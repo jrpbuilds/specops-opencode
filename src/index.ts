@@ -1,4 +1,5 @@
 import type { Config, Plugin } from "@opencode-ai/plugin";
+import { doctorTool } from "./tools/doctor.js";
 import { onboardTool } from "./tools/onboard.js";
 
 /** The only commands exposed by the walking skeleton. */
@@ -8,8 +9,9 @@ export const COMMANDS = {
         template: "SpecOps command received",
     },
     "specops-doctor": {
-        description: "Receive a SpecOps doctor command",
-        template: "SpecOps doctor command received",
+        description: "Run SpecOps doctor diagnostics",
+        template:
+            "Call the specops_doctor tool to run SpecOps diagnostics, then report its result to the user.",
     },
     "specops-onboard": {
         description: "Onboard the current project for OpenSpec",
@@ -25,6 +27,7 @@ export const SpecOpsPlugin: Plugin = async () => ({
         Object.assign(config.command, COMMANDS);
     },
     tool: {
+        specops_doctor: doctorTool,
         specops_onboard: onboardTool,
     },
 });

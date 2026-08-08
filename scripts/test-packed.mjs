@@ -46,6 +46,11 @@ try {
         ["specops", "specops-doctor", "specops-onboard"],
         "packed command catalogue",
     );
+    assertEqual(
+        Object.keys(hooks.tool).sort(),
+        ["specops_doctor", "specops_onboard"],
+        "packed tool catalogue",
+    );
     assert(
         (await readFile(path.join(packageDirectory, "dist", "tui.js"), "utf8")).includes(
             "SpecOps Configure",

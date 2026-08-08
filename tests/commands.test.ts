@@ -28,8 +28,8 @@ describe("SpecOps server plugin", () => {
         expect(config.command).toEqual(COMMANDS);
     });
 
-    test("registers the specops_onboard tool", async () => {
+    test("registers the SpecOps tools", async () => {
         const hooks = await SpecOpsPlugin(pluginInput());
-        expect(Object.keys(hooks.tool ?? {})).toEqual(["specops_onboard"]);
+        expect(Object.keys(hooks.tool ?? {})).toEqual(["specops_doctor", "specops_onboard"]);
     });
 });

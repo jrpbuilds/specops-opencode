@@ -26,3 +26,20 @@ export function runCaptured(
         });
     });
 }
+
+/** Run a command and resolve with captured stdout and its exit status. */
+export function runCaptureStdout(
+    command: string,
+    args: string[],
+    cwd?: string,
+): Promise<{ stdout: string; exitCode: number | null }> {
+    return new Promise((resolve, reject) => {
+        const child = spawn(command, args, { cwd, stdio: ["ignore", "pipe", "ignore"] });
+        const chunks: Buffer[] = [];
+        child.stdout?.on("data", (chunk: Buffer) => chunks.push(chunk));
+        child.on("error", reject);
+        child.on("exit", exitCode => {
+            resolve({ stdout: Buffer.concat(chunks).toString("utf8").trim(), exitCode });
+        });
+    });
+}
