@@ -46,6 +46,8 @@ try {
         ["specops", "specops-doctor", "specops-onboard"],
         "packed command catalogue",
     );
+    assert(config.command.specops.agent === "SpecOps", "specops command agent mismatch");
+    assert(config.command.specops.template === "$ARGUMENTS", "specops command template mismatch");
     assertEqual(
         Object.keys(hooks.tool).sort(),
         ["specops_doctor", "specops_onboard"],

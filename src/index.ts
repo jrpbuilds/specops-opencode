@@ -1,14 +1,15 @@
 import type { Config, Plugin } from "@opencode-ai/plugin";
 import { loadConfig } from "./config.js";
-import { registerCoordinatorAgent } from "./agents/coordinator.js";
+import { registerCoordinatorAgent, SPECOPS_AGENT_ID } from "./agents/coordinator.js";
 import { doctorTool } from "./tools/doctor.js";
 import { onboardTool } from "./tools/onboard.js";
 
 /** The only commands exposed by the walking skeleton. */
 export const COMMANDS = {
     specops: {
-        description: "Receive a SpecOps command",
-        template: "SpecOps command received",
+        description: "Run a goal under the SpecOps coordinator",
+        agent: SPECOPS_AGENT_ID,
+        template: "$ARGUMENTS",
     },
     "specops-doctor": {
         description: "Run SpecOps doctor diagnostics",

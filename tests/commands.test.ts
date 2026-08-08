@@ -30,6 +30,26 @@ describe("SpecOps server plugin", () => {
         expect(config.command).toEqual(COMMANDS);
     });
 
+    test("wires the specops command to the SpecOps primary agent", async () => {
+        await withTempDir(async dir => {
+            const original = process.env.XDG_CONFIG_HOME;
+            process.env.XDG_CONFIG_HOME = dir;
+            try {
+                const hooks = await SpecOpsPlugin(pluginInput());
+                const config: Config = {};
+                await hooks.config?.(config);
+
+                expect(config.command?.specops).toEqual({
+                    description: "Run a goal under the SpecOps coordinator",
+                    agent: SPECOPS_AGENT_ID,
+                    template: "$ARGUMENTS",
+                });
+            } finally {
+                process.env.XDG_CONFIG_HOME = original;
+            }
+        });
+    });
+
     test("registers the SpecOps tools", async () => {
         const hooks = await SpecOpsPlugin(pluginInput());
         expect(Object.keys(hooks.tool ?? {})).toEqual(["specops_doctor", "specops_onboard"]);
