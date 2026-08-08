@@ -3,6 +3,7 @@ import { loadConfig } from "./config.js";
 import { registerCoordinatorAgent, SPECOPS_AGENT_ID } from "./agents/coordinator.js";
 import { registerExplorerAgent } from "./agents/explorer.js";
 import { registerPlannerAgent } from "./agents/planner.js";
+import { registerDesignerAgent } from "./agents/designer.js";
 import { doctorTool } from "./tools/doctor.js";
 import { onboardTool } from "./tools/onboard.js";
 
@@ -36,6 +37,7 @@ export const SpecOpsPlugin: Plugin = async () => ({
             registerCoordinatorAgent(config, specOpsConfig);
             registerExplorerAgent(config, specOpsConfig);
             registerPlannerAgent(config, specOpsConfig);
+            registerDesignerAgent(config, specOpsConfig);
         } catch (error) {
             const reason = error instanceof Error ? error.message : String(error);
             console.warn(

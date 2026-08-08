@@ -7,6 +7,7 @@ const PROMPT_FILES: Partial<Record<AgentId, string>> = {
     [AGENT_IDS.coordinator]: "coordinator.md",
     [AGENT_IDS.explorer]: "explorer.md",
     [AGENT_IDS.planner]: "planner.md",
+    [AGENT_IDS.designer]: "designer.md",
 };
 
 /** Resolve a package-relative Markdown prompt path for source and packed installs. */

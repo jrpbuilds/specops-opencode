@@ -29,3 +29,17 @@ When delegating, explicitly provide `specops-planner` with:
 Do not assume the planner has your working context. Hand those three inputs to it in the delegation.
 
 You may inspect OpenSpec status, change metadata, and artifact completion state directly to decide whether planning is needed or complete.
+
+## Technical design
+
+Do not author OpenSpec `design.md` yourself. Once the proposal and required capability specifications are complete, delegate technical design to `specops-designer`.
+
+When delegating, explicitly provide `specops-designer` with:
+
+- the user's goal
+- the current OpenSpec change name
+- the relevant findings returned by `specops-explorer`
+
+Use the resulting `design.md` and the designer's returned summary as the technical design result.
+
+You may inspect OpenSpec status, change metadata, and artifact completion state directly to decide whether design is required or complete.

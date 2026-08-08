@@ -55,7 +55,7 @@ try {
     );
     assertEqual(
         Object.keys(config.agent ?? {}).sort(),
-        ["SpecOps", "specops-explorer", "specops-planner"],
+        ["SpecOps", "specops-designer", "specops-explorer", "specops-planner"],
         "packed agent catalogue",
     );
     assert(
@@ -83,6 +83,12 @@ try {
         "packed planner prompt missing or malformed",
     );
     assert(
+        (await readFile(path.join(packageDirectory, "prompts", "designer.md"), "utf8"))
+            .trim()
+            .startsWith("# SpecOps Designer"),
+        "packed designer prompt missing or malformed",
+    );
+    assert(
         typeof config.agent["SpecOps"].prompt === "string" &&
             config.agent["SpecOps"].prompt.length > 0,
         "coordinator prompt not loaded in packed install",
@@ -96,6 +102,11 @@ try {
         typeof config.agent["specops-planner"].prompt === "string" &&
             config.agent["specops-planner"].prompt.length > 0,
         "planner prompt not loaded in packed install",
+    );
+    assert(
+        typeof config.agent["specops-designer"].prompt === "string" &&
+            config.agent["specops-designer"].prompt.length > 0,
+        "designer prompt not loaded in packed install",
     );
 
     process.stderr.write("Packed install smoke passed\n");

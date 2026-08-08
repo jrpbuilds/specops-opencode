@@ -41,6 +41,15 @@ describe("registerCoordinatorAgent", () => {
         expect(prompt).toContain("relevant findings returned by `specops-explorer`");
     });
 
+    test("coordinator prompt delegates design authoring to specops-designer", () => {
+        const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+        expect(prompt).toContain("specops-designer");
+        expect(prompt).toContain("Do not author OpenSpec `design.md`");
+        expect(prompt).toContain("current OpenSpec change name");
+        expect(prompt).toContain("relevant findings returned by `specops-explorer`");
+    });
+
     test("applies configured coordinator model and variant", () => {
         const config: Config = {};
         registerCoordinatorAgent(

@@ -15,3 +15,5 @@ Do not make technical design decisions.
 Do not implement source changes.
 
 After authoring, run `openspec validate <change>` to confirm the proposal and specs are well-formed, then return a concise summary of the artifacts created, the capabilities introduced or modified, and any unresolved decisions or missing evidence to the SpecOps coordinator.
+
+After the proposal and required capability specifications are complete and valid, return to the coordinator immediately. Do not continue into technical design or task authoring.
