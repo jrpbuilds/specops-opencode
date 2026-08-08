@@ -32,6 +32,15 @@ describe("registerCoordinatorAgent", () => {
         expect(prompt).toContain("Do not read source files");
     });
 
+    test("coordinator prompt delegates proposal/spec authoring to specops-planner", () => {
+        const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+        expect(prompt).toContain("specops-planner");
+        expect(prompt).toContain("Do not author OpenSpec `proposal.md`");
+        expect(prompt).toContain("current OpenSpec change name");
+        expect(prompt).toContain("relevant findings returned by `specops-explorer`");
+    });
+
     test("applies configured coordinator model and variant", () => {
         const config: Config = {};
         registerCoordinatorAgent(

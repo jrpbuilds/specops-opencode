@@ -6,6 +6,7 @@ import { AGENT_IDS, type AgentId } from "./agents/ids.js";
 const PROMPT_FILES: Partial<Record<AgentId, string>> = {
     [AGENT_IDS.coordinator]: "coordinator.md",
     [AGENT_IDS.explorer]: "explorer.md",
+    [AGENT_IDS.planner]: "planner.md",
 };
 
 /** Resolve a package-relative Markdown prompt path for source and packed installs. */

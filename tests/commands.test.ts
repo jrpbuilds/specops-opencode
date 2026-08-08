@@ -2,6 +2,7 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { SPECOPS_AGENT_ID } from "../src/agents/coordinator.js";
 import { EXPLORER_AGENT_ID } from "../src/agents/explorer.js";
+import { PLANNER_AGENT_ID } from "../src/agents/planner.js";
 import { COMMANDS, SpecOpsPlugin } from "../src/index.js";
 import { loadPrompt } from "../src/prompts.js";
 import { AGENT_IDS } from "../src/agents/ids.js";
@@ -77,6 +78,12 @@ describe("SpecOps server plugin", () => {
                         "Investigates repository source code, existing behaviour, structure, conventions, tests, constraints and risks for the SpecOps coordinator. Use this agent for all codebase exploration.",
                     mode: "subagent",
                     prompt: loadPrompt(AGENT_IDS.explorer),
+                });
+                expect(config.agent?.[PLANNER_AGENT_ID]).toEqual({
+                    description:
+                        "Authors OpenSpec change proposals and capability specifications from the user's goal and repository evidence. Use this agent for SpecOps planning artifacts.",
+                    mode: "subagent",
+                    prompt: loadPrompt(AGENT_IDS.planner),
                 });
             } finally {
                 process.env.XDG_CONFIG_HOME = original;
