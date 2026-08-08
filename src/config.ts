@@ -9,7 +9,7 @@ import { ALL_AGENT_IDS, type AgentId } from "./agents.js";
  *
  * A blank/absent `model` means "use OpenCode's configured global default".
  * `variant` is only meaningful when a `model` is set; a variant without a
- * model is rejected by {@link validateConfig}.
+ * model is rejected by {@link validateConfigSelections}.
  */
 export type AgentConfig = { model?: string; variant?: string };
 

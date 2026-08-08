@@ -34,13 +34,7 @@ describe("selectConfiguredModel", () => {
 });
 
 describe("clearConfiguredModel", () => {
-    test("keeps the variant as a staging preference", () => {
-        expect(clearConfiguredModel({ model: "x", variant: "high" })).toEqual({
-            variant: "high",
-        });
-    });
-
-    test("returns an empty entry when there was no variant", () => {
-        expect(clearConfiguredModel({ model: "x" })).toEqual({});
+    test("clears the model override and variant", () => {
+        expect(clearConfiguredModel()).toEqual({});
     });
 });

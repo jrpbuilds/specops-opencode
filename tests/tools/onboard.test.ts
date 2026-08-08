@@ -3,7 +3,6 @@ import { onboard, type OnboardDeps } from "../../src/tools/onboard.js";
 
 function deps(overrides: Partial<OnboardDeps>): OnboardDeps {
     return {
-        cwd: "/tmp/test",
         isAvailable: async () => true,
         isInitialized: async () => false,
         initialize: async () => ({ ok: true, stderr: "" }),

@@ -7,7 +7,6 @@ import {
 
 /** Injected operations so branching is testable without a real openspec CLI. */
 export type OnboardDeps = {
-    cwd: string;
     isAvailable: () => Promise<boolean>;
     isInitialized: () => Promise<boolean>;
     initialize: () => Promise<{ ok: boolean; stderr: string }>;
@@ -35,7 +34,6 @@ export const onboardTool: ToolDefinition = tool({
     async execute(_args, context) {
         context.metadata({ title: "Onboarding project for OpenSpec…" });
         return onboard({
-            cwd: context.directory,
             isAvailable: () => isOpenSpecAvailable(),
             isInitialized: () => isOpenSpecInitialized(context.directory),
             initialize: () => initializeOpenSpec(context.directory),

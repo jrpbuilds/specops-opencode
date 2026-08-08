@@ -203,7 +203,7 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
                         return;
                     }
                     if (option.value === "") {
-                        staged.agents[id] = clearConfiguredModel(staged.agents[id]);
+                        staged.agents[id] = clearConfiguredModel();
                         showAgents();
                         return;
                     }

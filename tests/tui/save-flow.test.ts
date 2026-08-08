@@ -77,7 +77,7 @@ describe("SpecOps Configure save flow", () => {
         );
     });
 
-    test("shows validation issues instead of saving a variant without a model", async () => {
+    test("clears the model and variant so the default can be saved", async () => {
         await withTempDir(async home =>
             withConfigHome(home, async () => {
                 const fake = fakeTuiApi(allProviders);
@@ -88,8 +88,7 @@ describe("SpecOps Configure save flow", () => {
                 fake.selectByValue("");
                 fake.selectByValue("__save__");
 
-                expect(fake.currentDialog()?.title).toBe("Complete the model mapping");
-                expect(fake.currentDialog()?.message).toContain("variant high requires a model");
+                expect(fake.currentDialog()?.title).toBe("Save SpecOps model mappings?");
                 await expect(
                     readFile(path.join(home, "opencode", "specops.json")),
                 ).rejects.toThrow();

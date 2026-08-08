@@ -94,16 +94,9 @@ export function selectConfiguredModel(entry: AgentConfig, model: ConfiguredModel
     };
 }
 
-/**
- * Clear the role-specific model so OpenCode's global default is used.
- *
- * The variant is intentionally retained as a staging preference: it is
- * re-applied (or dropped) when a model is next chosen via
- * {@link selectConfiguredModel}. A modelless entry carrying a variant cannot
- * be saved because {@link validateConfigSelections} rejects it.
- */
-export function clearConfiguredModel(entry: AgentConfig): AgentConfig {
-    return entry.variant ? { variant: entry.variant } : {};
+/** Clear the role-specific model and variant so OpenCode's global default is used. */
+export function clearConfiguredModel(): AgentConfig {
+    return {};
 }
 
 /** Return the existing functional grouping shown beside each role. */
