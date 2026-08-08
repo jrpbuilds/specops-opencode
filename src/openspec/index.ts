@@ -39,7 +39,12 @@ export function initializeOpenSpec(cwd: string): Promise<{ ok: boolean; stderr: 
     return runCaptured("openspec", ["init", "--tools", "none", "--no-animation"], cwd);
 }
 
-/** Run `openspec doctor --json` and interpret its project root and health. */
+/**
+ * Run `openspec doctor --json` and normalize its root, health, and status data.
+ *
+ * Command failures, invalid JSON, and malformed response shapes are returned as
+ * structured errors so the doctor tool can report them without throwing.
+ */
 export async function runOpenSpecDoctor(cwd: string): Promise<OpenSpecDoctorResult> {
     let result: { stdout: string; exitCode: number | null };
     try {
@@ -96,10 +101,18 @@ export async function runOpenSpecDoctor(cwd: string): Promise<OpenSpecDoctorResu
     };
 }
 
+/** Narrow an unknown JSON value to a non-array object with string keys. */
 function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+/**
+ * Normalize one raw OpenSpec doctor status entry for the plugin result.
+ *
+ * The CLI may provide a code, message, and suggested fix independently. Keep
+ * the result readable by combining the code with the message and appending the
+ * fix on its own line. Missing or malformed fields receive safe fallbacks.
+ */
 function formatStatus(value: Record<string, unknown>): { severity: string; text: string } {
     const code = typeof value.code === "string" ? value.code : undefined;
     const message = typeof value.message === "string" ? value.message : undefined;
@@ -112,6 +125,7 @@ function formatStatus(value: Record<string, unknown>): { severity: string; text:
     };
 }
 
+/** Convert an unknown caught value into a message suitable for a tool result. */
 function errorMessage(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
 }

@@ -107,14 +107,17 @@ export async function writeFileAtomic(destination: string, content: string): Pro
     }
 }
 
+/** Narrow parsed JSON to a non-array object that can be inspected by key. */
 function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+/** Whether a record contains no keys outside the allowed configuration keys. */
 function hasOnlyKeys(value: Record<string, unknown>, allowed: readonly string[]): boolean {
     return Object.keys(value).every(key => allowed.includes(key));
 }
 
+/** Whether a record contains exactly the expected keys, independent of order. */
 function hasExactKeys(value: Record<string, unknown>, expected: readonly string[]): boolean {
     return Object.keys(value).sort().join("|") === [...expected].sort().join("|");
 }

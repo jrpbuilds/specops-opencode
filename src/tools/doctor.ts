@@ -103,6 +103,7 @@ export const doctorTool: ToolDefinition = tool({
     },
 });
 
+/** Read and trim a required version, using `unknown` for failures or blanks. */
 async function readVersion(read: () => Promise<string>): Promise<string> {
     try {
         const version = (await read()).trim();
@@ -112,6 +113,7 @@ async function readVersion(read: () => Promise<string>): Promise<string> {
     }
 }
 
+/** Read and trim an optional OpenSpec version, preserving unavailable as `null`. */
 async function readOpenSpecVersion(read: () => Promise<string | null>): Promise<string | null> {
     try {
         const version = await read();
@@ -121,6 +123,7 @@ async function readOpenSpecVersion(read: () => Promise<string | null>): Promise<
     }
 }
 
+/** Convert an unknown caught value into a message suitable for the report. */
 function errorMessage(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
 }

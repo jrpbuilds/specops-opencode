@@ -9,7 +9,7 @@ export function runExitZero(command: string, args: string[], cwd?: string): Prom
     });
 }
 
-/** Run a command and resolve with its exit code and captured stderr. */
+/** Run a command and resolve with whether it succeeded and its captured stderr. */
 export function runCaptured(
     command: string,
     args: string[],
@@ -27,7 +27,13 @@ export function runCaptured(
     });
 }
 
-/** Run a command and resolve with captured stdout and its exit status. */
+/**
+ * Run a command and resolve with captured stdout and its exit status.
+ *
+ * A non-zero exit is returned rather than rejected so callers can interpret
+ * command-specific failures. `exitCode` is `null` when the process is
+ * terminated by a signal; only spawn errors reject the promise.
+ */
 export function runCaptureStdout(
     command: string,
     args: string[],
