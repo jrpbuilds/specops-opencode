@@ -1,4 +1,4 @@
-import { AGENT_IDS, ALL_AGENT_IDS, type AgentId } from "./agents.js";
+import { AGENT_IDS, ALL_AGENT_IDS, type AgentId } from "./agents/ids.js";
 import type { AgentConfig, SpecOpsConfig } from "./config.js";
 
 const PLANNING_IDS = new Set<AgentId>([AGENT_IDS.explorer, AGENT_IDS.planner, AGENT_IDS.designer]);

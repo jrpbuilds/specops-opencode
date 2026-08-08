@@ -1,4 +1,6 @@
 import type { Config, Plugin } from "@opencode-ai/plugin";
+import { loadConfig } from "./config.js";
+import { registerCoordinatorAgent } from "./agents/coordinator.js";
 import { doctorTool } from "./tools/doctor.js";
 import { onboardTool } from "./tools/onboard.js";
 
@@ -20,11 +22,22 @@ export const COMMANDS = {
     },
 } satisfies NonNullable<Config["command"]>;
 
-/** Register the fixed confirmation commands and the onboarding tool. */
+/** Register the fixed confirmation commands, the onboarding tool, and the SpecOps primary agent. */
 export const SpecOpsPlugin: Plugin = async () => ({
     config: async (config: Config) => {
         config.command ??= {};
         Object.assign(config.command, COMMANDS);
+
+        try {
+            const specOpsConfig = await loadConfig();
+            registerCoordinatorAgent(config, specOpsConfig);
+        } catch (error) {
+            const reason = error instanceof Error ? error.message : String(error);
+            console.warn(
+                "SpecOps: failed to load configuration, agent registration skipped:",
+                reason,
+            );
+        }
     },
     tool: {
         specops_doctor: doctorTool,

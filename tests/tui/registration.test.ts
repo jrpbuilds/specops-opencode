@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ALL_AGENT_IDS } from "../../src/agents.js";
+import { ALL_AGENT_IDS } from "../../src/agents/ids.js";
 import { registerModelSettings } from "../../src/tui.js";
 import { allProviders } from "../fixtures.js";
 import { fakeTuiApi, withConfigHome } from "./helpers.js";

@@ -2,7 +2,7 @@ import { mkdir, open, readFile, rename, unlink } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { ALL_AGENT_IDS, type AgentId } from "./agents.js";
+import { ALL_AGENT_IDS, type AgentId } from "./agents/ids.js";
 
 /**
  * Model and optional reasoning variant selected for one role.

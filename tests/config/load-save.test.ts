@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, test } from "bun:test";
-import { ALL_AGENT_IDS } from "../../src/agents.js";
+import { ALL_AGENT_IDS } from "../../src/agents/ids.js";
 import { DEFAULT_CONFIG, loadConfig, saveConfig } from "../../src/config.js";
 import { configPath, withTempDir } from "../helpers.js";
 

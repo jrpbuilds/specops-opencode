@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ALL_AGENT_IDS, AGENT_IDS } from "../../src/agents.js";
+import { ALL_AGENT_IDS, AGENT_IDS } from "../../src/agents/ids.js";
 import { DEFAULT_CONFIG } from "../../src/config.js";
 import { configuredModels, createConfigDraft } from "../../src/models.js";
 import { allProviders } from "../fixtures.js";

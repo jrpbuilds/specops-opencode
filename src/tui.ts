@@ -1,6 +1,6 @@
 /** Native OpenCode TUI editor for SpecOps role model and variant mappings. */
 import type { TuiPluginApi, TuiPluginModule } from "@opencode-ai/plugin/tui";
-import { ALL_AGENT_IDS, type AgentId } from "./agents.js";
+import { ALL_AGENT_IDS, type AgentId } from "./agents/ids.js";
 import { loadConfig, saveConfig, type SpecOpsConfig } from "./config.js";
 import {
     agentSettingsCategory,

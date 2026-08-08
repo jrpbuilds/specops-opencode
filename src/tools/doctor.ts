@@ -1,5 +1,5 @@
 import { tool, type ToolDefinition } from "@opencode-ai/plugin/tool";
-import { ALL_AGENT_IDS } from "../agents.js";
+import { ALL_AGENT_IDS } from "../agents/ids.js";
 import { loadConfig, type SpecOpsConfig } from "../config.js";
 import {
     getOpenSpecVersion,
