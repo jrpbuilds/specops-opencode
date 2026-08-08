@@ -1,6 +1,7 @@
 import type { Config, Plugin } from "@opencode-ai/plugin";
 import { loadConfig } from "./config.js";
 import { registerCoordinatorAgent, SPECOPS_AGENT_ID } from "./agents/coordinator.js";
+import { registerExplorerAgent } from "./agents/explorer.js";
 import { doctorTool } from "./tools/doctor.js";
 import { onboardTool } from "./tools/onboard.js";
 
@@ -32,6 +33,7 @@ export const SpecOpsPlugin: Plugin = async () => ({
         try {
             const specOpsConfig = await loadConfig();
             registerCoordinatorAgent(config, specOpsConfig);
+            registerExplorerAgent(config, specOpsConfig);
         } catch (error) {
             const reason = error instanceof Error ? error.message : String(error);
             console.warn(

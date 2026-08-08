@@ -1,0 +1,92 @@
+import type { Config } from "@opencode-ai/plugin";
+import { describe, expect, test } from "bun:test";
+import { AGENT_IDS } from "../../src/agents/ids.js";
+import { EXPLORER_AGENT_ID, registerExplorerAgent } from "../../src/agents/explorer.js";
+import { loadPrompt } from "../../src/prompts.js";
+import type { SpecOpsConfig } from "../../src/config.js";
+
+/** Build a valid config with only the supplied explorer overrides. */
+function makeConfig(overrides: Partial<SpecOpsConfig["agents"]> = {}): SpecOpsConfig {
+    const defaults = Object.fromEntries(
+        Object.values(AGENT_IDS).map(id => [id, {}]),
+    ) as SpecOpsConfig["agents"];
+    return { agents: { ...defaults, ...overrides } as SpecOpsConfig["agents"] };
+}
+
+describe("registerExplorerAgent", () => {
+    test("registers the SpecOps explorer subagent with the explorer prompt", () => {
+        const config: Config = {};
+        registerExplorerAgent(config, makeConfig());
+
+        expect(config.agent?.[EXPLORER_AGENT_ID]).toEqual({
+            description:
+                "Investigates repository source code, existing behaviour, structure, conventions, tests, constraints and risks for the SpecOps coordinator. Use this agent for all codebase exploration.",
+            mode: "subagent",
+            prompt: loadPrompt(AGENT_IDS.explorer),
+        });
+    });
+
+    test("explorer prompt forbids source changes and final design decisions", () => {
+        const prompt = loadPrompt(AGENT_IDS.explorer);
+
+        expect(prompt).toContain("Do not implement source changes");
+        expect(prompt).toContain("Do not make final planning or design decisions");
+    });
+
+    test("applies configured explorer model and variant", () => {
+        const config: Config = {};
+        registerExplorerAgent(
+            config,
+            makeConfig({
+                [AGENT_IDS.explorer]: {
+                    model: "openference/Qwen3.7 Plus",
+                    variant: "medium",
+                },
+            }),
+        );
+
+        expect(config.agent?.[EXPLORER_AGENT_ID]).toMatchObject({
+            model: "openference/Qwen3.7 Plus",
+            variant: "medium",
+        });
+    });
+
+    test("applies model without variant when only model is configured", () => {
+        const config: Config = {};
+        registerExplorerAgent(
+            config,
+            makeConfig({ [AGENT_IDS.explorer]: { model: "openai/gpt-5" } }),
+        );
+
+        expect(config.agent?.[EXPLORER_AGENT_ID]?.model).toBe("openai/gpt-5");
+        expect("variant" in (config.agent?.[EXPLORER_AGENT_ID] ?? {})).toBe(false);
+    });
+
+    test("omits model and variant for blank model to preserve OpenCode fallback", () => {
+        const config: Config = {};
+        registerExplorerAgent(
+            config,
+            makeConfig({ [AGENT_IDS.explorer]: { model: "   ", variant: "medium" } }),
+        );
+
+        expect("model" in (config.agent?.[EXPLORER_AGENT_ID] ?? {})).toBe(false);
+        expect("variant" in (config.agent?.[EXPLORER_AGENT_ID] ?? {})).toBe(false);
+    });
+
+    test("does not modify existing agents including the coordinator", () => {
+        const config: Config = {
+            agent: {
+                build: { description: "Build", mode: "primary", prompt: "Build prompt" },
+                [AGENT_IDS.coordinator]: {
+                    description: "Coordinator",
+                    mode: "primary",
+                    prompt: "Coordinator prompt",
+                },
+            },
+        };
+        registerExplorerAgent(config, makeConfig());
+
+        expect(config.agent?.build?.description).toBe("Build");
+        expect(config.agent?.[AGENT_IDS.coordinator]?.description).toBe("Coordinator");
+    });
+});

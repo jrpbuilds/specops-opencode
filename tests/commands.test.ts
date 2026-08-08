@@ -1,7 +1,10 @@
 import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
-import { COORDINATOR_PROMPT, SPECOPS_AGENT_ID } from "../src/agents/coordinator.js";
+import { SPECOPS_AGENT_ID } from "../src/agents/coordinator.js";
+import { EXPLORER_AGENT_ID } from "../src/agents/explorer.js";
 import { COMMANDS, SpecOpsPlugin } from "../src/index.js";
+import { loadPrompt } from "../src/prompts.js";
+import { AGENT_IDS } from "../src/agents/ids.js";
 import { withTempDir } from "./helpers.js";
 
 function pluginInput() {
@@ -55,7 +58,7 @@ describe("SpecOps server plugin", () => {
         expect(Object.keys(hooks.tool ?? {})).toEqual(["specops_doctor", "specops_onboard"]);
     });
 
-    test("registers the SpecOps primary agent using the default coordinator config", async () => {
+    test("registers the SpecOps agents with loaded Markdown prompts", async () => {
         await withTempDir(async dir => {
             const original = process.env.XDG_CONFIG_HOME;
             process.env.XDG_CONFIG_HOME = dir;
@@ -67,7 +70,13 @@ describe("SpecOps server plugin", () => {
                 expect(config.agent?.[SPECOPS_AGENT_ID]).toEqual({
                     description: "SpecOps coordinator for spec-driven development",
                     mode: "primary",
-                    prompt: COORDINATOR_PROMPT,
+                    prompt: loadPrompt(AGENT_IDS.coordinator),
+                });
+                expect(config.agent?.[EXPLORER_AGENT_ID]).toEqual({
+                    description:
+                        "Investigates repository source code, existing behaviour, structure, conventions, tests, constraints and risks for the SpecOps coordinator. Use this agent for all codebase exploration.",
+                    mode: "subagent",
+                    prompt: loadPrompt(AGENT_IDS.explorer),
                 });
             } finally {
                 process.env.XDG_CONFIG_HOME = original;

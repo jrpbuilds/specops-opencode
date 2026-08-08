@@ -53,12 +53,38 @@ try {
         ["specops_doctor", "specops_onboard"],
         "packed tool catalogue",
     );
-    assertEqual(Object.keys(config.agent ?? {}).sort(), ["SpecOps"], "packed agent catalogue");
+    assertEqual(
+        Object.keys(config.agent ?? {}).sort(),
+        ["SpecOps", "specops-explorer"],
+        "packed agent catalogue",
+    );
     assert(
         (await readFile(path.join(packageDirectory, "dist", "tui.js"), "utf8")).includes(
             "SpecOps Configure",
         ),
         "packed TUI entry missing",
+    );
+    assert(
+        (await readFile(path.join(packageDirectory, "prompts", "coordinator.md"), "utf8"))
+            .trim()
+            .startsWith("# SpecOps Coordinator"),
+        "packed coordinator prompt missing or malformed",
+    );
+    assert(
+        (await readFile(path.join(packageDirectory, "prompts", "explorer.md"), "utf8"))
+            .trim()
+            .startsWith("# SpecOps Explorer"),
+        "packed explorer prompt missing or malformed",
+    );
+    assert(
+        typeof config.agent["SpecOps"].prompt === "string" &&
+            config.agent["SpecOps"].prompt.length > 0,
+        "coordinator prompt not loaded in packed install",
+    );
+    assert(
+        typeof config.agent["specops-explorer"].prompt === "string" &&
+            config.agent["specops-explorer"].prompt.length > 0,
+        "explorer prompt not loaded in packed install",
     );
 
     process.stderr.write("Packed install smoke passed\n");

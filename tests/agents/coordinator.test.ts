@@ -1,12 +1,9 @@
 import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
-import { AGENT_IDS } from "../src/agents/ids.js";
-import {
-    COORDINATOR_PROMPT,
-    registerCoordinatorAgent,
-    SPECOPS_AGENT_ID,
-} from "../src/agents/coordinator.js";
-import type { SpecOpsConfig } from "../src/config.js";
+import { AGENT_IDS } from "../../src/agents/ids.js";
+import { registerCoordinatorAgent, SPECOPS_AGENT_ID } from "../../src/agents/coordinator.js";
+import { loadPrompt } from "../../src/prompts.js";
+import type { SpecOpsConfig } from "../../src/config.js";
 
 /** Build a valid config with only the supplied coordinator overrides. */
 function makeConfig(overrides: Partial<SpecOpsConfig["agents"]> = {}): SpecOpsConfig {
@@ -24,8 +21,15 @@ describe("registerCoordinatorAgent", () => {
         expect(config.agent?.[SPECOPS_AGENT_ID]).toEqual({
             description: "SpecOps coordinator for spec-driven development",
             mode: "primary",
-            prompt: COORDINATOR_PROMPT,
+            prompt: loadPrompt(AGENT_IDS.coordinator),
         });
+    });
+
+    test("coordinator prompt delegates source-code exploration to specops-explorer", () => {
+        const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+        expect(prompt).toContain("specops-explorer");
+        expect(prompt).toContain("Do not read source files");
     });
 
     test("applies configured coordinator model and variant", () => {

@@ -1,18 +1,10 @@
 import type { Config } from "@opencode-ai/plugin";
+import { loadPrompt } from "../prompts.js";
 import { AGENT_IDS } from "./ids.js";
 import type { SpecOpsConfig } from "../config.js";
 
 /** Visible primary agent key presented in OpenCode's agent selector. */
 export const SPECOPS_AGENT_ID = "SpecOps";
-
-/** Minimal bundled coordinator prompt proving the agent has its own identity. */
-export const COORDINATOR_PROMPT = [
-    "You are the SpecOps coordinator.",
-    "",
-    "Coordinate spec-driven development using OpenSpec and the available SpecOps tools and specialist agents.",
-    "",
-    "Do not implement source changes yourself. Determine what work is needed and delegate specialist work when appropriate.",
-].join("\n");
 
 /**
  * Register the SpecOps primary agent using the persisted coordinator role config.
@@ -28,7 +20,7 @@ export function registerCoordinatorAgent(config: Config, specOpsConfig: SpecOpsC
     config.agent[SPECOPS_AGENT_ID] = {
         description: "SpecOps coordinator for spec-driven development",
         mode: "primary",
-        prompt: COORDINATOR_PROMPT,
+        prompt: loadPrompt(AGENT_IDS.coordinator),
         ...(model
             ? { model, ...(coordinator.variant ? { variant: coordinator.variant } : {}) }
             : {}),
