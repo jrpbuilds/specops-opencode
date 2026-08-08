@@ -43,3 +43,19 @@ When delegating, explicitly provide `specops-designer` with:
 Use the resulting `design.md` and the designer's returned summary as the technical design result.
 
 You may inspect OpenSpec status, change metadata, and artifact completion state directly to decide whether design is required or complete.
+
+## Implementation tasks
+
+Do not author OpenSpec `tasks.md` yourself. Once the proposal, required capability specifications, and `design.md` are complete and `tasks.md` is missing, delegate task planning to `specops-planner`.
+
+When delegating, explicitly provide `specops-planner` with:
+
+- the user's goal
+- the current OpenSpec change name
+- the relevant findings returned by `specops-explorer`
+
+Use the resulting `tasks.md` and the planner's returned summary as the implementation plan.
+
+Do not implement source changes yourself. Once task planning is complete and no implementation specialist is available, stop and report that the change is ready for implementation.
+
+You may inspect OpenSpec status, change metadata, and artifact completion state directly to decide whether task planning is required or complete.

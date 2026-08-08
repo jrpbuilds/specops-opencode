@@ -19,8 +19,9 @@ export function registerPlannerAgent(config: Config, specOpsConfig: SpecOpsConfi
 
     config.agent[PLANNER_AGENT_ID] = {
         description:
-            "Authors OpenSpec change proposals and capability specifications from the user's " +
-            "goal and repository evidence. Use this agent for SpecOps planning artifacts.",
+            "Authors OpenSpec planning artifacts — proposals, capability " +
+            "specifications, and implementation tasks — from the user's goal and " +
+            "repository evidence. Use this agent for SpecOps planning artifacts.",
         mode: "subagent",
         prompt: loadPrompt(AGENT_IDS.planner),
         ...(model ? { model, ...(planner.variant ? { variant: planner.variant } : {}) } : {}),

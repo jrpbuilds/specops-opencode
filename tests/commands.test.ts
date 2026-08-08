@@ -82,7 +82,7 @@ describe("SpecOps server plugin", () => {
                 });
                 expect(config.agent?.[PLANNER_AGENT_ID]).toEqual({
                     description:
-                        "Authors OpenSpec change proposals and capability specifications from the user's goal and repository evidence. Use this agent for SpecOps planning artifacts.",
+                        "Authors OpenSpec planning artifacts — proposals, capability specifications, and implementation tasks — from the user's goal and repository evidence. Use this agent for SpecOps planning artifacts.",
                     mode: "subagent",
                     prompt: loadPrompt(AGENT_IDS.planner),
                 });

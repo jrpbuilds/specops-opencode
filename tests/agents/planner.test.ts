@@ -20,20 +20,32 @@ describe("registerPlannerAgent", () => {
 
         expect(config.agent?.[PLANNER_AGENT_ID]).toEqual({
             description:
-                "Authors OpenSpec change proposals and capability specifications from the user's goal and repository evidence. Use this agent for SpecOps planning artifacts.",
+                "Authors OpenSpec planning artifacts — proposals, capability specifications, and implementation tasks — from the user's goal and repository evidence. Use this agent for SpecOps planning artifacts.",
             mode: "subagent",
             prompt: loadPrompt(AGENT_IDS.planner),
         });
     });
 
-    test("planner prompt forbids source exploration, design/tasks, and implementation", () => {
+    test("planner prompt owns both proposal/specs and tasks.md across two passes", () => {
         const prompt = loadPrompt(AGENT_IDS.planner);
 
+        expect(prompt).toContain("## Requirements planning");
+        expect(prompt).toContain("## Task planning");
+        expect(prompt).toContain("- `proposal.md`");
+        expect(prompt).toContain("- the required capability `spec.md` files");
+        expect(prompt).toContain("author `tasks.md`");
+    });
+
+    test("planner prompt gates tasks on design.md and forbids implementation and checkboxes", () => {
+        const prompt = loadPrompt(AGENT_IDS.planner);
+
+        expect(prompt).toContain("`design.md` exists, and `tasks.md` is missing");
         expect(prompt).toContain("Do not inspect repository source code yourself");
-        expect(prompt).toContain("Do not author `design.md` or `tasks.md`");
-        expect(prompt).toContain("Do not implement source changes");
-        expect(prompt).toContain("return to the coordinator immediately");
-        expect(prompt).toContain("Do not continue into technical design or task authoring");
+        expect(prompt).toContain("Do not author `design.md` or `tasks.md` during this pass");
+        expect(prompt).toContain("Do not implement source changes yourself");
+        expect(prompt).toContain("Do not mark tasks complete");
+        expect(prompt).toContain("- [ ]");
+        expect(prompt).toContain("return a concise summary");
     });
 
     test("applies configured planner model and variant", () => {
