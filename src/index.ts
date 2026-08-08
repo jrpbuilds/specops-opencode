@@ -1,4 +1,5 @@
 import type { Config, Plugin } from "@opencode-ai/plugin";
+import { onboardTool } from "./tools/onboard.js";
 
 /** The only commands exposed by the walking skeleton. */
 export const COMMANDS = {
@@ -11,16 +12,20 @@ export const COMMANDS = {
         template: "SpecOps doctor command received",
     },
     "specops-onboard": {
-        description: "Receive a SpecOps onboard command",
-        template: "SpecOps onboard command received",
+        description: "Onboard the current project for OpenSpec",
+        template:
+            "Call the specops_onboard tool to onboard the current project for OpenSpec, then report its result to the user.",
     },
 } satisfies NonNullable<Config["command"]>;
 
-/** Register the fixed confirmation commands. */
+/** Register the fixed confirmation commands and the onboarding tool. */
 export const SpecOpsPlugin: Plugin = async () => ({
     config: async (config: Config) => {
         config.command ??= {};
         Object.assign(config.command, COMMANDS);
+    },
+    tool: {
+        specops_onboard: onboardTool,
     },
 });
 
