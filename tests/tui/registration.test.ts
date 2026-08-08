@@ -1,0 +1,75 @@
+import { describe, expect, test } from "bun:test";
+import { ALL_AGENT_IDS } from "../../src/agents.js";
+import { registerModelSettings } from "../../src/tui.js";
+import { allProviders } from "../fixtures.js";
+import { fakeTuiApi, withConfigHome } from "./helpers.js";
+import { withTempDir } from "../helpers.js";
+
+describe("registerModelSettings", () => {
+    test("registers the SpecOps Configure palette command", () => {
+        const fake = fakeTuiApi(allProviders);
+        registerModelSettings(fake.api);
+
+        expect(fake.commands).toHaveLength(1);
+        expect(fake.commands[0]).toMatchObject({
+            name: "specops.models.configure",
+            title: "SpecOps Configure",
+            namespace: "palette",
+            category: "SpecOps",
+        });
+        expect(fake.commands[0].run).toBeFunction();
+    });
+
+    test("opens a role list with all seven roles and actions", async () => {
+        const fake = fakeTuiApi(allProviders);
+        registerModelSettings(fake.api);
+
+        await fake.runCommand();
+        const props = fake.currentDialog();
+        const values = props?.options?.map(option => option.value);
+
+        expect(values).toEqual([...ALL_AGENT_IDS, "__save__", "__cancel__"]);
+        expect(props?.title).toBe("SpecOps role model mappings");
+    });
+
+    test("does not open a second editor while one is already open", async () => {
+        const fake = fakeTuiApi(allProviders);
+        registerModelSettings(fake.api);
+
+        await fake.runCommand();
+        const replaceCount = fake.replaceCount;
+        await fake.runCommand();
+
+        expect(fake.replaceCount).toBe(replaceCount);
+    });
+
+    test("reports an error when OpenCode has no configured models", async () => {
+        await withTempDir(async home =>
+            withConfigHome(home, async () => {
+                const fake = fakeTuiApi([]);
+                registerModelSettings(fake.api);
+
+                await fake.runCommand();
+
+                expect(fake.toasts).toEqual([
+                    {
+                        variant: "error",
+                        title: "SpecOps model settings",
+                        message: "OpenCode has no configured models to select.",
+                    },
+                ]);
+                expect(fake.currentDialog()).toBeUndefined();
+            }),
+        );
+    });
+
+    test("unregisters the palette command on dispose", () => {
+        const fake = fakeTuiApi(allProviders);
+        registerModelSettings(fake.api);
+        expect(fake.isCommandRegistered).toBe(true);
+
+        fake.dispose();
+
+        expect(fake.isCommandRegistered).toBe(false);
+    });
+});
