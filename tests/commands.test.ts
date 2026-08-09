@@ -4,6 +4,7 @@ import { SPECOPS_AGENT_ID } from "../src/agents/coordinator.js";
 import { EXPLORER_AGENT_ID } from "../src/agents/explorer.js";
 import { PLANNER_AGENT_ID } from "../src/agents/planner.js";
 import { DESIGNER_AGENT_ID } from "../src/agents/designer.js";
+import { IMPLEMENTER_AGENT_ID } from "../src/agents/implementer.js";
 import { COMMANDS, SpecOpsPlugin } from "../src/index.js";
 import { loadPrompt } from "../src/prompts.js";
 import { AGENT_IDS } from "../src/agents/ids.js";
@@ -91,6 +92,12 @@ describe("SpecOps server plugin", () => {
                         "Authors the technical OpenSpec design from approved requirements and repository evidence. Use this agent to create design.md for SpecOps changes.",
                     mode: "subagent",
                     prompt: loadPrompt(AGENT_IDS.designer),
+                });
+                expect(config.agent?.[IMPLEMENTER_AGENT_ID]).toEqual({
+                    description:
+                        "Implements approved OpenSpec tasks in source and tests, runs verification, and marks completed tasks in tasks.md. Use this agent to execute SpecOps implementation plans.",
+                    mode: "subagent",
+                    prompt: loadPrompt(AGENT_IDS.implementer),
                 });
             } finally {
                 process.env.XDG_CONFIG_HOME = original;

@@ -57,7 +57,16 @@ describe("registerCoordinatorAgent", () => {
         expect(prompt).toContain("Do not author OpenSpec `tasks.md`");
         expect(prompt).toContain("current OpenSpec change name");
         expect(prompt).toContain("relevant findings returned by `specops-explorer`");
-        expect(prompt).toContain("no implementation specialist is available");
+    });
+
+    test("coordinator prompt delegates implementation and reports incomplete tasks", () => {
+        const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+        expect(prompt).toContain("delegate implementation to `specops-implementer`");
+        expect(prompt).toContain("updated `tasks.md` task state");
+        expect(prompt).toContain("remaining unchecked tasks or blockers");
+        expect(prompt).toContain("Do not perform final review or archive the change yourself");
+        expect(prompt).toContain("Do not implement source changes yourself");
     });
 
     test("applies configured coordinator model and variant", () => {

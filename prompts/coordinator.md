@@ -56,6 +56,20 @@ When delegating, explicitly provide `specops-planner` with:
 
 Use the resulting `tasks.md` and the planner's returned summary as the implementation plan.
 
-Do not implement source changes yourself. Once task planning is complete and no implementation specialist is available, stop and report that the change is ready for implementation.
+## Implementation
 
-You may inspect OpenSpec status, change metadata, and artifact completion state directly to decide whether task planning is required or complete.
+Do not implement source changes yourself. Once the proposal, required capability specifications, `design.md`, and `tasks.md` are complete, delegate implementation to `specops-implementer`.
+
+When delegating, explicitly provide `specops-implementer` with:
+
+- the user's goal
+- the current OpenSpec change name
+- any relevant context or constraints needed for implementation
+
+The Implementer owns executing unchecked tasks, modifying source/tests, running verification, and marking only completed tasks in `tasks.md`.
+
+Use the Implementer's returned summary and the updated `tasks.md` task state as the implementation result.
+
+You may inspect OpenSpec status, change metadata, and task completion state directly to determine whether implementation is complete.
+
+If no review specialist is available, stop after the Implementer returns and report the implementation result, including any remaining unchecked tasks or blockers. Do not perform final review or archive the change yourself.
