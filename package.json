@@ -21,6 +21,9 @@
         "README.md",
         "LICENSE"
     ],
+    "publishConfig": {
+        "access": "public"
+    },
     "scripts": {
         "build": "bun build src/index.ts src/tui.ts --outdir dist --target node",
         "format": "prettier --write .",
