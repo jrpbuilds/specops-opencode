@@ -63,7 +63,25 @@ describe("SpecOps Configure save flow", () => {
                     "__save__",
                     "__cancel__",
                 ]);
+                expect(
+                    fake
+                        .currentDialog()
+                        ?.options?.find(option => option.value === "__frontier_escalation__"),
+                ).toMatchObject({ title: "Frontier escalation", footer: "Disabled" });
+                expect(
+                    fake.currentDialog()?.options?.find(option => option.value === "__save__")
+                        ?.footer,
+                ).toBe("0 changed");
                 fake.selectByValue("__frontier_escalation__");
+                expect(
+                    fake
+                        .currentDialog()
+                        ?.options?.find(option => option.value === "__frontier_escalation__"),
+                ).toMatchObject({ title: "* Frontier escalation", footer: "Enabled" });
+                expect(
+                    fake.currentDialog()?.options?.find(option => option.value === "__save__")
+                        ?.footer,
+                ).toBe("1 changed");
                 fake.selectByValue("__save__");
                 await fake.confirm();
 

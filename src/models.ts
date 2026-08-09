@@ -1,7 +1,6 @@
 import { AGENT_IDS, ALL_AGENT_IDS, type AgentId } from "./agents/ids.js";
 import type { AgentConfig, SpecOpsConfig } from "./config.js";
 
-const PLANNING_IDS = new Set<AgentId>([AGENT_IDS.explorer, AGENT_IDS.planner, AGENT_IDS.designer]);
 const AGENT_DISPLAY_NAMES: Record<AgentId, string> = {
     [AGENT_IDS.coordinator]: "Coordinator",
     [AGENT_IDS.explorer]: "Explorer",
@@ -145,20 +144,6 @@ export function clearConfiguredModel(): AgentConfig {
 /** Return the friendly role name shown in the configuration editor. */
 export function agentDisplayName(id: AgentId): string {
     return AGENT_DISPLAY_NAMES[id];
-}
-
-/**
- * Return the stable functional category displayed beside a role in the editor.
- *
- * Categories are presentation metadata only; they do not affect registration,
- * validation, or the model selected for the role.
- */
-export function agentSettingsCategory(id: AgentId): string {
-    if (id === AGENT_IDS.coordinator) return "Coordination";
-    if (PLANNING_IDS.has(id)) return "Planning";
-    if (id === AGENT_IDS.implementer) return "Implementation";
-    if (id === AGENT_IDS.reviewer) return "Review";
-    return "Frontier";
 }
 
 /**

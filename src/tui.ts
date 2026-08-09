@@ -245,6 +245,7 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
             validateConfigSelections(staged, models).map(issue => issue.split(":")[0]),
         );
         const changed = new Set(changedAgentIds(initial, staged));
+        const frontierEscalationChanged = staged.frontierEscalation !== initial.frontierEscalation;
         const roleOptions = ROLE_WORKFLOW_ORDER.map(id => ({
             // "!" = saved model unavailable in the current catalogue; "*" = staged change.
             title: `${unresolved.has(id) ? "! " : ""}${changed.has(id) ? "* " : ""}${agentDisplayName(id)}`,
@@ -261,10 +262,10 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
                     options: [
                         ...roleOptions,
                         {
-                            title: "Frontier escalation",
                             value: FRONTIER_ESCALATION,
                             category: "Options",
                             description: "Allow future Frontier escalation behavior",
+                            title: `${frontierEscalationChanged ? "* " : ""}Frontier escalation`,
                             footer: staged.frontierEscalation ? "Enabled" : "Disabled",
                         },
                         {
@@ -272,7 +273,7 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
                             value: "__save__",
                             category: "Actions",
                             description: "Validate all mappings and write the configuration",
-                            footer: `${changed.size} changed`,
+                            footer: `${changed.size + (frontierEscalationChanged ? 1 : 0)} changed`,
                         },
                         {
                             title: "Cancel",
