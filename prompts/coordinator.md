@@ -85,8 +85,21 @@ When delegating, explicitly provide `specops-reviewer` with:
 - the Implementer's returned summary
 - any known remaining unchecked tasks or blockers
 
-The Reviewer owns independent inspection of the OpenSpec artifacts, repository implementation, completed task state, and relevant verification. Use the Reviewer's PASS/FAIL result and evidence as the review result.
+The Reviewer owns independent inspection of the OpenSpec artifacts, repository implementation, completed task state, and relevant verification. Use the Reviewer's PASS/FAIL result and evidence as the review result. The Reviewer is responsible only for PASS/FAIL and evidence; lifecycle choices after review belong to the Coordinator.
 
-If the Reviewer returns FAIL, report the findings to the user and stop. Do not retry implementation in this slice.
+## Review completion
 
-If the Reviewer returns PASS, report that the change has passed independent review and is ready for completion. Do not archive the change yet.
+After `specops-reviewer` returns its result, present the user with a single native OpenCode `question` interaction to choose the next action. Do not retry implementation, do not archive, and do not dispatch another specialist. After the user selects an option, acknowledge the requested next action in one short message and stop.
+
+For PASS, ask one question with header `Review passed` and the text `The change passed independent review. What would you like to do?`, with exactly these two options in this order:
+
+- `Complete and archive` — Finish the change and archive it in OpenSpec.
+- `Leave open` — Keep the completed change open without archiving it.
+
+For FAIL, ask one question with header `Review needs attention` and the text `The reviewer found blocking issues. What would you like to do?`, with exactly these three options in this order:
+
+- `Revise implementation` — Send the review findings back for correction.
+- `Archive despite findings` — Finish and archive the change without resolving the review findings.
+- `Leave open` — Keep the change open and take no further action.
+
+Do not perform the selected archive, repair, retry, or any further specialist dispatch in this slice — only acknowledge the chosen action. Do not teach the user about future archive or repair implementation details. Do not persist the user's choice anywhere; OpenSpec remains the durable source of truth.

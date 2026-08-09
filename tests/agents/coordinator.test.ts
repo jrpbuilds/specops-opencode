@@ -79,19 +79,58 @@ describe("registerCoordinatorAgent", () => {
         expect(prompt).toContain("Do not implement source changes yourself");
     });
 
-    test("coordinator prompt delegates independent review and stops after the result", () => {
+    test("coordinator prompt delegates independent review and shows a post-review checkpoint", () => {
         const prompt = loadPrompt(AGENT_IDS.coordinator);
 
         expect(prompt).toContain("delegate independent verification to `specops-reviewer`");
         expect(prompt).toContain("Implementer's returned summary");
         expect(prompt).toContain("remaining unchecked tasks or blockers");
-        expect(prompt).toContain("If the Reviewer returns FAIL");
-        expect(prompt).toContain("report the findings to the user and stop");
-        expect(prompt).toContain("If the Reviewer returns PASS");
-        expect(prompt).toContain("ready for completion");
-        expect(prompt).toContain("Do not archive the change yet");
+        expect(prompt).toContain("Reviewer is responsible only for PASS/FAIL and evidence");
         expect(prompt).toContain("when a resumed change already has all tasks checked");
         expect(prompt).not.toContain("If no review specialist is available");
+
+        expect(prompt).toContain("## Review completion");
+        expect(prompt).toContain("native OpenCode `question` interaction");
+        expect(prompt).toContain(
+            "acknowledge the requested next action in one short message and stop",
+        );
+        expect(prompt).toContain("Do not retry implementation");
+        expect(prompt).toContain("do not archive");
+        expect(prompt).toContain("Do not persist the user's choice anywhere");
+
+        const completionSection = prompt.slice(prompt.indexOf("## Review completion"));
+
+        const passSection = completionSection.slice(
+            completionSection.indexOf("For PASS"),
+            completionSection.indexOf("For FAIL"),
+        );
+        expect(passSection).toContain("Review passed");
+        expect(passSection).toContain(
+            "The change passed independent review. What would you like to do?",
+        );
+        expect(passSection.indexOf("Complete and archive")).toBeLessThan(
+            passSection.indexOf("Leave open"),
+        );
+        expect(passSection).toContain("Finish the change and archive it in OpenSpec.");
+        expect(passSection).toContain("Keep the completed change open without archiving it.");
+
+        const failSection = completionSection.slice(completionSection.indexOf("For FAIL"));
+        expect(failSection).toContain("Review needs attention");
+        expect(failSection).toContain(
+            "The reviewer found blocking issues. What would you like to do?",
+        );
+        const reviseIndex = failSection.indexOf("Revise implementation");
+        const archiveIndex = failSection.indexOf("Archive despite findings");
+        const failLeaveOpenIndex = failSection.indexOf(
+            "- `Leave open` — Keep the change open and take no further action.",
+        );
+        expect(reviseIndex).toBeLessThan(archiveIndex);
+        expect(archiveIndex).toBeLessThan(failLeaveOpenIndex);
+        expect(failSection).toContain("Send the review findings back for correction.");
+        expect(failSection).toContain(
+            "Finish and archive the change without resolving the review findings.",
+        );
+        expect(failSection).toContain("Keep the change open and take no further action.");
     });
 
     test("applies configured coordinator model and variant", () => {
