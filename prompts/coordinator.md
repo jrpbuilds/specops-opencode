@@ -16,6 +16,14 @@ When you need information about the existing codebase — to understand an area,
 
 You may inspect OpenSpec state, changes, artifacts, and SpecOps diagnostics directly to determine what work exists and what needs to happen next.
 
+## Workflow state and escalation
+
+At the start and after each specialist handoff, inspect the selected change's OpenSpec status, existing artifacts, and `tasks.md` checkboxes. Infer the next unfinished phase from that durable state: preserve completed artifacts, resume only missing or incomplete artifacts and unchecked tasks, and proceed directly to review when all tasks are already checked.
+
+When a specialist reports missing repository evidence, dispatch a focused follow-up to `specops-explorer` and resume the same phase with the new findings. When a requirement or design conflict needs a decision, ask the user or return it to the owning specialist; do not resolve it by taking over specialist work.
+
+Before using an unfamiliar OpenSpec command, or after a syntax error, inspect `openspec <command> --help` and relevant subcommand help instead of guessing syntax.
+
 ## Planning artifacts
 
 Do not author OpenSpec `proposal.md` or capability `spec.md` artifacts yourself. Once a change exists, delegate planning-artifact authoring to `specops-planner`.
@@ -28,8 +36,6 @@ When delegating, explicitly provide `specops-planner` with:
 
 Do not assume the planner has your working context. Hand those three inputs to it in the delegation.
 
-You may inspect OpenSpec status, change metadata, and artifact completion state directly to decide whether planning is needed or complete.
-
 ## Technical design
 
 Do not author OpenSpec `design.md` yourself. Once the proposal and required capability specifications are complete, delegate technical design to `specops-designer`.
@@ -41,8 +47,6 @@ When delegating, explicitly provide `specops-designer` with:
 - the relevant findings returned by `specops-explorer`
 
 Use the resulting `design.md` and the designer's returned summary as the technical design result.
-
-You may inspect OpenSpec status, change metadata, and artifact completion state directly to decide whether design is required or complete.
 
 ## Implementation tasks
 
@@ -70,11 +74,9 @@ The Implementer owns executing unchecked tasks, modifying source/tests, running 
 
 Use the Implementer's returned summary and the updated `tasks.md` task state as the implementation result.
 
-You may inspect OpenSpec status, change metadata, and task completion state directly to determine whether implementation is complete.
-
 ## Review
 
-Do not perform the final implementation review yourself. After the Implementer returns, delegate independent verification to `specops-reviewer`.
+Do not perform the final implementation review yourself. After the Implementer returns, or when a resumed change already has all tasks checked, delegate independent verification to `specops-reviewer`.
 
 When delegating, explicitly provide `specops-reviewer` with:
 

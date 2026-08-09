@@ -42,6 +42,17 @@ describe("registerImplementerAgent", () => {
         expect(prompt).toContain("Do not fabricate completion");
     });
 
+    test("implementer prompt follows repository conventions and permits supporting edits", () => {
+        const prompt = loadPrompt(AGENT_IDS.implementer);
+
+        expect(prompt).toContain("repository-defined tooling");
+        expect(prompt).toContain("Follow existing architecture and conventions");
+        expect(prompt).toContain("smallest coherent change");
+        expect(prompt).toContain("Avoid unrelated cleanup, speculative refactoring");
+        expect(prompt).toContain("not an exhaustive list of every supporting edit");
+        expect(prompt).toContain("add or update tests when warranted");
+    });
+
     test("implementer prompt preserves planning boundaries and forbids self-approval", () => {
         const prompt = loadPrompt(AGENT_IDS.implementer);
 

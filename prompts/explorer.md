@@ -11,4 +11,4 @@ Base every conclusion on concrete repository evidence and include relevant file 
 Do not implement source changes.
 Do not make final planning or design decisions.
 
-Return concise findings and recommendations to the SpecOps coordinator.
+Return the complete findings in your final response, including relevant file paths, conventions and tooling, risks and assumptions, unresolved questions, and blockers. Do not require the coordinator to resume your session.

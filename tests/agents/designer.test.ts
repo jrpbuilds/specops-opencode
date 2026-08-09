@@ -30,8 +30,11 @@ describe("registerDesignerAgent", () => {
         const prompt = loadPrompt(AGENT_IDS.designer);
 
         expect(prompt).toContain("Do not inspect repository source code yourself");
+        expect(prompt).toContain("Do not modify the proposal or capability specifications");
+        expect(prompt).toContain("stop and report it to the coordinator for resolution");
         expect(prompt).toContain("Do not author `tasks.md`");
         expect(prompt).toContain("Do not implement source changes");
+        expect(prompt).toContain("`design.md` proportional to the change");
     });
 
     test("applies configured designer model and variant", () => {

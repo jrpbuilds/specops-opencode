@@ -31,8 +31,9 @@ describe("registerPlannerAgent", () => {
 
         expect(prompt).toContain("## Requirements planning");
         expect(prompt).toContain("## Task planning");
-        expect(prompt).toContain("- `proposal.md`");
-        expect(prompt).toContain("- the required capability `spec.md` files");
+        expect(prompt).toContain("`proposal.md`, when missing or incomplete");
+        expect(prompt).toContain("capability `spec.md` files that are missing or incomplete");
+        expect(prompt).toContain("Preserve completed artifacts");
         expect(prompt).toContain("author `tasks.md`");
     });
 
@@ -46,6 +47,10 @@ describe("registerPlannerAgent", () => {
         expect(prompt).toContain("Do not mark tasks complete");
         expect(prompt).toContain("- [ ]");
         expect(prompt).toContain("return a concise summary");
+        expect(prompt).toContain("openspec instructions <artifact> --change <change>");
+        expect(prompt).toContain("artifact scope and detail proportional to the change");
+        expect(prompt).toContain("right-sized for coherent implementation");
+        expect(prompt).not.toContain("no implementation specialist is available");
     });
 
     test("applies configured planner model and variant", () => {

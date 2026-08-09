@@ -32,6 +32,16 @@ describe("registerCoordinatorAgent", () => {
         expect(prompt).toContain("Do not read source files");
     });
 
+    test("coordinator prompt resumes from OpenSpec state and escalates without taking over", () => {
+        const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+        expect(prompt).toContain("At the start and after each specialist handoff");
+        expect(prompt).toContain("when all tasks are already checked");
+        expect(prompt).toContain("dispatch a focused follow-up to `specops-explorer`");
+        expect(prompt).toContain("do not resolve it by taking over specialist work");
+        expect(prompt).toContain("openspec <command> --help");
+    });
+
     test("coordinator prompt delegates proposal/spec authoring to specops-planner", () => {
         const prompt = loadPrompt(AGENT_IDS.coordinator);
 
@@ -80,6 +90,7 @@ describe("registerCoordinatorAgent", () => {
         expect(prompt).toContain("If the Reviewer returns PASS");
         expect(prompt).toContain("ready for completion");
         expect(prompt).toContain("Do not archive the change yet");
+        expect(prompt).toContain("when a resumed change already has all tasks checked");
         expect(prompt).not.toContain("If no review specialist is available");
     });
 

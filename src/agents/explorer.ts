@@ -19,9 +19,9 @@ export function registerExplorerAgent(config: Config, specOpsConfig: SpecOpsConf
 
     config.agent[EXPLORER_AGENT_ID] = {
         description:
-            "Investigates repository source code, existing behaviour, structure, conventions, " +
-            "tests, constraints and risks for the SpecOps coordinator. Use this agent for all " +
-            "codebase exploration.",
+            "Investigates repository source, behavior, conventions, tests, constraints, and " +
+            "risks for planning and design. Use when the SpecOps coordinator needs focused " +
+            "repository evidence.",
         mode: "subagent",
         prompt: loadPrompt(AGENT_IDS.explorer),
         ...(model ? { model, ...(explorer.variant ? { variant: explorer.variant } : {}) } : {}),

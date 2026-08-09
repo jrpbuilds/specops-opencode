@@ -20,17 +20,22 @@ describe("registerExplorerAgent", () => {
 
         expect(config.agent?.[EXPLORER_AGENT_ID]).toEqual({
             description:
-                "Investigates repository source code, existing behaviour, structure, conventions, tests, constraints and risks for the SpecOps coordinator. Use this agent for all codebase exploration.",
+                "Investigates repository source, behavior, conventions, tests, constraints, and risks for planning and design. Use when the SpecOps coordinator needs focused repository evidence.",
             mode: "subagent",
             prompt: loadPrompt(AGENT_IDS.explorer),
         });
     });
 
-    test("explorer prompt forbids source changes and final design decisions", () => {
+    test("explorer prompt forbids source changes and requires the complete final report", () => {
         const prompt = loadPrompt(AGENT_IDS.explorer);
 
         expect(prompt).toContain("Do not implement source changes");
         expect(prompt).toContain("Do not make final planning or design decisions");
+        expect(prompt).toContain("complete findings in your final response");
+        expect(prompt).toContain("conventions and tooling");
+        expect(prompt).toContain("risks and assumptions");
+        expect(prompt).toContain("unresolved questions, and blockers");
+        expect(prompt).toContain("Do not require the coordinator to resume your session");
     });
 
     test("applies configured explorer model and variant", () => {

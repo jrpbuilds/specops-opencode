@@ -42,6 +42,7 @@ describe("registerReviewerAgent", () => {
 
         expect(prompt).toContain("cannot actually be performed");
         expect(prompt).toContain("do not issue PASS");
+        expect(prompt).toContain("do not issue PASS or alter task state");
         expect(prompt).toContain("pending required verification");
         expect(prompt).toContain("Do not fake, infer, or assume completion");
     });
@@ -63,6 +64,8 @@ describe("registerReviewerAgent", () => {
         expect(prompt).toContain("Return exactly one unambiguous outcome");
         expect(prompt).toContain("PASS");
         expect(prompt).toContain("FAIL");
+        expect(prompt).toContain("FAIL only for unmet approved requirements");
+        expect(prompt).toContain("Do not fail for unrelated style preferences");
     });
 
     test("applies configured reviewer model and variant", () => {
