@@ -318,4 +318,185 @@ describe("registerCoordinatorAgent", () => {
         expect(config.agent?.build?.description).toBe("Build");
         expect(config.agent?.plan?.description).toBe("Plan");
     });
+
+    describe("plan checkpoint", () => {
+        function getPlanCheckpointSection(prompt: string): string {
+            return prompt.slice(
+                prompt.indexOf("## Plan checkpoint"),
+                prompt.indexOf("## Implementation", prompt.indexOf("## Plan checkpoint") + 1),
+            );
+        }
+
+        test("completed planning triggers checkpoint before Implementer", () => {
+            const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+            expect(prompt).toContain("## Plan checkpoint");
+            expect(prompt).toContain("completedTasks");
+            expect(prompt).toContain("totalTasks");
+            expect(prompt).toContain("no implementation tasks have started");
+            expect(prompt.indexOf("## Plan checkpoint")).toBeLessThan(
+                prompt.indexOf("## Implementation", prompt.indexOf("## Plan checkpoint") + 1),
+            );
+            const implementationSection = prompt.slice(
+                prompt.indexOf("## Implementation", prompt.indexOf("## Plan checkpoint") + 1),
+            );
+            expect(implementationSection).toContain("plan checkpoint has been cleared");
+            expect(implementationSection).toContain(
+                "delegate implementation to `specops-implementer`",
+            );
+        });
+
+        test("Start implementation option is the single explicit option", () => {
+            const prompt = loadPrompt(AGENT_IDS.coordinator);
+            const planCheckpointSection = getPlanCheckpointSection(prompt);
+
+            expect(planCheckpointSection).toContain('"label": "Start implementation"');
+            expect(planCheckpointSection).toContain("Proceed with the approved OpenSpec plan.");
+            expect(planCheckpointSection).toContain(
+                "Start implementation, or type your feedback if you'd like anything changed.",
+            );
+            expect(planCheckpointSection).toContain('"header": "Plan ready"');
+        });
+
+        test("custom type-your-own answer is explicitly enabled", () => {
+            const prompt = loadPrompt(AGENT_IDS.coordinator);
+            const planCheckpointSection = getPlanCheckpointSection(prompt);
+
+            expect(planCheckpointSection).toContain('"custom": true');
+            expect(planCheckpointSection).toContain(
+                "custom/type-your-own-answer explicitly enabled",
+            );
+        });
+
+        test("checkpoint has no Leave open option", () => {
+            const prompt = loadPrompt(AGENT_IDS.coordinator);
+            const planCheckpointSection = getPlanCheckpointSection(prompt);
+
+            expect(planCheckpointSection).not.toContain('"label": "Leave open"');
+            expect(planCheckpointSection).toContain(
+                "approval-or-feedback only, not a lifecycle choice",
+            );
+        });
+
+        test("custom answers are the only revision path", () => {
+            const prompt = loadPrompt(AGENT_IDS.coordinator);
+            const planCheckpointSection = getPlanCheckpointSection(prompt);
+
+            expect(planCheckpointSection).not.toContain('"label": "Revise');
+            expect(planCheckpointSection).toContain("treat the response verbatim as plan feedback");
+            expect(planCheckpointSection).toContain("Route the feedback to the owning specialist");
+        });
+
+        test("feedback never implicitly approves implementation", () => {
+            const prompt = loadPrompt(AGENT_IDS.coordinator);
+            const planCheckpointSection = getPlanCheckpointSection(prompt);
+
+            expect(planCheckpointSection).toContain("Do not implement.");
+            expect(planCheckpointSection).toContain(
+                "Never silently start implementation after a revision",
+            );
+            expect(planCheckpointSection).toContain(
+                "the user must explicitly select `Start implementation` on the updated checkpoint",
+            );
+        });
+
+        test("custom revision routes to the correct specialist", () => {
+            const prompt = loadPrompt(AGENT_IDS.coordinator);
+            const planCheckpointSection = getPlanCheckpointSection(prompt);
+
+            expect(planCheckpointSection).toContain(
+                "Requirements, externally observable behaviour",
+            );
+            expect(planCheckpointSection).toContain("`specops-planner` (requirements pass)");
+            expect(planCheckpointSection).toContain("Technical design, architecture");
+            expect(planCheckpointSection).toContain("`specops-designer`");
+            expect(planCheckpointSection).toContain("Task breakdown only");
+            expect(planCheckpointSection).toContain("`specops-planner` (tasks pass)");
+        });
+
+        test("revised artifacts return to the checkpoint before implementation", () => {
+            const prompt = loadPrompt(AGENT_IDS.coordinator);
+            const planCheckpointSection = getPlanCheckpointSection(prompt);
+
+            expect(planCheckpointSection).toContain(
+                "present the plan checkpoint again with the updated summary",
+            );
+            expect(planCheckpointSection).toContain(
+                "Any user-requested revision invalidates the previous approval",
+            );
+        });
+
+        test("upstream revision causes only necessary downstream reconciliation", () => {
+            const prompt = loadPrompt(AGENT_IDS.coordinator);
+            const planCheckpointSection = getPlanCheckpointSection(prompt);
+
+            expect(planCheckpointSection).toContain("Preserve unaffected content");
+            expect(planCheckpointSection).toContain("chain only as far as the change propagates");
+            expect(planCheckpointSection).toContain(
+                "requirements change → designer if affected → planner (tasks pass)",
+            );
+            expect(planCheckpointSection).toContain("design change → planner (tasks pass)");
+            expect(planCheckpointSection).toContain("tasks change → no downstream");
+        });
+
+        test("resumed fully planned change with zero completed tasks shows checkpoint", () => {
+            const prompt = loadPrompt(AGENT_IDS.coordinator);
+            const planCheckpointSection = getPlanCheckpointSection(prompt);
+
+            expect(planCheckpointSection).toContain("`completedTasks` is 0");
+            expect(planCheckpointSection).toContain("`totalTasks` is greater than 0");
+            expect(planCheckpointSection).toContain("naturally present the checkpoint again");
+        });
+
+        test("resumed change where implementation has started skips checkpoint", () => {
+            const prompt = loadPrompt(AGENT_IDS.coordinator);
+            const planCheckpointSection = getPlanCheckpointSection(prompt);
+
+            expect(planCheckpointSection).toContain("`completedTasks` is greater than 0");
+            expect(planCheckpointSection).toContain("implementation has already begun");
+            expect(planCheckpointSection).toContain("skip the checkpoint");
+        });
+
+        test("checkpoint uses no persisted approval state", () => {
+            const prompt = loadPrompt(AGENT_IDS.coordinator);
+            const planCheckpointSection = getPlanCheckpointSection(prompt);
+
+            expect(planCheckpointSection).toContain("Do not introduce a persisted `");
+            expect(planCheckpointSection).toContain("approved");
+            expect(planCheckpointSection).toContain("flag");
+            expect(planCheckpointSection).toContain("OpenSpec remains the durable source of truth");
+        });
+
+        test("checkpoint does not call specops_context again", () => {
+            const prompt = loadPrompt(AGENT_IDS.coordinator);
+            const planCheckpointSection = getPlanCheckpointSection(prompt);
+
+            expect(planCheckpointSection).toContain("Do not call `specops_context` again");
+            expect(planCheckpointSection).toContain(
+                "inspect the `tasks.md` checkbox state directly",
+            );
+        });
+
+        test("existing review remediation and lifecycle behaviour remains unchanged", () => {
+            const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+            expect(prompt).toContain("## Review completion");
+            expect(prompt).toContain("## Review remediation");
+            expect(prompt).toContain('"label": "Leave open"');
+            expect(prompt).toContain("Complete and archive");
+            expect(prompt).toContain("Revise implementation");
+        });
+
+        test("Implementation section is gated on the checkpoint", () => {
+            const prompt = loadPrompt(AGENT_IDS.coordinator);
+            const implementationSection = prompt.slice(prompt.indexOf("## Implementation"));
+
+            expect(implementationSection).toContain(
+                "plan checkpoint has been cleared with `Start implementation`",
+            );
+            expect(implementationSection).toContain(
+                "delegate implementation to `specops-implementer`",
+            );
+        });
+    });
 });

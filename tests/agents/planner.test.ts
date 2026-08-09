@@ -37,7 +37,7 @@ describe("registerPlannerAgent", () => {
         expect(prompt).toContain("`proposal.md`, when missing or incomplete");
         expect(prompt).toContain("capability `spec.md` files that are missing or incomplete");
         expect(prompt).toContain("Preserve completed artifacts");
-        expect(prompt).toContain("author `tasks.md`");
+        expect(prompt).toContain("author or revise `tasks.md`");
     });
 
     test("planner prompt defines material-decision escalation and resume behavior", () => {
@@ -80,6 +80,18 @@ describe("registerPlannerAgent", () => {
         expect(prompt).toContain("artifact scope and detail proportional to the change");
         expect(prompt).toContain("right-sized for coherent implementation");
         expect(prompt).not.toContain("no implementation specialist is available");
+    });
+
+    test("planner prompt allows tasks.md revision and preserves unaffected tasks", () => {
+        const prompt = loadPrompt(AGENT_IDS.planner);
+
+        expect(prompt).toContain(
+            "`tasks.md` is missing or the coordinator explicitly returns it for revision",
+        );
+        expect(prompt).toContain("revise only the affected tasks");
+        expect(prompt).toContain("preserve everything else");
+        expect(prompt).toContain("including any existing `- [x]` completion state");
+        expect(prompt).toContain("Do not regenerate unaffected tasks");
     });
 
     test("applies configured planner model and variant", () => {

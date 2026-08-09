@@ -38,6 +38,11 @@ describe("registerDesignerAgent", () => {
         expect(prompt).toContain("Do not author `tasks.md`");
         expect(prompt).toContain("Do not implement source changes");
         expect(prompt).toContain("`design.md` proportional to the change");
+        expect(prompt).toContain(
+            "If the coordinator explicitly returns `design.md` for revision after an upstream change",
+        );
+        expect(prompt).toContain("revise only the affected design decisions");
+        expect(prompt).toContain("preserve the rest");
     });
 
     test("designer prompt defines material-decision escalation and resume behavior", () => {

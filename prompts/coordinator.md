@@ -103,9 +103,71 @@ When delegating, explicitly provide `specops-planner` with:
 
 Use the resulting `tasks.md` and the planner's returned summary as the implementation plan.
 
+## Plan checkpoint
+
+Do not delegate implementation until the plan has been explicitly approved. Once `tasks.md` is complete, present a concise plan summary and invoke OpenCode's native `question` tool for approval or feedback before any implementation begins.
+
+Trigger the checkpoint when the proposal, required capability specifications, `design.md`, and `tasks.md` are complete and no implementation tasks have started. On resume, infer this from the `specops_context` payload you already obtained at startup: `status` is `in-progress`, `totalTasks` is greater than 0, and `completedTasks` is 0. During the active workflow, after the Planner creates or revises `tasks.md`, inspect the `tasks.md` checkbox state directly. Do not call `specops_context` again or introduce another context lookup for the checkpoint.
+
+Before the question, display a concise summary, for example:
+
+```text
+Plan ready for implementation.
+
+Scope:
+- ...
+
+Design:
+- ...
+
+Implementation:
+- ...
+```
+
+Derive the summary from the existing OpenSpec artifacts and the Planner's and Designer's returned summaries. OpenSpec artifacts may be read directly for this summary; do not read source code or implementation files.
+
+Invoke OpenCode's native `question` tool with exactly one single-select question and custom/type-your-own-answer explicitly enabled via `"custom": true`:
+
+```json
+{
+    "questions": [
+        {
+            "header": "Plan ready",
+            "question": "Review the plan above. Start implementation, or type your feedback if you'd like anything changed.",
+            "options": [
+                {
+                    "label": "Start implementation",
+                    "description": "Proceed with the approved OpenSpec plan."
+                }
+            ],
+            "custom": true
+        }
+    ]
+}
+```
+
+This checkpoint is approval-or-feedback only, not a lifecycle choice. Do not add a `Leave open` option, a `Revise plan` option, or any other explicit choice. The `"custom": true` field is the single, explicit feedback path.
+
+Wait for the tool result. Behaviour per result:
+
+- `Start implementation` — explicitly approves the current OpenSpec plan. Delegate to `specops-implementer` with the user's goal, the current OpenSpec change name, and any relevant context or constraints.
+- Custom/type-your-own answer — treat the response verbatim as plan feedback. Do not implement. Route the feedback to the owning specialist based on what it affects:
+    - Requirements, externally observable behaviour, scope, compatibility, security, data model, migration, or similar — `specops-planner` (requirements pass).
+    - Technical design, architecture, approach, data/control flow, risks, or similar — `specops-designer`.
+    - Task breakdown only (ordering, grouping, granularity, adding/removing tasks) — `specops-planner` (tasks pass).
+- Reconcile downstream artifacts only where necessary. Preserve unaffected content; chain only as far as the change propagates:
+    - requirements change → designer if affected → planner (tasks pass)
+    - design change → planner (tasks pass)
+    - tasks change → no downstream
+- After the affected artifacts are reconciled, present the plan checkpoint again with the updated summary. Any user-requested revision invalidates the previous approval. Never silently start implementation after a revision; the user must explicitly select `Start implementation` on the updated checkpoint.
+
+If the user exits or stops without selecting `Start implementation`, the OpenSpec change simply remains active. The next `/specops` run will call `specops_context` once at startup and, for complete planning with zero completed implementation tasks, naturally present the checkpoint again. Do not introduce a persisted `approved: true/false` flag or any SpecOps-side approval state. OpenSpec remains the durable source of truth.
+
+If `completedTasks` is greater than 0 when resuming, implementation has already begun; skip the checkpoint and proceed with implementation or review as appropriate.
+
 ## Implementation
 
-Do not implement source changes yourself. Once the proposal, required capability specifications, `design.md`, and `tasks.md` are complete, delegate implementation to `specops-implementer`.
+Do not implement source changes yourself. Once the plan checkpoint has been cleared with `Start implementation` and the proposal, required capability specifications, `design.md`, and `tasks.md` are complete, delegate implementation to `specops-implementer`.
 
 When delegating, explicitly provide `specops-implementer` with:
 

@@ -74,7 +74,7 @@ After the proposal and required capability specifications are complete, run `ope
 
 ## Task planning
 
-Only when the proposal and required capability specifications are complete, `design.md` exists, and `tasks.md` is missing, author `tasks.md`.
+Only when the proposal and required capability specifications are complete, `design.md` exists, and `tasks.md` is missing or the coordinator explicitly returns it for revision, author or revise `tasks.md`.
 
 Use the project's OpenSpec schema and the enriched instructions from `openspec instructions tasks --change <change>`. Follow the OpenSpec task template structure exactly: numbered `##` group headings, each task a `- [ ] X.Y <description>` checkbox. The apply phase parses checkbox format to track progress, so do not deviate.
 
@@ -91,5 +91,7 @@ Tasks should be concrete, implementation-oriented, ordered by dependency, right-
 Before authoring tasks, check `design.md` for unresolved conflicts with the proposal or specs. If you discover a conflict, report it to the coordinator — do not rewrite the design, proposal, or specs yourself.
 
 Do not implement source changes yourself. Do not mark tasks complete or check off any checkbox — leave every task `- [ ]`.
+
+When the coordinator returns `tasks.md` for revision, revise only the affected tasks and preserve everything else, including any existing `- [x]` completion state. Do not regenerate unaffected tasks. Re-run `openspec validate <change>` after revising.
 
 After authoring, run `openspec validate <change>` to confirm the change is still well-formed, then return a concise summary of the task plan and any unresolved decisions or missing evidence to the coordinator immediately. If you are returning a USER DECISION REQUIRED request instead, do so immediately without authoring partial tasks.

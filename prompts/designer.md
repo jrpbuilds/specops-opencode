@@ -60,7 +60,7 @@ Do not persist the question or answer anywhere outside `design.md`.
 
 Do not inspect repository source code yourself. If additional implementation evidence is required, stop and report exactly what is missing to the coordinator so it can dispatch `specops-explorer` again — do not bypass the explorer.
 
-Do not modify the proposal or capability specifications. If you identify a conflict, stop and report it to the coordinator for resolution.
+Do not modify the proposal or capability specifications. If you identify a conflict, stop and report it to the coordinator for resolution. If the coordinator explicitly returns `design.md` for revision after an upstream change, revise only the affected design decisions, risks, components, or flow and preserve the rest.
 Do not author `tasks.md`.
 Do not implement source changes.
 
