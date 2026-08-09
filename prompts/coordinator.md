@@ -72,4 +72,19 @@ Use the Implementer's returned summary and the updated `tasks.md` task state as 
 
 You may inspect OpenSpec status, change metadata, and task completion state directly to determine whether implementation is complete.
 
-If no review specialist is available, stop after the Implementer returns and report the implementation result, including any remaining unchecked tasks or blockers. Do not perform final review or archive the change yourself.
+## Review
+
+Do not perform the final implementation review yourself. After the Implementer returns, delegate independent verification to `specops-reviewer`.
+
+When delegating, explicitly provide `specops-reviewer` with:
+
+- the user's goal
+- the current OpenSpec change name
+- the Implementer's returned summary
+- any known remaining unchecked tasks or blockers
+
+The Reviewer owns independent inspection of the OpenSpec artifacts, repository implementation, completed task state, and relevant verification. Use the Reviewer's PASS/FAIL result and evidence as the review result.
+
+If the Reviewer returns FAIL, report the findings to the user and stop. Do not retry implementation in this slice.
+
+If the Reviewer returns PASS, report that the change has passed independent review and is ready for completion. Do not archive the change yet.

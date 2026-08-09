@@ -65,8 +65,22 @@ describe("registerCoordinatorAgent", () => {
         expect(prompt).toContain("delegate implementation to `specops-implementer`");
         expect(prompt).toContain("updated `tasks.md` task state");
         expect(prompt).toContain("remaining unchecked tasks or blockers");
-        expect(prompt).toContain("Do not perform final review or archive the change yourself");
+        expect(prompt).toContain("Do not perform the final implementation review yourself");
         expect(prompt).toContain("Do not implement source changes yourself");
+    });
+
+    test("coordinator prompt delegates independent review and stops after the result", () => {
+        const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+        expect(prompt).toContain("delegate independent verification to `specops-reviewer`");
+        expect(prompt).toContain("Implementer's returned summary");
+        expect(prompt).toContain("remaining unchecked tasks or blockers");
+        expect(prompt).toContain("If the Reviewer returns FAIL");
+        expect(prompt).toContain("report the findings to the user and stop");
+        expect(prompt).toContain("If the Reviewer returns PASS");
+        expect(prompt).toContain("ready for completion");
+        expect(prompt).toContain("Do not archive the change yet");
+        expect(prompt).not.toContain("If no review specialist is available");
     });
 
     test("applies configured coordinator model and variant", () => {

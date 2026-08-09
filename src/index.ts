@@ -5,6 +5,7 @@ import { registerExplorerAgent } from "./agents/explorer.js";
 import { registerPlannerAgent } from "./agents/planner.js";
 import { registerDesignerAgent } from "./agents/designer.js";
 import { registerImplementerAgent } from "./agents/implementer.js";
+import { registerReviewerAgent } from "./agents/reviewer.js";
 import { doctorTool } from "./tools/doctor.js";
 import { onboardTool } from "./tools/onboard.js";
 
@@ -18,12 +19,14 @@ export const COMMANDS = {
     "specops-doctor": {
         description: "Run SpecOps doctor diagnostics",
         template:
-            "Call the specops_doctor tool to run SpecOps diagnostics, then report its result to the user.",
+            "Call the specops_doctor tool to run SpecOps diagnostics, then report its " +
+            "result to the user.",
     },
     "specops-onboard": {
         description: "Onboard the current project for OpenSpec",
         template:
-            "Call the specops_onboard tool to onboard the current project for OpenSpec, then report its result to the user.",
+            "Call the specops_onboard tool to onboard the current project for OpenSpec, then " +
+            "report its result to the user.",
     },
 } satisfies NonNullable<Config["command"]>;
 
@@ -40,6 +43,7 @@ export const SpecOpsPlugin: Plugin = async () => ({
             registerPlannerAgent(config, specOpsConfig);
             registerDesignerAgent(config, specOpsConfig);
             registerImplementerAgent(config, specOpsConfig);
+            registerReviewerAgent(config, specOpsConfig);
         } catch (error) {
             const reason = error instanceof Error ? error.message : String(error);
             console.warn(

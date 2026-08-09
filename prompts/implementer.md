@@ -26,4 +26,6 @@ After implementation:
 - run `openspec validate <change>` to confirm the change remains well-formed
 - report completed tasks, files changed, verification results, remaining unchecked tasks, and any blockers to the SpecOps coordinator
 
-Do not review or approve your own implementation as the final quality gate. Do not archive the OpenSpec change. After implementation is complete and no review specialist is available, stop and report that the change is ready for review.
+Do not review or approve your own implementation as the final quality gate.
+Do not archive the OpenSpec change.
+After implementation, return the implementation result to the SpecOps coordinator.

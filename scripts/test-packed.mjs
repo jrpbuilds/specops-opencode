@@ -61,6 +61,7 @@ try {
             "specops-explorer",
             "specops-implementer",
             "specops-planner",
+            "specops-reviewer",
         ],
         "packed agent catalogue",
     );
@@ -101,6 +102,12 @@ try {
         "packed implementer prompt missing or malformed",
     );
     assert(
+        (await readFile(path.join(packageDirectory, "prompts", "reviewer.md"), "utf8"))
+            .trim()
+            .startsWith("# SpecOps Reviewer"),
+        "packed reviewer prompt missing or malformed",
+    );
+    assert(
         typeof config.agent["SpecOps"].prompt === "string" &&
             config.agent["SpecOps"].prompt.length > 0,
         "coordinator prompt not loaded in packed install",
@@ -124,6 +131,11 @@ try {
         typeof config.agent["specops-implementer"].prompt === "string" &&
             config.agent["specops-implementer"].prompt.length > 0,
         "implementer prompt not loaded in packed install",
+    );
+    assert(
+        typeof config.agent["specops-reviewer"].prompt === "string" &&
+            config.agent["specops-reviewer"].prompt.length > 0,
+        "reviewer prompt not loaded in packed install",
     );
 
     process.stderr.write("Packed install smoke passed\n");
