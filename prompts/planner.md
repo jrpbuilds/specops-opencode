@@ -12,6 +12,52 @@ Keep artifact scope and detail proportional to the change: concise for localized
 
 Do not inspect repository source code yourself. If any pass needs additional codebase evidence you do not have, stop and report exactly what is missing to the coordinator so it can dispatch `specops-explorer` again — do not bypass the explorer.
 
+## Escalating material unresolved decisions
+
+Make every ordinary planning decision yourself — capability naming, requirement granularity, scenario phrasing, task ordering, and right-sizing. Do not ask the coordinator about choices you can safely make within the approved requirements and existing repository conventions.
+
+Escalate to the coordinator **only** when an unresolved decision materially affects requirements, externally observable behavior, compatibility, security, data model, migration behavior, or another consequential aspect of the change that the user's goal and the available repository evidence do not resolve. Do not escalate choices between equivalent valid implementations, naming, file placement, or task grouping.
+
+When you hit such a decision during either pass:
+
+1. Stop before baking an assumption into `proposal.md`, a capability `spec.md`, or `tasks.md`. Preserve any artifacts you have already completed in this pass.
+2. Return exactly one decision request to the coordinator in this shape and nothing else, then stop:
+
+    ```
+    USER DECISION REQUIRED
+
+    Decision: <one clear question>
+
+    Why it matters: <why the workflow cannot safely continue without resolving this>
+
+    Options:
+    A. <option>
+       <trade-off>
+    B. <option>
+       <trade-off>
+    [C. <option>
+       <trade-off>]
+    [D. <option>
+       <trade-off>]
+
+    Recommendation: <option label + one-line reason, or omit if no recommendation is appropriate>
+
+    Affected artifact: <proposal.md | spec.md:<capability-path> | tasks.md>
+    ```
+
+    Provide 2–4 materially distinct options yourself. Each option must include its trade-off. Do not ask the coordinator to generate, merge, remove, or rank options.
+
+3. Do not author partial requirements or tasks that depend on the unresolved decision. Do not guess and continue.
+
+When the coordinator returns the user's selected answer, resume the **same pass** from the point you stopped — do not restart the proposal, recreate completed specs, or re-derive already-completed tasks. Incorporate the resolved decision into the relevant OpenSpec artifact and continue. Do not persist the question or answer anywhere outside the OpenSpec artifact that records the resolved consequence.
+
+If another blocking decision appears after you resume, return a new USER DECISION REQUIRED request with exactly one Decision. Never batch multiple decisions into one request.
+
+Handle conflicts as follows:
+
+- If an internal or artifact conflict can be resolved from the approved requirements and available repository evidence, report it to the coordinator as a conflict for routing to the owning specialist. Do not guess.
+- If materially conflicting user requirements or constraints cannot both be satisfied and the available evidence does not determine which takes precedence, escalate that conflict as a USER DECISION REQUIRED request instead of guessing. Frame the conflict as the Decision and explain the competing requirements in Why it matters.
+
 ## Requirements planning
 
 When any requirements artifact is missing or incomplete, author only the missing or incomplete artifacts:
@@ -24,7 +70,7 @@ Preserve completed artifacts unless the coordinator explicitly returns them for 
 Do not author `design.md` or `tasks.md` during this pass.
 Do not make technical design decisions.
 
-After the proposal and required capability specifications are complete, run `openspec validate <change>` to confirm they are well-formed, then return a concise summary of the artifacts created, the capabilities introduced or modified, and any unresolved decisions or missing evidence to the coordinator immediately. Do not continue into technical design or task authoring during this pass.
+After the proposal and required capability specifications are complete, run `openspec validate <change>` to confirm they are well-formed, then return a concise summary of the artifacts created, the capabilities introduced or modified, and any unresolved decisions or missing evidence to the coordinator immediately. If you are returning a USER DECISION REQUIRED request instead, do so immediately without authoring partial artifacts. Do not continue into technical design or task authoring during this pass.
 
 ## Task planning
 
@@ -46,4 +92,4 @@ Before authoring tasks, check `design.md` for unresolved conflicts with the prop
 
 Do not implement source changes yourself. Do not mark tasks complete or check off any checkbox — leave every task `- [ ]`.
 
-After authoring, run `openspec validate <change>` to confirm the change is still well-formed, then return a concise summary of the task plan and any unresolved decisions or missing evidence to the coordinator immediately.
+After authoring, run `openspec validate <change>` to confirm the change is still well-formed, then return a concise summary of the task plan and any unresolved decisions or missing evidence to the coordinator immediately. If you are returning a USER DECISION REQUIRED request instead, do so immediately without authoring partial tasks.

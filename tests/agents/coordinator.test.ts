@@ -46,6 +46,41 @@ describe("registerCoordinatorAgent", () => {
         expect(prompt).toContain("openspec <command> --help");
     });
 
+    test("coordinator prompt owns the user-decision escalation gateway", () => {
+        const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+        expect(prompt).toContain("## User-decision escalation from specialists");
+        expect(prompt).toContain(
+            "Only `specops-planner` and `specops-designer` may return a USER DECISION REQUIRED request",
+        );
+        expect(prompt).toContain("do not guess the answer");
+        expect(prompt).toContain("do not take over the specialist's work");
+        expect(prompt).toContain("invoke OpenCode's native `question` tool");
+        expect(prompt).toContain("exactly one single-select question");
+        expect(prompt).toContain("Omit `multiple`");
+        expect(prompt).toContain("faithfully from the specialist's request");
+        expect(prompt).toContain("Do not merge, remove, rank, or invent options");
+        expect(prompt).toContain("2–4 materially distinct options");
+        expect(prompt).toContain("(recommended)");
+        expect(prompt).toContain("Do not pre-select, reorder, or hide alternatives");
+        expect(prompt).toContain("re-dispatch the **same specialist**");
+        expect(prompt).toContain("resume the same pass and same artifact");
+        expect(prompt).toContain("Do not persist the question or answer");
+        expect(prompt).toContain("never batch multiple decisions");
+    });
+
+    test("coordinator prompt preserves native custom answers and conflict routing", () => {
+        const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+        expect(prompt).toContain("custom answer");
+        expect(prompt).toContain("pass it through verbatim");
+        expect(prompt).toContain('not "A"/"B"');
+        expect(prompt).toContain('do not add a "none of the above" option yourself');
+        expect(prompt).toContain("internal or artifact conflict");
+        expect(prompt).toContain("materially conflicting user requirements or constraints");
+        expect(prompt).toContain("ensure Planner returns it as USER DECISION REQUIRED");
+    });
+
     test("coordinator prompt delegates proposal/spec authoring to specops-planner", () => {
         const prompt = loadPrompt(AGENT_IDS.coordinator);
 

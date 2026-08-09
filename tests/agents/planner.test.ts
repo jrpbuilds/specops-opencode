@@ -37,6 +37,32 @@ describe("registerPlannerAgent", () => {
         expect(prompt).toContain("author `tasks.md`");
     });
 
+    test("planner prompt defines material-decision escalation and resume behavior", () => {
+        const prompt = loadPrompt(AGENT_IDS.planner);
+
+        expect(prompt).toContain("## Escalating material unresolved decisions");
+        expect(prompt).toContain("materially affects requirements");
+        expect(prompt).toContain("Do not ask the coordinator about choices you can safely make");
+        expect(prompt).toContain("USER DECISION REQUIRED");
+        expect(prompt).toContain("exactly one decision request");
+        expect(prompt).toContain("2–4 materially distinct options");
+        expect(prompt).toContain(
+            "Do not ask the coordinator to generate, merge, remove, or rank options",
+        );
+        expect(prompt).toContain("resume the **same pass**");
+        expect(prompt).toContain("new USER DECISION REQUIRED request");
+        expect(prompt).toContain("Do not persist the question or answer");
+    });
+
+    test("planner prompt distinguishes resolvable conflicts from user-scope conflicts", () => {
+        const prompt = loadPrompt(AGENT_IDS.planner);
+
+        expect(prompt).toContain("internal or artifact conflict can be resolved");
+        expect(prompt).toContain("report it to the coordinator as a conflict");
+        expect(prompt).toContain("materially conflicting user requirements or constraints");
+        expect(prompt).toContain("escalate that conflict as a USER DECISION REQUIRED request");
+    });
+
     test("planner prompt gates tasks on design.md and forbids implementation and checkboxes", () => {
         const prompt = loadPrompt(AGENT_IDS.planner);
 

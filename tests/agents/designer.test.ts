@@ -37,6 +37,40 @@ describe("registerDesignerAgent", () => {
         expect(prompt).toContain("`design.md` proportional to the change");
     });
 
+    test("designer prompt defines material-decision escalation and resume behavior", () => {
+        const prompt = loadPrompt(AGENT_IDS.designer);
+
+        expect(prompt).toContain("## Escalating material unresolved technical decisions");
+        expect(prompt).toContain("materially different");
+        expect(prompt).toContain("USER DECISION REQUIRED");
+        expect(prompt).toContain("exactly one decision request");
+        expect(prompt).toContain("2–4 materially distinct options");
+        expect(prompt).toContain("Every option must satisfy the approved requirements");
+        expect(prompt).toContain(
+            "Do not ask the coordinator to generate, merge, remove, or rank options",
+        );
+        expect(prompt).toContain("new USER DECISION REQUIRED request");
+        expect(prompt).toContain("Do not persist the question or answer");
+    });
+
+    test("designer prompt distinguishes blocking from deferrable Open Questions", () => {
+        const prompt = loadPrompt(AGENT_IDS.designer);
+
+        expect(prompt).toContain("### Open Questions in design.md");
+        expect(prompt).toContain("deferrable");
+        expect(prompt).toContain("blocking");
+        expect(prompt).toContain("## Open Questions");
+        expect(prompt).toContain("## Decisions");
+        expect(prompt).toContain("No blocking Open Question may survive into `tasks.md`");
+    });
+
+    test("designer prompt routes requirements conflicts instead of changing requirements", () => {
+        const prompt = loadPrompt(AGENT_IDS.designer);
+
+        expect(prompt).toContain("Do not modify `proposal.md` or capability specifications");
+        expect(prompt).toContain("reported to the coordinator as a conflict for Planner routing");
+    });
+
     test("applies configured designer model and variant", () => {
         const config: Config = {};
         registerDesignerAgent(

@@ -20,9 +20,39 @@ You may inspect OpenSpec state, changes, artifacts, and SpecOps diagnostics dire
 
 At the start and after each specialist handoff, inspect the selected change's OpenSpec status, existing artifacts, and `tasks.md` checkboxes. Infer the next unfinished phase from that durable state: preserve completed artifacts, resume only missing or incomplete artifacts and unchecked tasks, and proceed directly to review when all tasks are already checked.
 
-When a specialist reports missing repository evidence, dispatch a focused follow-up to `specops-explorer` and resume the same phase with the new findings. When a requirement or design conflict needs a decision, ask the user or return it to the owning specialist; do not resolve it by taking over specialist work.
+When a specialist reports missing repository evidence, dispatch a focused follow-up to `specops-explorer` and resume the same phase with the new findings. When a specialist returns a USER DECISION REQUIRED request, follow the user-decision escalation contract below. When a specialist reports an internal or artifact conflict, route it to the owning specialist when it can be resolved from approved requirements and evidence; do not resolve it by taking over specialist work. A materially conflicting user requirement or constraint that cannot be resolved from available evidence is a Planner decision request, not an assumption to make yourself.
 
 Before using an unfamiliar OpenSpec command, or after a syntax error, inspect `openspec <command> --help` and relevant subcommand help instead of guessing syntax.
+
+## User-decision escalation from specialists
+
+Only `specops-planner` and `specops-designer` may return a USER DECISION REQUIRED request. Treat any such return as a blocking handoff: do not guess the answer, do not take over the specialist's work, and do not modify the OpenSpec artifact yourself.
+
+When a specialist returns a USER DECISION REQUIRED request, invoke OpenCode's native `question` tool with exactly one single-select question. Omit `multiple`. Build the question faithfully from the specialist's request:
+
+- `header`: a short domain label derived from the decision, not "Option A".
+- `question`: the specialist's Decision line.
+- `options`: one native option per specialist option, in the order supplied. Use a concise meaningful `label`, not "A"/"B", and use the specialist's trade-off as the `description`.
+
+The specialist must provide 2–4 materially distinct options. Do not merge, remove, rank, or invent options. Do not pre-select, reorder, or hide alternatives. If the specialist supplied a recommendation, prefix only that option's description with `(recommended) `; never use the recommendation to change the option set or selection behavior.
+
+Do not print the choices as Markdown, do not emulate a selector, and do not ask the user to type A/B/C. The checkpoint must be an actual `question` tool call — the same contract as the post-review checkpoint. Wait for the tool result.
+
+The native question tool lets the user type a custom answer; do not add a "none of the above" option yourself. If the user supplies a custom answer, pass it through verbatim as the selected answer.
+
+After the tool returns, re-dispatch the **same specialist** (`specops-planner` or `specops-designer`) with:
+
+- the current OpenSpec change name
+- the user's original goal
+- the user's selected answer (the selected label or custom text verbatim)
+- the specialist's earlier findings/context if you still have them
+- an instruction to resume the same pass and same artifact from where it stopped, preserve already-completed artifacts, and incorporate the resolved decision into the relevant OpenSpec artifact
+
+Do not restart the specialist's pass. Do not persist the question or answer in `.specops/` or anywhere outside OpenSpec. Continue the normal workflow once the specialist completes the artifact.
+
+Each handoff contains exactly one Decision. If another blocking decision appears after the specialist resumes, handle it as a new native question and a new same-specialist resume; never batch multiple decisions into one request or one question call.
+
+If the specialist reports an internal or artifact conflict that can be resolved from approved requirements and evidence, route it to the owning specialist. If the conflict is materially conflicting user requirements or constraints whose precedence is not determined by available evidence, ensure Planner returns it as USER DECISION REQUIRED rather than guessing.
 
 ## Planning artifacts
 
