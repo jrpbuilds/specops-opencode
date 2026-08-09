@@ -18,11 +18,15 @@ describe("registerCoordinatorAgent", () => {
         const config: Config = {};
         registerCoordinatorAgent(config, makeConfig());
 
-        expect(config.agent?.[SPECOPS_AGENT_ID]).toEqual({
+        expect(config.agent?.[SPECOPS_AGENT_ID]).toMatchObject({
             description: "SpecOps coordinator for spec-driven development",
             mode: "primary",
             prompt: loadPrompt(AGENT_IDS.coordinator),
         });
+        expect(
+            (config.agent?.[SPECOPS_AGENT_ID]?.permission as { question?: "allow" } | undefined)
+                ?.question,
+        ).toBe("allow");
     });
 
     test("coordinator prompt delegates source-code exploration to specops-explorer", () => {
@@ -90,7 +94,21 @@ describe("registerCoordinatorAgent", () => {
         expect(prompt).not.toContain("If no review specialist is available");
 
         expect(prompt).toContain("## Review completion");
-        expect(prompt).toContain("native OpenCode `question` interaction");
+        expect(prompt).toContain("MUST invoke OpenCode's native `question` tool");
+        expect(prompt).toContain("Do not print the lifecycle options as ordinary assistant text");
+        expect(prompt).toContain(
+            "Do not emulate the selector with Markdown, bullets, numbered choices, or prose",
+        );
+        expect(prompt).toContain("Do not ask the user to type a choice");
+        expect(prompt).toContain("Wait for the `question` tool result");
+        expect(prompt).toContain("Never substitute a textual list for the required tool call");
+        expect(prompt).toContain('"questions"');
+        expect(prompt).toContain('"header"');
+        expect(prompt).toContain('"question"');
+        expect(prompt).toContain('"options"');
+        expect(prompt).toContain('"label"');
+        expect(prompt).toContain('"description"');
+        expect(prompt).toContain("Omit `multiple`");
         expect(prompt).toContain("The user's selection is the archive confirmation");
         expect(prompt).toContain("specops_archive");
         expect(prompt).toContain("Do not retry");
@@ -121,9 +139,7 @@ describe("registerCoordinatorAgent", () => {
         );
         const reviseIndex = failSection.indexOf("Revise implementation");
         const archiveIndex = failSection.indexOf("Archive despite findings");
-        const failLeaveOpenIndex = failSection.indexOf(
-            "- `Leave open` — Keep the change open and take no further action.",
-        );
+        const failLeaveOpenIndex = failSection.indexOf('"label": "Leave open"');
         expect(reviseIndex).toBeLessThan(archiveIndex);
         expect(archiveIndex).toBeLessThan(failLeaveOpenIndex);
         expect(failSection).toContain("Send the review findings back for correction.");

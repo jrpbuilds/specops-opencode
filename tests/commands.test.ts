@@ -75,11 +75,17 @@ describe("SpecOps server plugin", () => {
                 const config: Config = {};
                 await hooks.config?.(config);
 
-                expect(config.agent?.[SPECOPS_AGENT_ID]).toEqual({
+                expect(config.agent?.[SPECOPS_AGENT_ID]).toMatchObject({
                     description: "SpecOps coordinator for spec-driven development",
                     mode: "primary",
                     prompt: loadPrompt(AGENT_IDS.coordinator),
                 });
+                expect(
+                    (
+                        config.agent?.[SPECOPS_AGENT_ID]?.permission as
+                            { question?: "allow" } | undefined
+                    )?.question,
+                ).toBe("allow");
                 expect(config.agent?.[EXPLORER_AGENT_ID]).toEqual({
                     description:
                         "Investigates repository source, behavior, conventions, tests, constraints, and risks for planning and design. Use when the SpecOps coordinator needs focused repository evidence.",

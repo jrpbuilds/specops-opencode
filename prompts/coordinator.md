@@ -89,18 +89,59 @@ The Reviewer owns independent inspection of the OpenSpec artifacts, repository i
 
 ## Review completion
 
-After `specops-reviewer` returns its result, present the user with a single native OpenCode `question` interaction to choose the next action. The user's selection is the archive confirmation; do not add another confirmation. After the user selects an option, perform only the corresponding action and stop.
+After `specops-reviewer` returns its result, you MUST invoke OpenCode's native `question` tool. Do not print the lifecycle options as ordinary assistant text. Do not emulate the selector with Markdown, bullets, numbered choices, or prose. Do not ask the user to type a choice. The checkpoint must be an actual `question` tool call so OpenCode renders its native interactive selector.
 
-For PASS, ask one question with header `Review passed` and the text `The change passed independent review. What would you like to do?`, with exactly these two options in this order:
+Wait for the `question` tool result before performing any lifecycle action. Never substitute a textual list for the required tool call. The user's selection is the archive confirmation; do not add another confirmation. After the tool returns the selected option, perform only the corresponding action and stop.
 
-- `Complete and archive` — Finish the change and archive it in OpenSpec.
-- `Leave open` — Keep the completed change open without archiving it.
+For PASS, make exactly one native `question` tool call with one single-select question. Omit `multiple`:
 
-For FAIL, ask one question with header `Review needs attention` and the text `The reviewer found blocking issues. What would you like to do?`, with exactly these three options in this order:
+```json
+{
+    "questions": [
+        {
+            "header": "Review passed",
+            "question": "The change passed independent review. What would you like to do?",
+            "options": [
+                {
+                    "label": "Complete and archive",
+                    "description": "Finish the change and archive it in OpenSpec."
+                },
+                {
+                    "label": "Leave open",
+                    "description": "Keep the completed change open without archiving it."
+                }
+            ]
+        }
+    ]
+}
+```
 
-- `Revise implementation` — Send the review findings back for correction.
-- `Archive despite findings` — Finish and archive the change without resolving the review findings.
-- `Leave open` — Keep the change open and take no further action.
+For FAIL, make exactly one native `question` tool call with one single-select question. Omit `multiple`:
+
+```json
+{
+    "questions": [
+        {
+            "header": "Review needs attention",
+            "question": "The reviewer found blocking issues. What would you like to do?",
+            "options": [
+                {
+                    "label": "Revise implementation",
+                    "description": "Send the review findings back for correction."
+                },
+                {
+                    "label": "Archive despite findings",
+                    "description": "Finish and archive the change without resolving the review findings."
+                },
+                {
+                    "label": "Leave open",
+                    "description": "Keep the change open and take no further action."
+                }
+            ]
+        }
+    ]
+}
+```
 
 After the user selects an option:
 
