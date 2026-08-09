@@ -8,8 +8,14 @@ import { registerImplementerAgent } from "./agents/implementer.js";
 import { registerReviewerAgent } from "./agents/reviewer.js";
 import { doctorTool } from "./tools/doctor.js";
 import { onboardTool } from "./tools/onboard.js";
+import { archiveTool } from "./tools/archive.js";
 
-/** The only commands exposed by the walking skeleton. */
+/**
+ * Slash commands installed by the plugin.
+ *
+ * Lifecycle tools such as archive are intentionally not duplicated as slash
+ * commands; the Coordinator invokes them when the workflow reaches that step.
+ */
 export const COMMANDS = {
     specops: {
         description: "Run a goal under the SpecOps coordinator",
@@ -30,7 +36,13 @@ export const COMMANDS = {
     },
 } satisfies NonNullable<Config["command"]>;
 
-/** Register the fixed confirmation commands, the onboarding tool, and the SpecOps primary agent. */
+/**
+ * Build the OpenCode plugin hooks for commands, agents, and deterministic tools.
+ *
+ * Commands and tools are always exposed. Agent registration depends on valid
+ * persisted configuration; a configuration error is warned and isolated so it
+ * does not prevent the host from loading the rest of the plugin surface.
+ */
 export const SpecOpsPlugin: Plugin = async () => ({
     config: async (config: Config) => {
         config.command ??= {};
@@ -53,12 +65,18 @@ export const SpecOpsPlugin: Plugin = async () => ({
         }
     },
     tool: {
+        specops_archive: archiveTool,
         specops_doctor: doctorTool,
         specops_onboard: onboardTool,
     },
 });
 
-/** Server entry point consumed by OpenCode's plugin loader. */
+/**
+ * Package entry point consumed by OpenCode's plugin loader.
+ *
+ * The server factory is kept behind the module metadata so OpenCode can load
+ * the plugin without importing the TUI entry point.
+ */
 export default {
     id: "specops",
     server: SpecOpsPlugin,

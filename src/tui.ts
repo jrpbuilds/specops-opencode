@@ -1,4 +1,9 @@
-/** Native OpenCode TUI editor for SpecOps role model and variant mappings. */
+/**
+ * Native OpenCode TUI editor for SpecOps role model and variant mappings.
+ *
+ * The editor stages changes in memory, validates the complete mapping, and
+ * writes configuration only after the user confirms the review dialog.
+ */
 import type { TuiPluginApi, TuiPluginModule } from "@opencode-ai/plugin/tui";
 import { ALL_AGENT_IDS, type AgentId } from "./agents/ids.js";
 import { loadConfig, saveConfig, type SpecOpsConfig } from "./config.js";
@@ -15,7 +20,14 @@ import {
 const COMMAND_NAME = "specops.models.configure";
 const BACK = Symbol("specops-back");
 
-/** Register the Ctrl+P command-palette entry for model configuration. */
+/**
+ * Register the command-palette entry that opens model configuration.
+ *
+ * The `editorOpen` guard prevents overlapping editor sessions, while the
+ * lifecycle disposer removes the command when the TUI plugin is unloaded.
+ *
+ * @param api OpenCode TUI API used for command registration and notifications.
+ */
 export function registerModelSettings(api: TuiPluginApi): void {
     let editorOpen = false;
 
@@ -52,7 +64,16 @@ export function registerModelSettings(api: TuiPluginApi): void {
     api.lifecycle.onDispose(unregisterCommand);
 }
 
-/** Open a staged editor and save only after the complete mapping is valid. */
+/**
+ * Run the staged model-mapping editor from role selection through save/cancel.
+ *
+ * Dialog callbacks form a small state machine: role list -> model -> variant ->
+ * role list, with review and validation before persistence. The original config
+ * is never mutated while the user is browsing or cancelling.
+ *
+ * @param api OpenCode TUI API used to render dialogs and report errors.
+ * @param onClose Callback used to release the top-level editor-open guard.
+ */
 async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<void> {
     const source = await loadConfig();
     const models = configuredModels(api.state.provider);
@@ -268,7 +289,12 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
     showAgents();
 }
 
-/** Describe one selected role mapping in the role list. */
+/**
+ * Format one role's staged selection for the role list footer.
+ *
+ * Unknown saved models remain visible by ID, while long display names are
+ * shortened so the role list stays readable in a narrow terminal.
+ */
 function describeSelection(
     config: SpecOpsConfig,
     id: AgentId,
@@ -281,14 +307,24 @@ function describeSelection(
     return `${compactName} · ${entry.variant ?? "Default"}`;
 }
 
-/** Return roles whose staged model or variant differs from the opened config. */
+/**
+ * Return roles whose staged model mapping differs from the opened snapshot.
+ *
+ * JSON comparison is sufficient because configuration entries contain only
+ * stable scalar fields and the role order is fixed by `ALL_AGENT_IDS`.
+ */
 function changedAgentIds(initial: SpecOpsConfig, staged: SpecOpsConfig): readonly AgentId[] {
     return ALL_AGENT_IDS.filter(
         id => JSON.stringify(initial.agents[id]) !== JSON.stringify(staged.agents[id]),
     );
 }
 
-/** TUI entry point loaded from the package's ./tui export. */
+/**
+ * TUI entry point loaded from the package's `./tui` export.
+ *
+ * The module intentionally exposes only the TUI factory; server-side plugin
+ * registration remains in `src/index.ts`.
+ */
 const SpecOpsTuiPlugin = {
     id: "specops",
     tui: async (api: TuiPluginApi) => {

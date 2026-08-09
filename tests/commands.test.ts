@@ -59,7 +59,11 @@ describe("SpecOps server plugin", () => {
 
     test("registers the SpecOps tools", async () => {
         const hooks = await SpecOpsPlugin(pluginInput());
-        expect(Object.keys(hooks.tool ?? {})).toEqual(["specops_doctor", "specops_onboard"]);
+        expect(Object.keys(hooks.tool ?? {})).toEqual([
+            "specops_archive",
+            "specops_doctor",
+            "specops_onboard",
+        ]);
     });
 
     test("registers the SpecOps agents with loaded Markdown prompts", async () => {

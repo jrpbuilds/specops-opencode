@@ -12,14 +12,25 @@ const PROMPT_FILES: Partial<Record<AgentId, string>> = {
     [AGENT_IDS.reviewer]: "reviewer.md",
 };
 
-/** Resolve a package-relative Markdown prompt path for source and packed installs. */
+/**
+ * Resolve the packaged Markdown prompt for source and packed installations.
+ *
+ * Prompts are located relative to the compiled module rather than the current
+ * working directory, so the same lookup works before and after packaging.
+ */
 function promptPath(id: AgentId): string {
     const file = PROMPT_FILES[id];
     if (!file) throw new Error(`SpecOps prompt not registered for agent: ${id}`);
     return path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "prompts", file);
 }
 
-/** Load a packaged Markdown prompt and fail loudly when the asset is missing or empty. */
+/**
+ * Load a registered agent prompt and reject missing or empty prompt assets.
+ *
+ * Failing during registration is intentional: an agent without its role
+ * instructions would otherwise be present but behave without the SpecOps
+ * contract.
+ */
 export function loadPrompt(id: AgentId): string {
     const prompt = readFileSync(promptPath(id), "utf8");
     const file = PROMPT_FILES[id]!;

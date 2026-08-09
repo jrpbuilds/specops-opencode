@@ -1,6 +1,12 @@
 import { spawn } from "node:child_process";
 
-/** Run a command and resolve only if it exits 0; reject on non-zero or spawn error. */
+/**
+ * Run a command without exposing its output and require a zero exit status.
+ *
+ * This is appropriate for fire-and-forget commands whose callers only need to
+ * distinguish success from failure. Both non-zero exits and process-spawn
+ * errors reject the returned promise.
+ */
 export function runExitZero(command: string, args: string[], cwd?: string): Promise<void> {
     return new Promise((resolve, reject) => {
         const child = spawn(command, args, { cwd, stdio: "ignore" });
@@ -9,7 +15,12 @@ export function runExitZero(command: string, args: string[], cwd?: string): Prom
     });
 }
 
-/** Run a command and resolve with whether it succeeded and its captured stderr. */
+/**
+ * Run a command while capturing stderr for a human-readable failure report.
+ *
+ * Non-zero exits are represented by `ok: false` so callers can decide how to
+ * describe command-specific failures; only spawn errors reject the promise.
+ */
 export function runCaptured(
     command: string,
     args: string[],

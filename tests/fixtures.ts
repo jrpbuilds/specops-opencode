@@ -3,6 +3,8 @@ import type { ConfiguredProvider } from "../src/models.js";
 /**
  * A provider that explicitly sets `providerID` on each model. Used to verify
  * that model IDs use `model.providerID` rather than the provider-level `id`.
+ * It also supplies multiple variants so sorting and variant-preservation tests
+ * can exercise the normalized model shape.
  */
 export const providerWithModelProviderID: ConfiguredProvider = {
     id: "openference",
@@ -25,6 +27,8 @@ export const providerWithModelProviderID: ConfiguredProvider = {
 
 /**
  * A provider whose models omit `providerID`, so ids fall back to `provider.id`.
+ * One model has variants and one has none to cover both optional catalogue
+ * shapes returned by OpenCode.
  */
 export const providerWithoutModelProviderID: ConfiguredProvider = {
     id: "openai",
@@ -44,7 +48,12 @@ export const providerWithoutModelProviderID: ConfiguredProvider = {
     },
 };
 
-/** Both providers together, in a fixed order for flattening tests. */
+/**
+ * Both providers together in a deliberately non-alphabetical order.
+ *
+ * Tests can therefore distinguish input order from the stable sorting promised
+ * by `configuredModels`.
+ */
 export const allProviders: readonly ConfiguredProvider[] = [
     providerWithoutModelProviderID,
     providerWithModelProviderID,

@@ -13,15 +13,30 @@ import { ALL_AGENT_IDS, type AgentId } from "./agents/ids.js";
  */
 export type AgentConfig = { model?: string; variant?: string };
 
-/** Persisted SpecOps configuration. */
+/**
+ * The complete persisted SpecOps configuration.
+ *
+ * Validation requires one entry for every `AgentId`; individual entries may
+ * omit `model` to inherit OpenCode's global default.
+ */
 export type SpecOpsConfig = { agents: Record<AgentId, AgentConfig> };
 
-/** Default configuration delegates every role to OpenCode's global default. */
+/**
+ * Initial configuration used when no SpecOps file exists.
+ *
+ * Every role is present with an empty entry so the default remains explicit
+ * and satisfies the same shape enforced for persisted configuration.
+ */
 export const DEFAULT_CONFIG: SpecOpsConfig = {
     agents: Object.fromEntries(ALL_AGENT_IDS.map(id => [id, {}])) as SpecOpsConfig["agents"],
 };
 
-/** Resolve OpenCode's XDG-aware configuration directory. */
+/**
+ * Resolve the OpenCode configuration directory using the XDG convention.
+ *
+ * Explicit `XDG_CONFIG_HOME` values are honored; otherwise the supplied home
+ * directory is used to make the path deterministic in tests.
+ */
 function resolveOpenCodeConfigDirectory(
     environment: NodeJS.ProcessEnv = process.env,
     homeDirectory: string = os.homedir(),
@@ -31,7 +46,12 @@ function resolveOpenCodeConfigDirectory(
         : path.join(homeDirectory, ".config", "opencode");
 }
 
-/** Resolve the global SpecOps configuration path. */
+/**
+ * Resolve the location of the persisted SpecOps configuration file.
+ *
+ * The file lives below OpenCode's configuration directory so the plugin uses
+ * the same per-user configuration boundary as the host application.
+ */
 export function resolveConfigPath(
     environment: NodeJS.ProcessEnv = process.env,
     homeDirectory: string = os.homedir(),
@@ -39,7 +59,13 @@ export function resolveConfigPath(
     return path.join(resolveOpenCodeConfigDirectory(environment, homeDirectory), "specops.json");
 }
 
-/** Load the persisted configuration, or defaults when the file is absent. */
+/**
+ * Load and validate persisted configuration, falling back to a fresh default
+ * only when the file does not exist.
+ *
+ * Malformed or incompatible existing files are allowed to fail loudly rather
+ * than being silently replaced.
+ */
 export async function loadConfig(
     destination: string = resolveConfigPath(),
 ): Promise<SpecOpsConfig> {
@@ -53,7 +79,12 @@ export async function loadConfig(
     }
 }
 
-/** Validate the exact seven-role configuration shape. */
+/**
+ * Validate and clone the exact current SpecOps configuration shape.
+ *
+ * The validator rejects unknown top-level or role keys, missing roles, invalid
+ * field types, and non-blank variants without a valid model context.
+ */
 export function validateConfig(value: unknown): SpecOpsConfig {
     if (!isRecord(value) || !hasExactKeys(value, ["agents"]) || !isRecord(value.agents)) {
         throw new Error("invalid SpecOps configuration");
@@ -80,7 +111,12 @@ export function validateConfig(value: unknown): SpecOpsConfig {
     return structuredClone(value) as SpecOpsConfig;
 }
 
-/** Validate then atomically replace the persisted configuration file. */
+/**
+ * Validate configuration and replace the destination atomically.
+ *
+ * Validation occurs before any write, while `writeFileAtomic` prevents a
+ * partially written JSON file from becoming the active configuration.
+ */
 export async function saveConfig(
     config: SpecOpsConfig,
     destination: string = resolveConfigPath(),
@@ -89,7 +125,13 @@ export async function saveConfig(
     await writeFileAtomic(destination, `${JSON.stringify(validated, null, 2)}\n`);
 }
 
-/** Write a complete UTF-8 file through a same-directory temp-file rename. */
+/**
+ * Write UTF-8 content through a same-directory temporary file and rename.
+ *
+ * The temporary file is opened exclusively, flushed before replacement, and
+ * cleaned up in both success and failure paths. Keeping it beside the target
+ * preserves the filesystem's atomic rename guarantees.
+ */
 export async function writeFileAtomic(destination: string, content: string): Promise<void> {
     await mkdir(path.dirname(destination), { recursive: true });
     const temporary = `${destination}.${process.pid}.${randomUUID()}.tmp`;
@@ -107,17 +149,17 @@ export async function writeFileAtomic(destination: string, content: string): Pro
     }
 }
 
-/** Narrow parsed JSON to a non-array object that can be inspected by key. */
+/** Narrow parsed JSON to a non-array object suitable for configuration validation. */
 function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-/** Whether a record contains no keys outside the allowed configuration keys. */
+/** Return whether a record contains no keys outside the supplied allow-list. */
 function hasOnlyKeys(value: Record<string, unknown>, allowed: readonly string[]): boolean {
     return Object.keys(value).every(key => allowed.includes(key));
 }
 
-/** Whether a record contains exactly the expected keys, independent of order. */
+/** Return whether a record has exactly the expected keys, independent of order. */
 function hasExactKeys(value: Record<string, unknown>, expected: readonly string[]): boolean {
     return Object.keys(value).sort().join("|") === [...expected].sort().join("|");
 }

@@ -5,7 +5,7 @@ import { registerCoordinatorAgent, SPECOPS_AGENT_ID } from "../../src/agents/coo
 import { loadPrompt } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
-/** Build a valid config with only the supplied coordinator overrides. */
+/** Build a complete valid role config with optional coordinator overrides. */
 function makeConfig(overrides: Partial<SpecOpsConfig["agents"]> = {}): SpecOpsConfig {
     const defaults = Object.fromEntries(
         Object.values(AGENT_IDS).map(id => [id, {}]),
@@ -91,11 +91,11 @@ describe("registerCoordinatorAgent", () => {
 
         expect(prompt).toContain("## Review completion");
         expect(prompt).toContain("native OpenCode `question` interaction");
-        expect(prompt).toContain(
-            "acknowledge the requested next action in one short message and stop",
-        );
-        expect(prompt).toContain("Do not retry implementation");
-        expect(prompt).toContain("do not archive");
+        expect(prompt).toContain("The user's selection is the archive confirmation");
+        expect(prompt).toContain("specops_archive");
+        expect(prompt).toContain("Do not retry");
+        expect(prompt).toContain("filesystem fallback");
+        expect(prompt).toContain("Do not dispatch `specops-implementer` yet");
         expect(prompt).toContain("Do not persist the user's choice anywhere");
 
         const completionSection = prompt.slice(prompt.indexOf("## Review completion"));
@@ -131,6 +131,17 @@ describe("registerCoordinatorAgent", () => {
             "Finish and archive the change without resolving the review findings.",
         );
         expect(failSection).toContain("Keep the change open and take no further action.");
+
+        const actionSection = completionSection.slice(completionSection.indexOf("After the user"));
+        expect(actionSection).toContain(
+            "For PASS → `Complete and archive`, call `specops_archive`",
+        );
+        expect(actionSection).toContain("For PASS → `Leave open`");
+        expect(actionSection).toContain(
+            "For FAIL → `Archive despite findings`, call `specops_archive`",
+        );
+        expect(actionSection).toContain("For FAIL → `Revise implementation`");
+        expect(actionSection).toContain("For FAIL → `Leave open`");
     });
 
     test("applies configured coordinator model and variant", () => {

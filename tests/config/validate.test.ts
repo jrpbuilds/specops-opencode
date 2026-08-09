@@ -1,7 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { DEFAULT_CONFIG, validateConfig } from "../../src/config.js";
 
-/** Helper: a full valid agents object with the same value for every role. */
+/**
+ * Build a complete role map with a cloned entry for every configured role.
+ *
+ * Cloning each value prevents one test mutation from accidentally sharing state
+ * across role entries while keeping individual validation cases concise.
+ */
 function allRoles(value: Record<string, unknown> = {}): Record<string, unknown> {
     return Object.fromEntries(
         Object.keys(DEFAULT_CONFIG.agents).map(id => [id, structuredClone(value)]),

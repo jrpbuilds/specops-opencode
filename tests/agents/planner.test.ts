@@ -5,7 +5,7 @@ import { PLANNER_AGENT_ID, registerPlannerAgent } from "../../src/agents/planner
 import { loadPrompt } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
-/** Build a valid config with only the supplied planner overrides. */
+/** Build a complete valid role config with optional planner overrides. */
 function makeConfig(overrides: Partial<SpecOpsConfig["agents"]> = {}): SpecOpsConfig {
     const defaults = Object.fromEntries(
         Object.values(AGENT_IDS).map(id => [id, {}]),

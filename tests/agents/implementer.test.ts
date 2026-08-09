@@ -5,7 +5,7 @@ import { IMPLEMENTER_AGENT_ID, registerImplementerAgent } from "../../src/agents
 import { loadPrompt } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
-/** Build a valid config with only the supplied implementer overrides. */
+/** Build a complete valid role config with optional implementer overrides. */
 function makeConfig(overrides: Partial<SpecOpsConfig["agents"]> = {}): SpecOpsConfig {
     const defaults = Object.fromEntries(
         Object.values(AGENT_IDS).map(id => [id, {}]),

@@ -3,7 +3,13 @@ import type { AgentConfig, SpecOpsConfig } from "./config.js";
 
 const PLANNING_IDS = new Set<AgentId>([AGENT_IDS.explorer, AGENT_IDS.planner, AGENT_IDS.designer]);
 
-/** A configured OpenCode model and its supported variants. */
+/**
+ * A normalized OpenCode model exposed to the SpecOps configuration editor.
+ *
+ * `id` is the provider/model value persisted in SpecOps configuration, while
+ * `name` and `providerName` are display labels. Variants are sorted for stable
+ * selection order.
+ */
 export type ConfiguredModel = {
     id: string;
     name: string;
@@ -12,7 +18,12 @@ export type ConfiguredModel = {
     variants: readonly string[];
 };
 
-/** The provider/model shape used by the OpenCode TUI state. */
+/**
+ * The provider catalogue shape supplied by OpenCode's TUI state.
+ *
+ * OpenCode keys models by provider-local IDs, so normalization must retain the
+ * provider ID when constructing the persisted `provider/model` identifier.
+ */
 export type ConfiguredProvider = {
     id: string;
     name: string;
@@ -29,13 +40,23 @@ export type ConfiguredProvider = {
     >;
 };
 
-/** A complete editable configuration and unavailable saved selections. */
+/**
+ * The staged editor configuration and roles whose saved models are unavailable.
+ *
+ * `unresolved` is informational for the UI; it lets a user repair a stale
+ * saved selection without discarding the rest of the configuration.
+ */
 export type ConfigDraft = {
     config: SpecOpsConfig;
     unresolved: readonly AgentId[];
 };
 
-/** Flatten providers into stable provider/model IDs and sort them for display. */
+/**
+ * Flatten OpenCode providers into normalized models and stable display order.
+ *
+ * Provider-local model IDs become `provider/model` IDs, variants are sorted,
+ * and the final list is ordered by provider name and model name for the TUI.
+ */
 export function configuredModels(
     providers: readonly ConfiguredProvider[],
 ): readonly ConfiguredModel[] {
@@ -84,7 +105,12 @@ export function createConfigDraft(
     return { config: { agents }, unresolved };
 }
 
-/** Select a model while retaining only a variant it supports. */
+/**
+ * Select a model for one role and preserve its variant only when still valid.
+ *
+ * A model change can invalidate the previously selected variant, so invalid
+ * variants are intentionally dropped instead of being persisted.
+ */
 export function selectConfiguredModel(entry: AgentConfig, model: ConfiguredModel): AgentConfig {
     return {
         model: model.id,
@@ -94,12 +120,22 @@ export function selectConfiguredModel(entry: AgentConfig, model: ConfiguredModel
     };
 }
 
-/** Clear the role-specific model and variant so OpenCode's global default is used. */
+/**
+ * Clear a role's explicit model mapping so it inherits OpenCode's global default.
+ *
+ * Returning a fresh empty object also removes any stale variant at the same
+ * time.
+ */
 export function clearConfiguredModel(): AgentConfig {
     return {};
 }
 
-/** Return the existing functional grouping shown beside each role. */
+/**
+ * Return the stable functional category displayed beside a role in the editor.
+ *
+ * Categories are presentation metadata only; they do not affect registration,
+ * validation, or the model selected for the role.
+ */
 export function agentSettingsCategory(id: AgentId): string {
     if (id === AGENT_IDS.coordinator) return "Coordination";
     if (PLANNING_IDS.has(id)) return "Planning";
@@ -114,6 +150,8 @@ export function agentSettingsCategory(id: AgentId): string {
  * A blank model is always valid (it means "use OpenCode's global default").
  * A variant without a model, a model that is no longer configured, and a
  * variant the selected model does not support are all reported as issues.
+ * The function returns every issue so the editor can present one complete
+ * correction list instead of failing on the first invalid role.
  */
 export function validateConfigSelections(
     config: SpecOpsConfig,

@@ -5,7 +5,7 @@ import { DESIGNER_AGENT_ID, registerDesignerAgent } from "../../src/agents/desig
 import { loadPrompt } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
-/** Build a valid config with only the supplied designer overrides. */
+/** Build a complete valid role config with optional designer overrides. */
 function makeConfig(overrides: Partial<SpecOpsConfig["agents"]> = {}): SpecOpsConfig {
     const defaults = Object.fromEntries(
         Object.values(AGENT_IDS).map(id => [id, {}]),

@@ -3,7 +3,10 @@ import { loadPrompt } from "../prompts.js";
 import { AGENT_IDS } from "./ids.js";
 import type { SpecOpsConfig } from "../config.js";
 
-/** OpenCode subagent id used by the coordinator to delegate implementation. */
+/**
+ * OpenCode subagent ID used by the Coordinator to delegate approved task
+ * implementation and verification.
+ */
 export const IMPLEMENTER_AGENT_ID = AGENT_IDS.implementer;
 
 /**
@@ -11,6 +14,11 @@ export const IMPLEMENTER_AGENT_ID = AGENT_IDS.implementer;
  *
  * A blank implementer model is preserved as the semantic "use the invoking primary
  * agent's model": the `model` and `variant` fields are omitted from the agent config.
+ * The implementation boundary is enforced by the registered prompt; this
+ * module only supplies the native OpenCode registration and model selection.
+ *
+ * @param config OpenCode configuration object mutated with the subagent.
+ * @param specOpsConfig Validated persisted role-to-model configuration.
  */
 export function registerImplementerAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
     config.agent ??= {};

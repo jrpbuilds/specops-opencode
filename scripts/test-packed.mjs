@@ -50,7 +50,7 @@ try {
     assert(config.command.specops.template === "$ARGUMENTS", "specops command template mismatch");
     assertEqual(
         Object.keys(hooks.tool).sort(),
-        ["specops_doctor", "specops_onboard"],
+        ["specops_archive", "specops_doctor", "specops_onboard"],
         "packed tool catalogue",
     );
     assertEqual(

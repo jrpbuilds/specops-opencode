@@ -89,7 +89,7 @@ The Reviewer owns independent inspection of the OpenSpec artifacts, repository i
 
 ## Review completion
 
-After `specops-reviewer` returns its result, present the user with a single native OpenCode `question` interaction to choose the next action. Do not retry implementation, do not archive, and do not dispatch another specialist. After the user selects an option, acknowledge the requested next action in one short message and stop.
+After `specops-reviewer` returns its result, present the user with a single native OpenCode `question` interaction to choose the next action. The user's selection is the archive confirmation; do not add another confirmation. After the user selects an option, perform only the corresponding action and stop.
 
 For PASS, ask one question with header `Review passed` and the text `The change passed independent review. What would you like to do?`, with exactly these two options in this order:
 
@@ -102,4 +102,12 @@ For FAIL, ask one question with header `Review needs attention` and the text `Th
 - `Archive despite findings` — Finish and archive the change without resolving the review findings.
 - `Leave open` — Keep the change open and take no further action.
 
-Do not perform the selected archive, repair, retry, or any further specialist dispatch in this slice — only acknowledge the chosen action. Do not teach the user about future archive or repair implementation details. Do not persist the user's choice anywhere; OpenSpec remains the durable source of truth.
+After the user selects an option:
+
+- For PASS → `Complete and archive`, call `specops_archive` with the current OpenSpec change name. Report its success, including the archived-as name and path, or its concrete failure, then stop. Do not retry or use a filesystem fallback.
+- For PASS → `Leave open`, acknowledge the selection in one short message and stop. Do not archive.
+- For FAIL → `Revise implementation`, acknowledge the selection in one short message and stop. Do not dispatch `specops-implementer` yet; the repair loop is not implemented.
+- For FAIL → `Archive despite findings`, call `specops_archive` with the current OpenSpec change name. This overrides the SpecOps Reviewer verdict only; do not suppress or rewrite its findings. Report the tool's success or concrete failure, then stop. Do not retry or force the archive.
+- For FAIL → `Leave open`, acknowledge the selection in one short message and stop. Do not archive.
+
+Do not teach the user about future archive or repair implementation details. Do not persist the user's choice anywhere; OpenSpec remains the durable source of truth.

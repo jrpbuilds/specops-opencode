@@ -5,7 +5,7 @@ import { REVIEWER_AGENT_ID, registerReviewerAgent } from "../../src/agents/revie
 import { loadPrompt } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
-/** Build a valid config with only the supplied reviewer overrides. */
+/** Build a complete valid role config with optional reviewer overrides. */
 function makeConfig(overrides: Partial<SpecOpsConfig["agents"]> = {}): SpecOpsConfig {
     const defaults = Object.fromEntries(
         Object.values(AGENT_IDS).map(id => [id, {}]),

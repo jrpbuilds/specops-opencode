@@ -35,7 +35,12 @@ export type FakeTui = {
     dispose: () => void;
 };
 
-/** Run a test with the real config resolver pointed at an isolated directory. */
+/**
+ * Run a TUI test with the real config resolver pointed at an isolated directory.
+ *
+ * The previous environment value is restored even when the callback fails, so
+ * tests cannot leak their temporary XDG configuration home.
+ */
 export async function withConfigHome<T>(home: string, fn: () => Promise<T>): Promise<T> {
     const previous = process.env.XDG_CONFIG_HOME;
     process.env.XDG_CONFIG_HOME = home;
@@ -51,6 +56,8 @@ export async function withConfigHome<T>(home: string, fn: () => Promise<T>): Pro
  * Build the smallest host surface needed to drive registerModelSettings.
  * Dialog component calls return their props, letting tests invoke real
  * selection and confirmation callbacks without rendering OpenTUI.
+ * The returned harness also records command registration, dialog replacement,
+ * toasts, and disposal so lifecycle behavior can be asserted directly.
  */
 export function fakeTuiApi(providers: readonly ConfiguredProvider[]): FakeTui {
     const commands: FakeCommand[] = [];

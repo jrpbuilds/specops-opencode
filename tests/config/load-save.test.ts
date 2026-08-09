@@ -5,7 +5,12 @@ import { ALL_AGENT_IDS } from "../../src/agents/ids.js";
 import { DEFAULT_CONFIG, loadConfig, saveConfig } from "../../src/config.js";
 import { configPath, withTempDir } from "../helpers.js";
 
-/** The fully-populated configuration example from the spec. */
+/**
+ * Build the fully-populated configuration example used by round-trip tests.
+ *
+ * Each role receives an explicit model and variant so serialization covers the
+ * maximum persisted shape rather than only the default empty entries.
+ */
 function fullyPopulated() {
     const agents = structuredClone(DEFAULT_CONFIG.agents);
     agents["specops-coordinator"] = {
