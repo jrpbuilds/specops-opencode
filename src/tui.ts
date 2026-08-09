@@ -8,6 +8,7 @@ import type { TuiPluginApi, TuiPluginModule } from "@opencode-ai/plugin/tui";
 import { ALL_AGENT_IDS, ROLE_WORKFLOW_ORDER, type AgentId } from "./agents/ids.js";
 import { loadConfig, saveConfig, type SpecOpsConfig } from "./config.js";
 import {
+    agentDisplayName,
     clearConfiguredModel,
     configuredModels,
     createConfigDraft,
@@ -246,8 +247,9 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
         const changed = new Set(changedAgentIds(initial, staged));
         const roleOptions = ROLE_WORKFLOW_ORDER.map(id => ({
             // "!" = saved model unavailable in the current catalogue; "*" = staged change.
-            title: `${unresolved.has(id) ? "! " : ""}${changed.has(id) ? "* " : ""}${id}`,
+            title: `${unresolved.has(id) ? "! " : ""}${changed.has(id) ? "* " : ""}${agentDisplayName(id)}`,
             value: id,
+            category: "Model Routing",
             footer: describeSelection(staged, id, models),
         }));
 

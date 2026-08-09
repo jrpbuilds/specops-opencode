@@ -1,6 +1,22 @@
 import { describe, expect, test } from "bun:test";
 import { ALL_AGENT_IDS, ROLE_WORKFLOW_ORDER } from "../../src/agents/ids.js";
-import { agentSettingsCategory } from "../../src/models.js";
+import { agentDisplayName, agentSettingsCategory } from "../../src/models.js";
+
+const DISPLAY_NAMES = [
+    "Coordinator",
+    "Explorer",
+    "Planner",
+    "Designer",
+    "Implementer",
+    "Reviewer",
+    "Frontier",
+] as const;
+
+describe("agentDisplayName", () => {
+    test("returns friendly names in workflow order", () => {
+        expect(ROLE_WORKFLOW_ORDER.map(agentDisplayName)).toEqual([...DISPLAY_NAMES]);
+    });
+});
 
 describe("agentSettingsCategory", () => {
     test("coordinator maps to Coordination", () => {

@@ -9,7 +9,13 @@ export type FakeCommand = {
     run?: () => void | Promise<void>;
 };
 
-export type DialogOption = { title: string; value: unknown };
+export type DialogOption = {
+    title: string;
+    value: unknown;
+    category?: string;
+    description?: string;
+    footer?: string;
+};
 
 export type DialogProps = {
     title?: string;

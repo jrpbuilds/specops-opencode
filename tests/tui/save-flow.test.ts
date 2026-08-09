@@ -22,7 +22,7 @@ describe("SpecOps Configure save flow", () => {
                 registerModelSettings(fake.api);
 
                 await openPlannerModelVariant(fake);
-                expect(fake.currentDialog()?.options?.[2]?.title).toContain("specops-planner");
+                expect(fake.currentDialog()?.options?.[2]?.title).toContain("Planner");
 
                 fake.selectByValue("__save__");
                 expect(fake.currentDialog()?.title).toBe("Save SpecOps model mappings?");

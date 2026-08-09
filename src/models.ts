@@ -2,6 +2,15 @@ import { AGENT_IDS, ALL_AGENT_IDS, type AgentId } from "./agents/ids.js";
 import type { AgentConfig, SpecOpsConfig } from "./config.js";
 
 const PLANNING_IDS = new Set<AgentId>([AGENT_IDS.explorer, AGENT_IDS.planner, AGENT_IDS.designer]);
+const AGENT_DISPLAY_NAMES: Record<AgentId, string> = {
+    [AGENT_IDS.coordinator]: "Coordinator",
+    [AGENT_IDS.explorer]: "Explorer",
+    [AGENT_IDS.planner]: "Planner",
+    [AGENT_IDS.designer]: "Designer",
+    [AGENT_IDS.implementer]: "Implementer",
+    [AGENT_IDS.reviewer]: "Reviewer",
+    [AGENT_IDS.frontier]: "Frontier",
+};
 
 /**
  * A normalized OpenCode model exposed to the SpecOps configuration editor.
@@ -131,6 +140,11 @@ export function selectConfiguredModel(entry: AgentConfig, model: ConfiguredModel
  */
 export function clearConfiguredModel(): AgentConfig {
     return {};
+}
+
+/** Return the friendly role name shown in the configuration editor. */
+export function agentDisplayName(id: AgentId): string {
+    return AGENT_DISPLAY_NAMES[id];
 }
 
 /**

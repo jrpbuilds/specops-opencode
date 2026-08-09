@@ -26,7 +26,8 @@ describe("registerModelSettings", () => {
 
         await fake.runCommand();
         const props = fake.currentDialog();
-        const values = props?.options?.map(option => option.value);
+        const options = props?.options ?? [];
+        const values = options.map(option => option.value);
 
         expect(values).toEqual([
             ...ALL_AGENT_IDS,
@@ -34,6 +35,16 @@ describe("registerModelSettings", () => {
             "__save__",
             "__cancel__",
         ]);
+        expect(options.slice(0, 7).map(option => option.title.replace(/^[!*] /, ""))).toEqual([
+            "Coordinator",
+            "Explorer",
+            "Planner",
+            "Designer",
+            "Implementer",
+            "Reviewer",
+            "Frontier",
+        ]);
+        expect(options.slice(0, 7).every(option => option.category === "Model Routing")).toBe(true);
         expect(props?.title).toBe("SpecOps role model mappings");
     });
 
