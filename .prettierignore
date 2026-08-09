@@ -3,3 +3,5 @@ node_modules
 .codegraph
 .opencode
 bun.lock
+examples/galaxy-shooter/index.html
+examples/galaxy-shooter/openspec
