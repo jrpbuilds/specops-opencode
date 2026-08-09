@@ -127,32 +127,32 @@ Example:
 
 ```json
 {
-  "agents": {
-    "specops-coordinator": {
-      "model": "opencode-go/deepseek-v4-flash",
-      "variant": "high"
-    },
-    "specops-explorer": {
-      "model": "openference/Qwen3.7 Plus",
-      "variant": "medium"
-    },
-    "specops-planner": {
-      "model": "openai/gpt-5.6-terra",
-      "variant": "high"
-    },
-    "specops-designer": {
-      "model": "openference/GLM-5.2",
-      "variant": "max"
-    },
-    "specops-implementer": {
-      "model": "openference/Kimi K2.7 Code",
-      "variant": "thinking"
-    },
-    "specops-reviewer": {
-      "model": "openference/DeepSeek-V4-Pro",
-      "variant": "high"
+    "agents": {
+        "specops-coordinator": {
+            "model": "opencode-go/deepseek-v4-flash",
+            "variant": "high"
+        },
+        "specops-explorer": {
+            "model": "openference/Qwen3.7 Plus",
+            "variant": "medium"
+        },
+        "specops-planner": {
+            "model": "openai/gpt-5.6-terra",
+            "variant": "high"
+        },
+        "specops-designer": {
+            "model": "openference/GLM-5.2",
+            "variant": "max"
+        },
+        "specops-implementer": {
+            "model": "openference/Kimi K2.7 Code",
+            "variant": "thinking"
+        },
+        "specops-reviewer": {
+            "model": "openference/DeepSeek-V4-Pro",
+            "variant": "high"
+        }
     }
-  }
 }
 ```
 

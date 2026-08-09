@@ -1,5 +1,5 @@
 import { tool, type ToolDefinition } from "@opencode-ai/plugin/tool";
-import { archiveChange, type OpenSpecArchiveResult } from "../openspec/index.js";
+import { archiveChange, type OpenSpecArchiveResult } from "../openspec/archive.js";
 
 /**
  * Dependencies for the deterministic archive operation.

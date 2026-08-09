@@ -1,9 +1,6 @@
 import { tool, type ToolDefinition } from "@opencode-ai/plugin/tool";
-import {
-    initializeOpenSpec,
-    isOpenSpecAvailable,
-    isOpenSpecInitialized,
-} from "../openspec/index.js";
+import { isOpenSpecAvailable } from "../openspec/cli.js";
+import { initializeOpenSpec, isOpenSpecInitialized } from "../openspec/init.js";
 
 /**
  * OpenSpec operations injected into onboarding.

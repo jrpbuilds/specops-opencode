@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, test } from "bun:test";
-import { isOpenSpecInitialized } from "../../src/openspec/index.js";
+import { isOpenSpecInitialized } from "../../src/openspec/init.js";
 import { withTempDir } from "../helpers.js";
 
 describe("isOpenSpecInitialized", () => {
