@@ -114,6 +114,7 @@ Models and reasoning variants can be configured independently for:
 - Designer
 - Implementer
 - Reviewer
+- Frontier
 
 Configuration is stored in:
 
@@ -127,6 +128,7 @@ Example:
 
 ```json
 {
+    "frontierEscalation": false,
     "agents": {
         "specops-coordinator": {
             "model": "opencode-go/deepseek-v4-flash",
@@ -150,6 +152,10 @@ Example:
         },
         "specops-reviewer": {
             "model": "openference/DeepSeek-V4-Pro",
+            "variant": "high"
+        },
+        "specops-frontier": {
+            "model": "openai/gpt-5.6-sol",
             "variant": "high"
         }
     }

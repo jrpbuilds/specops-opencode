@@ -20,28 +20,54 @@ describe("registerModelSettings", () => {
         expect(fake.commands[0].run).toBeFunction();
     });
 
-    test("opens a role list with all seven roles and actions", async () => {
-        const fake = fakeTuiApi(allProviders);
-        registerModelSettings(fake.api);
+    test("opens a role list with all seven roles and actions", async () =>
+        withTempDir(async home =>
+            withConfigHome(home, async () => {
+                const fake = fakeTuiApi(allProviders);
+                registerModelSettings(fake.api);
 
-        await fake.runCommand();
-        const props = fake.currentDialog();
-        const values = props?.options?.map(option => option.value);
+                await fake.runCommand();
+                const props = fake.currentDialog();
+                const options = props?.options ?? [];
+                const values = options.map(option => option.value);
 
-        expect(values).toEqual([...ALL_AGENT_IDS, "__save__", "__cancel__"]);
-        expect(props?.title).toBe("SpecOps role model mappings");
-    });
+                expect(values).toEqual([
+                    ...ALL_AGENT_IDS,
+                    "__frontier_escalation__",
+                    "__save__",
+                    "__cancel__",
+                ]);
+                expect(
+                    options.slice(0, 7).map(option => option.title.replace(/^[!*] /, "")),
+                ).toEqual([
+                    "Coordinator",
+                    "Explorer",
+                    "Planner",
+                    "Designer",
+                    "Implementer",
+                    "Reviewer",
+                    "Frontier",
+                ]);
+                expect(
+                    options.slice(0, 7).every(option => option.category === "Model Routing"),
+                ).toBe(true);
+                expect(props?.title).toBe("SpecOps role model mappings");
+            }),
+        ));
 
-    test("does not open a second editor while one is already open", async () => {
-        const fake = fakeTuiApi(allProviders);
-        registerModelSettings(fake.api);
+    test("does not open a second editor while one is already open", async () =>
+        withTempDir(async home =>
+            withConfigHome(home, async () => {
+                const fake = fakeTuiApi(allProviders);
+                registerModelSettings(fake.api);
 
-        await fake.runCommand();
-        const replaceCount = fake.replaceCount;
-        await fake.runCommand();
+                await fake.runCommand();
+                const replaceCount = fake.replaceCount;
+                await fake.runCommand();
 
-        expect(fake.replaceCount).toBe(replaceCount);
-    });
+                expect(fake.replaceCount).toBe(replaceCount);
+            }),
+        ));
 
     test("reports an error when OpenCode has no configured models", async () => {
         await withTempDir(async home =>

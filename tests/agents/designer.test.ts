@@ -10,7 +10,10 @@ function makeConfig(overrides: Partial<SpecOpsConfig["agents"]> = {}): SpecOpsCo
     const defaults = Object.fromEntries(
         Object.values(AGENT_IDS).map(id => [id, {}]),
     ) as SpecOpsConfig["agents"];
-    return { agents: { ...defaults, ...overrides } as SpecOpsConfig["agents"] };
+    return {
+        agents: { ...defaults, ...overrides } as SpecOpsConfig["agents"],
+        frontierEscalation: false,
+    };
 }
 
 describe("registerDesignerAgent", () => {
