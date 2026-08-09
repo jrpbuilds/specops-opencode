@@ -9,6 +9,8 @@ import { registerReviewerAgent } from "./agents/reviewer.js";
 import { doctorTool } from "./tools/doctor.js";
 import { onboardTool } from "./tools/onboard.js";
 import { archiveTool } from "./tools/archive.js";
+import { contextTool } from "./tools/context.js";
+import { createChangeTool } from "./tools/create-change.js";
 
 /**
  * Slash commands installed by the plugin.
@@ -66,6 +68,8 @@ export const SpecOpsPlugin: Plugin = async () => ({
     },
     tool: {
         specops_archive: archiveTool,
+        specops_context: contextTool,
+        specops_create_change: createChangeTool,
         specops_doctor: doctorTool,
         specops_onboard: onboardTool,
     },

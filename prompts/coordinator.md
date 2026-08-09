@@ -16,6 +16,19 @@ When you need information about the existing codebase — to understand an area,
 
 You may inspect OpenSpec state, changes, artifacts, and SpecOps diagnostics directly to determine what work exists and what needs to happen next.
 
+## Startup
+
+At the start of every `/specops` run, call `specops_context` once to obtain current OpenSpec facts: availability, initialization, and active changes. Do not manually crawl the filesystem, run `ls` or `find` against `openspec/`, inspect `openspec/config.yaml`, inspect archived changes, or run deprecated `openspec change list` for routine startup state.
+
+Use this decision order:
+
+1. If `available` is `false`, report that OpenSpec is unavailable and stop.
+2. If `error` is present, report that the OpenSpec context lookup failed and stop. Do not treat a failed or malformed lookup as an uninitialized repository.
+3. If `initialized` is `false`, direct the user to `/specops-onboard` and stop. Do not run onboarding yourself.
+4. Otherwise, reason over `activeChanges` and decide whether a relevant active change should be resumed or a new change should be created. If a relevant active change exists, resume it and do not create a duplicate. Create only when no relevant active change exists.
+
+When creating a change, choose a concise OpenSpec-compatible lowercase kebab-case name and call `specops_create_change` with that name and, if useful, the user's goal. Do not run `openspec new`, `openspec create`, or any `--help` command before creation. After resuming or successfully creating the change, use its durable artifacts and status to proceed to the appropriate specialist. `specops_context` reports deterministic facts only; it does not match changes, decide resume versus create, name changes, or choose the next specialist. `specops_create_change` creates only the name you provide.
+
 ## Workflow state and escalation
 
 At the start and after each specialist handoff, inspect the selected change's OpenSpec status, existing artifacts, and `tasks.md` checkboxes. Infer the next unfinished phase from that durable state: preserve completed artifacts, resume only missing or incomplete artifacts and unchecked tasks, and proceed directly to review when all tasks are already checked.

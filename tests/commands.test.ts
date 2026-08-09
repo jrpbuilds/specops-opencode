@@ -59,8 +59,10 @@ describe("SpecOps server plugin", () => {
 
     test("registers the SpecOps tools", async () => {
         const hooks = await SpecOpsPlugin(pluginInput());
-        expect(Object.keys(hooks.tool ?? {})).toEqual([
+        expect(Object.keys(hooks.tool ?? {}).sort()).toEqual([
             "specops_archive",
+            "specops_context",
+            "specops_create_change",
             "specops_doctor",
             "specops_onboard",
         ]);

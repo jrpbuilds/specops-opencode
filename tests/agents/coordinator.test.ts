@@ -46,6 +46,28 @@ describe("registerCoordinatorAgent", () => {
         expect(prompt).toContain("openspec <command> --help");
     });
 
+    test("coordinator prompt uses deterministic startup context and owns decisions", () => {
+        const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+        expect(prompt).toContain("## Startup");
+        expect(prompt).toContain("call `specops_context` once");
+        expect(prompt).toContain("Do not manually crawl the filesystem");
+        expect(prompt).toContain("deprecated `openspec change list`");
+        expect(prompt).toContain("If `available` is `false`");
+        expect(prompt).toContain("If `error` is present");
+        expect(prompt).toContain("failed or malformed lookup");
+        expect(prompt).toContain("If `initialized` is `false`");
+        expect(prompt).toContain("reason over `activeChanges`");
+        expect(prompt).toContain("relevant active change should be resumed or a new change");
+        expect(prompt).toContain("resume it and do not create a duplicate");
+        expect(prompt).toContain("Create only when no relevant active change exists");
+        expect(prompt).toContain("call `specops_create_change`");
+        expect(prompt).toContain("After resuming or successfully creating the change");
+        expect(prompt).toContain("specops_context` reports deterministic facts only");
+        expect(prompt).toContain("does not match changes");
+        expect(prompt).toContain("specops_create_change` creates only the name you provide");
+    });
+
     test("coordinator prompt owns the user-decision escalation gateway", () => {
         const prompt = loadPrompt(AGENT_IDS.coordinator);
 
