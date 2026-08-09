@@ -173,7 +173,6 @@ describe("registerCoordinatorAgent", () => {
         expect(prompt).toContain("specops_archive");
         expect(prompt).toContain("Do not retry");
         expect(prompt).toContain("filesystem fallback");
-        expect(prompt).toContain("Do not dispatch `specops-implementer` yet");
         expect(prompt).toContain("Do not persist the user's choice anywhere");
 
         const completionSection = prompt.slice(prompt.indexOf("## Review completion"));
@@ -218,6 +217,53 @@ describe("registerCoordinatorAgent", () => {
         );
         expect(actionSection).toContain("For FAIL → `Revise implementation`");
         expect(actionSection).toContain("For FAIL → `Leave open`");
+    });
+
+    test("coordinator prompt implements the review remediation loop", () => {
+        const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+        expect(prompt).toContain("## Review remediation");
+        expect(prompt).toContain("For FAIL → `Revise implementation`, acknowledge");
+        expect(prompt).not.toContain("the repair loop is not implemented");
+        expect(prompt).not.toContain("Do not dispatch `specops-implementer` yet");
+    });
+
+    test("coordinator prompt re-dispatches implementer then reviewer on revise", () => {
+        const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+        const remediationSection = prompt.slice(prompt.indexOf("## Review remediation"));
+
+        expect(remediationSection).toContain("Re-dispatch `specops-implementer`");
+        expect(remediationSection).toContain("the user's original goal");
+        expect(remediationSection).toContain("the current OpenSpec change name");
+        expect(remediationSection).toContain("complete `specops-reviewer` FAIL findings verbatim");
+        expect(remediationSection).toContain("every `F1..Fn` ID");
+        expect(remediationSection).toContain(
+            "explicit instruction that this pass is review remediation",
+        );
+        expect(remediationSection).toContain("Do not summarize, paraphrase, or drop findings");
+        expect(remediationSection).toContain("pass them through verbatim");
+        expect(remediationSection).toContain("inspect the updated `tasks.md`");
+        expect(remediationSection).toContain(
+            "all new `## N. Review remediation` items are checked",
+        );
+        expect(remediationSection).toContain("re-dispatch `specops-reviewer`");
+        expect(remediationSection).toContain("**same** review-completion `question` checkpoint");
+        expect(remediationSection).toContain("Do not create an automatic retry loop");
+        expect(remediationSection).toContain(
+            "unless the user explicitly selects `Revise implementation`",
+        );
+    });
+
+    test("coordinator prompt routes remediation conflicts to planning/design", () => {
+        const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+        const remediationSection = prompt.slice(prompt.indexOf("## Review remediation"));
+
+        expect(remediationSection).toContain("requires changing approved requirements or design");
+        expect(remediationSection).toContain("route it to `specops-planner` or `specops-designer`");
+        expect(remediationSection).toContain("user-decision escalation contract");
+        expect(remediationSection).toContain("rather than authorising design changes yourself");
     });
 
     test("applies configured coordinator model and variant", () => {

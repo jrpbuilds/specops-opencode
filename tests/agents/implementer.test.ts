@@ -65,6 +65,24 @@ describe("registerImplementerAgent", () => {
         expect(prompt).toContain("Do not archive");
     });
 
+    test("implementer prompt supports review remediation mode", () => {
+        const prompt = loadPrompt(AGENT_IDS.implementer);
+
+        expect(prompt).toContain("## Review remediation");
+        expect(prompt).toContain("review remediation and provides reviewer FAIL findings");
+        expect(prompt).toContain("## N. Review remediation");
+        expect(prompt).toContain("reuse still-unchecked items rather than appending a new one");
+        expect(prompt).toContain("`- [ ] N.x Resolve reviewer finding Fx:");
+        expect(prompt).toContain("Do not uncheck any completed task");
+        expect(prompt).toContain("Append the remediation items before you modify source or tests");
+        expect(prompt).toContain("smallest coherent source and test changes");
+        expect(prompt).toContain("Do not expand scope beyond the approved proposal");
+        expect(prompt).toContain("change its item to `- [x]` only after you have verified");
+        expect(prompt).toContain("Run `openspec validate <change>` after remediation changes");
+        expect(prompt).toContain("cannot be resolved without changing approved requirements");
+        expect(prompt).toContain("Leave that item unchecked and return the conflict");
+    });
+
     test("applies configured implementer model and variant", () => {
         const config: Config = {};
         registerImplementerAgent(

@@ -71,6 +71,20 @@ describe("registerReviewerAgent", () => {
         expect(prompt).toContain("Do not fail for unrelated style preferences");
     });
 
+    test("reviewer prompt numbers blocking findings for remediation", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain("<numbered blocking findings>");
+        expect(prompt).toContain("F1");
+        expect(prompt).toContain("`Fx`");
+        expect(prompt).toContain("mapped directly to remediation");
+        expect(prompt).toContain("**Violated:**");
+        expect(prompt).toContain("**Problem:**");
+        expect(prompt).toContain("**Evidence:**");
+        expect(prompt).toContain("relevant file paths, line references, or verification result");
+        expect(prompt).toContain("Non-blocking observations may follow without IDs");
+    });
+
     test("applies configured reviewer model and variant", () => {
         const config: Config = {};
         registerReviewerAgent(

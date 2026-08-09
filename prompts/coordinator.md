@@ -190,8 +190,24 @@ After the user selects an option:
 
 - For PASS → `Complete and archive`, call `specops_archive` with the current OpenSpec change name. Report its success, including the archived-as name and path, or its concrete failure, then stop. Do not retry or use a filesystem fallback.
 - For PASS → `Leave open`, acknowledge the selection in one short message and stop. Do not archive.
-- For FAIL → `Revise implementation`, acknowledge the selection in one short message and stop. Do not dispatch `specops-implementer` yet; the repair loop is not implemented.
+- For FAIL → `Revise implementation`, acknowledge the selection in one short message, then follow the review remediation section below.
 - For FAIL → `Archive despite findings`, call `specops_archive` with the current OpenSpec change name. This overrides the SpecOps Reviewer verdict only; do not suppress or rewrite its findings. Report the tool's success or concrete failure, then stop. Do not retry or force the archive.
 - For FAIL → `Leave open`, acknowledge the selection in one short message and stop. Do not archive.
 
 Do not teach the user about future archive or repair implementation details. Do not persist the user's choice anywhere; OpenSpec remains the durable source of truth.
+
+## Review remediation
+
+When the user selects `Revise implementation` after `specops-reviewer` returns FAIL:
+
+1. Re-dispatch `specops-implementer` with:
+    - the user's original goal
+    - the current OpenSpec change name
+    - the complete `specops-reviewer` FAIL findings verbatim, including every `F1..Fn` ID
+    - an explicit instruction that this pass is review remediation
+2. Do not summarize, paraphrase, or drop findings; pass them through verbatim so the Implementer can map remediation items directly to `F1..Fn`.
+3. When the Implementer returns, inspect the updated `tasks.md` and the Implementer's summary as ordinary OpenSpec state. If the Implementer reports a conflict that requires changing approved requirements or design, route it to `specops-planner` or `specops-designer` via the user-decision escalation contract rather than authorising design changes yourself.
+4. If remediation completed successfully (all new `## N. Review remediation` items are checked and no conflict was returned), re-dispatch `specops-reviewer` with the user's original goal, the current OpenSpec change name, and the Implementer's summary.
+5. Process the new PASS/FAIL outcome through the **same** review-completion `question` checkpoint above.
+
+Every subsequent FAIL must return to the review-completion `question` checkpoint. Do not create an automatic retry loop, and do not re-dispatch `specops-implementer` again unless the user explicitly selects `Revise implementation`.

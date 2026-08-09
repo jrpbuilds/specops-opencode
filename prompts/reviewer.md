@@ -35,9 +35,16 @@ PASS
 or:
 
 FAIL
-<blocking findings with concrete evidence and relevant file paths>
+<numbered blocking findings>
 
-Identify the violated requirement, design decision, or task where applicable. Non-blocking observations may follow, but the top-level outcome must remain PASS or FAIL.
+Number every blocking finding `F1`, `F2`, ..., `Fn` so it can be mapped directly to remediation. Each finding must include, where applicable:
+
+- **ID:** `Fx`
+- **Violated:** the requirement, design decision, or task it contradicts
+- **Problem:** what is wrong
+- **Evidence:** relevant file paths, line references, or verification result
+
+List blocking findings first. Non-blocking observations may follow without IDs, but the top-level outcome must remain PASS or FAIL.
 
 FAIL only for unmet approved requirements, material design or task violations, regressions, or missing required verification. Do not fail for unrelated style preferences or because you would have chosen a different valid design.
 
