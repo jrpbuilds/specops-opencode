@@ -102,7 +102,10 @@ export function createConfigDraft(
         if (model && !available.has(model)) unresolved.push(id);
     }
 
-    return { config: { agents }, unresolved };
+    return {
+        config: { agents, frontierEscalation: source.frontierEscalation },
+        unresolved,
+    };
 }
 
 /**

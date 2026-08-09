@@ -30,6 +30,7 @@ describe("SpecOps Configure save flow", () => {
 
                 const destination = path.join(home, "opencode", "specops.json");
                 const saved = await loadConfig(destination);
+                expect(saved.frontierEscalation).toBe(false);
                 expect(saved.agents["specops-planner"]).toEqual({
                     model: "openference/GLM-5.2",
                     variant: "high",
@@ -39,6 +40,35 @@ describe("SpecOps Configure save flow", () => {
                     title: "SpecOps model settings saved",
                 });
                 expect(fake.currentDialog()).toBeUndefined();
+            }),
+        );
+    });
+
+    test("toggles and persists frontier escalation independently of role mappings", async () => {
+        await withTempDir(async home =>
+            withConfigHome(home, async () => {
+                const fake = fakeTuiApi(allProviders);
+                registerModelSettings(fake.api);
+                await fake.runCommand();
+
+                expect(fake.currentDialog()?.options?.map(option => option.value)).toEqual([
+                    "specops-coordinator",
+                    "specops-explorer",
+                    "specops-planner",
+                    "specops-designer",
+                    "specops-implementer",
+                    "specops-reviewer",
+                    "specops-frontier",
+                    "__frontier_escalation__",
+                    "__save__",
+                    "__cancel__",
+                ]);
+                fake.selectByValue("__frontier_escalation__");
+                fake.selectByValue("__save__");
+                await fake.confirm();
+
+                const saved = await loadConfig(path.join(home, "opencode", "specops.json"));
+                expect(saved.frontierEscalation).toBe(true);
             }),
         );
     });

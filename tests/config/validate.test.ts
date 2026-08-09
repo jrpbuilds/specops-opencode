@@ -37,7 +37,19 @@ describe("validateConfig - valid shapes", () => {
 
     test("accepts an absent model with no variant (blank default)", () => {
         const value = { agents: allRoles() };
-        expect(validateConfig(value).agents["specops-frontier"]).toEqual({});
+        const result = validateConfig(value);
+        expect(result.agents["specops-frontier"]).toEqual({});
+        expect(result.frontierEscalation).toBe(false);
+    });
+
+    test("accepts an explicitly enabled frontier escalation switch", () => {
+        const value = { agents: allRoles(), frontierEscalation: true };
+        expect(validateConfig(value).frontierEscalation).toBe(true);
+    });
+
+    test("accepts an explicitly disabled frontier escalation switch", () => {
+        const value = { agents: allRoles(), frontierEscalation: false };
+        expect(validateConfig(value).frontierEscalation).toBe(false);
     });
 });
 
@@ -65,6 +77,18 @@ describe("validateConfig - top-level structure", () => {
     test("rejects agents that is not an object", () => {
         expect(() => validateConfig({ agents: [] })).toThrow();
     });
+
+    for (const [label, frontierEscalation] of [
+        ["string", "true"],
+        ["number", 1],
+        ["null", null],
+        ["object", {}],
+        ["array", []],
+    ] as const) {
+        test(`rejects a non-boolean frontier escalation value: ${label}`, () => {
+            expect(() => validateConfig({ agents: allRoles(), frontierEscalation })).toThrow();
+        });
+    }
 });
 
 describe("validateConfig - role catalogue", () => {

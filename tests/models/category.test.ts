@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ALL_AGENT_IDS } from "../../src/agents/ids.js";
+import { ALL_AGENT_IDS, ROLE_WORKFLOW_ORDER } from "../../src/agents/ids.js";
 import { agentSettingsCategory } from "../../src/models.js";
 
 describe("agentSettingsCategory", () => {
@@ -30,5 +30,19 @@ describe("agentSettingsCategory", () => {
         expect(categories).toEqual(
             new Set(["Coordination", "Planning", "Implementation", "Review", "Frontier"]),
         );
+    });
+});
+
+describe("ROLE_WORKFLOW_ORDER", () => {
+    test("matches the SpecOps workflow order", () => {
+        expect(ROLE_WORKFLOW_ORDER).toEqual([
+            "specops-coordinator",
+            "specops-explorer",
+            "specops-planner",
+            "specops-designer",
+            "specops-implementer",
+            "specops-reviewer",
+            "specops-frontier",
+        ]);
     });
 });

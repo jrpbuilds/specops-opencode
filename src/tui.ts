@@ -5,10 +5,9 @@
  * writes configuration only after the user confirms the review dialog.
  */
 import type { TuiPluginApi, TuiPluginModule } from "@opencode-ai/plugin/tui";
-import { ALL_AGENT_IDS, type AgentId } from "./agents/ids.js";
+import { ALL_AGENT_IDS, ROLE_WORKFLOW_ORDER, type AgentId } from "./agents/ids.js";
 import { loadConfig, saveConfig, type SpecOpsConfig } from "./config.js";
 import {
-    agentSettingsCategory,
     clearConfiguredModel,
     configuredModels,
     createConfigDraft,
@@ -19,6 +18,7 @@ import {
 
 const COMMAND_NAME = "specops.models.configure";
 const BACK = Symbol("specops-back");
+const FRONTIER_ESCALATION = "__frontier_escalation__";
 
 /**
  * Register the command-palette entry that opens model configuration.
@@ -150,7 +150,8 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
                 message: [
                     `The configuration contains all ${ALL_AGENT_IDS.length} roles.`,
                     `${changed} role selection${changed === 1 ? "" : "s"} changed.`,
-                    "Only model configuration is stored.",
+                    `Frontier escalation: ${staged.frontierEscalation ? "Enabled" : "Disabled"}.`,
+                    "Only model mappings and this option are stored.",
                 ].join("\n"),
                 onConfirm: save,
                 onCancel: showAgents,
@@ -243,11 +244,10 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
             validateConfigSelections(staged, models).map(issue => issue.split(":")[0]),
         );
         const changed = new Set(changedAgentIds(initial, staged));
-        const roleOptions = ALL_AGENT_IDS.map(id => ({
+        const roleOptions = ROLE_WORKFLOW_ORDER.map(id => ({
             // "!" = saved model unavailable in the current catalogue; "*" = staged change.
             title: `${unresolved.has(id) ? "! " : ""}${changed.has(id) ? "* " : ""}${id}`,
             value: id,
-            category: agentSettingsCategory(id),
             footer: describeSelection(staged, id, models),
         }));
 
@@ -258,6 +258,13 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
                     placeholder: "Search role IDs",
                     options: [
                         ...roleOptions,
+                        {
+                            title: "Frontier escalation",
+                            value: FRONTIER_ESCALATION,
+                            category: "Options",
+                            description: "Allow future Frontier escalation behavior",
+                            footer: staged.frontierEscalation ? "Enabled" : "Disabled",
+                        },
                         {
                             title: "Review and save",
                             value: "__save__",
@@ -273,7 +280,10 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
                         },
                     ],
                     onSelect: option => {
-                        if (option.value === "__save__") {
+                        if (option.value === FRONTIER_ESCALATION) {
+                            staged.frontierEscalation = !staged.frontierEscalation;
+                            showAgents();
+                        } else if (option.value === "__save__") {
                             showReview();
                         } else if (option.value === "__cancel__") {
                             close();

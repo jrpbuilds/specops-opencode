@@ -13,6 +13,10 @@ describe("DEFAULT_CONFIG", () => {
         }
     });
 
+    test("disables frontier escalation by default", () => {
+        expect(DEFAULT_CONFIG.frontierEscalation).toBe(false);
+    });
+
     test("structuredClone is independent of the original", () => {
         const copy = structuredClone(DEFAULT_CONFIG);
         copy.agents["specops-coordinator"].model = "openference/GLM-5.2";

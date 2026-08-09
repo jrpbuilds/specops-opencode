@@ -23,9 +23,17 @@ export const AGENT_IDS = {
 export type AgentId = (typeof AGENT_IDS)[keyof typeof AGENT_IDS];
 
 /**
- * All configurable roles in the display and validation order used by SpecOps.
- *
- * Keeping this derived from `AGENT_IDS` prevents the UI and config validator
- * from drifting apart when a role is added or renamed.
+ * Configurable roles in the order used by the SpecOps workflow and editor.
  */
-export const ALL_AGENT_IDS = Object.values(AGENT_IDS) as readonly AgentId[];
+export const ROLE_WORKFLOW_ORDER = [
+    AGENT_IDS.coordinator,
+    AGENT_IDS.explorer,
+    AGENT_IDS.planner,
+    AGENT_IDS.designer,
+    AGENT_IDS.implementer,
+    AGENT_IDS.reviewer,
+    AGENT_IDS.frontier,
+] as const satisfies readonly AgentId[];
+
+/** All configurable roles used by configuration validation. */
+export const ALL_AGENT_IDS = ROLE_WORKFLOW_ORDER;

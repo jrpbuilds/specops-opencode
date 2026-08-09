@@ -17,9 +17,13 @@ export type AgentConfig = { model?: string; variant?: string };
  * The complete persisted SpecOps configuration.
  *
  * Validation requires one entry for every `AgentId`; individual entries may
- * omit `model` to inherit OpenCode's global default.
+ * omit `model` to inherit OpenCode's global default. `frontierEscalation` is
+ * normalized to `false` when loading an older configuration without the field.
  */
-export type SpecOpsConfig = { agents: Record<AgentId, AgentConfig> };
+export type SpecOpsConfig = {
+    agents: Record<AgentId, AgentConfig>;
+    frontierEscalation: boolean;
+};
 
 /**
  * Initial configuration used when no SpecOps file exists.
@@ -29,6 +33,7 @@ export type SpecOpsConfig = { agents: Record<AgentId, AgentConfig> };
  */
 export const DEFAULT_CONFIG: SpecOpsConfig = {
     agents: Object.fromEntries(ALL_AGENT_IDS.map(id => [id, {}])) as SpecOpsConfig["agents"],
+    frontierEscalation: false,
 };
 
 /**
@@ -83,11 +88,19 @@ export async function loadConfig(
  * Validate and clone the exact current SpecOps configuration shape.
  *
  * The validator rejects unknown top-level or role keys, missing roles, invalid
- * field types, and non-blank variants without a valid model context.
+ * field types, and non-blank variants without a valid model context. The
+ * optional top-level switch preserves compatibility with older config files.
  */
 export function validateConfig(value: unknown): SpecOpsConfig {
-    if (!isRecord(value) || !hasExactKeys(value, ["agents"]) || !isRecord(value.agents)) {
+    if (
+        !isRecord(value) ||
+        !hasOnlyKeys(value, ["agents", "frontierEscalation"]) ||
+        !isRecord(value.agents)
+    ) {
         throw new Error("invalid SpecOps configuration");
+    }
+    if ("frontierEscalation" in value && typeof value.frontierEscalation !== "boolean") {
+        throw new Error("invalid SpecOps configuration frontierEscalation");
     }
 
     const expected = [...ALL_AGENT_IDS].sort();
@@ -108,7 +121,10 @@ export function validateConfig(value: unknown): SpecOpsConfig {
         }
     }
 
-    return structuredClone(value) as SpecOpsConfig;
+    return structuredClone({
+        ...value,
+        frontierEscalation: value.frontierEscalation ?? false,
+    }) as SpecOpsConfig;
 }
 
 /**
@@ -157,9 +173,4 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 /** Return whether a record contains no keys outside the supplied allow-list. */
 function hasOnlyKeys(value: Record<string, unknown>, allowed: readonly string[]): boolean {
     return Object.keys(value).every(key => allowed.includes(key));
-}
-
-/** Return whether a record has exactly the expected keys, independent of order. */
-function hasExactKeys(value: Record<string, unknown>, expected: readonly string[]): boolean {
-    return Object.keys(value).sort().join("|") === [...expected].sort().join("|");
 }

@@ -28,7 +28,12 @@ describe("registerModelSettings", () => {
         const props = fake.currentDialog();
         const values = props?.options?.map(option => option.value);
 
-        expect(values).toEqual([...ALL_AGENT_IDS, "__save__", "__cancel__"]);
+        expect(values).toEqual([
+            ...ALL_AGENT_IDS,
+            "__frontier_escalation__",
+            "__save__",
+            "__cancel__",
+        ]);
         expect(props?.title).toBe("SpecOps role model mappings");
     });
 

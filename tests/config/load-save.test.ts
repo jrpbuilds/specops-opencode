@@ -41,7 +41,7 @@ function fullyPopulated() {
         model: "openai/gpt-5.6-sol",
         variant: "high",
     };
-    return { agents };
+    return { agents, frontierEscalation: true };
 }
 
 describe("loadConfig", () => {
@@ -75,6 +75,14 @@ describe("loadConfig", () => {
             const expected = fullyPopulated();
             await saveConfig(expected, destination);
             expect(await loadConfig(destination)).toEqual(expected);
+        });
+    });
+
+    test("loads an older config without frontier escalation as disabled", async () => {
+        await withTempDir(async dir => {
+            const destination = configPath(dir);
+            await writeFile(destination, JSON.stringify({ agents: DEFAULT_CONFIG.agents }), "utf8");
+            expect(await loadConfig(destination)).toEqual(DEFAULT_CONFIG);
         });
     });
 });
@@ -157,6 +165,16 @@ describe("saveConfig", () => {
             const destination = configPath(dir);
             await saveConfig(structuredClone(DEFAULT_CONFIG), destination);
             expect(await loadConfig(destination)).toEqual(DEFAULT_CONFIG);
+        });
+    });
+
+    test("persists an explicit disabled frontier escalation value", async () => {
+        await withTempDir(async dir => {
+            const destination = configPath(dir);
+            const config = structuredClone(DEFAULT_CONFIG);
+            config.frontierEscalation = false;
+            await saveConfig(config, destination);
+            expect(JSON.parse(await readFile(destination, "utf8")).frontierEscalation).toBe(false);
         });
     });
 });
