@@ -6,6 +6,7 @@ import { registerPlannerAgent } from "./agents/planner.js";
 import { registerDesignerAgent } from "./agents/designer.js";
 import { registerImplementerAgent } from "./agents/implementer.js";
 import { registerReviewerAgent } from "./agents/reviewer.js";
+import { registerFrontierAgent } from "./agents/frontier.js";
 import { doctorTool } from "./tools/doctor.js";
 import { onboardTool } from "./tools/onboard.js";
 import { archiveTool } from "./tools/archive.js";
@@ -58,6 +59,10 @@ export const SpecOpsPlugin: Plugin = async () => ({
             registerDesignerAgent(config, specOpsConfig);
             registerImplementerAgent(config, specOpsConfig);
             registerReviewerAgent(config, specOpsConfig);
+
+            if (specOpsConfig.frontierEscalation) {
+                registerFrontierAgent(config, specOpsConfig);
+            }
         } catch (error) {
             const reason = error instanceof Error ? error.message : String(error);
             console.warn(

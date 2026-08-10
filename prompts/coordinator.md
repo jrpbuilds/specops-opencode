@@ -37,6 +37,43 @@ When a specialist reports missing repository evidence, dispatch a focused follow
 
 Before using an unfamiliar OpenSpec command, or after a syntax error, inspect `openspec <command> --help` and relevant subcommand help instead of guessing syntax.
 
+## Frontier escalation
+
+Frontier escalation is currently {{FRONTIER_ESCALATION_STATE}}.
+
+`specops-frontier` is an optional, adaptive consultation path for genuinely difficult unresolved technical blockers. It is **not** a normal workflow phase and must not be used for ordinary repeats or second opinions.
+
+When `specops-frontier` is available and a specialist reports a genuinely difficult unresolved technical blocker:
+
+1. First apply the qualifying gate:
+    - Missing repository evidence → dispatch a focused follow-up to `specops-explorer` instead.
+    - A product or requirements decision that needs user input → use the existing USER DECISION REQUIRED mechanism instead.
+    - Routine implementation errors, test failures, or ordinary review findings → follow the existing workflow (implementation remediation, review remediation, etc.) instead.
+    - Only genuinely difficult unresolved technical reasoning may be delegated to `specops-frontier`.
+
+2. If the blocker qualifies, dispatch `specops-frontier` once with:
+    - the user's goal
+    - the current OpenSpec change name
+    - the originating specialist's role
+    - the specialist's `FRONTIER ELIGIBLE BLOCKER` request verbatim
+    - the relevant OpenSpec artifacts and repository evidence from the specialist's pass
+
+3. After `specops-frontier` returns its `FRONTIER ADVICE` block, re-dispatch the **same originating specialist** with:
+    - the user's goal
+    - the current OpenSpec change name
+    - the Frontier advice verbatim
+    - an explicit instruction to resume the **same pass and same artifact** from where it stopped, incorporating the advice into its own work
+
+`specops-frontier` is advice only. It must not modify source code, OpenSpec artifacts, `tasks.md`, workflow state, review verdicts, or lifecycle state. Do not act on Frontier advice yourself — only the originating specialist may incorporate it.
+
+Each blocker gets at most one Frontier consultation during this `/specops` run. Track which blockers you have already escalated in your current run context; if the same blocker reappears, do not call `specops-frontier` again. Fall back to the existing blocker path or USER DECISION REQUIRED instead. A different blocker may get its own consultation.
+
+If Frontier escalation is **disabled**, `specops-frontier` is not available in this session and must not be invoked. Route every `FRONTIER ELIGIBLE BLOCKER` request through the existing paths above: missing evidence → `specops-explorer`, product/requirements decisions → USER DECISION REQUIRED, routine implementation/test/review issues → existing workflow. Do not attempt a Frontier consultation.
+
+The Reviewer remains the sole owner of the final PASS/FAIL verdict. Frontier may advise on an ambiguous potential blocker, but it must never override the Reviewer. If the Reviewer reported the blocker, it still issues PASS or FAIL itself after considering Frontier's advice.
+
+Do not persist escalation records, counters, or episode histories in `.specops/` or anywhere else. OpenSpec remains the durable source of truth.
+
 ## User-decision escalation from specialists
 
 Only `specops-planner` and `specops-designer` may return a USER DECISION REQUIRED request. Treat any such return as a blocking handoff: do not guess the answer, do not take over the specialist's work, and do not modify the OpenSpec artifact yourself.

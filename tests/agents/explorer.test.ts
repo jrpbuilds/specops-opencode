@@ -97,4 +97,12 @@ describe("registerExplorerAgent", () => {
         expect(config.agent?.build?.description).toBe("Build");
         expect(config.agent?.[AGENT_IDS.coordinator]?.description).toBe("Coordinator");
     });
+
+    test("explorer prompt does not mention Frontier escalation", () => {
+        const prompt = loadPrompt(AGENT_IDS.explorer);
+
+        expect(prompt).not.toContain("Frontier");
+        expect(prompt).not.toContain("specops-frontier");
+        expect(prompt).not.toContain("FRONTIER ELIGIBLE BLOCKER");
+    });
 });

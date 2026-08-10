@@ -1,7 +1,7 @@
 {
     "name": "@jrpbuilds/specops-opencode",
-    "version": "0.1.0",
-    "description": "SpecOps OpenCode plugin",
+    "version": "0.2.0",
+    "description": "A lightweight OpenSpec workflow layer for OpenCode with per-phase model selection",
     "license": "MIT",
     "author": "Jake Paine <jrp.builds@proton.me>",
     "type": "module",

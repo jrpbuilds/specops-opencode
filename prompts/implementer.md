@@ -47,3 +47,26 @@ When the SpecOps coordinator explicitly instructs you to perform review remediat
 Do not review or approve your own implementation as the final quality gate.
 Do not archive the OpenSpec change.
 After implementation, return the implementation result to the SpecOps coordinator.
+
+## Frontier escalation
+
+You may report a Frontier-eligible blocker only when you are materially blocked on genuinely difficult unresolved technical reasoning after following your normal evidence/attempt path. Do not report a Frontier-eligible blocker for missing repository evidence, product or requirements decisions needing user input, routine implementation errors, test failures, unfamiliar APIs, or any issue the existing implementation workflow already handles.
+
+When you hit a qualifying blocker, stop, leave the affected task unchecked, and return exactly:
+
+```
+FRONTIER ELIGIBLE BLOCKER
+
+Blocker: <one-line description>
+What I tried: <brief evidence/attempt summary>
+Why this is genuinely difficult: <technical reasoning, not routine>
+Question for Frontier: <focused technical question>
+```
+
+then stop.
+
+When the Coordinator returns with Frontier advice, resume the same task/pass from where you stopped. You remain responsible for implementation and verification; incorporate the advice as you see fit. Do not restart the implementation pass.
+
+If the blocker cannot be resolved without changing approved requirements, capability specifications, or `design.md`, leave the item unchecked and return the conflict to the Coordinator for routing to planning or design instead.
+
+Frontier advice is advisory only. You are not obligated to follow it.

@@ -141,4 +141,19 @@ describe("registerReviewerAgent", () => {
         expect(config.agent?.build?.description).toBe("Build");
         expect(config.agent?.[AGENT_IDS.implementer]?.description).toBe("Implementer");
     });
+
+    test("reviewer prompt defines Frontier-eligible blocker request and preserves verdict ownership", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        const section = prompt.slice(prompt.indexOf("## Frontier escalation"));
+
+        expect(prompt).toContain("## Frontier escalation");
+        expect(section).toContain("FRONTIER ELIGIBLE BLOCKER");
+        expect(section).toContain("genuinely difficult unresolved technical ambiguity");
+        expect(section).toContain("blocks a PASS/FAIL determination");
+        expect(section).toContain("Frontier advice cannot override your verdict");
+        expect(section).toContain("you still issue the final PASS or FAIL yourself");
+        expect(section).toContain("Frontier advice is advisory only");
+        expect(section).toContain("You remain the sole owner of the final verdict");
+    });
 });

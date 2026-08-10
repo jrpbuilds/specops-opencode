@@ -17,8 +17,25 @@ type CoordinatorAgentConfig = Omit<RegisteredAgentConfig, "permission"> & {
 export const SPECOPS_AGENT_ID = "SpecOps";
 
 /**
+ * Substitute the Frontier escalation state into the Coordinator prompt.
+ *
+ * The placeholder `{{FRONTIER_ESCALATION_STATE}}` is replaced with either
+ * `enabled` or `disabled` so the Coordinator prompt contract is concrete for
+ * the current session. This is intentionally the only runtime mutation of a
+ * loaded prompt and avoids inventing a general templating system.
+ */
+export function applyFrontierState(prompt: string, frontierEscalation: boolean): string {
+    return prompt.replace(
+        "{{FRONTIER_ESCALATION_STATE}}",
+        frontierEscalation ? "enabled" : "disabled",
+    );
+}
+
+/**
  * Register the SpecOps primary agent using the persisted coordinator role config.
  *
+ * The loaded coordinator prompt has the current `frontierEscalation` state
+ * substituted so the Coordinator prompt contract is concrete for the session.
  * A blank coordinator model is preserved as the semantic "use OpenCode's global
  * default": the `model` and `variant` fields are omitted from the agent config.
  * The coordinator prompt is loaded from the packaged prompt catalogue so the
@@ -37,7 +54,10 @@ export function registerCoordinatorAgent(config: Config, specOpsConfig: SpecOpsC
     const agent: CoordinatorAgentConfig = {
         description: "SpecOps coordinator for spec-driven development",
         mode: "primary",
-        prompt: loadPrompt(AGENT_IDS.coordinator),
+        prompt: applyFrontierState(
+            loadPrompt(AGENT_IDS.coordinator),
+            specOpsConfig.frontierEscalation,
+        ),
         permission: { question: "allow" },
         ...(model
             ? { model, ...(coordinator.variant ? { variant: coordinator.variant } : {}) }

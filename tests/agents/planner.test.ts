@@ -156,4 +156,20 @@ describe("registerPlannerAgent", () => {
         expect(config.agent?.[AGENT_IDS.coordinator]?.description).toBe("Coordinator");
         expect(config.agent?.[AGENT_IDS.explorer]?.description).toBe("Explorer");
     });
+
+    test("planner prompt defines Frontier-eligible blocker request and resume behaviour", () => {
+        const prompt = loadPrompt(AGENT_IDS.planner);
+
+        expect(prompt).toContain("## Frontier escalation");
+        expect(prompt).toContain("FRONTIER ELIGIBLE BLOCKER");
+        expect(prompt).toContain("Blocker:");
+        expect(prompt).toContain("What I tried:");
+        expect(prompt).toContain("Why this is genuinely difficult:");
+        expect(prompt).toContain("Question for Frontier:");
+        expect(prompt).toContain(
+            "Do not report a Frontier-eligible blocker for missing repository evidence",
+        );
+        expect(prompt).toContain("resume the same pass");
+        expect(prompt).toContain("Frontier advice is advisory only");
+    });
 });

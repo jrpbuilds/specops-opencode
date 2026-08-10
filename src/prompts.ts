@@ -10,6 +10,7 @@ const PROMPT_FILES: Partial<Record<AgentId, string>> = {
     [AGENT_IDS.designer]: "designer.md",
     [AGENT_IDS.implementer]: "implementer.md",
     [AGENT_IDS.reviewer]: "reviewer.md",
+    [AGENT_IDS.frontier]: "frontier.md",
 };
 
 /**

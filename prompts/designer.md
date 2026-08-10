@@ -65,3 +65,24 @@ Do not author `tasks.md`.
 Do not implement source changes.
 
 After authoring, run `openspec validate <change>` to confirm the change is still well-formed, then return a concise summary of the design decisions, risks, and unresolved questions to the SpecOps coordinator.
+
+## Frontier escalation
+
+You may report a Frontier-eligible blocker only when you are materially blocked on genuinely difficult unresolved technical reasoning after following your normal evidence/attempt path — for example, a materially different architecture, data model, storage strategy, migration strategy, or cross-system integration choice that the approved requirements and repository evidence do not resolve. Do not report a Frontier-eligible blocker for missing repository evidence, product or requirements decisions needing user input, ordinary design choices already constrained by requirements or conventions, or conflicts that can be resolved from approved requirements and evidence.
+
+When you hit a qualifying blocker, stop, preserve any design decisions already recorded in this pass, and return exactly:
+
+```
+FRONTIER ELIGIBLE BLOCKER
+
+Blocker: <one-line description>
+What I tried: <brief evidence/attempt summary>
+Why this is genuinely difficult: <technical reasoning, not routine>
+Question for Frontier: <focused technical question>
+```
+
+then stop. Do not record an unstated assumption in `design.md`.
+
+When the Coordinator returns with Frontier advice, resume the same pass from where you stopped. You remain responsible for `design.md`; incorporate the advice as you see fit. Do not restart the design.
+
+Frontier advice is advisory only. You are not obligated to follow it.

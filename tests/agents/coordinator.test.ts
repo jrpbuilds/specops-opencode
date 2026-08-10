@@ -1,7 +1,11 @@
 import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
-import { registerCoordinatorAgent, SPECOPS_AGENT_ID } from "../../src/agents/coordinator.js";
+import {
+    applyFrontierState,
+    registerCoordinatorAgent,
+    SPECOPS_AGENT_ID,
+} from "../../src/agents/coordinator.js";
 import { loadPrompt } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
@@ -24,7 +28,7 @@ describe("registerCoordinatorAgent", () => {
         expect(config.agent?.[SPECOPS_AGENT_ID]).toMatchObject({
             description: "SpecOps coordinator for spec-driven development",
             mode: "primary",
-            prompt: loadPrompt(AGENT_IDS.coordinator),
+            prompt: applyFrontierState(loadPrompt(AGENT_IDS.coordinator), false),
         });
         expect(
             (config.agent?.[SPECOPS_AGENT_ID]?.permission as { question?: "allow" } | undefined)
@@ -497,6 +501,111 @@ describe("registerCoordinatorAgent", () => {
             expect(implementationSection).toContain(
                 "delegate implementation to `specops-implementer`",
             );
+        });
+    });
+
+    describe("frontier escalation", () => {
+        test("raw coordinator prompt contains the frontier state placeholder", () => {
+            const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+            expect(prompt).toContain("{{FRONTIER_ESCALATION_STATE}}");
+        });
+
+        test("applyFrontierState substitutes enabled and disabled", () => {
+            const raw = loadPrompt(AGENT_IDS.coordinator);
+
+            expect(applyFrontierState(raw, true)).not.toContain("{{FRONTIER_ESCALATION_STATE}}");
+            expect(applyFrontierState(raw, true)).toMatch(
+                /Frontier escalation is currently enabled\b/,
+            );
+
+            expect(applyFrontierState(raw, false)).not.toContain("{{FRONTIER_ESCALATION_STATE}}");
+            expect(applyFrontierState(raw, false)).toMatch(
+                /Frontier escalation is currently disabled\b/,
+            );
+        });
+
+        test("registered coordinator prompt reflects disabled escalation", () => {
+            const config: Config = {};
+            registerCoordinatorAgent(config, makeConfig());
+
+            const prompt = config.agent?.[SPECOPS_AGENT_ID]?.prompt as string;
+            expect(prompt).toContain("Frontier escalation is currently disabled");
+            expect(prompt).not.toContain("Frontier escalation is currently enabled");
+            expect(prompt).not.toContain("{{FRONTIER_ESCALATION_STATE}}");
+        });
+
+        test("registered coordinator prompt reflects enabled escalation", () => {
+            const config: Config = {};
+            registerCoordinatorAgent(config, { ...makeConfig(), frontierEscalation: true });
+
+            const prompt = config.agent?.[SPECOPS_AGENT_ID]?.prompt as string;
+            expect(prompt).toContain("Frontier escalation is currently enabled");
+            expect(prompt).not.toContain("Frontier escalation is currently disabled");
+            expect(prompt).not.toContain("{{FRONTIER_ESCALATION_STATE}}");
+        });
+
+        test("coordinator prompt defines the frontier escalation contract", () => {
+            const prompt = loadPrompt(AGENT_IDS.coordinator);
+            const section = prompt.slice(prompt.indexOf("## Frontier escalation"));
+
+            expect(prompt).toContain("## Frontier escalation");
+            expect(section).toContain("adaptive consultation path");
+            expect(section).toContain("**not** a normal workflow phase");
+            expect(section).toContain("Missing repository evidence");
+            expect(section).toContain("`specops-explorer`");
+            expect(section).toContain("USER DECISION REQUIRED");
+            expect(section).toContain("Routine implementation errors");
+            expect(section).toContain("genuinely difficult unresolved technical reasoning");
+            expect(section).toContain("`specops-frontier`");
+        });
+
+        test("coordinator prompt requires one frontier consultation per blocker", () => {
+            const prompt = loadPrompt(AGENT_IDS.coordinator);
+            const section = prompt.slice(prompt.indexOf("## Frontier escalation"));
+
+            expect(section).toContain("at most one Frontier consultation");
+            expect(section).toContain("during this `/specops` run");
+            expect(section).toContain("Track which blockers you have already escalated");
+            expect(section).toContain("do not call `specops-frontier` again");
+            expect(section).toContain("Fall back to the existing blocker path");
+        });
+
+        test("coordinator prompt states frontier is advice-only and preserves reviewer sovereignty", () => {
+            const prompt = loadPrompt(AGENT_IDS.coordinator);
+            const section = prompt.slice(prompt.indexOf("## Frontier escalation"));
+
+            expect(section).toContain("advice only");
+            expect(section).toContain("must not modify source code");
+            expect(section).toContain("OpenSpec artifacts");
+            expect(section).toContain("review verdicts");
+            expect(section).toContain(
+                "The Reviewer remains the sole owner of the final PASS/FAIL verdict",
+            );
+            expect(section).toContain("Frontier may advise on an ambiguous potential blocker");
+            expect(section).toContain("must never override the Reviewer");
+        });
+
+        test("coordinator prompt forbids persisted frontier state", () => {
+            const prompt = loadPrompt(AGENT_IDS.coordinator);
+            const section = prompt.slice(prompt.indexOf("## Frontier escalation"));
+
+            expect(section).toContain("Do not persist escalation records");
+            expect(section).toContain("counters");
+            expect(section).toContain("episode histories");
+            expect(section).toContain("OpenSpec remains the durable source of truth");
+        });
+
+        test("coordinator prompt defines disabled fallback paths", () => {
+            const prompt = applyFrontierState(loadPrompt(AGENT_IDS.coordinator), false);
+            const section = prompt.slice(prompt.indexOf("## Frontier escalation"));
+
+            expect(section).toContain("`specops-frontier` is not available in this session");
+            expect(section).toContain("must not be invoked");
+            expect(section).toContain(
+                "Route every `FRONTIER ELIGIBLE BLOCKER` request through the existing paths",
+            );
+            expect(section).not.toContain("Do not attempt to invoke a Frontier subagent");
         });
     });
 });

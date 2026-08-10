@@ -157,4 +157,22 @@ describe("registerImplementerAgent", () => {
         expect(config.agent?.[AGENT_IDS.planner]?.description).toBe("Planner");
         expect(config.agent?.[AGENT_IDS.designer]?.description).toBe("Designer");
     });
+
+    test("implementer prompt defines Frontier-eligible blocker request and resume behaviour", () => {
+        const prompt = loadPrompt(AGENT_IDS.implementer);
+
+        const section = prompt.slice(prompt.indexOf("## Frontier escalation"));
+
+        expect(prompt).toContain("## Frontier escalation");
+        expect(section).toContain("FRONTIER ELIGIBLE BLOCKER");
+        expect(section).toContain(
+            "Do not report a Frontier-eligible blocker for missing repository evidence",
+        );
+        expect(section).toContain("product or requirements decisions needing user input");
+        expect(section).toContain("routine implementation errors");
+        expect(section).toContain("test failures");
+        expect(section).toContain("resume the same task/pass");
+        expect(section).toContain("Frontier advice is advisory only");
+        expect(section).toContain("leave the item unchecked and return the conflict");
+    });
 });

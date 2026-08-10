@@ -164,6 +164,8 @@ Example:
 
 Leave a model unset to inherit OpenCode's default model.
 
+`frontierEscalation` controls whether the `specops-frontier` subagent is registered. Changing this setting requires restarting OpenCode to take effect, because the registered agent catalogue changes.
+
 ## Commands
 
 ### `/specops <goal>`

@@ -147,4 +147,20 @@ describe("registerDesignerAgent", () => {
         expect(config.agent?.[AGENT_IDS.explorer]?.description).toBe("Explorer");
         expect(config.agent?.[AGENT_IDS.planner]?.description).toBe("Planner");
     });
+
+    test("designer prompt defines Frontier-eligible blocker request and resume behaviour", () => {
+        const prompt = loadPrompt(AGENT_IDS.designer);
+
+        const section = prompt.slice(prompt.indexOf("## Frontier escalation"));
+
+        expect(prompt).toContain("## Frontier escalation");
+        expect(section).toContain("FRONTIER ELIGIBLE BLOCKER");
+        expect(section).toContain("materially different architecture");
+        expect(section).toContain(
+            "Do not report a Frontier-eligible blocker for missing repository evidence",
+        );
+        expect(section).toContain("resume the same pass");
+        expect(section).toContain("Frontier advice is advisory only");
+        expect(section).toContain("You remain responsible for `design.md`");
+    });
 });

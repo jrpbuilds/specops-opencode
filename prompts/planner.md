@@ -95,3 +95,24 @@ Do not implement source changes yourself. Do not mark tasks complete or check of
 When the coordinator returns `tasks.md` for revision, revise only the affected tasks and preserve everything else, including any existing `- [x]` completion state. Do not regenerate unaffected tasks. Re-run `openspec validate <change>` after revising.
 
 After authoring, run `openspec validate <change>` to confirm the change is still well-formed, then return a concise summary of the task plan and any unresolved decisions or missing evidence to the coordinator immediately. If you are returning a USER DECISION REQUIRED request instead, do so immediately without authoring partial tasks.
+
+## Frontier escalation
+
+You may report a Frontier-eligible blocker only when you are materially blocked on genuinely difficult unresolved technical reasoning after following your normal evidence/attempt path. Do not report a Frontier-eligible blocker for missing repository evidence, product or requirements decisions needing user input, or ordinary planning issues that you can resolve from approved requirements and repository conventions.
+
+When you hit a qualifying blocker, stop, preserve artifacts already completed in this pass, and return exactly:
+
+```
+FRONTIER ELIGIBLE BLOCKER
+
+Blocker: <one-line description>
+What I tried: <brief evidence/attempt summary>
+Why this is genuinely difficult: <technical reasoning, not routine>
+Question for Frontier: <focused technical question>
+```
+
+then stop. Do not bake an assumption into the artifact.
+
+When the Coordinator returns with Frontier advice, resume the same pass from where you stopped. You remain responsible for the artifact; incorporate the advice as you see fit. Do not restart the proposal or recreate completed specs.
+
+Frontier advice is advisory only. You are not obligated to follow it.
