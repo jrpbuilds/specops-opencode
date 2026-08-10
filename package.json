@@ -19,11 +19,30 @@
         "dist",
         "prompts",
         "README.md",
+        "CHANGELOG.md",
         "LICENSE"
     ],
     "publishConfig": {
         "access": "public"
     },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/jrpbuilds/specops-opencode.git"
+    },
+    "bugs": {
+        "url": "https://github.com/jrpbuilds/specops-opencode/issues"
+    },
+    "homepage": "https://github.com/jrpbuilds/specops-opencode#readme",
+    "keywords": [
+        "opencode",
+        "openspec",
+        "specops",
+        "spec-driven-development",
+        "plugin",
+        "ai-agents",
+        "multi-agent",
+        "typescript"
+    ],
     "scripts": {
         "build": "bun build src/index.ts src/tui.ts --outdir dist --target node",
         "format": "prettier --write .",
