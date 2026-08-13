@@ -85,6 +85,55 @@ describe("registerReviewerAgent", () => {
         expect(prompt).toContain("Non-blocking observations may follow without IDs");
     });
 
+    test("reviewer prompt requires a per-behaviour compliance matrix with four evidence states", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain("Compliance matrix:");
+        expect(prompt).toContain("one matrix row per independently verifiable approved behaviour");
+        expect(prompt).toContain("VERIFIED");
+        expect(prompt).toContain("COMPLIANT");
+        expect(prompt).toContain("UNPROVEN");
+        expect(prompt).toContain("FAILING");
+    });
+
+    test("reviewer prompt groups only shared-evidence scenarios and never hides distinct or failing ones", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain("Group closely related scenarios");
+        expect(prompt).toContain("share the same implementation and verification evidence");
+        expect(prompt).toContain("Never hide a materially distinct scenario through grouping");
+        expect(prompt).toContain("never group a failing or unproven scenario");
+    });
+
+    test("reviewer prompt requires PASS to have every matrix row COMPLIANT or VERIFIED", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain("A PASS requires every matrix row");
+        expect(prompt).toContain("`COMPLIANT` or `VERIFIED`");
+    });
+
+    test("reviewer prompt forces FAIL on unresolved UNPROVEN rows", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain("An unresolved `UNPROVEN` row must force a FAIL");
+        expect(prompt).toContain("it cannot remain in a PASS");
+    });
+
+    test("reviewer prompt links FAILING rows to blocking findings for one-to-one remediation", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain("FAILING — see F");
+        expect(prompt).toContain("Every `FAILING` row must reference its blocking finding");
+        expect(prompt).toContain("remediation stays mapped one-to-one");
+    });
+
+    test("reviewer prompt does not require an automated test for every behaviour", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain("Do not require an automated test for every behaviour");
+        expect(prompt).toContain("manual or runtime verification is the appropriate evidence");
+    });
+
     test("applies configured reviewer model and variant", () => {
         const config: Config = {};
         registerReviewerAgent(
@@ -140,6 +189,15 @@ describe("registerReviewerAgent", () => {
 
         expect(config.agent?.build?.description).toBe("Build");
         expect(config.agent?.[AGENT_IDS.implementer]?.description).toBe("Implementer");
+    });
+
+    test("reviewer prompt does not use the specialist handoff envelope", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).not.toContain("STATUS: success | blocked");
+        expect(prompt).not.toContain("## Handoff");
+        expect(prompt).toContain("PASS");
+        expect(prompt).toContain("FAIL");
     });
 
     test("reviewer prompt defines Frontier-eligible blocker request and preserves verdict ownership", () => {
