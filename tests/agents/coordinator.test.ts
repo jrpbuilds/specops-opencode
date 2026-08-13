@@ -53,6 +53,29 @@ describe("registerCoordinatorAgent", () => {
         expect(prompt).toContain("openspec <command> --help");
     });
 
+    test("coordinator prompt defines the specialist handoff envelope and its limits", () => {
+        const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+        expect(prompt).toContain("## Specialist handoffs");
+        const section = prompt.slice(prompt.indexOf("## Specialist handoffs"));
+
+        expect(section).toContain("STATUS: success | blocked");
+        expect(section).toContain("completed its owned pass even if non-blocking risks remain");
+        expect(section).toContain("could not complete and requires follow-up");
+        expect(section).toContain("`SUMMARY`");
+        expect(section).toContain("`ARTIFACTS`");
+        expect(section).toContain("`VERIFICATION`");
+        expect(section).toContain("`RISKS`");
+        expect(section).toContain("`NEXT`");
+        expect(section).toContain("Never ordinary changed source or test files");
+        expect(section).toContain("advisory only and never overrides your own workflow");
+        expect(section).toContain("continue to inspect the change's OpenSpec artifacts");
+        expect(section).toContain("returned alone and take precedence over the envelope");
+        expect(section).toContain("do not use the handoff envelope");
+        expect(section).toContain("routing signal");
+        expect(section).toContain("without taking over specialist work");
+    });
+
     test("coordinator prompt uses deterministic startup context and owns decisions", () => {
         const prompt = loadPrompt(AGENT_IDS.coordinator);
 

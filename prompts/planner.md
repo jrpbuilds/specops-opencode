@@ -70,7 +70,7 @@ Preserve completed artifacts unless the coordinator explicitly returns them for 
 Do not author `design.md` or `tasks.md` during this pass.
 Do not make technical design decisions.
 
-After the proposal and required capability specifications are complete, run `openspec validate <change>` to confirm they are well-formed, then return a concise summary of the artifacts created, the capabilities introduced or modified, and any unresolved decisions or missing evidence to the coordinator immediately. If you are returning a USER DECISION REQUIRED request instead, do so immediately without authoring partial artifacts. Do not continue into technical design or task authoring during this pass.
+After the proposal and required capability specifications are complete, run `openspec validate <change>` to confirm they are well-formed, then return a concise summary to the coordinator immediately in the standard SpecOps handoff envelope (see ## Handoff). If you are returning a USER DECISION REQUIRED request instead, do so immediately without authoring partial artifacts. Do not continue into technical design or task authoring during this pass.
 
 ## Task planning
 
@@ -94,7 +94,35 @@ Do not implement source changes yourself. Do not mark tasks complete or check of
 
 When the coordinator returns `tasks.md` for revision, revise only the affected tasks and preserve everything else, including any existing `- [x]` completion state. Do not regenerate unaffected tasks. Re-run `openspec validate <change>` after revising.
 
-After authoring, run `openspec validate <change>` to confirm the change is still well-formed, then return a concise summary of the task plan and any unresolved decisions or missing evidence to the coordinator immediately. If you are returning a USER DECISION REQUIRED request instead, do so immediately without authoring partial tasks.
+After authoring, run `openspec validate <change>` to confirm the change is still well-formed, then return a concise summary to the coordinator immediately in the standard SpecOps handoff envelope (see ## Handoff). If you are returning a USER DECISION REQUIRED request instead, do so immediately without authoring partial tasks.
+
+## Handoff
+
+Return a concise summary to the coordinator in the standard SpecOps handoff envelope:
+
+STATUS: success | blocked
+
+SUMMARY:
+<1-3 sentences>
+
+ARTIFACTS:
+
+- <durable workflow/OpenSpec artifacts created or updated this pass, names only — never ordinary changed source or test files — or "none">
+
+VERIFICATION:
+
+- <checks or evidence performed this pass, or "none">
+
+RISKS:
+
+- <material risks, unresolved questions, or blockers, or "none">
+
+NEXT:
+<advisory recommended owning role/action, or "none">
+
+`success` means you completed your owned pass, even if non-blocking risks remain. `blocked` means your owned pass could not complete and requires follow-up: explain what blocked you in RISKS and what you need in NEXT. `NEXT` is advisory only and never overrides the coordinator's workflow or lifecycle decisions.
+
+If you return `USER DECISION REQUIRED` or `FRONTIER ELIGIBLE BLOCKER`, return that block alone — do not prepend the handoff envelope.
 
 ## Frontier escalation
 

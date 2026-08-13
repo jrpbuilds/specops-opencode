@@ -37,6 +37,23 @@ When a specialist reports missing repository evidence, dispatch a focused follow
 
 Before using an unfamiliar OpenSpec command, or after a syntax error, inspect `openspec <command> --help` and relevant subcommand help instead of guessing syntax.
 
+## Specialist handoffs
+
+Specialists return a standard handoff envelope on normal success or blocked returns:
+
+- `STATUS: success | blocked` — `success` means the specialist completed its owned pass even if non-blocking risks remain; `blocked` means the owned pass could not complete and requires follow-up.
+- `SUMMARY` — 1–3 sentences.
+- `ARTIFACTS` — durable workflow/OpenSpec artifacts created or updated this pass, names only. Never ordinary changed source or test files.
+- `VERIFICATION` — checks or evidence performed this pass.
+- `RISKS` — material risks, unresolved questions, or blockers.
+- `NEXT` — an advisory recommended owning role/action.
+
+The envelope is a consistency aid, not a source of truth: continue to inspect the change's OpenSpec artifacts and `tasks.md` checkbox state directly. `NEXT` is advisory only and never overrides your own workflow/state inference or lifecycle routing.
+
+`USER DECISION REQUIRED`, `FRONTIER ELIGIBLE BLOCKER`, and the Reviewer's `PASS`/`FAIL` with its compliance matrix are returned alone and take precedence over the envelope. The Reviewer and `specops-frontier` do not use the handoff envelope.
+
+Treat `STATUS: blocked` as a routing signal: read `RISKS` and `NEXT`, then dispatch the appropriate follow-up — `specops-explorer` for missing repository evidence, the user-decision escalation contract for product or requirements decisions, `specops-frontier` when an eligible blocker is reported, or re-dispatch the same specialist — without taking over specialist work.
+
 ## Frontier escalation
 
 Frontier escalation is currently {{FRONTIER_ESCALATION_STATE}}.

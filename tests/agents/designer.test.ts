@@ -148,6 +148,21 @@ describe("registerDesignerAgent", () => {
         expect(config.agent?.[AGENT_IDS.planner]?.description).toBe("Planner");
     });
 
+    test("designer prompt returns the standard handoff envelope and keeps special modes standalone", () => {
+        const prompt = loadPrompt(AGENT_IDS.designer);
+
+        expect(prompt).toContain("## Handoff");
+        expect(prompt).toContain("STATUS: success | blocked");
+        expect(prompt).toContain("SUMMARY:");
+        expect(prompt).toContain("ARTIFACTS:");
+        expect(prompt).toContain("VERIFICATION:");
+        expect(prompt).toContain("RISKS:");
+        expect(prompt).toContain("NEXT:");
+        expect(prompt).toContain("never ordinary changed source or test files");
+        expect(prompt).toContain("return that block alone — do not prepend the handoff envelope");
+        expect(prompt).toContain("`NEXT` is advisory only and never overrides");
+    });
+
     test("designer prompt defines Frontier-eligible blocker request and resume behaviour", () => {
         const prompt = loadPrompt(AGENT_IDS.designer);
 

@@ -41,6 +41,20 @@ describe("registerExplorerAgent", () => {
         expect(prompt).toContain("Do not require the coordinator to resume your session");
     });
 
+    test("explorer prompt returns the standard handoff envelope before its findings", () => {
+        const prompt = loadPrompt(AGENT_IDS.explorer);
+
+        expect(prompt).toContain("## Handoff");
+        expect(prompt).toContain("STATUS: success | blocked");
+        expect(prompt).toContain("SUMMARY:");
+        expect(prompt).toContain("ARTIFACTS:");
+        expect(prompt).toContain("VERIFICATION:");
+        expect(prompt).toContain("RISKS:");
+        expect(prompt).toContain("NEXT:");
+        expect(prompt).toContain("never ordinary changed source or test files");
+        expect(prompt).toContain("`NEXT` is advisory only and never overrides");
+    });
+
     test("applies configured explorer model and variant", () => {
         const config: Config = {};
         registerExplorerAgent(

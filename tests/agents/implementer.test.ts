@@ -158,6 +158,25 @@ describe("registerImplementerAgent", () => {
         expect(config.agent?.[AGENT_IDS.designer]?.description).toBe("Designer");
     });
 
+    test("implementer prompt returns the standard handoff envelope and keeps special modes standalone", () => {
+        const prompt = loadPrompt(AGENT_IDS.implementer);
+
+        expect(prompt).toContain("## Handoff");
+        expect(prompt).toContain("STATUS: success | blocked");
+        expect(prompt).toContain("SUMMARY:");
+        expect(prompt).toContain("ARTIFACTS:");
+        expect(prompt).toContain("VERIFICATION:");
+        expect(prompt).toContain("RISKS:");
+        expect(prompt).toContain("NEXT:");
+        expect(prompt).toContain("never ordinary changed source or test files");
+        expect(prompt).toContain("For ARTIFACTS, list only durable workflow artifacts");
+        expect(prompt).toContain(
+            "return a concise summary to the SpecOps coordinator in the standard SpecOps handoff envelope (see ## Handoff), reporting ordinary changed source and test files in SUMMARY",
+        );
+        expect(prompt).toContain("`FRONTIER ELIGIBLE BLOCKER`, return that block alone");
+        expect(prompt).not.toContain("`USER DECISION REQUIRED`, return that block alone");
+    });
+
     test("implementer prompt defines Frontier-eligible blocker request and resume behaviour", () => {
         const prompt = loadPrompt(AGENT_IDS.implementer);
 

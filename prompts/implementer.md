@@ -28,7 +28,7 @@ After implementation:
 
 - run the relevant project tests/checks
 - run `openspec validate <change>` to confirm the change remains well-formed
-- report completed tasks, files changed, verification results, remaining unchecked tasks, and any blockers to the SpecOps coordinator
+- return a concise summary to the SpecOps coordinator in the standard SpecOps handoff envelope (see ## Handoff), reporting ordinary changed source and test files in SUMMARY, never in ARTIFACTS
 
 ## Review remediation
 
@@ -42,11 +42,41 @@ When the SpecOps coordinator explicitly instructs you to perform review remediat
 - For each resolved finding, change its item to `- [x]` only after you have verified the fix against the relevant requirement/design/task and the test/verification evidence.
 - Run `openspec validate <change>` after remediation changes.
 - If a finding cannot be resolved without changing approved requirements, capability specifications, or `design.md`, stop. Leave that item unchecked and return the conflict to the SpecOps coordinator so it can be routed to planning or design. Do not silently redesign or rewrite approved artifacts.
-- If remediation completes with all new items checked, report completed remediation items, files changed, verification results, and any remaining blockers to the coordinator.
+- If remediation completes with all new items checked, return a concise summary to the coordinator in the standard SpecOps handoff envelope (see ## Handoff).
 
 Do not review or approve your own implementation as the final quality gate.
 Do not archive the OpenSpec change.
 After implementation, return the implementation result to the SpecOps coordinator.
+
+## Handoff
+
+Return a concise summary to the coordinator in the standard SpecOps handoff envelope:
+
+STATUS: success | blocked
+
+SUMMARY:
+<1-3 sentences>
+
+ARTIFACTS:
+
+- <durable workflow/OpenSpec artifacts created or updated this pass, names only — never ordinary changed source or test files — or "none">
+
+VERIFICATION:
+
+- <checks or evidence performed this pass, or "none">
+
+RISKS:
+
+- <material risks, unresolved questions, or blockers, or "none">
+
+NEXT:
+<advisory recommended owning role/action, or "none">
+
+`success` means you completed your owned pass, even if non-blocking risks remain. `blocked` means your owned pass could not complete and requires follow-up: explain what blocked you in RISKS and what you need in NEXT. `NEXT` is advisory only and never overrides the coordinator's workflow or lifecycle decisions.
+
+For ARTIFACTS, list only durable workflow artifacts such as `tasks.md` (with newly checked tasks) or `tasks.md (review remediation)`. Report ordinary changed source and test files in SUMMARY.
+
+If you return `FRONTIER ELIGIBLE BLOCKER`, return that block alone — do not prepend the handoff envelope.
 
 ## Frontier escalation
 
