@@ -2,7 +2,11 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
-import { applyFrontierState, SPECOPS_AGENT_ID } from "../src/agents/coordinator.js";
+import {
+    applyFrontierState,
+    SPECOPS_AGENT_ID,
+    SPECOPS_AUTO_AGENT_ID,
+} from "../src/agents/coordinator.js";
 import { EXPLORER_AGENT_ID } from "../src/agents/explorer.js";
 import { PLANNER_AGENT_ID } from "../src/agents/planner.js";
 import { DESIGNER_AGENT_ID } from "../src/agents/designer.js";
@@ -34,17 +38,26 @@ async function writeSpecOpsConfig(dir: string, config: object): Promise<void> {
 }
 
 describe("SpecOps server plugin", () => {
-    test("registers exactly the three walking-skeleton commands", async () => {
-        const hooks = await SpecOpsPlugin(pluginInput());
-        const config: Config = {};
-        await hooks.config?.(config);
+    test("registers exactly the four SpecOps commands", async () => {
+        await withTempDir(async dir => {
+            const original = process.env.XDG_CONFIG_HOME;
+            process.env.XDG_CONFIG_HOME = dir;
+            try {
+                const hooks = await SpecOpsPlugin(pluginInput());
+                const config: Config = {};
+                await hooks.config?.(config);
 
-        expect(Object.keys(config.command ?? {}).sort()).toEqual([
-            "specops",
-            "specops-doctor",
-            "specops-onboard",
-        ]);
-        expect(config.command).toEqual(COMMANDS);
+                expect(Object.keys(config.command ?? {}).sort()).toEqual([
+                    "specops",
+                    "specops-auto",
+                    "specops-doctor",
+                    "specops-onboard",
+                ]);
+                expect(config.command).toEqual(COMMANDS);
+            } finally {
+                process.env.XDG_CONFIG_HOME = original;
+            }
+        });
     });
 
     test("wires the specops command to the SpecOps primary agent", async () => {
@@ -68,14 +81,22 @@ describe("SpecOps server plugin", () => {
     });
 
     test("registers the SpecOps tools", async () => {
-        const hooks = await SpecOpsPlugin(pluginInput());
-        expect(Object.keys(hooks.tool ?? {}).sort()).toEqual([
-            "specops_archive",
-            "specops_context",
-            "specops_create_change",
-            "specops_doctor",
-            "specops_onboard",
-        ]);
+        await withTempDir(async dir => {
+            const original = process.env.XDG_CONFIG_HOME;
+            process.env.XDG_CONFIG_HOME = dir;
+            try {
+                const hooks = await SpecOpsPlugin(pluginInput());
+                expect(Object.keys(hooks.tool ?? {}).sort()).toEqual([
+                    "specops_archive",
+                    "specops_context",
+                    "specops_create_change",
+                    "specops_doctor",
+                    "specops_onboard",
+                ]);
+            } finally {
+                process.env.XDG_CONFIG_HOME = original;
+            }
+        });
     });
 
     test("registers the normal SpecOps agents with loaded Markdown prompts", async () => {
@@ -95,7 +116,7 @@ describe("SpecOps server plugin", () => {
                 expect(
                     (
                         config.agent?.[SPECOPS_AGENT_ID]?.permission as
-                            { question?: "allow" } | undefined
+                            { question?: "allow" | "deny" } | undefined
                     )?.question,
                 ).toBe("allow");
                 expect(config.agent?.[EXPLORER_AGENT_ID]).toEqual({
@@ -300,6 +321,51 @@ describe("SpecOps server plugin", () => {
                 expect(prompt).toContain("Frontier escalation is currently enabled");
                 expect(prompt).not.toContain("Frontier escalation is currently disabled");
                 expect(prompt).not.toContain("{{FRONTIER_ESCALATION_STATE}}");
+            } finally {
+                process.env.XDG_CONFIG_HOME = original;
+            }
+        });
+    });
+
+    test("specops-auto command wires to the SpecOps Auto agent with denied question", async () => {
+        await withTempDir(async dir => {
+            const original = process.env.XDG_CONFIG_HOME;
+            process.env.XDG_CONFIG_HOME = dir;
+            try {
+                const hooks = await SpecOpsPlugin(pluginInput());
+                const config: Config = {};
+                await hooks.config?.(config);
+
+                expect(config.command?.["specops-auto"]).toEqual({
+                    description:
+                        "Run a goal under the SpecOps Auto coordinator (autonomous, no human checkpoints)",
+                    agent: SPECOPS_AUTO_AGENT_ID,
+                    template: "$ARGUMENTS",
+                });
+                expect(config.command?.specops).toEqual({
+                    description: "Run a goal under the SpecOps coordinator",
+                    agent: SPECOPS_AGENT_ID,
+                    template: "$ARGUMENTS",
+                });
+
+                const autoPrompt = config.agent?.[SPECOPS_AUTO_AGENT_ID]?.prompt as string;
+                expect(autoPrompt).toContain("## Autonomous operation (SpecOps Auto)");
+                expect(autoPrompt).toContain("Never invoke OpenCode's native `question` tool");
+                expect(
+                    (
+                        config.agent?.[SPECOPS_AUTO_AGENT_ID]?.permission as
+                            { question?: "allow" | "deny" } | undefined
+                    )?.question,
+                ).toBe("deny");
+
+                const interactivePrompt = config.agent?.[SPECOPS_AGENT_ID]?.prompt as string;
+                expect(interactivePrompt).not.toContain("## Autonomous operation (SpecOps Auto)");
+                expect(
+                    (
+                        config.agent?.[SPECOPS_AGENT_ID]?.permission as
+                            { question?: "allow" | "deny" } | undefined
+                    )?.question,
+                ).toBe("allow");
             } finally {
                 process.env.XDG_CONFIG_HOME = original;
             }

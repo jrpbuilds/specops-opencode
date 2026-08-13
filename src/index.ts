@@ -1,6 +1,11 @@
 import type { Config, Plugin } from "@opencode-ai/plugin";
 import { loadConfig } from "./config.js";
-import { registerCoordinatorAgent, SPECOPS_AGENT_ID } from "./agents/coordinator.js";
+import {
+    registerAutoCoordinatorAgent,
+    registerCoordinatorAgent,
+    SPECOPS_AGENT_ID,
+    SPECOPS_AUTO_AGENT_ID,
+} from "./agents/coordinator.js";
 import { registerExplorerAgent } from "./agents/explorer.js";
 import { registerPlannerAgent } from "./agents/planner.js";
 import { registerDesignerAgent } from "./agents/designer.js";
@@ -23,6 +28,12 @@ export const COMMANDS = {
     specops: {
         description: "Run a goal under the SpecOps coordinator",
         agent: SPECOPS_AGENT_ID,
+        template: "$ARGUMENTS",
+    },
+    "specops-auto": {
+        description:
+            "Run a goal under the SpecOps Auto coordinator (autonomous, no human checkpoints)",
+        agent: SPECOPS_AUTO_AGENT_ID,
         template: "$ARGUMENTS",
     },
     "specops-doctor": {
@@ -54,6 +65,7 @@ export const SpecOpsPlugin: Plugin = async () => ({
         try {
             const specOpsConfig = await loadConfig();
             registerCoordinatorAgent(config, specOpsConfig);
+            registerAutoCoordinatorAgent(config, specOpsConfig);
             registerExplorerAgent(config, specOpsConfig);
             registerPlannerAgent(config, specOpsConfig);
             registerDesignerAgent(config, specOpsConfig);

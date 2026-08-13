@@ -43,11 +43,19 @@ try {
 
     assertEqual(
         Object.keys(config.command).sort(),
-        ["specops", "specops-doctor", "specops-onboard"],
+        ["specops", "specops-auto", "specops-doctor", "specops-onboard"],
         "packed command catalogue",
     );
     assert(config.command.specops.agent === "SpecOps", "specops command agent mismatch");
     assert(config.command.specops.template === "$ARGUMENTS", "specops command template mismatch");
+    assert(
+        config.command["specops-auto"].agent === "SpecOps Auto",
+        "specops-auto command agent mismatch",
+    );
+    assert(
+        config.command["specops-auto"].template === "$ARGUMENTS",
+        "specops-auto command template mismatch",
+    );
     assertEqual(
         Object.keys(hooks.tool).sort(),
         [
@@ -63,6 +71,7 @@ try {
         Object.keys(config.agent ?? {}).sort(),
         [
             "SpecOps",
+            "SpecOps Auto",
             "specops-designer",
             "specops-explorer",
             "specops-implementer",
@@ -142,6 +151,32 @@ try {
         typeof config.agent["specops-reviewer"].prompt === "string" &&
             config.agent["specops-reviewer"].prompt.length > 0,
         "reviewer prompt not loaded in packed install",
+    );
+
+    // Interactive boundary: the SpecOps agent keeps the question permission allowed.
+    assert(
+        config.agent["SpecOps"].permission?.question === "allow",
+        "packed interactive question permission",
+    );
+    assert(
+        !config.agent["SpecOps"].prompt.includes("## Autonomous operation"),
+        "packed interactive prompt must not carry the autonomous appendix",
+    );
+
+    // Autonomous boundary: the SpecOps Auto agent denies the question permission and appends
+    // the autonomous policy to the shared coordinator prompt.
+    assert(
+        config.agent["SpecOps Auto"].permission?.question === "deny",
+        "packed auto question permission",
+    );
+    assert(
+        config.agent["SpecOps Auto"].prompt.includes("## Autonomous operation (SpecOps Auto)") &&
+            config.agent["SpecOps Auto"].prompt.includes("## Workflow"),
+        "packed auto prompt missing autonomous appendix or shared workflow",
+    );
+    assert(
+        !config.agent["SpecOps Auto"].prompt.includes("{{AUTO_MODE_STATE}}"),
+        "packed auto prompt contains a stale placeholder",
     );
 
     process.stderr.write("Packed install smoke passed\n");

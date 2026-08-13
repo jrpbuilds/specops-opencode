@@ -1,0 +1,19 @@
+schema: spec-driven
+created: 2026-08-13
+goal: "Create a polished vertical Galaxy Shooter as a single self-contained HTML
+  file using Canvas, optimized for a 400×700 portrait mobile layout. Build a
+  visually striking arcade shooter with a sleek animated blue player ship,
+  smooth acceleration/easing movement, auto-fire plus Space/tap firing, enemy
+  formations with varied movement patterns, projectiles, power-ups, escalating
+  levels, score, lives, and restartable start/game-over screens. Prioritize
+  excellent game feel: punchy laser recoil, projectile trails, hit flashes,
+  brief hit-stop, subtle screen shake, knockback, accurate collision detection,
+  satisfying enemy destruction, layered glowing particle explosions, animated
+  power-up pickups, combo/score feedback, and smooth transitions. Add a
+  multi-layer scrolling/parallax starfield, neon sci-fi effects, enemy
+  spawn/entrance animations, occasional tougher enemies, and lightweight physics
+  so movement and impacts feel responsive rather than static. Include responsive
+  touch controls and keyboard controls. Keep performance smooth, code clean, no
+  external assets or libraries, and make the finished result feel like a small
+  polished arcade game suitable for a showcase. Output only the complete HTML
+  code."

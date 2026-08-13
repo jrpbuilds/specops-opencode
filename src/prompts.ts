@@ -38,3 +38,23 @@ export function loadPrompt(id: AgentId): string {
     if (!prompt.trim()) throw new Error(`SpecOps prompt is empty: ${file}`);
     return prompt;
 }
+
+/**
+ * Load a packaged prompt asset by filename rather than by agent role.
+ *
+ * Used for prompt fragments that are not tied to a configurable role, such as
+ * the autonomous appendix appended to the coordinator prompt for the
+ * SpecOps Auto agent. Resolution mirrors {@link promptPath} so the same
+ * lookup works before and after packaging.
+ */
+export function loadPromptFile(filename: string): string {
+    const filePath = path.resolve(
+        path.dirname(fileURLToPath(import.meta.url)),
+        "..",
+        "prompts",
+        filename,
+    );
+    const prompt = readFileSync(filePath, "utf8");
+    if (!prompt.trim()) throw new Error(`SpecOps prompt is empty: ${filename}`);
+    return prompt;
+}

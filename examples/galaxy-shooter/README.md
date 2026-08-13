@@ -12,17 +12,16 @@ A polished vertical arcade shooter generated in a single SpecOps run.
 
 ## Model Mapping
 
-| SpecOps Role | Model                    | Variant  |
-| ------------ | ------------------------ | -------- |
-| Coordinator  | MiniMax M3               | thinking |
-| Explorer     | Qwen3.7 Plus             | medium   |
-| Planner      | GLM-5.2                  | high     |
-| Designer     | GPT-5.6 Terra            | high     |
-| Implementer  | DeepSeek V4 Flash (0731) | high     |
-| Reviewer     | MiMo V2.5 Pro            | default  |
-| Frontier     | GPT-5.6 Sol              | high     |
+| SpecOps Role | Model                | Variant  |
+| ------------ | -------------------- | -------- |
+| Coordinator  | MiniMax-M3           | thinking |
+| Explorer     | Qwen3.7 Plus         | high     |
+| Planner      | GLM-5.2              | high     |
+| Designer     | Kimi K3              | default  |
+| Implementer  | GPT-5.6 Luna         | high     |
+| Reviewer     | DeepSeek-V4-Pro-0813 | max      |
 
-Frontier escalation was **disabled** for this run.
+Frontier escalation was enabled but **not invoked** for this run (no qualifying blocker arose). Run cost: approximately **$1.64**.
 
 ## Workflow
 
@@ -50,9 +49,9 @@ Final result
 
 The complete OpenSpec artifacts produced during the run are included with this example:
 
-- [`proposal.md`](openspec/changes/archive/2026-08-09-galaxy-shooter-vertical/proposal.md)
-- [`design.md`](openspec/changes/archive/2026-08-09-galaxy-shooter-vertical/design.md)
-- [`tasks.md`](openspec/changes/archive/2026-08-09-galaxy-shooter-vertical/tasks.md)
+- [`proposal.md`](openspec/changes/archive/2026-08-13-galaxy-shooter-html-canvas/proposal.md)
+- [`design.md`](openspec/changes/archive/2026-08-13-galaxy-shooter-html-canvas/design.md)
+- [`tasks.md`](openspec/changes/archive/2026-08-13-galaxy-shooter-html-canvas/tasks.md)
 - [`specs/`](openspec/specs/)
 
 These show the requirements, design decisions, and implementation plan used to produce the final game.

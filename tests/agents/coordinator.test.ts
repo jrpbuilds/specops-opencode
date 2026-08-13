@@ -3,10 +3,12 @@ import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import {
     applyFrontierState,
+    registerAutoCoordinatorAgent,
     registerCoordinatorAgent,
     SPECOPS_AGENT_ID,
+    SPECOPS_AUTO_AGENT_ID,
 } from "../../src/agents/coordinator.js";
-import { loadPrompt } from "../../src/prompts.js";
+import { loadPrompt, loadPromptFile } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
 /** Build a complete valid role config with optional coordinator overrides. */
@@ -29,11 +31,72 @@ describe("registerCoordinatorAgent", () => {
             description: "SpecOps coordinator for spec-driven development",
             mode: "primary",
             prompt: applyFrontierState(loadPrompt(AGENT_IDS.coordinator), false),
+            permission: { question: "allow" },
         });
         expect(
-            (config.agent?.[SPECOPS_AGENT_ID]?.permission as { question?: "allow" } | undefined)
-                ?.question,
+            (
+                config.agent?.[SPECOPS_AGENT_ID]?.permission as
+                    { question?: "allow" | "deny" } | undefined
+            )?.question,
         ).toBe("allow");
+    });
+
+    test("registers the SpecOps Auto agent with the autonomous appendix and denied question", () => {
+        const config: Config = {};
+        registerAutoCoordinatorAgent(config, makeConfig());
+
+        expect(config.agent?.[SPECOPS_AUTO_AGENT_ID]).toMatchObject({
+            mode: "primary",
+            prompt: applyFrontierState(
+                loadPrompt(AGENT_IDS.coordinator) + "\n\n" + loadPromptFile("coordinator-auto.md"),
+                false,
+            ),
+        });
+        expect(
+            (
+                config.agent?.[SPECOPS_AUTO_AGENT_ID]?.permission as
+                    { question?: "allow" | "deny" } | undefined
+            )?.question,
+        ).toBe("deny");
+        const prompt = config.agent?.[SPECOPS_AUTO_AGENT_ID]?.prompt as string;
+        expect(prompt).toContain("## Autonomous operation (SpecOps Auto)");
+        expect(prompt).not.toContain("{{AUTO_MODE_STATE}}");
+    });
+
+    test("auto coordinator prompt overrides checkpoints with the autonomous policy", () => {
+        const autoPrompt =
+            loadPrompt(AGENT_IDS.coordinator) + "\n\n" + loadPromptFile("coordinator-auto.md");
+
+        expect(autoPrompt).toContain("overrides the human-checkpoint clauses above");
+        expect(autoPrompt).toContain("Never invoke OpenCode's native `question` tool");
+        expect(autoPrompt).toContain("Prefer an explicit specialist recommendation");
+        expect(autoPrompt).toContain("at most 2 remediation rounds total");
+        expect(autoPrompt).toContain("call `specops_archive`");
+        expect(autoPrompt).toContain("`COMPLETED`");
+        expect(autoPrompt).toContain("`BLOCKED`");
+    });
+
+    test("interactive coordinator prompt has no autonomous appendix", () => {
+        const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+        expect(prompt).not.toContain("## Autonomous operation (SpecOps Auto)");
+        expect(prompt).not.toContain("{{AUTO_MODE_STATE}}");
+    });
+
+    test("coordinator prompt mandates the workflow for every goal including greenfield", () => {
+        const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+        expect(prompt).toContain("## Workflow");
+        expect(prompt).toContain("The goal is the WHAT; the workflow is the HOW");
+        expect(prompt).toContain("regardless of how self-contained, greenfield, small");
+        expect(prompt).toContain("Greenfield projects run every phase");
+        expect(prompt).toContain(
+            "A self-contained or single-file deliverable is never a reason to skip",
+        );
+        expect(prompt).toContain("run the workflow, do not build the goal directly");
+        expect(prompt).toContain(
+            "`specops-explorer` investigates the repository's tooling, conventions, and constraints",
+        );
     });
 
     test("coordinator prompt delegates source-code exploration to specops-explorer", () => {
@@ -117,7 +180,6 @@ describe("registerCoordinatorAgent", () => {
         expect(prompt).toContain("If `available` is `false`");
         expect(prompt).toContain("If `error` is present");
         expect(prompt).toContain("failed or malformed lookup");
-        expect(prompt).toContain("If `initialized` is `false`");
         expect(prompt).toContain("reason over `activeChanges`");
         expect(prompt).toContain("relevant active change should be resumed or a new change");
         expect(prompt).toContain("resume it and do not create a duplicate");
@@ -127,6 +189,27 @@ describe("registerCoordinatorAgent", () => {
         expect(prompt).toContain("specops_context` reports deterministic facts only");
         expect(prompt).toContain("does not match changes");
         expect(prompt).toContain("specops_create_change` creates only the name you provide");
+    });
+
+    test("coordinator prompt self-onboards first and blocks on onboarding failure", () => {
+        const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+        expect(prompt).toContain("call `specops_onboard` first");
+        expect(prompt).toContain("do not invoke the `/specops-onboard` slash command");
+        expect(prompt).toContain("before `specops_context` and before any specialist delegation");
+        expect(prompt).toContain("never requires a human checkpoint");
+        expect(prompt).toContain("already initialised");
+        expect(prompt).toContain("initialised successfully");
+        expect(prompt).toContain("preserving the user's original goal exactly");
+        expect(prompt).toContain("never consumes or replaces the requested SpecOps task");
+        expect(prompt).toContain("terminate immediately as BLOCKED");
+        expect(prompt).toContain("OpenSpec is not installed");
+        expect(prompt).toContain("Failed to initialise OpenSpec");
+        expect(prompt).toContain(
+            "Do not call `specops_context` and do not delegate to any specialist",
+        );
+        expect(prompt).not.toContain("direct the user to `/specops-onboard`");
+        expect(prompt).not.toContain("Do not run onboarding yourself");
     });
 
     test("coordinator prompt owns the user-decision escalation gateway", () => {
