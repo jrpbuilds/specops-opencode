@@ -76,6 +76,37 @@ describe("registerCoordinatorAgent", () => {
         expect(section).toContain("without taking over specialist work");
     });
 
+    test("coordinator prompt retains, updates, and passes scoped Project Context", () => {
+        const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+        expect(prompt).toContain("## Project Context");
+        const section = prompt.slice(
+            prompt.indexOf("## Project Context"),
+            prompt.indexOf("## Frontier escalation"),
+        );
+
+        expect(section).toContain("PROJECT CONTEXT capsule");
+        expect(section).toContain("for this `/specops` run only");
+        expect(section).toContain("Do not persist it anywhere");
+        expect(section).toContain("OpenSpec remains the durable source of truth");
+        expect(section).toContain("update only the affected fields");
+        expect(section).toContain("Do not keep merge history or multiple versions");
+        expect(section).toContain("Trim it to what that specialist needs");
+        expect(section).toContain("orientation, not authority");
+        expect(section).toContain("the repository wins");
+
+        const delegationBullet =
+            "the relevant Project Context from `specops-explorer` (scoped to this delegation)";
+        expect(
+            (
+                prompt.match(
+                    /the relevant Project Context from `specops-explorer` \(scoped to this delegation\)/g,
+                ) ?? []
+            ).length,
+        ).toBeGreaterThanOrEqual(5);
+        expect(prompt).toContain(delegationBullet);
+    });
+
     test("coordinator prompt uses deterministic startup context and owns decisions", () => {
         const prompt = loadPrompt(AGENT_IDS.coordinator);
 

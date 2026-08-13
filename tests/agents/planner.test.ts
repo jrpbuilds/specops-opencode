@@ -172,6 +172,17 @@ describe("registerPlannerAgent", () => {
         expect(prompt).toContain("`NEXT` is advisory only and never overrides");
     });
 
+    test("planner prompt consumes Project Context as non-authoritative orientation", () => {
+        const prompt = loadPrompt(AGENT_IDS.planner);
+
+        expect(prompt).toContain("## Project Context");
+        expect(prompt).toContain("use it as orientation");
+        expect(prompt).toContain("not authoritative");
+        expect(prompt).toContain("win if they conflict");
+        expect(prompt).toContain("Do not copy Project Context into");
+        expect(prompt).toContain("report the missing evidence to the coordinator");
+    });
+
     test("planner prompt defines Frontier-eligible blocker request and resume behaviour", () => {
         const prompt = loadPrompt(AGENT_IDS.planner);
 

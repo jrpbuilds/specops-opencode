@@ -200,6 +200,16 @@ describe("registerReviewerAgent", () => {
         expect(prompt).toContain("FAIL");
     });
 
+    test("reviewer prompt treats Project Context as orientation, not a substitute", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain("## Project Context");
+        expect(prompt).toContain("use it as orientation");
+        expect(prompt).toContain("not a substitute for direct inspection");
+        expect(prompt).toContain("the repository wins");
+        expect(prompt).toContain("Do not treat Project Context as an approved requirement");
+    });
+
     test("reviewer prompt defines Frontier-eligible blocker request and preserves verdict ownership", () => {
         const prompt = loadPrompt(AGENT_IDS.reviewer);
 

@@ -66,6 +66,10 @@ Do not implement source changes.
 
 After authoring, run `openspec validate <change>` to confirm the change is still well-formed, then return a concise summary to the SpecOps coordinator in the standard SpecOps handoff envelope (see ## Handoff).
 
+## Project Context
+
+When the coordinator provides Project Context (a scoped capsule from `specops-explorer`), use it as orientation for technical design decisions. It is not authoritative: the approved OpenSpec artifacts and the specific explorer findings the coordinator passes win if they conflict. Do not copy Project Context into `design.md`; cite it only where it materially informs a design decision, risk, or Open Question. If it lacks a fact you need, stop and report the missing evidence to the coordinator.
+
 ## Handoff
 
 Return a concise summary to the coordinator in the standard SpecOps handoff envelope:

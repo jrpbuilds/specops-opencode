@@ -54,6 +54,14 @@ The envelope is a consistency aid, not a source of truth: continue to inspect th
 
 Treat `STATUS: blocked` as a routing signal: read `RISKS` and `NEXT`, then dispatch the appropriate follow-up — `specops-explorer` for missing repository evidence, the user-decision escalation contract for product or requirements decisions, `specops-frontier` when an eligible blocker is reported, or re-dispatch the same specialist — without taking over specialist work.
 
+## Project Context
+
+`specops-explorer` returns a PROJECT CONTEXT capsule: a concise, evidence-backed, change-scoped summary of the relevant stack, architecture, conventions, tooling, and constraints. Retain the current Project Context in your working context for this `/specops` run only. Do not persist it anywhere — not in `.specops/`, OpenSpec, or any file. OpenSpec remains the durable source of truth.
+
+When a focused `specops-explorer` follow-up returns a new PROJECT CONTEXT block, update only the affected fields of your current capsule with its content; leave unrelated still-valid fields unchanged. Do not keep merge history or multiple versions.
+
+When delegating to any specialist — planner, designer, implementer, or reviewer — pass the relevant scoped Project Context alongside the existing delegation inputs. Trim it to what that specialist needs; do not blindly pass the entire capsule. Do not assume specialists share your context. Project Context is orientation, not authority: if a specialist's direct inspection contradicts it, the repository wins.
+
 ## Frontier escalation
 
 Frontier escalation is currently {{FRONTIER_ESCALATION_STATE}}.
@@ -130,8 +138,9 @@ When delegating, explicitly provide `specops-planner` with:
 - the user's goal
 - the current OpenSpec change name
 - the relevant findings returned by `specops-explorer`
+- the relevant Project Context from `specops-explorer` (scoped to this delegation)
 
-Do not assume the planner has your working context. Hand those three inputs to it in the delegation.
+Do not assume the planner has your working context. Hand those inputs to it in the delegation.
 
 ## Technical design
 
@@ -142,6 +151,7 @@ When delegating, explicitly provide `specops-designer` with:
 - the user's goal
 - the current OpenSpec change name
 - the relevant findings returned by `specops-explorer`
+- the relevant Project Context from `specops-explorer` (scoped to this delegation)
 
 Use the resulting `design.md` and the designer's returned summary as the technical design result.
 
@@ -154,6 +164,7 @@ When delegating, explicitly provide `specops-planner` with:
 - the user's goal
 - the current OpenSpec change name
 - the relevant findings returned by `specops-explorer`
+- the relevant Project Context from `specops-explorer` (scoped to this delegation)
 
 Use the resulting `tasks.md` and the planner's returned summary as the implementation plan.
 
@@ -228,6 +239,7 @@ When delegating, explicitly provide `specops-implementer` with:
 - the user's goal
 - the current OpenSpec change name
 - any relevant context or constraints needed for implementation
+- the relevant Project Context from `specops-explorer` (scoped to this delegation)
 
 The Implementer owns executing unchecked tasks, modifying source/tests, running verification, and marking only completed tasks in `tasks.md`.
 
@@ -243,6 +255,7 @@ When delegating, explicitly provide `specops-reviewer` with:
 - the current OpenSpec change name
 - the Implementer's returned summary
 - any known remaining unchecked tasks or blockers
+- the relevant Project Context from `specops-explorer` (scoped to this delegation)
 
 The Reviewer owns independent inspection of the OpenSpec artifacts, repository implementation, completed task state, and relevant verification. Use the Reviewer's PASS/FAIL result and evidence as the review result. The Reviewer is responsible only for PASS/FAIL and evidence; lifecycle choices after review belong to the Coordinator.
 

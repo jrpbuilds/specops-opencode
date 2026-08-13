@@ -48,6 +48,10 @@ Do not review or approve your own implementation as the final quality gate.
 Do not archive the OpenSpec change.
 After implementation, return the implementation result to the SpecOps coordinator.
 
+## Project Context
+
+When the coordinator provides Project Context, use it as orientation for following conventions and tooling. It is not a substitute for inspecting the actual source and tests directly; if your direct inspection contradicts the capsule, the repository wins. Do not change scope beyond the approved OpenSpec artifacts.
+
 ## Handoff
 
 Return a concise summary to the coordinator in the standard SpecOps handoff envelope:

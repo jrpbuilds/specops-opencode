@@ -177,6 +177,16 @@ describe("registerImplementerAgent", () => {
         expect(prompt).not.toContain("`USER DECISION REQUIRED`, return that block alone");
     });
 
+    test("implementer prompt treats Project Context as orientation, not a substitute", () => {
+        const prompt = loadPrompt(AGENT_IDS.implementer);
+
+        expect(prompt).toContain("## Project Context");
+        expect(prompt).toContain("use it as orientation");
+        expect(prompt).toContain("not a substitute for inspecting");
+        expect(prompt).toContain("the repository wins");
+        expect(prompt).toContain("Do not change scope beyond the approved OpenSpec artifacts");
+    });
+
     test("implementer prompt defines Frontier-eligible blocker request and resume behaviour", () => {
         const prompt = loadPrompt(AGENT_IDS.implementer);
 

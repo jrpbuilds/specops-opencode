@@ -55,6 +55,26 @@ describe("registerExplorerAgent", () => {
         expect(prompt).toContain("`NEXT` is advisory only and never overrides");
     });
 
+    test("explorer prompt returns a scoped PROJECT CONTEXT capsule before its findings", () => {
+        const prompt = loadPrompt(AGENT_IDS.explorer);
+
+        expect(prompt).toContain("## Project Context");
+        expect(prompt).toContain("PROJECT CONTEXT");
+        expect(prompt).toContain("Stack:");
+        expect(prompt).toContain("Architecture:");
+        expect(prompt).toContain("Conventions:");
+        expect(prompt).toContain("Tooling:");
+        expect(prompt).toContain("Constraints:");
+        expect(prompt).toContain("Evidence:");
+        expect(prompt).toContain("scoped strictly to the current change");
+        expect(prompt).toContain("materially affect planning, design, implementation, or review");
+        expect(prompt).toContain("`(inferred)`");
+        expect(prompt).toContain("Omit any field with no material content");
+        expect(prompt).toContain("Do not duplicate OpenSpec requirements or specifications");
+        expect(prompt).toContain("executed tooling/commands");
+        expect(prompt).toContain("first return a PROJECT CONTEXT block");
+    });
+
     test("applies configured explorer model and variant", () => {
         const config: Config = {};
         registerExplorerAgent(

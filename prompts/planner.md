@@ -96,6 +96,10 @@ When the coordinator returns `tasks.md` for revision, revise only the affected t
 
 After authoring, run `openspec validate <change>` to confirm the change is still well-formed, then return a concise summary to the coordinator immediately in the standard SpecOps handoff envelope (see ## Handoff). If you are returning a USER DECISION REQUIRED request instead, do so immediately without authoring partial tasks.
 
+## Project Context
+
+When the coordinator provides Project Context (a scoped capsule from `specops-explorer`), use it as orientation for requirements and task decisions. It is not authoritative: the approved OpenSpec artifacts and the specific explorer findings the coordinator passes win if they conflict. Do not copy Project Context into `proposal.md`, capability specifications, or `tasks.md`; cite it only where it materially informs a requirement or task. If it lacks a fact you need, stop and report the missing evidence to the coordinator.
+
 ## Handoff
 
 Return a concise summary to the coordinator in the standard SpecOps handoff envelope:

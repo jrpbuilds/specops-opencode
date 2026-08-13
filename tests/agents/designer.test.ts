@@ -163,6 +163,16 @@ describe("registerDesignerAgent", () => {
         expect(prompt).toContain("`NEXT` is advisory only and never overrides");
     });
 
+    test("designer prompt consumes Project Context as non-authoritative orientation", () => {
+        const prompt = loadPrompt(AGENT_IDS.designer);
+
+        expect(prompt).toContain("## Project Context");
+        expect(prompt).toContain("use it as orientation");
+        expect(prompt).toContain("not authoritative");
+        expect(prompt).toContain("Do not copy Project Context into `design.md`");
+        expect(prompt).toContain("report the missing evidence to the coordinator");
+    });
+
     test("designer prompt defines Frontier-eligible blocker request and resume behaviour", () => {
         const prompt = loadPrompt(AGENT_IDS.designer);
 
