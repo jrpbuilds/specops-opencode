@@ -336,7 +336,13 @@ When the user selects `Revise implementation` after `specops-reviewer` returns F
     - an explicit instruction that this pass is review remediation
 2. Do not summarize, paraphrase, or drop findings; pass them through verbatim so the Implementer can map remediation items directly to `F1..Fn`.
 3. When the Implementer returns, inspect the updated `tasks.md` and the Implementer's summary as ordinary OpenSpec state. If the Implementer reports a conflict that requires changing approved requirements or design, route it to `specops-planner` or `specops-designer` via the user-decision escalation contract rather than authorising design changes yourself.
-4. If remediation completed successfully (all new `## N. Review remediation` items are checked and no conflict was returned), re-dispatch `specops-reviewer` with the user's original goal, the current OpenSpec change name, and the Implementer's summary.
+4. If remediation completed successfully (all new `## N. Review remediation` items are checked and no conflict was returned), re-dispatch `specops-reviewer` with:
+    - the user's original goal
+    - the current OpenSpec change name
+    - the Implementer's remediation summary
+    - the prior `specops-reviewer` FAIL findings (`F1..Fn`) verbatim
+    - an explicit instruction that this is a remediation re-review
+      Pass the prior findings verbatim so the Reviewer can re-check each `F1..Fn` ID against the remediation delta without relitigating unrelated issues.
 5. Process the new PASS/FAIL outcome through the **same** review-completion `question` checkpoint above.
 
 Every subsequent FAIL must return to the review-completion `question` checkpoint. Do not create an automatic retry loop, and do not re-dispatch `specops-implementer` again unless the user explicitly selects `Revise implementation`.

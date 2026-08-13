@@ -210,6 +210,84 @@ describe("registerReviewerAgent", () => {
         expect(prompt).toContain("Do not treat Project Context as an approved requirement");
     });
 
+    test("reviewer prompt defines six proportional review lenses that feed the existing contract", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain("## Review lenses");
+        expect(prompt).toContain("Correctness / spec compliance");
+        expect(prompt).toContain("Reliability");
+        expect(prompt).toContain("Resilience / edge cases");
+        expect(prompt).toContain("Security / risk");
+        expect(prompt).toContain("Maintainability / readability");
+        expect(prompt).toContain("Regression risk");
+        expect(prompt).toContain("only where the concern is relevant to this change");
+        expect(prompt).toContain("Do not manufacture findings");
+        expect(prompt).toContain("not a second verdict mechanism");
+        expect(prompt).toContain("flow into the compliance matrix");
+        expect(prompt).toContain(
+            "Do not FAIL merely because you prefer another style or abstraction",
+        );
+    });
+
+    test("reviewer prompt gates lens findings on material impact and sparse observations", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain("A lens observation blocks (becomes an `Fk`) only when");
+        expect(prompt).toContain("genuine problem relevant to the approved change");
+        expect(prompt).toContain("a non-blocking observation (kept sparse)");
+    });
+
+    test("reviewer prompt restricts FAIL to material blockers and excludes non-material nags", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain("genuine correctness/reliability/resilience/security problems");
+        expect(prompt).toContain("alternative but valid architecture");
+        expect(prompt).toContain("speculative future improvements");
+        expect(prompt).toContain("unrelated pre-existing problems");
+        expect(prompt).toContain("generic best-practice suggestions");
+    });
+
+    test("reviewer prompt defines delta-focused remediation re-review mode", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain("## Remediation re-review");
+        expect(prompt).toContain(
+            "active only when the SpecOps coordinator explicitly says this is a remediation re-review",
+        );
+        expect(prompt).toContain("provides the prior `F1..Fn` blocking findings");
+        expect(prompt).toContain("perform the normal full review above");
+        expect(prompt).toContain("RESOLVED");
+        expect(prompt).toContain("UNRESOLVED");
+        expect(prompt).toContain("REGRESSED");
+        expect(prompt).toContain("REMEDIATION REVIEW");
+    });
+
+    test("reviewer prompt keeps prior finding IDs stable and continues numbering for new findings", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain("Keep the same `F` ID");
+        expect(prompt).toContain(
+            "Do not use `REGRESSED` when the original issue simply remains unfixed",
+        );
+        expect(prompt).toContain("new `F` ID continuing the existing numbering");
+        expect(prompt).toContain("do not renumber existing findings");
+        expect(prompt).toContain("scoped to this review/remediation loop only");
+    });
+
+    test("reviewer prompt restricts re-review scope and preserves the single verdict", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain("Do not rediscover unrelated stylistic issues");
+        expect(prompt).toContain("Do not relitigate a finding marked `RESOLVED`");
+        expect(prompt).toContain(
+            "Expand back to a broader full review only when the remediation materially changed scope",
+        );
+        expect(prompt).toContain("A new blocking `Fk` is allowed only when");
+        expect(prompt).toContain("re-verified against the delta");
+        expect(prompt).toContain("The `REMEDIATION REVIEW` block is informational");
+        expect(prompt).toContain("`PASS`/`FAIL` remains the only verdict");
+    });
+
     test("reviewer prompt defines Frontier-eligible blocker request and preserves verdict ownership", () => {
         const prompt = loadPrompt(AGENT_IDS.reviewer);
 

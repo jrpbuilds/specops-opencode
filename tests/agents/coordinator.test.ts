@@ -313,6 +313,22 @@ describe("registerCoordinatorAgent", () => {
         );
     });
 
+    test("coordinator prompt re-dispatches reviewer with prior findings for remediation re-review", () => {
+        const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+        const remediationSection = prompt.slice(prompt.indexOf("## Review remediation"));
+
+        expect(remediationSection).toContain(
+            "the prior `specops-reviewer` FAIL findings (`F1..Fn`) verbatim",
+        );
+        expect(remediationSection).toContain(
+            "an explicit instruction that this is a remediation re-review",
+        );
+        expect(remediationSection).toContain("the Implementer's remediation summary");
+        expect(remediationSection).toContain("Pass the prior findings verbatim");
+        expect(remediationSection).toContain("without relitigating unrelated issues");
+    });
+
     test("coordinator prompt routes remediation conflicts to planning/design", () => {
         const prompt = loadPrompt(AGENT_IDS.coordinator);
 
