@@ -170,6 +170,21 @@ describe("registerCoordinatorAgent", () => {
         expect(prompt).toContain(delegationBullet);
     });
 
+    test("coordinator prompt keeps Engram retrieval Explorer-owned and never gates on it", () => {
+        const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+        const section = prompt.slice(
+            prompt.indexOf("## Project Context"),
+            prompt.indexOf("## Frontier escalation"),
+        );
+
+        expect(section).toContain("Engram historical memory");
+        expect(section).toContain("retrieved and reconciled exclusively by `specops-explorer`");
+        expect(section).toContain("labelled historical context");
+        expect(section).toContain("Do not call Engram tools yourself");
+        expect(section).toContain("do not gate any workflow decision on Engram availability");
+    });
+
     test("coordinator prompt uses deterministic startup context and owns decisions", () => {
         const prompt = loadPrompt(AGENT_IDS.coordinator);
 

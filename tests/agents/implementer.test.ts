@@ -187,6 +187,17 @@ describe("registerImplementerAgent", () => {
         expect(prompt).toContain("Do not change scope beyond the approved OpenSpec artifacts");
     });
 
+    test("implementer prompt forbids direct Engram tool calls and treats Engram context as non-requirement", () => {
+        const prompt = loadPrompt(AGENT_IDS.implementer);
+
+        expect(prompt).toContain("Engram-derived content");
+        expect(prompt).toContain("historical orientation, never a requirement");
+        expect(prompt).toContain("Do not call any Engram (`engram_mem_*`) tool yourself");
+        expect(prompt).toContain("the Explorer owns Engram retrieval");
+        expect(prompt).toContain("SpecOps performs no Engram writes at any stage");
+        expect(prompt).toContain("rather than searching Engram directly");
+    });
+
     test("implementer prompt defines Frontier-eligible blocker request and resume behaviour", () => {
         const prompt = loadPrompt(AGENT_IDS.implementer);
 

@@ -76,24 +76,22 @@ Then restart OpenCode.
 
 ## Getting started
 
-Open a project and run:
+Open a project and run a goal directly:
+
+```text
+/specops improve the API error responses and add coverage for the new behaviour
+```
+
+SpecOps self-onboards the project for OpenSpec on the first run. To initialise OpenSpec explicitly — for example before the first `/specops` run or on a fresh checkout — use:
 
 ```text
 /specops-onboard
 ```
 
-This initialises the project for OpenSpec without installing OpenSpec's own OpenCode commands or skills.
-
 Check everything is ready:
 
 ```text
 /specops-doctor
-```
-
-Then start a change:
-
-```text
-/specops improve the API error responses and add coverage for the new behaviour
 ```
 
 SpecOps will coordinate the change through the appropriate specialist agents.
@@ -213,6 +211,38 @@ Operations such as onboarding, diagnostics, and OpenSpec lifecycle mutations are
 The Explorer investigates. The Planner defines requirements and tasks. The Designer designs. The Implementer implements. The Reviewer independently verifies.
 
 No agent needs to pretend it can do everything well.
+
+## Historical project memory (optional)
+
+SpecOps can use [Engram](https://github.com/Gentleman-Programming/engram) as optional cross-session project memory. When Engram's MCP tools are available, the SpecOps Explorer retrieves historical context — architectural rationale, established conventions, prior bug root causes, gotchas, compatibility constraints — reconciles it against the current repository, and folds confirmed context into the same evidence-backed PROJECT CONTEXT capsule that downstream specialists already receive.
+
+Engram is **optional and recommended, not required**. If Engram is not installed, is misconfigured, or returns errors, SpecOps continues exactly as it does without it. Engram never gates `/specops` or `/specops-auto`.
+
+### Boundary
+
+- **OpenSpec remains the sole durable source of truth** for the current change — proposal, specs, design, tasks, review, and archive. SpecOps does not store OpenSpec artifacts, workflow state, or Project Context in Engram.
+- **Engram is historical context only.** Repository evidence and approved OpenSpec artifacts always override Engram memory. The Explorer never treats an Engram memory as an approved requirement.
+- **Stage 1 is read-only.** SpecOps does not call any Engram write or mutation tool (`mem_save`, `mem_update`, `mem_delete`, `mem_session_summary`, `mem_judge`, `mem_compare`, `mem_review`, and others). Curated writes may arrive in a later stage.
+
+### Setup (MCP-only, recommended for SpecOps)
+
+Install the `engram` binary (see [Engram's installation guide](https://github.com/Gentleman-Programming/engram/blob/main/docs/INSTALLATION.md)), then register the Engram MCP server in your `opencode.json` (global at `~/.config/opencode/opencode.json`, or project-level):
+
+```json
+{
+    "mcp": {
+        "engram": {
+            "type": "local",
+            "command": ["engram", "mcp"],
+            "enabled": true
+        }
+    }
+}
+```
+
+Restart OpenCode, then confirm with `/specops-doctor` — the report shows `Engram: <version> (optional)` when the binary is available.
+
+> Why MCP-only for SpecOps? Engram's full OpenCode plugin (`engram setup opencode`) installs a Memory Protocol that proactively saves memories from every agent, including SpecOps specialists. That is excellent for general OpenCode use, but SpecOps Stage 1 is a read-only contract: the Explorer retrieves and reconciles, and specialists must not write to Engram as part of a SpecOps pass. MCP-only gives the Explorer the read tools without turning every specialist into a memory writer. If you already use Engram's full plugin for other work, leave it installed — SpecOps specialist prompts suppress Engram writes for the SpecOps pass regardless.
 
 ## Development
 

@@ -52,6 +52,8 @@ After implementation, return the implementation result to the SpecOps coordinato
 
 When the coordinator provides Project Context, use it as orientation for following conventions and tooling. It is not a substitute for inspecting the actual source and tests directly; if your direct inspection contradicts the capsule, the repository wins. Do not change scope beyond the approved OpenSpec artifacts.
 
+Engram-derived content within this Project Context is historical orientation, never a requirement — approved OpenSpec artifacts and your direct inspection of the repository always override it. Do not call any Engram (`engram_mem_*`) tool yourself; the Explorer owns Engram retrieval, and SpecOps performs no Engram writes at any stage. If you need additional historical context, request it via the coordinator rather than searching Engram directly.
+
 ## Handoff
 
 Return a concise summary to the coordinator in the standard SpecOps handoff envelope:

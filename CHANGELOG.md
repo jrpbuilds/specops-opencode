@@ -2,6 +2,30 @@
 
 All notable changes to SpecOps are documented in this file.
 
+## [v0.4.0]
+
+### Added
+
+- Optional read-only Engram integration: when Engram's MCP tools are available, the Explorer
+  retrieves historical project memory (architectural rationale, conventions, gotchas, prior bug
+  root causes), reconciles it against current repository evidence, and folds confirmed context
+  into the existing PROJECT CONTEXT capsule. OpenSpec remains the sole durable source of truth;
+  Engram is historical context, not authority, and repository evidence plus approved OpenSpec
+  artifacts always override it.
+- Explorer-owned retrieval contract with an explicit authority hierarchy and fail-open behaviour:
+  Engram absence, errors, or ambiguous project identity never block `/specops` or `/specops-auto`.
+- Stage 1 boundary: SpecOps performs no Engram writes or mutations; Planner, Designer,
+  Implementer, and Reviewer may not call Engram tools themselves and receive reconciled
+  historical context only through the Explorer's Project Context capsule.
+- Non-blocking `Engram: <version> (optional)` line in `/specops-doctor`, reporting Engram binary
+  availability without affecting any verdict or repair guidance.
+
+### Changed
+
+- README Getting Started no longer requires running `/specops-onboard` before `/specops`;
+  `/specops` self-onboards and `/specops-onboard` is documented as an explicit/manual command.
+- README documents Engram as optional/recommended with MCP-only setup as the Stage 1 baseline.
+
 ## [v0.3.0] - 2026-08-13
 
 ### Added

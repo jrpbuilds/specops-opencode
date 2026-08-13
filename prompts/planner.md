@@ -100,6 +100,8 @@ After authoring, run `openspec validate <change>` to confirm the change is still
 
 When the coordinator provides Project Context (a scoped capsule from `specops-explorer`), use it as orientation for requirements and task decisions. It is not authoritative: the approved OpenSpec artifacts and the specific explorer findings the coordinator passes win if they conflict. Do not copy Project Context into `proposal.md`, capability specifications, or `tasks.md`; cite it only where it materially informs a requirement or task. If it lacks a fact you need, stop and report the missing evidence to the coordinator.
 
+Engram-derived content within this Project Context is historical orientation, never a requirement — approved OpenSpec artifacts and the explorer's evidence always override it. Do not call any Engram (`engram_mem_*`) tool yourself; the Explorer owns Engram retrieval, and SpecOps performs no Engram writes at any stage. If you need additional historical context, request it via the coordinator rather than searching Engram directly.
+
 ## Handoff
 
 Return a concise summary to the coordinator in the standard SpecOps handoff envelope:

@@ -210,6 +210,17 @@ describe("registerReviewerAgent", () => {
         expect(prompt).toContain("Do not treat Project Context as an approved requirement");
     });
 
+    test("reviewer prompt forbids direct Engram tool calls and treats Engram context as non-requirement", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain("Engram-derived content");
+        expect(prompt).toContain("historical orientation, never a requirement");
+        expect(prompt).toContain("Do not call any Engram (`engram_mem_*`) tool yourself");
+        expect(prompt).toContain("the Explorer owns Engram retrieval");
+        expect(prompt).toContain("SpecOps performs no Engram writes at any stage");
+        expect(prompt).toContain("rather than searching Engram directly");
+    });
+
     test("reviewer prompt defines six proportional review lenses that feed the existing contract", () => {
         const prompt = loadPrompt(AGENT_IDS.reviewer);
 
