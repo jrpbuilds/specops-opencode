@@ -176,6 +176,14 @@ Starts or resumes SpecOps work using the SpecOps Coordinator.
 /specops stop the background animation when the game is over
 ```
 
+### `/specops-auto <goal>`
+
+Runs the same workflow autonomously with no human checkpoints, finishing with a terminal `COMPLETED` or `BLOCKED` report. Designed for headless runs:
+
+```bash
+opencode run --auto --command specops-auto "<goal>"
+```
+
 ### `/specops-onboard`
 
 Initialises OpenSpec in the current project.

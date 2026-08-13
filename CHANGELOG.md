@@ -2,6 +2,39 @@
 
 All notable changes to SpecOps are documented in this file.
 
+## [v0.3.0] - 2026-08-13
+
+### Added
+
+- `specops-auto` command and autonomous `SpecOps Auto` coordinator for headless runs: shares the
+  standard coordinator prompt with an appended autonomous appendix and denies the `question`
+  permission, executing the full workflow without human checkpoints and finishing with a terminal
+  `COMPLETED` or `BLOCKED` report.
+- Self-onboarding: every `/specops` run calls `specops_onboard` first, initialising OpenSpec
+  automatically on fresh projects and terminating BLOCKED on unavailable or failed initialisation.
+- Evidence-backed Reviewer compliance matrix: each independently verifiable approved behaviour is
+  reported as `VERIFIED`, `COMPLIANT`, `UNPROVEN`, or `FAILING`, with executed evidence preferred
+  where appropriate and manual/runtime verification accepted where no automated test is the right
+  evidence.
+- Standard specialist handoff envelope (`STATUS`, `SUMMARY`, `ARTIFACTS`, `VERIFICATION`, `RISKS`,
+  `NEXT`) for specialist returns, with `USER DECISION REQUIRED`, `FRONTIER ELIGIBLE BLOCKER`, and
+  Reviewer `PASS`/`FAIL` preserved as standalone returns.
+- Explorer-generated `PROJECT CONTEXT` capsule, scoped to the current change and passed to
+  Planner, Designer, Implementer, and Reviewer as orientation (never authoritative).
+- Six review lenses inside the Reviewer — correctness/spec compliance, reliability,
+  resilience/edge cases, security/risk, maintainability/readability, and regression risk —
+  applied proportionally with findings flowing into the compliance matrix and `F1..Fn` contract.
+- Delta-focused remediation re-review: after remediation the Reviewer re-checks each prior
+  `F1..Fn` finding against the remediation delta, tagging `RESOLVED`, `UNRESOLVED`, or `REGRESSED`
+  with stable finding IDs instead of re-critiquing the entire change.
+
+### Changed
+
+- Hardened the Coordinator workflow contract: every `/specops` goal now runs the full SpecOps
+  workflow, including greenfield and self-contained deliverables, preventing the Coordinator from
+  implementing goals directly.
+- Regenerated the Galaxy Shooter example with the updated workflow and new model mapping.
+
 ## [v0.2.0] - 2026-08-10
 
 ### Added
