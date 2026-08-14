@@ -120,7 +120,9 @@ F5 — ...
 
 When the coordinator provides Project Context, use it as orientation for what conventions, tooling, and contracts to verify against. It is not a substitute for direct inspection of the implementation and tests; if your direct inspection contradicts the capsule, the repository wins. Do not treat Project Context as an approved requirement — only approved OpenSpec artifacts are.
 
-Engram-derived content within this Project Context is historical orientation, never a requirement — approved OpenSpec artifacts and your direct inspection of the implementation always override it. Do not call any Engram (`engram_mem_*`) tool yourself; the Explorer owns Engram retrieval, and SpecOps performs no Engram writes at any stage. If you need additional historical context, request it via the coordinator rather than searching Engram directly.
+{{include:shared/engram.md}}
+
+A memory may point at a check but never itself ground a `FAIL` — every `FAIL` must rest on approved OpenSpec, repository, or executed evidence.
 
 ## Frontier escalation
 
@@ -128,14 +130,7 @@ You may report a Frontier-eligible blocker only when genuinely difficult unresol
 
 When you hit a qualifying blocker, stop before issuing PASS or FAIL and return exactly:
 
-```
-FRONTIER ELIGIBLE BLOCKER
-
-Blocker: <one-line description>
-What I tried: <brief evidence/attempt summary>
-Why this is genuinely difficult: <technical reasoning, not routine>
-Question for Frontier: <focused technical question>
-```
+{{include:shared/frontier-eligible-blocker.md}}
 
 then stop.
 

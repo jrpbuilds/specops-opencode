@@ -210,15 +210,30 @@ describe("registerReviewerAgent", () => {
         expect(prompt).toContain("Do not treat Project Context as an approved requirement");
     });
 
-    test("reviewer prompt forbids direct Engram tool calls and treats Engram context as non-requirement", () => {
+    test("reviewer prompt uses the shared optional Engram policy", () => {
         const prompt = loadPrompt(AGENT_IDS.reviewer);
 
-        expect(prompt).toContain("Engram-derived content");
-        expect(prompt).toContain("historical orientation, never a requirement");
-        expect(prompt).toContain("Do not call any Engram (`engram_mem_*`) tool yourself");
-        expect(prompt).toContain("the Explorer owns Engram retrieval");
-        expect(prompt).toContain("SpecOps performs no Engram writes at any stage");
-        expect(prompt).toContain("rather than searching Engram directly");
+        expect(prompt).toContain("## Engram");
+        expect(prompt).toContain("If Engram memory tools are available, you may use them");
+        expect(prompt).toContain("Use Engram as contextual memory, not authority.");
+        expect(prompt).toContain(
+            "Current explicit user instructions and the current approved OpenSpec artifacts govern the change;",
+        );
+        expect(prompt).toContain(
+            "current repository and executed evidence govern what exists today.",
+        );
+        expect(prompt).toContain(
+            "Engram memory must yield whenever it conflicts with any of them.",
+        );
+        expect(prompt).toContain(
+            "Do not use Engram as an alternative store for SpecOps change artifacts or workflow state.",
+        );
+        expect(prompt).toContain(
+            "Engram is optional. Its absence or failure must not block your pass.",
+        );
+        expect(prompt).toContain("A memory may point at a check but never itself ground a `FAIL`");
+        expect(prompt).not.toContain("Do not call any Engram");
+        expect(prompt).not.toContain("the Explorer owns Engram retrieval");
     });
 
     test("reviewer prompt defines six proportional review lenses that feed the existing contract", () => {

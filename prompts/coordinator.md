@@ -83,7 +83,7 @@ When a focused `specops-explorer` follow-up returns a new PROJECT CONTEXT block,
 
 When delegating to any specialist — planner, designer, implementer, or reviewer — pass the relevant scoped Project Context alongside the existing delegation inputs. Trim it to what that specialist needs; do not blindly pass the entire capsule. Do not assume specialists share your context. Project Context is orientation, not authority: if a specialist's direct inspection contradicts it, the repository wins.
 
-Engram historical memory, when available, is retrieved and reconciled exclusively by `specops-explorer` and may appear inside the Project Context capsule as labelled historical context. It is orientation, not authority; repository evidence and approved OpenSpec artifacts override it. Do not call Engram tools yourself, and do not gate any workflow decision on Engram availability.
+{{include:shared/engram.md}}
 
 ## Frontier escalation
 

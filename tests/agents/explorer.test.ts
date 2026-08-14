@@ -140,78 +140,32 @@ describe("registerExplorerAgent", () => {
         expect(prompt).not.toContain("FRONTIER ELIGIBLE BLOCKER");
     });
 
-    test("explorer prompt treats Engram as optional historical memory with fail-open behaviour", () => {
+    test("explorer prompt uses the shared optional Engram policy", () => {
         const prompt = loadPrompt(AGENT_IDS.explorer);
 
-        expect(prompt).toContain("## Historical project memory (Engram, optional)");
-        expect(prompt).toContain("`mem_current_project`");
-        expect(prompt).toContain("never blocks this pass");
-        expect(prompt).toContain("proceed exactly as today");
-        expect(prompt).toContain("`ambiguous_project`");
-        expect(prompt).toContain("Do not ask the user and do not guess");
-        expect(prompt).toContain('match_mode: "any"');
-        expect(prompt).toContain("at most two focused `mem_search` calls");
-        expect(prompt).toContain("top 1–3 genuinely relevant hits");
-        expect(prompt).toContain("The repository always comes first");
-    });
-
-    test("explorer prompt defines the Engram authority hierarchy with repository and OpenSpec precedence", () => {
-        const prompt = loadPrompt(AGENT_IDS.explorer);
-
-        expect(prompt).toContain("Engram is context, not authority");
-        expect(prompt).toContain("Current explicit user requirements");
-        expect(prompt).toContain("Approved/current OpenSpec artifacts");
-        expect(prompt).toContain("Current repository state and executed evidence");
-        expect(prompt).toContain("Engram historical memory");
-        expect(prompt).toContain("Repository evidence overrides Engram");
-        expect(prompt).toContain("Approved OpenSpec overrides Engram");
-        expect(prompt).toContain("Never treat an Engram memory as an approved requirement");
-    });
-
-    test("explorer prompt reconciles Engram claims before they enter Project Context", () => {
-        const prompt = loadPrompt(AGENT_IDS.explorer);
-
-        expect(prompt).toContain("Reconcile every material historical claim");
-        expect(prompt).toContain("`Engram observation <id/title> — historical rationale`");
-        expect(prompt).toContain("`(historical, unverified)`");
-        expect(prompt).toContain("do not add a separate `Memory:` field");
-        expect(prompt).toContain("Do not forward raw Engram search results downstream");
-    });
-
-    test("explorer prompt never silently trusts stale or conflicting Engram memory", () => {
-        const prompt = loadPrompt(AGENT_IDS.explorer);
-
-        expect(prompt).toContain("needs_review");
-        expect(prompt).toContain("`(historical, needs review)`");
-        expect(prompt).toContain("the repository wins; do not propagate the memory as fact");
-        expect(prompt).toContain("OpenSpec wins; do not propagate");
-        expect(prompt).toContain("treat all as unverified leads");
-        expect(prompt).toContain("do not pick one as fact");
-    });
-
-    test("explorer prompt forbids all Engram write and mutation tools", () => {
-        const prompt = loadPrompt(AGENT_IDS.explorer);
-
-        expect(prompt).toContain("Stage 1 is read-only");
-        for (const toolName of [
-            "mem_save",
-            "mem_update",
-            "mem_delete",
-            "mem_save_prompt",
-            "mem_session_start",
-            "mem_session_end",
-            "mem_session_summary",
-            "mem_judge",
-            "mem_compare",
-            "mem_review",
-            "mem_capture_passive",
-            "mem_pin",
-            "mem_unpin",
-            "mem_merge_projects",
-            "mem_suggest_topic_key",
-        ]) {
-            expect(prompt).toContain(`\`${toolName}\``);
-        }
-        expect(prompt).toContain("Engram retrieval is the Explorer's responsibility only");
+        expect(prompt).toContain("## Engram");
+        expect(prompt).toContain(
+            "If Engram memory tools are available, you may use them when historical project knowledge would materially improve your pass.",
+        );
+        expect(prompt).toContain("Use Engram as contextual memory, not authority.");
+        expect(prompt).toContain(
+            "Current explicit user instructions and the current approved OpenSpec artifacts govern the change;",
+        );
+        expect(prompt).toContain(
+            "current repository and executed evidence govern what exists today.",
+        );
+        expect(prompt).toContain(
+            "Engram memory must yield whenever it conflicts with any of them.",
+        );
+        expect(prompt).toContain(
+            "Do not use Engram as an alternative store for SpecOps change artifacts or workflow state.",
+        );
+        expect(prompt).toContain(
+            "Engram is optional. Its absence or failure must not block your pass.",
+        );
+        expect(prompt).not.toContain("## Historical project memory (Engram, optional)");
+        expect(prompt).not.toContain("mem_");
+        expect(prompt).not.toContain("Stage 1 is read-only");
+        expect(prompt).not.toContain("Explorer's responsibility only");
     });
 });

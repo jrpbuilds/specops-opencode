@@ -52,33 +52,13 @@ After implementation, return the implementation result to the SpecOps coordinato
 
 When the coordinator provides Project Context, use it as orientation for following conventions and tooling. It is not a substitute for inspecting the actual source and tests directly; if your direct inspection contradicts the capsule, the repository wins. Do not change scope beyond the approved OpenSpec artifacts.
 
-Engram-derived content within this Project Context is historical orientation, never a requirement — approved OpenSpec artifacts and your direct inspection of the repository always override it. Do not call any Engram (`engram_mem_*`) tool yourself; the Explorer owns Engram retrieval, and SpecOps performs no Engram writes at any stage. If you need additional historical context, request it via the coordinator rather than searching Engram directly.
+{{include:shared/engram.md}}
 
 ## Handoff
 
 Return a concise summary to the coordinator in the standard SpecOps handoff envelope:
 
-STATUS: success | blocked
-
-SUMMARY:
-<1-3 sentences>
-
-ARTIFACTS:
-
-- <durable workflow/OpenSpec artifacts created or updated this pass, names only — never ordinary changed source or test files — or "none">
-
-VERIFICATION:
-
-- <checks or evidence performed this pass, or "none">
-
-RISKS:
-
-- <material risks, unresolved questions, or blockers, or "none">
-
-NEXT:
-<advisory recommended owning role/action, or "none">
-
-`success` means you completed your owned pass, even if non-blocking risks remain. `blocked` means your owned pass could not complete and requires follow-up: explain what blocked you in RISKS and what you need in NEXT. `NEXT` is advisory only and never overrides the coordinator's workflow or lifecycle decisions.
+{{include:shared/handoff-envelope.md}}
 
 For ARTIFACTS, list only durable workflow artifacts such as `tasks.md` (with newly checked tasks) or `tasks.md (review remediation)`. Report ordinary changed source and test files in SUMMARY.
 
@@ -90,14 +70,7 @@ You may report a Frontier-eligible blocker only when you are materially blocked 
 
 When you hit a qualifying blocker, stop, leave the affected task unchecked, and return exactly:
 
-```
-FRONTIER ELIGIBLE BLOCKER
-
-Blocker: <one-line description>
-What I tried: <brief evidence/attempt summary>
-Why this is genuinely difficult: <technical reasoning, not routine>
-Question for Frontier: <focused technical question>
-```
+{{include:shared/frontier-eligible-blocker.md}}
 
 then stop.
 
@@ -105,4 +78,4 @@ When the Coordinator returns with Frontier advice, resume the same task/pass fro
 
 If the blocker cannot be resolved without changing approved requirements, capability specifications, or `design.md`, leave the item unchecked and return the conflict to the Coordinator for routing to planning or design instead.
 
-Frontier advice is advisory only. You are not obligated to follow it.
+{{include:shared/frontier-advice.md}}

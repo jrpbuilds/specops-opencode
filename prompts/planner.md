@@ -100,33 +100,13 @@ After authoring, run `openspec validate <change>` to confirm the change is still
 
 When the coordinator provides Project Context (a scoped capsule from `specops-explorer`), use it as orientation for requirements and task decisions. It is not authoritative: the approved OpenSpec artifacts and the specific explorer findings the coordinator passes win if they conflict. Do not copy Project Context into `proposal.md`, capability specifications, or `tasks.md`; cite it only where it materially informs a requirement or task. If it lacks a fact you need, stop and report the missing evidence to the coordinator.
 
-Engram-derived content within this Project Context is historical orientation, never a requirement — approved OpenSpec artifacts and the explorer's evidence always override it. Do not call any Engram (`engram_mem_*`) tool yourself; the Explorer owns Engram retrieval, and SpecOps performs no Engram writes at any stage. If you need additional historical context, request it via the coordinator rather than searching Engram directly.
+{{include:shared/engram.md}}
 
 ## Handoff
 
 Return a concise summary to the coordinator in the standard SpecOps handoff envelope:
 
-STATUS: success | blocked
-
-SUMMARY:
-<1-3 sentences>
-
-ARTIFACTS:
-
-- <durable workflow/OpenSpec artifacts created or updated this pass, names only — never ordinary changed source or test files — or "none">
-
-VERIFICATION:
-
-- <checks or evidence performed this pass, or "none">
-
-RISKS:
-
-- <material risks, unresolved questions, or blockers, or "none">
-
-NEXT:
-<advisory recommended owning role/action, or "none">
-
-`success` means you completed your owned pass, even if non-blocking risks remain. `blocked` means your owned pass could not complete and requires follow-up: explain what blocked you in RISKS and what you need in NEXT. `NEXT` is advisory only and never overrides the coordinator's workflow or lifecycle decisions.
+{{include:shared/handoff-envelope.md}}
 
 If you return `USER DECISION REQUIRED` or `FRONTIER ELIGIBLE BLOCKER`, return that block alone — do not prepend the handoff envelope.
 
@@ -136,17 +116,10 @@ You may report a Frontier-eligible blocker only when you are materially blocked 
 
 When you hit a qualifying blocker, stop, preserve artifacts already completed in this pass, and return exactly:
 
-```
-FRONTIER ELIGIBLE BLOCKER
-
-Blocker: <one-line description>
-What I tried: <brief evidence/attempt summary>
-Why this is genuinely difficult: <technical reasoning, not routine>
-Question for Frontier: <focused technical question>
-```
+{{include:shared/frontier-eligible-blocker.md}}
 
 then stop. Do not bake an assumption into the artifact.
 
 When the Coordinator returns with Frontier advice, resume the same pass from where you stopped. You remain responsible for the artifact; incorporate the advice as you see fit. Do not restart the proposal or recreate completed specs.
 
-Frontier advice is advisory only. You are not obligated to follow it.
+{{include:shared/frontier-advice.md}}

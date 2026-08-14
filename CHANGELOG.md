@@ -6,25 +6,26 @@ All notable changes to SpecOps are documented in this file.
 
 ### Added
 
-- Optional read-only Engram integration: when Engram's MCP tools are available, the Explorer
-  retrieves historical project memory (architectural rationale, conventions, gotchas, prior bug
-  root causes), reconciles it against current repository evidence, and folds confirmed context
-  into the existing PROJECT CONTEXT capsule. OpenSpec remains the sole durable source of truth;
-  Engram is historical context, not authority, and repository evidence plus approved OpenSpec
-  artifacts always override it.
-- Explorer-owned retrieval contract with an explicit authority hierarchy and fail-open behaviour:
-  Engram absence, errors, or ambiguous project identity never block `/specops` or `/specops-auto`.
-- Stage 1 boundary: SpecOps performs no Engram writes or mutations; Planner, Designer,
-  Implementer, and Reviewer may not call Engram tools themselves and receive reconciled
-  historical context only through the Explorer's Project Context capsule.
-- Non-blocking `Engram: <version> (optional)` line in `/specops-doctor`, reporting Engram binary
-  availability without affecting any verdict or repair guidance.
+- Optional Engram project-memory capability available to every SpecOps agent when Engram's MCP
+  tools are present. Agents may use historical architectural decisions, conventions, previous
+  discoveries, and project-specific gotchas selectively when they materially help their pass.
+- One shared Engram policy across prompts: memory is contextual, not authority. Current explicit
+  user instructions and the current approved OpenSpec artifacts govern the change; current
+  repository and executed evidence govern what exists today; Engram memory yields whenever it
+  conflicts with any of them. Engram absence or failure never blocks `/specops` or `/specops-auto`.
+- SpecOps does not use Engram as an alternative store for OpenSpec change artifacts or workflow
+  state. The previous global read-only restriction is removed so normal Engram memory behaviour
+  can coexist with SpecOps.
 
 ### Changed
 
 - README Getting Started no longer requires running `/specops-onboard` before `/specops`;
   `/specops` self-onboards and `/specops-onboard` is documented as an explicit/manual command.
-- README documents Engram as optional/recommended with MCP-only setup as the Stage 1 baseline.
+- README documents Engram as an optional companion and recommends Engram's current documented
+  OpenCode setup for exposing its MCP server and tools.
+- Prompt contracts now compose shared fragments in `prompts/shared/` for the Engram policy, handoff
+  envelope, Frontier blocker template, and Frontier advice line via a minimal whole-line
+  `{{include:...}}` directive resolved when prompts load.
 
 ## [v0.3.0] - 2026-08-13
 

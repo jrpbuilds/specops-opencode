@@ -212,37 +212,15 @@ The Explorer investigates. The Planner defines requirements and tasks. The Desig
 
 No agent needs to pretend it can do everything well.
 
-## Historical project memory (optional)
+## Engram (optional)
 
-SpecOps can use [Engram](https://github.com/Gentleman-Programming/engram) as optional cross-session project memory. When Engram's MCP tools are available, the SpecOps Explorer retrieves historical context — architectural rationale, established conventions, prior bug root causes, gotchas, compatibility constraints — reconciles it against the current repository, and folds confirmed context into the same evidence-backed PROJECT CONTEXT capsule that downstream specialists already receive.
+SpecOps uses OpenSpec for authoritative change state and works perfectly without Engram. For better cross-session project awareness, we recommend installing the [Engram](https://github.com/Gentleman-Programming/engram) MCP server so SpecOps agents can make use of historical architectural decisions, conventions, previous discoveries, and project-specific gotchas when useful.
 
-Engram is **optional and recommended, not required**. If Engram is not installed, is misconfigured, or returns errors, SpecOps continues exactly as it does without it. Engram never gates `/specops` or `/specops-auto`.
+When Engram's MCP tools are available, any SpecOps agent may use them selectively. Engram is contextual memory, not authority: current explicit user instructions and the current approved OpenSpec artifacts govern the change; current repository and executed evidence govern what exists today. Engram memory must yield whenever it conflicts with any of them. SpecOps does not store OpenSpec artifacts or workflow state in Engram, and Engram is never required - if its tools are unavailable, SpecOps continues unchanged.
 
-### Boundary
+### Setup
 
-- **OpenSpec remains the sole durable source of truth** for the current change — proposal, specs, design, tasks, review, and archive. SpecOps does not store OpenSpec artifacts, workflow state, or Project Context in Engram.
-- **Engram is historical context only.** Repository evidence and approved OpenSpec artifacts always override Engram memory. The Explorer never treats an Engram memory as an approved requirement.
-- **Stage 1 is read-only.** SpecOps does not call any Engram write or mutation tool (`mem_save`, `mem_update`, `mem_delete`, `mem_session_summary`, `mem_judge`, `mem_compare`, `mem_review`, and others). Curated writes may arrive in a later stage.
-
-### Setup (MCP-only, recommended for SpecOps)
-
-Install the `engram` binary (see [Engram's installation guide](https://github.com/Gentleman-Programming/engram/blob/main/docs/INSTALLATION.md)), then register the Engram MCP server in your `opencode.json` (global at `~/.config/opencode/opencode.json`, or project-level):
-
-```json
-{
-    "mcp": {
-        "engram": {
-            "type": "local",
-            "command": ["engram", "mcp"],
-            "enabled": true
-        }
-    }
-}
-```
-
-Restart OpenCode, then confirm with `/specops-doctor` — the report shows `Engram: <version> (optional)` when the binary is available.
-
-> Why MCP-only for SpecOps? Engram's full OpenCode plugin (`engram setup opencode`) installs a Memory Protocol that proactively saves memories from every agent, including SpecOps specialists. That is excellent for general OpenCode use, but SpecOps Stage 1 is a read-only contract: the Explorer retrieves and reconciles, and specialists must not write to Engram as part of a SpecOps pass. MCP-only gives the Explorer the read tools without turning every specialist into a memory writer. If you already use Engram's full plugin for other work, leave it installed — SpecOps specialist prompts suppress Engram writes for the SpecOps pass regardless.
+Install Engram (see [Engram's installation guide](https://github.com/Gentleman-Programming/engram/blob/main/docs/INSTALLATION.md)), then follow [Engram's documented OpenCode setup](https://github.com/Gentleman-Programming/engram/blob/main/docs/AGENT-SETUP.md) (`engram setup opencode`) to expose its MCP server and tools to OpenCode. Restart OpenCode afterwards.
 
 ## Development
 

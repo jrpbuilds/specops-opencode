@@ -1,7 +1,6 @@
 import { tool, type ToolDefinition } from "@opencode-ai/plugin/tool";
 import { ALL_AGENT_IDS } from "../agents/ids.js";
 import { loadConfig, type SpecOpsConfig } from "../config.js";
-import { isEngramAvailable } from "../engram.js";
 import { getOpenSpecVersion } from "../openspec/cli.js";
 import { runOpenSpecDoctor, type OpenSpecDoctorResult } from "../openspec/doctor.js";
 import { getSpecOpsVersion } from "../version.js";
@@ -16,33 +15,27 @@ export type DoctorDeps = {
     specopsVersion: () => Promise<string>;
     openspecVersion: () => Promise<string | null>;
     openspecDoctor: () => Promise<OpenSpecDoctorResult>;
-    engramVersion: () => Promise<string | null>;
     loadConfig: () => Promise<SpecOpsConfig>;
 };
 
 /**
- * Collect SpecOps, OpenSpec, and role-configuration diagnostics, plus a
- * non-blocking informational Engram version line when the optional binary is
- * installed.
+ * Collect SpecOps, OpenSpec, and role-configuration diagnostics.
  *
  * OpenSpec failures and invalid configuration are reported as text rather than
  * stopping the report early, allowing the user to see the most useful repair
- * information in one result. Engram availability never affects any verdict or
- * repair guidance in the report.
+ * information in one result.
  *
  * @param deps Version readers, OpenSpec diagnostics, and config loader.
  * @returns A concise multi-line report suitable for a tool result.
  */
 export async function doctor(deps: DoctorDeps): Promise<string> {
     const specopsVersion = await readVersion(deps.specopsVersion);
-    const openspecVersion = await readOptionalVersion(deps.openspecVersion);
-    const engramVersion = await readOptionalVersion(deps.engramVersion);
+    const openspecVersion = await readOpenSpecVersion(deps.openspecVersion);
     const lines = [
         "SpecOps Doctor",
         "",
         `SpecOps: ${specopsVersion}`,
         `OpenSpec: ${openspecVersion ?? "unavailable"}`,
-        `Engram: ${engramVersion ?? "unavailable"} (optional)`,
         "",
     ];
 
@@ -114,7 +107,7 @@ export async function doctor(deps: DoctorDeps): Promise<string> {
  */
 export const doctorTool: ToolDefinition = tool({
     description:
-        "Run SpecOps diagnostics: report versions (including optional Engram availability), OpenSpec health, configuration validity, and model-role mappings.",
+        "Run SpecOps diagnostics: report versions, OpenSpec health, configuration validity, and model-role mappings.",
     args: {},
     async execute(_args, context) {
         context.metadata({ title: "Running SpecOps doctor…" });
@@ -122,7 +115,6 @@ export const doctorTool: ToolDefinition = tool({
             specopsVersion: getSpecOpsVersion,
             openspecVersion: getOpenSpecVersion,
             openspecDoctor: () => runOpenSpecDoctor(context.directory),
-            engramVersion: isEngramAvailable,
             loadConfig: () => loadConfig(),
         });
     },
@@ -142,13 +134,12 @@ async function readVersion(read: () => Promise<string>): Promise<string> {
 }
 
 /**
- * Read an optional CLI version while preserving unavailable as `null`.
+ * Read the optional OpenSpec version while preserving unavailable as `null`.
  *
  * The caller uses `null` to distinguish an absent CLI from a present CLI whose
- * version string happens to be unavailable. Used for both OpenSpec and the
- * optional Engram binary.
+ * version string happens to be unavailable.
  */
-async function readOptionalVersion(read: () => Promise<string | null>): Promise<string | null> {
+async function readOpenSpecVersion(read: () => Promise<string | null>): Promise<string | null> {
     try {
         const version = await read();
         return version?.trim() || null;

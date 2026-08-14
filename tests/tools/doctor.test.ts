@@ -7,7 +7,6 @@ function deps(overrides: Partial<DoctorDeps> = {}): DoctorDeps {
         specopsVersion: async () => "0.1.0",
         openspecVersion: async () => "1.8.0",
         openspecDoctor: async () => ({ initialized: true, healthy: true, issues: [] }),
-        engramVersion: async () => null,
         loadConfig: async () => structuredClone(DEFAULT_CONFIG),
         ...overrides,
     };
@@ -37,8 +36,6 @@ describe("doctor", () => {
 
         expect(result).toContain("OpenSpec: unavailable");
         expect(result).toContain("✗ OpenSpec CLI not found");
-        expect(result).toContain("Engram: unavailable (optional)");
-        expect(result).not.toContain("Install Engram");
         expect(result).toContain("✓ SpecOps configuration valid");
         expect(result).toContain("- 2 explicit models");
         expect(result).toContain("- 5 OpenCode default");
@@ -105,20 +102,5 @@ describe("doctor", () => {
         expect(result).toContain("specops-explorer");
         expect(result).toContain("Open SpecOps Configure");
         expect(result).not.toContain("model roles configured");
-    });
-
-    test("reports Engram as optional and available without affecting readiness", async () => {
-        const result = await doctor(deps({ engramVersion: async () => "1.4.0" }));
-
-        expect(result).toContain("Engram: 1.4.0 (optional)");
-        expect(result).toContain("SpecOps is ready.");
-        expect(result).not.toContain("Install Engram");
-    });
-
-    test("reports Engram as optional and unavailable without affecting the verdict", async () => {
-        const result = await doctor(deps({ engramVersion: async () => null }));
-
-        expect(result).toContain("Engram: unavailable (optional)");
-        expect(result).toContain("SpecOps is ready.");
     });
 });

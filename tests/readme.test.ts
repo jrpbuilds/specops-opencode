@@ -9,13 +9,16 @@ const gettingStarted = readme.slice(
 );
 
 describe("README", () => {
-    test("documents Engram as optional recommended MCP-based historical memory", () => {
+    test("documents Engram as an optional companion and not an artifact store", () => {
         expect(readme).toContain("https://github.com/Gentleman-Programming/engram");
-        expect(readme).toContain("optional and recommended, not required");
-        expect(readme).toContain('"command": ["engram", "mcp"]');
-        expect(readme).toContain("MCP-only, recommended for SpecOps");
-        expect(readme).toContain("OpenSpec remains the sole durable source of truth");
-        expect(readme).toContain("SpecOps continues exactly as it does without it");
+        expect(readme).toContain("works perfectly without Engram");
+        expect(readme).toContain("engram setup opencode");
+        expect(readme).toContain("docs/AGENT-SETUP.md");
+        expect(readme).toContain("does not store OpenSpec artifacts or workflow state in Engram");
+        expect(readme).toContain("Engram is never required");
+        expect(readme).not.toContain("Stage 1 is read-only");
+        expect(readme).not.toContain('"command": ["engram", "mcp"]');
+        expect(readme).not.toContain("MCP-only, recommended for SpecOps");
     });
 
     test("getting started no longer requires manual onboarding before /specops", () => {

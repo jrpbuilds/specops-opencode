@@ -122,10 +122,27 @@ try {
             .startsWith("# SpecOps Reviewer"),
         "packed reviewer prompt missing or malformed",
     );
+    for (const fragment of [
+        "engram.md",
+        "handoff-envelope.md",
+        "frontier-eligible-blocker.md",
+        "frontier-advice.md",
+    ]) {
+        assert(
+            (
+                await readFile(path.join(packageDirectory, "prompts", "shared", fragment), "utf8")
+            ).trim().length > 0,
+            `packed shared prompt fragment missing: ${fragment}`,
+        );
+    }
     assert(
         typeof config.agent["SpecOps"].prompt === "string" &&
             config.agent["SpecOps"].prompt.length > 0,
         "coordinator prompt not loaded in packed install",
+    );
+    assert(
+        config.agent["SpecOps"].prompt.includes("## Engram"),
+        "packed coordinator prompt did not resolve shared Engram fragment",
     );
     assert(
         typeof config.agent["specops-explorer"].prompt === "string" &&

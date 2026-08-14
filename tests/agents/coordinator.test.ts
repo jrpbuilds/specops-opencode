@@ -170,7 +170,7 @@ describe("registerCoordinatorAgent", () => {
         expect(prompt).toContain(delegationBullet);
     });
 
-    test("coordinator prompt keeps Engram retrieval Explorer-owned and never gates on it", () => {
+    test("coordinator prompt uses the shared optional Engram policy", () => {
         const prompt = loadPrompt(AGENT_IDS.coordinator);
 
         const section = prompt.slice(
@@ -178,11 +178,26 @@ describe("registerCoordinatorAgent", () => {
             prompt.indexOf("## Frontier escalation"),
         );
 
-        expect(section).toContain("Engram historical memory");
-        expect(section).toContain("retrieved and reconciled exclusively by `specops-explorer`");
-        expect(section).toContain("labelled historical context");
-        expect(section).toContain("Do not call Engram tools yourself");
-        expect(section).toContain("do not gate any workflow decision on Engram availability");
+        expect(section).toContain("## Engram");
+        expect(section).toContain("If Engram memory tools are available, you may use them");
+        expect(section).toContain("Use Engram as contextual memory, not authority.");
+        expect(section).toContain(
+            "Current explicit user instructions and the current approved OpenSpec artifacts govern the change;",
+        );
+        expect(section).toContain(
+            "current repository and executed evidence govern what exists today.",
+        );
+        expect(section).toContain(
+            "Engram memory must yield whenever it conflicts with any of them.",
+        );
+        expect(section).toContain(
+            "Do not use Engram as an alternative store for SpecOps change artifacts or workflow state.",
+        );
+        expect(section).toContain(
+            "Engram is optional. Its absence or failure must not block your pass.",
+        );
+        expect(section).not.toContain("retrieved and reconciled exclusively by `specops-explorer`");
+        expect(section).not.toContain("Do not call Engram tools yourself");
     });
 
     test("coordinator prompt uses deterministic startup context and owns decisions", () => {

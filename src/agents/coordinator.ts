@@ -29,11 +29,12 @@ export const SPECOPS_AUTO_AGENT_ID = "SpecOps Auto";
 /**
  * Substitute the Frontier escalation state into the Coordinator prompt.
  *
- * The placeholder `{{FRONTIER_ESCALATION_STATE}}` is replaced with either
- * `enabled` or `disabled` so the Coordinator prompt contract is concrete for
- * the current session. Together with the autonomous appendix composition this
- * is intentionally the only runtime mutation of a loaded prompt and avoids
- * inventing a general templating system.
+ * Prompt includes are resolved by `src/prompts.ts` when the prompt is loaded.
+ * This helper then replaces the `{{FRONTIER_ESCALATION_STATE}}` placeholder
+ * with either `enabled` or `disabled` so the Coordinator prompt contract is
+ * concrete for the current session. It is the only mutation applied after
+ * prompt loading; the include syntax remains a deliberately small,
+ * whole-line-only mechanism without parameters or conditionals.
  */
 export function applyFrontierState(prompt: string, frontierEscalation: boolean): string {
     return prompt.replace(
