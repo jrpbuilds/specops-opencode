@@ -2,6 +2,7 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import { FRONTIER_AGENT_ID, registerFrontierAgent } from "../../src/agents/frontier.js";
+import { SPECOPS_AUTO_REPLICATE_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
@@ -29,6 +30,7 @@ describe("registerFrontierAgent", () => {
                 "verdicts, or lifecycle state.",
             mode: "subagent",
             prompt: loadPrompt(AGENT_IDS.frontier),
+            permission: { ...SPECOPS_AUTO_REPLICATE_PERMISSION },
         });
     });
 

@@ -8,6 +8,7 @@ import {
     SPECOPS_AGENT_ID,
     SPECOPS_AUTO_AGENT_ID,
 } from "../../src/agents/coordinator.js";
+import { SPECOPS_AUTO_REPLICATE_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt, loadPromptFile } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
@@ -31,7 +32,7 @@ describe("registerCoordinatorAgent", () => {
             description: "SpecOps coordinator for spec-driven development",
             mode: "primary",
             prompt: applyFrontierState(loadPrompt(AGENT_IDS.coordinator), false),
-            permission: { question: "allow" },
+            permission: { question: "allow", ...SPECOPS_AUTO_REPLICATE_PERMISSION },
         });
         expect(
             (
@@ -58,6 +59,9 @@ describe("registerCoordinatorAgent", () => {
                     { question?: "allow" | "deny" } | undefined
             )?.question,
         ).toBe("deny");
+        expect(config.agent?.[SPECOPS_AUTO_AGENT_ID]).toMatchObject({
+            permission: SPECOPS_AUTO_REPLICATE_PERMISSION,
+        });
         const prompt = config.agent?.[SPECOPS_AUTO_AGENT_ID]?.prompt as string;
         expect(prompt).toContain("## Autonomous operation (SpecOps Auto)");
         expect(prompt).not.toContain("{{AUTO_MODE_STATE}}");

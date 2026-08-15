@@ -2,6 +2,34 @@
 
 All notable changes to SpecOps are documented in this file.
 
+## [v0.5.0] - 2026-08-15
+
+### Fixed
+
+- `/specops-auto` (and any headless run) could silently deadlock the first
+  time a subagent made a `bash` call with a `workdir` outside `--dir`
+  (smoke tests from `/tmp`, reading a global config, checking installed
+  binaries, linting from a sibling checkout). None of the SpecOps agents set
+  an explicit `external_directory` permission, so OpenCode's default `ask`
+  applied — and `--auto` does not propagate to subagent sessions
+  ([opencode#35073](https://github.com/anomalyco/opencode/issues/35073)),
+  parent agent permissions don't propagate to subagents
+  ([opencode#12566](https://github.com/anomalyco/opencode/issues/12566)), and
+  session-inherited `external_directory` allows get clobbered on the way
+  into the child session
+  ([opencode#30527](https://github.com/anomalyco/opencode/issues/30527)).
+  Every SpecOps agent (both coordinators and all six subagents) now sets
+  the two OpenCode permission keys that default to `ask` —
+  `external_directory` and `doom_loop` — to `"allow"`, which is exactly what
+  `--auto` would auto-approve. Because these are the agent's own registered
+  rules (evaluated via `merge(taskAgent.permission, …)`), they short-circuit
+  all three upstream bugs: no `ask` is ever generated, so there is nothing
+  for `--auto` to fail to propagate and nothing to clobber. Interactive
+  `/specops` runs no longer surface the per-call `external_directory` or
+  `doom_loop` prompts; OpenCode's TUI `always` action and SpecOps's own
+  plan-checkpoint / review-completion checkpoints remain as the human gates.
+  (issue #3)
+
 ## [v0.4.0] - 2026-08-14
 
 ### Added

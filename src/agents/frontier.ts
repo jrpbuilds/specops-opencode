@@ -1,6 +1,7 @@
 import type { Config } from "@opencode-ai/plugin";
 import { loadPrompt } from "../prompts.js";
 import { AGENT_IDS } from "./ids.js";
+import { SPECOPS_AUTO_REPLICATE_PERMISSION } from "./permissions.js";
 import type { SpecOpsConfig } from "../config.js";
 
 /**
@@ -36,6 +37,7 @@ export function registerFrontierAgent(config: Config, specOpsConfig: SpecOpsConf
             "verdicts, or lifecycle state.",
         mode: "subagent",
         prompt: loadPrompt(AGENT_IDS.frontier),
+        permission: { ...SPECOPS_AUTO_REPLICATE_PERMISSION },
         ...(model ? { model, ...(frontier.variant ? { variant: frontier.variant } : {}) } : {}),
     };
 }

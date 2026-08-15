@@ -1,6 +1,7 @@
 import type { Config } from "@opencode-ai/plugin";
 import { loadPrompt } from "../prompts.js";
 import { AGENT_IDS } from "./ids.js";
+import { SPECOPS_AUTO_REPLICATE_PERMISSION } from "./permissions.js";
 import type { SpecOpsConfig } from "../config.js";
 
 /**
@@ -32,6 +33,7 @@ export function registerImplementerAgent(config: Config, specOpsConfig: SpecOpsC
             "implementation plans.",
         mode: "subagent",
         prompt: loadPrompt(AGENT_IDS.implementer),
+        permission: { ...SPECOPS_AUTO_REPLICATE_PERMISSION },
         ...(model
             ? { model, ...(implementer.variant ? { variant: implementer.variant } : {}) }
             : {}),

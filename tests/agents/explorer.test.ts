@@ -2,6 +2,7 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import { EXPLORER_AGENT_ID, registerExplorerAgent } from "../../src/agents/explorer.js";
+import { SPECOPS_AUTO_REPLICATE_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
@@ -26,6 +27,7 @@ describe("registerExplorerAgent", () => {
                 "Investigates repository source, behavior, conventions, tests, constraints, and risks for planning and design. Use when the SpecOps coordinator needs focused repository evidence.",
             mode: "subagent",
             prompt: loadPrompt(AGENT_IDS.explorer),
+            permission: { ...SPECOPS_AUTO_REPLICATE_PERMISSION },
         });
     });
 

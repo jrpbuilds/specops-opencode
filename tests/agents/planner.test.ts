@@ -2,6 +2,7 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import { PLANNER_AGENT_ID, registerPlannerAgent } from "../../src/agents/planner.js";
+import { SPECOPS_AUTO_REPLICATE_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
@@ -26,6 +27,7 @@ describe("registerPlannerAgent", () => {
                 "Authors OpenSpec planning artifacts — proposals, capability specifications, and implementation tasks — from the user's goal and repository evidence. Use this agent for SpecOps planning artifacts.",
             mode: "subagent",
             prompt: loadPrompt(AGENT_IDS.planner),
+            permission: { ...SPECOPS_AUTO_REPLICATE_PERMISSION },
         });
     });
 
