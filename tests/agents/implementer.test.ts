@@ -2,6 +2,7 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import { IMPLEMENTER_AGENT_ID, registerImplementerAgent } from "../../src/agents/implementer.js";
+import { SPECOPS_AUTO_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
@@ -26,7 +27,18 @@ describe("registerImplementerAgent", () => {
                 "Implements approved OpenSpec tasks in source and tests, runs verification, and marks completed tasks in tasks.md. Use this agent to execute SpecOps implementation plans.",
             mode: "subagent",
             prompt: loadPrompt(AGENT_IDS.implementer),
+            permission: { ...SPECOPS_AUTO_PERMISSION },
         });
+    });
+
+    test("implementer registration carries the SpecOps Auto permission so headless specops-auto cannot stall on a subagent permission ask (issue #3)", () => {
+        const config: Config = {};
+        registerImplementerAgent(config, makeConfig());
+
+        const permission = config.agent?.[IMPLEMENTER_AGENT_ID]?.permission;
+        expect(permission).toBeDefined();
+        expect(permission?.external_directory).toBe("allow");
+        expect(permission?.doom_loop).toBe("allow");
     });
 
     test("implementer prompt owns unchecked task execution and direct source changes", () => {

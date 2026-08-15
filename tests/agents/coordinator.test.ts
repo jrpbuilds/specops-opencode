@@ -8,6 +8,7 @@ import {
     SPECOPS_AGENT_ID,
     SPECOPS_AUTO_AGENT_ID,
 } from "../../src/agents/coordinator.js";
+import { SPECOPS_AUTO_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt, loadPromptFile } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
@@ -39,6 +40,10 @@ describe("registerCoordinatorAgent", () => {
                     { question?: "allow" | "deny" } | undefined
             )?.question,
         ).toBe("allow");
+        const interactivePermission = config.agent?.[SPECOPS_AGENT_ID]?.permission as
+            Record<string, unknown> | undefined;
+        expect(interactivePermission?.external_directory).toBeUndefined();
+        expect(interactivePermission?.doom_loop).toBeUndefined();
     });
 
     test("registers the SpecOps Auto agent with the autonomous appendix and denied question", () => {
@@ -58,6 +63,9 @@ describe("registerCoordinatorAgent", () => {
                     { question?: "allow" | "deny" } | undefined
             )?.question,
         ).toBe("deny");
+        expect(config.agent?.[SPECOPS_AUTO_AGENT_ID]).toMatchObject({
+            permission: SPECOPS_AUTO_PERMISSION,
+        });
         const prompt = config.agent?.[SPECOPS_AUTO_AGENT_ID]?.prompt as string;
         expect(prompt).toContain("## Autonomous operation (SpecOps Auto)");
         expect(prompt).not.toContain("{{AUTO_MODE_STATE}}");

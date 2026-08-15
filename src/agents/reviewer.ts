@@ -1,6 +1,7 @@
 import type { Config } from "@opencode-ai/plugin";
 import { loadPrompt } from "../prompts.js";
 import { AGENT_IDS } from "./ids.js";
+import { SPECOPS_AUTO_PERMISSION } from "./permissions.js";
 import type { SpecOpsConfig } from "../config.js";
 
 /**
@@ -32,6 +33,7 @@ export function registerReviewerAgent(config: Config, specOpsConfig: SpecOpsConf
             "before completion.",
         mode: "subagent",
         prompt: loadPrompt(AGENT_IDS.reviewer),
+        permission: { ...SPECOPS_AUTO_PERMISSION },
         ...(model ? { model, ...(reviewer.variant ? { variant: reviewer.variant } : {}) } : {}),
     };
 }

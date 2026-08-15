@@ -2,6 +2,37 @@
 
 All notable changes to SpecOps are documented in this file.
 
+## [v0.5.0] - 2026-08-15
+
+### Fixed
+
+- `/specops-auto` (and any headless run) could silently deadlock the first
+  time a subagent made a `bash` call with a `workdir` outside `--dir`
+  (smoke tests from `/tmp`, reading a global config, checking installed
+  binaries, linting from a sibling checkout). None of the SpecOps agents set
+  an explicit `external_directory` permission, so OpenCode's default `ask`
+  applied — and `--auto` does not propagate to subagent sessions
+  ([opencode#35073](https://github.com/anomalyco/opencode/issues/35073)),
+  parent agent permissions don't propagate to subagents
+  ([opencode#12566](https://github.com/anomalyco/opencode/issues/12566)), and
+  session-inherited `external_directory` allows get clobbered on the way
+  into the child session
+  ([opencode#30527](https://github.com/anomalyco/opencode/issues/30527)). The
+  `SpecOps Auto` coordinator and the bash-heavy subagents it dispatches
+  (`specops-implementer`, `specops-reviewer`) now carry a shared
+  `SPECOPS_AUTO_PERMISSION` that sets the two OpenCode permission keys that
+  default to `ask` (`external_directory`, `doom_loop`) to `"allow"`, which is
+  exactly what `--auto` would auto-approve. Because these are the agent's own
+  registered rules (evaluated via `merge(taskAgent.permission, …)`), no `ask`
+  is ever generated, short-circuiting all three upstream bugs. The
+  interactive `SpecOps` coordinator and the read-only specialists
+  (`specops-explorer`, `specops-planner`, `specops-designer`,
+  `specops-frontier`) keep OpenCode's default `ask`, so interactive
+  `/specops` still prompts before cross-directory access by those agents.
+  Residual risk: Auto's read-only specialists can still stall in headless if
+  they touch a cross-directory path (opencode#35073); accepted tradeoff for
+  the interactive safety net. (issue #3)
+
 ## [v0.4.0] - 2026-08-14
 
 ### Added

@@ -16,6 +16,7 @@ import { FRONTIER_AGENT_ID } from "../src/agents/frontier.js";
 import { COMMANDS, SpecOpsPlugin } from "../src/index.js";
 import { loadPrompt } from "../src/prompts.js";
 import { AGENT_IDS } from "../src/agents/ids.js";
+import { SPECOPS_AUTO_PERMISSION } from "../src/agents/permissions.js";
 import { DEFAULT_CONFIG } from "../src/config.js";
 import { withTempDir } from "./helpers.js";
 
@@ -142,12 +143,14 @@ describe("SpecOps server plugin", () => {
                         "Implements approved OpenSpec tasks in source and tests, runs verification, and marks completed tasks in tasks.md. Use this agent to execute SpecOps implementation plans.",
                     mode: "subagent",
                     prompt: loadPrompt(AGENT_IDS.implementer),
+                    permission: { ...SPECOPS_AUTO_PERMISSION },
                 });
                 expect(config.agent?.[REVIEWER_AGENT_ID]).toEqual({
                     description:
                         "Independently verifies implemented OpenSpec changes against requirements, design, tasks, source code, and tests. Use this agent as the final SpecOps quality gate before completion.",
                     mode: "subagent",
                     prompt: loadPrompt(AGENT_IDS.reviewer),
+                    permission: { ...SPECOPS_AUTO_PERMISSION },
                 });
             } finally {
                 process.env.XDG_CONFIG_HOME = original;
