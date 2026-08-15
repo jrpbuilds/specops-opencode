@@ -1,12 +1,12 @@
 import type { Config } from "@opencode-ai/plugin";
 import { loadPrompt, loadPromptFile } from "../prompts.js";
 import { AGENT_IDS } from "./ids.js";
-import { SPECOPS_AUTO_REPLICATE_PERMISSION } from "./permissions.js";
+import { SPECOPS_AUTO_PERMISSION } from "./permissions.js";
 import type { SpecOpsConfig } from "../config.js";
 
 type RegisteredAgentConfig = NonNullable<NonNullable<Config["agent"]>[string]>;
 type CoordinatorAgentConfig = Omit<RegisteredAgentConfig, "permission"> & {
-    permission: { question: "allow" | "deny" } & typeof SPECOPS_AUTO_REPLICATE_PERMISSION;
+    permission: { question: "allow" } | ({ question: "deny" } & typeof SPECOPS_AUTO_PERMISSION);
 };
 
 /**
@@ -70,7 +70,7 @@ export function registerCoordinatorAgent(config: Config, specOpsConfig: SpecOpsC
             loadPrompt(AGENT_IDS.coordinator),
             specOpsConfig.frontierEscalation,
         ),
-        permission: { question: "allow", ...SPECOPS_AUTO_REPLICATE_PERMISSION },
+        permission: { question: "allow" },
         ...(model
             ? { model, ...(coordinator.variant ? { variant: coordinator.variant } : {}) }
             : {}),
@@ -105,7 +105,7 @@ export function registerAutoCoordinatorAgent(config: Config, specOpsConfig: Spec
             loadPrompt(AGENT_IDS.coordinator) + "\n\n" + loadPromptFile("coordinator-auto.md"),
             specOpsConfig.frontierEscalation,
         ),
-        permission: { question: "deny", ...SPECOPS_AUTO_REPLICATE_PERMISSION },
+        permission: { question: "deny", ...SPECOPS_AUTO_PERMISSION },
         ...(model
             ? { model, ...(coordinator.variant ? { variant: coordinator.variant } : {}) }
             : {}),

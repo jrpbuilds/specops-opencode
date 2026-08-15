@@ -2,7 +2,7 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import { IMPLEMENTER_AGENT_ID, registerImplementerAgent } from "../../src/agents/implementer.js";
-import { SPECOPS_AUTO_REPLICATE_PERMISSION } from "../../src/agents/permissions.js";
+import { SPECOPS_AUTO_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
@@ -27,11 +27,11 @@ describe("registerImplementerAgent", () => {
                 "Implements approved OpenSpec tasks in source and tests, runs verification, and marks completed tasks in tasks.md. Use this agent to execute SpecOps implementation plans.",
             mode: "subagent",
             prompt: loadPrompt(AGENT_IDS.implementer),
-            permission: { ...SPECOPS_AUTO_REPLICATE_PERMISSION },
+            permission: { ...SPECOPS_AUTO_PERMISSION },
         });
     });
 
-    test("implementer registration replicates --auto so headless specops-auto cannot stall on a subagent permission ask (issue #3)", () => {
+    test("implementer registration carries the SpecOps Auto permission so headless specops-auto cannot stall on a subagent permission ask (issue #3)", () => {
         const config: Config = {};
         registerImplementerAgent(config, makeConfig());
 

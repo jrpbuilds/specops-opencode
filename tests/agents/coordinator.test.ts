@@ -8,7 +8,7 @@ import {
     SPECOPS_AGENT_ID,
     SPECOPS_AUTO_AGENT_ID,
 } from "../../src/agents/coordinator.js";
-import { SPECOPS_AUTO_REPLICATE_PERMISSION } from "../../src/agents/permissions.js";
+import { SPECOPS_AUTO_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt, loadPromptFile } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
@@ -32,7 +32,7 @@ describe("registerCoordinatorAgent", () => {
             description: "SpecOps coordinator for spec-driven development",
             mode: "primary",
             prompt: applyFrontierState(loadPrompt(AGENT_IDS.coordinator), false),
-            permission: { question: "allow", ...SPECOPS_AUTO_REPLICATE_PERMISSION },
+            permission: { question: "allow" },
         });
         expect(
             (
@@ -40,6 +40,10 @@ describe("registerCoordinatorAgent", () => {
                     { question?: "allow" | "deny" } | undefined
             )?.question,
         ).toBe("allow");
+        const interactivePermission = config.agent?.[SPECOPS_AGENT_ID]?.permission as
+            Record<string, unknown> | undefined;
+        expect(interactivePermission?.external_directory).toBeUndefined();
+        expect(interactivePermission?.doom_loop).toBeUndefined();
     });
 
     test("registers the SpecOps Auto agent with the autonomous appendix and denied question", () => {
@@ -60,7 +64,7 @@ describe("registerCoordinatorAgent", () => {
             )?.question,
         ).toBe("deny");
         expect(config.agent?.[SPECOPS_AUTO_AGENT_ID]).toMatchObject({
-            permission: SPECOPS_AUTO_REPLICATE_PERMISSION,
+            permission: SPECOPS_AUTO_PERMISSION,
         });
         const prompt = config.agent?.[SPECOPS_AUTO_AGENT_ID]?.prompt as string;
         expect(prompt).toContain("## Autonomous operation (SpecOps Auto)");

@@ -17,18 +17,21 @@ All notable changes to SpecOps are documented in this file.
   ([opencode#12566](https://github.com/anomalyco/opencode/issues/12566)), and
   session-inherited `external_directory` allows get clobbered on the way
   into the child session
-  ([opencode#30527](https://github.com/anomalyco/opencode/issues/30527)).
-  Every SpecOps agent (both coordinators and all six subagents) now sets
-  the two OpenCode permission keys that default to `ask` —
-  `external_directory` and `doom_loop` — to `"allow"`, which is exactly what
-  `--auto` would auto-approve. Because these are the agent's own registered
-  rules (evaluated via `merge(taskAgent.permission, …)`), they short-circuit
-  all three upstream bugs: no `ask` is ever generated, so there is nothing
-  for `--auto` to fail to propagate and nothing to clobber. Interactive
-  `/specops` runs no longer surface the per-call `external_directory` or
-  `doom_loop` prompts; OpenCode's TUI `always` action and SpecOps's own
-  plan-checkpoint / review-completion checkpoints remain as the human gates.
-  (issue #3)
+  ([opencode#30527](https://github.com/anomalyco/opencode/issues/30527)). The
+  `SpecOps Auto` coordinator and the bash-heavy subagents it dispatches
+  (`specops-implementer`, `specops-reviewer`) now carry a shared
+  `SPECOPS_AUTO_PERMISSION` that sets the two OpenCode permission keys that
+  default to `ask` (`external_directory`, `doom_loop`) to `"allow"`, which is
+  exactly what `--auto` would auto-approve. Because these are the agent's own
+  registered rules (evaluated via `merge(taskAgent.permission, …)`), no `ask`
+  is ever generated, short-circuiting all three upstream bugs. The
+  interactive `SpecOps` coordinator and the read-only specialists
+  (`specops-explorer`, `specops-planner`, `specops-designer`,
+  `specops-frontier`) keep OpenCode's default `ask`, so interactive
+  `/specops` still prompts before cross-directory access by those agents.
+  Residual risk: Auto's read-only specialists can still stall in headless if
+  they touch a cross-directory path (opencode#35073); accepted tradeoff for
+  the interactive safety net. (issue #3)
 
 ## [v0.4.0] - 2026-08-14
 

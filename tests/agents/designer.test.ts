@@ -2,7 +2,6 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import { DESIGNER_AGENT_ID, registerDesignerAgent } from "../../src/agents/designer.js";
-import { SPECOPS_AUTO_REPLICATE_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
@@ -27,7 +26,6 @@ describe("registerDesignerAgent", () => {
                 "Authors the technical OpenSpec design from approved requirements and repository evidence. Use this agent to create design.md for SpecOps changes.",
             mode: "subagent",
             prompt: loadPrompt(AGENT_IDS.designer),
-            permission: { ...SPECOPS_AUTO_REPLICATE_PERMISSION },
         });
     });
 
