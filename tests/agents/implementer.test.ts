@@ -32,7 +32,7 @@ describe("registerImplementerAgent", () => {
         });
     });
 
-    test("implementer registration keeps its headless-safe implementation authority (issue #3)", () => {
+    test("implementer registration keeps native access within the active worktree", () => {
         const config: Config = {};
         registerImplementerAgent(config, makeConfig());
 
@@ -40,7 +40,7 @@ describe("registerImplementerAgent", () => {
         expect(permission).toBeDefined();
         expect(permission?.edit).toBe("allow");
         expect(permission?.bash).toBe("allow");
-        expect(permission?.external_directory).toBe("allow");
+        expect(permission?.external_directory).toBe("deny");
         expect(permission?.doom_loop).toBe("allow");
     });
 
@@ -49,6 +49,7 @@ describe("registerImplementerAgent", () => {
 
         expect(prompt).toContain("executing the unchecked tasks in `tasks.md`");
         expect(prompt).toContain("Inspect and modify repository source code and tests directly");
+        expect(prompt).toContain("Work within the active project/worktree");
         expect(prompt).not.toContain("Do not inspect repository source code yourself");
     });
 

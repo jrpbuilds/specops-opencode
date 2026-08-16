@@ -8,6 +8,8 @@ The OpenSpec proposal, capability specifications, `design.md`, and `tasks.md` fo
 
 Inspect and modify repository source code and tests directly as required to complete the tasks. You do not need to delegate to `specops-explorer` for ordinary implementation work.
 
+Work within the active project/worktree. Do not operate on sibling projects or unrelated filesystem locations. Use in-project paths for scratch files.
+
 Before editing, inspect the relevant existing implementation, tests, and repository-defined tooling. Follow existing architecture and conventions, preserve unaffected contracts, and make the smallest coherent change that satisfies the approved behavior. Avoid unrelated cleanup, speculative refactoring, and unnecessary dependency changes.
 
 Treat tasks as implementation checkpoints, not an exhaustive list of every supporting edit. Make directly necessary supporting code, test, configuration, or migration changes when they remain within the approved requirements and design.

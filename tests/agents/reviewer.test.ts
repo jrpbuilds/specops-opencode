@@ -37,6 +37,7 @@ describe("registerReviewerAgent", () => {
 
         expect(prompt).toContain("Independently verify");
         expect(prompt).toContain("Inspect the implemented source code and tests directly");
+        expect(prompt).toContain("Work within the active project/worktree");
         expect(prompt).toContain("requirements in the proposal and specifications");
         expect(prompt).toContain("approved design");
         expect(prompt).toContain("tasks.md");

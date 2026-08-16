@@ -1,4 +1,5 @@
 import type { Config } from "@opencode-ai/plugin";
+import { ROLE_CAPABILITY_POLICY } from "./permission-policy.js";
 
 /**
  * Custom permission namespace enforced explicitly by each lifecycle tool.
@@ -7,105 +8,59 @@ import type { Config } from "@opencode-ai/plugin";
  */
 export const SPECOPS_LIFECYCLE_PERMISSION = "specops_lifecycle";
 
+/** Architectural invariant overlay applied to every specialist role. */
+const SPECIALIST_INVARIANT = {
+    question: "deny",
+    task: { "*": "deny" },
+    "specops_*": "deny",
+    [SPECOPS_LIFECYCLE_PERMISSION]: "deny",
+} as const;
+
+/** Coordinator lifecycle ownership — task and question are added at registration. */
+const COORDINATOR_LIFECYCLE_INVARIANT = {
+    [SPECOPS_LIFECYCLE_PERMISSION]: "allow",
+} as const;
+
 /** Shared authority for the two SpecOps coordinator entry points. */
 export const COORDINATOR_PERMISSION = {
-    external_directory: "deny",
-    doom_loop: "deny",
-    edit: { "*": "deny" },
-    bash: { "*": "deny", "openspec --help": "allow", "openspec * --help": "allow" },
-    [SPECOPS_LIFECYCLE_PERMISSION]: "allow",
+    ...ROLE_CAPABILITY_POLICY["specops-coordinator"],
+    ...COORDINATOR_LIFECYCLE_INVARIANT,
 } as const;
 
 /** Read-only repository evidence role. */
 export const EXPLORER_PERMISSION = {
-    external_directory: "deny",
-    doom_loop: "deny",
-    edit: { "*": "deny" },
-    bash: "deny",
-    question: "deny",
-    task: { "*": "deny" },
-    "specops_*": "deny",
-    [SPECOPS_LIFECYCLE_PERMISSION]: "deny",
+    ...ROLE_CAPABILITY_POLICY["specops-explorer"],
+    ...SPECIALIST_INVARIANT,
 } as const;
 
 /** OpenSpec planning-artifact authoring role. */
 export const PLANNER_PERMISSION = {
-    external_directory: "deny",
-    doom_loop: "deny",
-    // OpenCode matches git projects as openspec/** but worktree="/" projects as
-    // home/.../openspec/**; both forms are required for artifact authoring.
-    edit: {
-        "*": "deny",
-        "openspec/**": "allow",
-        "**/openspec/**": "allow",
-    },
-    bash: {
-        "*": "deny",
-        "openspec instructions *": "allow",
-        "openspec validate *": "allow",
-    },
-    question: "deny",
-    task: { "*": "deny" },
-    "specops_*": "deny",
-    [SPECOPS_LIFECYCLE_PERMISSION]: "deny",
+    ...ROLE_CAPABILITY_POLICY["specops-planner"],
+    ...SPECIALIST_INVARIANT,
 } as const;
 
 /** OpenSpec design-artifact authoring role. */
 export const DESIGNER_PERMISSION = {
-    external_directory: "deny",
-    doom_loop: "deny",
-    // Keep design artifacts writable for both git-rooted and worktree="/"
-    // projects without broadening the role to repository code.
-    edit: {
-        "*": "deny",
-        "openspec/**": "allow",
-        "**/openspec/**": "allow",
-    },
-    bash: {
-        "*": "deny",
-        "openspec instructions *": "allow",
-        "openspec validate *": "allow",
-    },
-    question: "deny",
-    task: { "*": "deny" },
-    "specops_*": "deny",
-    [SPECOPS_LIFECYCLE_PERMISSION]: "deny",
+    ...ROLE_CAPABILITY_POLICY["specops-designer"],
+    ...SPECIALIST_INVARIANT,
 } as const;
 
-/** Full implementation authority retained for the issue #3 smoke-test fix. */
+/** Implementation capabilities are declared in permission-policy.ts. */
 export const IMPLEMENTER_PERMISSION = {
-    edit: "allow",
-    external_directory: "allow",
-    doom_loop: "allow",
-    bash: "allow",
-    question: "deny",
-    task: { "*": "deny" },
-    "specops_*": "deny",
-    [SPECOPS_LIFECYCLE_PERMISSION]: "deny",
+    ...ROLE_CAPABILITY_POLICY["specops-implementer"],
+    ...SPECIALIST_INVARIANT,
 } as const;
 
 /** Verification role with native edit denial and deliberate bash authority. */
 export const REVIEWER_PERMISSION = {
-    external_directory: "allow",
-    doom_loop: "allow",
-    edit: { "*": "deny" },
-    bash: "allow",
-    question: "deny",
-    task: { "*": "deny" },
-    "specops_*": "deny",
-    [SPECOPS_LIFECYCLE_PERMISSION]: "deny",
+    ...ROLE_CAPABILITY_POLICY["specops-reviewer"],
+    ...SPECIALIST_INVARIANT,
 } as const;
 
 /** Advice-only blocker consultation role. */
 export const FRONTIER_PERMISSION = {
-    external_directory: "deny",
-    doom_loop: "deny",
-    edit: { "*": "deny" },
-    bash: "deny",
-    question: "deny",
-    task: { "*": "deny" },
-    "specops_*": "deny",
-    [SPECOPS_LIFECYCLE_PERMISSION]: "deny",
+    ...ROLE_CAPABILITY_POLICY["specops-frontier"],
+    ...SPECIALIST_INVARIANT,
 } as const;
 
 /**

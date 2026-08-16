@@ -8,6 +8,8 @@ Read the current change's proposal, capability specifications, design.md, and ta
 
 Inspect the implemented source code and tests directly. Do not delegate this inspection to `specops-explorer`.
 
+Work within the active project/worktree. Do not operate on sibling projects or unrelated filesystem locations. Use in-project paths for scratch files.
+
 Verify that:
 
 - requirements in the proposal and specifications are satisfied

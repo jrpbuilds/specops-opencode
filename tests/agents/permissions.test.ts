@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { ALL_AGENT_IDS } from "../../src/agents/ids.js";
+import { ROLE_CAPABILITY_POLICY } from "../../src/agents/permission-policy.js";
 import {
     COORDINATOR_PERMISSION,
     DESIGNER_PERMISSION,
@@ -67,12 +69,14 @@ describe("role permission profiles", () => {
 
         expect(IMPLEMENTER_PERMISSION.edit).toBe("allow");
         expect(IMPLEMENTER_PERMISSION.bash).toBe("allow");
-        expect(IMPLEMENTER_PERMISSION.external_directory).toBe("allow");
+        expect(IMPLEMENTER_PERMISSION.external_directory).toBe("deny");
         expect(IMPLEMENTER_PERMISSION.doom_loop).toBe("allow");
 
-        // Reviewer bash remains unrestricted, so shell-side mutation is still possible.
+        // Reviewer bash remains unrestricted, so this is a tool-level boundary rather than a sandbox.
         expect(REVIEWER_PERMISSION.edit).toEqual({ "*": "deny" });
         expect(REVIEWER_PERMISSION.bash).toBe("allow");
+        expect(REVIEWER_PERMISSION.external_directory).toBe("deny");
+        expect(REVIEWER_PERMISSION.doom_loop).toBe("allow");
     });
 
     test("restricts ordinary lifecycle access to doctor and onboarding", () => {
@@ -98,6 +102,21 @@ describe("role permission profiles", () => {
             expect(permission.task).toEqual({ "*": "deny" });
             expect(permission[SPECOPS_LIFECYCLE_PERMISSION]).toBe("deny");
             expect(permission["specops_*"]).toBe("deny");
+        }
+    });
+});
+
+describe("policy vs invariant split", () => {
+    test("built-in capability catalogue contains every role exactly once", () => {
+        expect(Object.keys(ROLE_CAPABILITY_POLICY).sort()).toEqual([...ALL_AGENT_IDS].sort());
+    });
+
+    test("capability data does not contain architectural invariant keys", () => {
+        for (const entry of Object.values(ROLE_CAPABILITY_POLICY)) {
+            expect("question" in entry).toBe(false);
+            expect("task" in entry).toBe(false);
+            expect("specops_*" in entry).toBe(false);
+            expect(SPECOPS_LIFECYCLE_PERMISSION in entry).toBe(false);
         }
     });
 });

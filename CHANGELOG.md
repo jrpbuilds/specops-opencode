@@ -2,6 +2,22 @@
 
 All notable changes to SpecOps are documented in this file.
 
+## [v0.7.0] - unreleased
+
+### Changed
+
+- Refactored built-in role capabilities into declarative data in
+  `src/agents/permission-policy.ts`, while architectural security invariants
+  (`task`, `question`, `specops_*`, `specops_lifecycle`, the private `specops-*`
+  subagent boundary, and lifecycle ownership) remain enforced in
+  `src/agents/permissions.ts` and `src/agents/boundary.ts`.
+- `specops-implementer` and `specops-reviewer` now deny native external-directory
+  access and retain `doom_loop: "allow"` for legitimate iteration and
+  re-verification. Their unrestricted bash permission remains a residual
+  capability for commands OpenCode does not detect; this is a native/tool-level
+  guardrail, not an OS filesystem sandbox. The previous external-directory allow
+  was a headless approval workaround, not a current workflow requirement.
+
 ## [v0.6.0] - 2026-08-16
 
 ### Changed
