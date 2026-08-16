@@ -2,7 +2,7 @@
 
 All notable changes to SpecOps are documented in this file.
 
-## [v0.7.0] - unreleased
+## [v0.7.0] - 2026-08-16
 
 ### Changed
 
@@ -17,6 +17,19 @@ All notable changes to SpecOps are documented in this file.
   capability for commands OpenCode does not detect; this is a native/tool-level
   guardrail, not an OS filesystem sandbox. The previous external-directory allow
   was a headless approval workaround, not a current workflow requirement.
+- Split the monolithic `prompts/coordinator.md` into a shared core plus
+  mode-specific `coordinator-interactive.md` and `coordinator-auto.md`, with
+  `coordinator-frontier.md` loaded only when Frontier escalation is enabled. The
+  coordinator prompt is now composed by `buildCoordinatorPrompt` in
+  `src/agents/coordinator.ts`, replacing the previous `{{FRONTIER_ESCALATION_STATE}}`
+  placeholder substitution so disabled Frontier policy stays out of the model
+  context rather than being overridden at prompt time.
+- Aligned the interactive plan and `USER DECISION REQUIRED` checkpoints with
+  OpenCode's native `question` tool: the type-your-own-answer path is left on its
+  default (no `custom` field), and a specialist recommendation is surfaced by
+  appending ` (Recommended)` to the first option's label rather than mutating its
+  trade-off. `specops-planner` and `specops-designer` now place any recommended
+  option first in `Options`, with neutral ordering otherwise.
 
 ## [v0.6.0] - 2026-08-16
 
