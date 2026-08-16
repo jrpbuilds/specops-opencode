@@ -9,54 +9,42 @@ type CoordinatorAgentConfig = Omit<RegisteredAgentConfig, "permission"> & {
     permission: RolePermission;
 };
 
-/**
- * Visible primary-agent key presented in OpenCode's agent selector.
- *
- * This display name is intentionally distinct from the persisted role ID in
- * `AGENT_IDS`; OpenCode uses it to identify the plugin's primary entry point.
- */
+export type CoordinatorMode = "interactive" | "auto";
+
+/** Visible primary-agent key presented in OpenCode's agent selector. */
 export const SPECOPS_AGENT_ID = "SpecOps";
 
-/**
- * Visible primary-agent key for the autonomous SpecOps Auto coordinator.
- *
- * This agent shares the coordinator role's model config and the shared
- * coordinator prompt, appending the autonomous appendix so headless runs
- * execute without human checkpoints. It is not a configurable role, so it has
- * no entry in `AGENT_IDS`.
- */
+/** Visible primary-agent key for the autonomous SpecOps Auto coordinator. */
 export const SPECOPS_AUTO_AGENT_ID = "SpecOps Auto";
 
 /**
- * Substitute the Frontier escalation state into the Coordinator prompt.
+ * Build one coherent coordinator prompt for the selected runtime mode.
  *
- * Prompt includes are resolved by `src/prompts.ts` when the prompt is loaded.
- * This helper then replaces the `{{FRONTIER_ESCALATION_STATE}}` placeholder
- * with either `enabled` or `disabled` so the Coordinator prompt contract is
- * concrete for the current session. It is the only mutation applied after
- * prompt loading; the include syntax remains a deliberately small,
- * whole-line-only mechanism without parameters or conditionals.
+ * Interactive and Auto policies are mutually exclusive. Frontier policy is
+ * included only when the feature is enabled, keeping disabled policy out of
+ * the model context instead of relying on prompt-time overrides/placeholders.
  */
-export function applyFrontierState(prompt: string, frontierEscalation: boolean): string {
-    return prompt.replace(
-        "{{FRONTIER_ESCALATION_STATE}}",
-        frontierEscalation ? "enabled" : "disabled",
-    );
+export function buildCoordinatorPrompt(mode: CoordinatorMode, frontierEscalation: boolean): string {
+    const fragments = [
+        loadPrompt(AGENT_IDS.coordinator),
+        loadPromptFile(
+            mode === "interactive" ? "coordinator-interactive.md" : "coordinator-auto.md",
+        ),
+    ];
+
+    if (frontierEscalation) {
+        fragments.push(loadPromptFile("coordinator-frontier.md"));
+    }
+
+    return fragments.join("\n\n");
 }
 
 /**
  * Register the interactive SpecOps primary agent.
  *
- * The loaded coordinator prompt has the current `frontierEscalation` state
- * substituted so the Coordinator prompt contract is concrete for the session.
- * A blank coordinator model is preserved as the semantic "use OpenCode's
- * global default": the `model` and `variant` fields are omitted from the agent
- * config. The explicit question permission guarantees that this custom primary
- * agent can use OpenCode's native interactive question tool across runtime
- * defaults.
- *
- * @param config OpenCode configuration object mutated with the primary agent.
- * @param specOpsConfig Validated persisted role-to-model configuration.
+ * A blank coordinator model means "use OpenCode's global default", so model
+ * and variant fields are omitted. Native question permission is explicitly
+ * allowed because this mode owns plan, decision, and lifecycle checkpoints.
  */
 export function registerCoordinatorAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
     config.agent ??= {};
@@ -66,10 +54,7 @@ export function registerCoordinatorAgent(config: Config, specOpsConfig: SpecOpsC
     const agent: CoordinatorAgentConfig = {
         description: "SpecOps coordinator for spec-driven development",
         mode: "primary",
-        prompt: applyFrontierState(
-            loadPrompt(AGENT_IDS.coordinator),
-            specOpsConfig.frontierEscalation,
-        ),
+        prompt: buildCoordinatorPrompt("interactive", specOpsConfig.frontierEscalation),
         permission: {
             ...COORDINATOR_PERMISSION,
             question: "allow",
@@ -85,15 +70,9 @@ export function registerCoordinatorAgent(config: Config, specOpsConfig: SpecOpsC
 /**
  * Register the autonomous SpecOps Auto primary agent.
  *
- * The prompt is the shared coordinator prompt with the autonomous appendix
- * appended, so both coordinators follow the same workflow while only the Auto
- * variant overrides the human checkpoints. The question permission is denied
- * at the runtime layer, making an accidental interactive checkpoint call
- * impossible in headless runs. The Auto agent reuses the coordinator role's
- * model config; it is not a separately configurable role.
- *
- * @param config OpenCode configuration object mutated with the primary agent.
- * @param specOpsConfig Validated persisted role-to-model configuration.
+ * Auto receives the shared workflow plus only the autonomous policy. Runtime
+ * question denial provides a second hard boundary against accidental human
+ * checkpoints in headless operation. Auto shares the coordinator model config.
  */
 export function registerAutoCoordinatorAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
     config.agent ??= {};
@@ -105,10 +84,7 @@ export function registerAutoCoordinatorAgent(config: Config, specOpsConfig: Spec
             "Autonomous SpecOps coordinator for headless runs: executes the SpecOps workflow " +
             "without human checkpoints. Use via the specops-auto command.",
         mode: "primary",
-        prompt: applyFrontierState(
-            loadPrompt(AGENT_IDS.coordinator) + "\n\n" + loadPromptFile("coordinator-auto.md"),
-            specOpsConfig.frontierEscalation,
-        ),
+        prompt: buildCoordinatorPrompt("auto", specOpsConfig.frontierEscalation),
         permission: {
             ...COORDINATOR_PERMISSION,
             question: "deny",
