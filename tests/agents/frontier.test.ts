@@ -2,6 +2,7 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import { FRONTIER_AGENT_ID, registerFrontierAgent } from "../../src/agents/frontier.js";
+import { FRONTIER_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
@@ -21,13 +22,15 @@ describe("registerFrontierAgent", () => {
         const config: Config = {};
         registerFrontierAgent(config, makeConfig());
 
-        expect(config.agent?.[FRONTIER_AGENT_ID]).toEqual({
+        expect(config.agent?.[FRONTIER_AGENT_ID] as Record<string, unknown>).toEqual({
             description:
                 "Advice-only consultation for genuinely difficult unresolved technical " +
                 "blockers raised by SpecOps specialists. Returns technical advice only; does " +
                 "not modify source, OpenSpec artifacts, tasks, workflow state, review " +
                 "verdicts, or lifecycle state.",
             mode: "subagent",
+            hidden: true,
+            permission: FRONTIER_PERMISSION,
             prompt: loadPrompt(AGENT_IDS.frontier),
         });
     });

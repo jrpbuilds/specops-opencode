@@ -5,6 +5,7 @@ import { getOpenSpecVersion } from "../openspec/cli.js";
 import { runOpenSpecDoctor, type OpenSpecDoctorResult } from "../openspec/doctor.js";
 import { getSpecOpsVersion } from "../version.js";
 import { errorMessage } from "../openspec/helpers.js";
+import { requireLifecyclePermission } from "./lifecycle-permission.js";
 
 /**
  * External operations used by the diagnostics report.
@@ -111,6 +112,7 @@ export const doctorTool: ToolDefinition = tool({
         "Run SpecOps diagnostics: report versions, OpenSpec health, configuration validity, and model-role mappings.",
     args: {},
     async execute(_args, context) {
+        await requireLifecyclePermission(context, "specops_doctor");
         context.metadata({ title: "Running SpecOps doctor…" });
         return doctor({
             specopsVersion: getSpecOpsVersion,

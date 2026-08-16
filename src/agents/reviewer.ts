@@ -1,7 +1,7 @@
 import type { Config } from "@opencode-ai/plugin";
 import { loadPrompt } from "../prompts.js";
 import { AGENT_IDS } from "./ids.js";
-import { SPECOPS_AUTO_PERMISSION } from "./permissions.js";
+import { REVIEWER_PERMISSION, type RolePermission } from "./permissions.js";
 import type { SpecOpsConfig } from "../config.js";
 
 /**
@@ -15,8 +15,10 @@ export const REVIEWER_AGENT_ID = AGENT_IDS.reviewer;
  *
  * A blank reviewer model is preserved as the semantic "use the invoking primary
  * agent's model": the `model` and `variant` fields are omitted from the agent config.
- * The reviewer remains a verification-only subagent; lifecycle actions such as
- * archiving stay with the Coordinator and the deterministic tools.
+ * The reviewer is intended to remain verification-only through its prompt and
+ * native edit denial. Its unrestricted bash permission can still perform shell
+ * mutations, so this is not a hard shell-level immutability guarantee. Lifecycle
+ * actions such as archiving stay with the Coordinator and deterministic tools.
  *
  * @param config OpenCode configuration object mutated with the subagent.
  * @param specOpsConfig Validated persisted role-to-model configuration.
@@ -32,8 +34,9 @@ export function registerReviewerAgent(config: Config, specOpsConfig: SpecOpsConf
             "tasks, source code, and tests. Use this agent as the final SpecOps quality gate " +
             "before completion.",
         mode: "subagent",
+        hidden: true,
         prompt: loadPrompt(AGENT_IDS.reviewer),
-        permission: { ...SPECOPS_AUTO_PERMISSION },
+        permission: REVIEWER_PERMISSION as unknown as RolePermission,
         ...(model ? { model, ...(reviewer.variant ? { variant: reviewer.variant } : {}) } : {}),
     };
 }

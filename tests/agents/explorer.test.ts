@@ -2,6 +2,7 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import { EXPLORER_AGENT_ID, registerExplorerAgent } from "../../src/agents/explorer.js";
+import { EXPLORER_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
@@ -21,10 +22,12 @@ describe("registerExplorerAgent", () => {
         const config: Config = {};
         registerExplorerAgent(config, makeConfig());
 
-        expect(config.agent?.[EXPLORER_AGENT_ID]).toEqual({
+        expect(config.agent?.[EXPLORER_AGENT_ID] as Record<string, unknown>).toEqual({
             description:
                 "Investigates repository source, behavior, conventions, tests, constraints, and risks for planning and design. Use when the SpecOps coordinator needs focused repository evidence.",
             mode: "subagent",
+            hidden: true,
+            permission: EXPLORER_PERMISSION,
             prompt: loadPrompt(AGENT_IDS.explorer),
         });
     });
@@ -71,7 +74,7 @@ describe("registerExplorerAgent", () => {
         expect(prompt).toContain("`(inferred)`");
         expect(prompt).toContain("Omit any field with no material content");
         expect(prompt).toContain("Do not duplicate OpenSpec requirements or specifications");
-        expect(prompt).toContain("executed tooling/commands");
+        expect(prompt).toContain("repository-defined verification commands");
         expect(prompt).toContain("first return a PROJECT CONTEXT block");
     });
 

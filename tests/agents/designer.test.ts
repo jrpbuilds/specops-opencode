@@ -2,6 +2,7 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import { DESIGNER_AGENT_ID, registerDesignerAgent } from "../../src/agents/designer.js";
+import { DESIGNER_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
@@ -21,10 +22,12 @@ describe("registerDesignerAgent", () => {
         const config: Config = {};
         registerDesignerAgent(config, makeConfig());
 
-        expect(config.agent?.[DESIGNER_AGENT_ID]).toEqual({
+        expect(config.agent?.[DESIGNER_AGENT_ID] as Record<string, unknown>).toEqual({
             description:
                 "Authors the technical OpenSpec design from approved requirements and repository evidence. Use this agent to create design.md for SpecOps changes.",
             mode: "subagent",
+            hidden: true,
+            permission: DESIGNER_PERMISSION,
             prompt: loadPrompt(AGENT_IDS.designer),
         });
     });

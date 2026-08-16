@@ -97,6 +97,20 @@ The plugin itself stays deliberately small:
 - **TypeScript** handles deterministic plugin operations.
 - **Specialist agents** stay focused on their assigned role.
 
+### Internal agents
+
+The `specops-*` specialist agents (`specops-explorer`, `specops-planner`,
+`specops-designer`, `specops-implementer`, `specops-reviewer`, and, when
+enabled, `specops-frontier`) are internal to the SpecOps workflow. Only the
+`SpecOps` and `SpecOps Auto` coordinators may dispatch them; other OpenCode
+agents cannot invoke them, and they are hidden from the `@` autocomplete menu.
+They cannot themselves delegate to further subagents.
+
+Coordinator agents have native edit tools disabled and may use the shell only
+for `openspec --help` lookups. Ordinary OpenCode primary agents can use the
+user-facing `specops_doctor` and `specops_onboard` tools, while OpenSpec context,
+change creation, and archive operations remain Coordinator-owned.
+
 ## Model configuration
 
 Open the OpenCode command palette with `Ctrl+P` and select:

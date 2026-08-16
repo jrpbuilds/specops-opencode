@@ -1,6 +1,7 @@
 import type { Config } from "@opencode-ai/plugin";
 import { loadPrompt } from "../prompts.js";
 import { AGENT_IDS } from "./ids.js";
+import { DESIGNER_PERMISSION, type RolePermission } from "./permissions.js";
 import type { SpecOpsConfig } from "../config.js";
 
 /**
@@ -30,6 +31,8 @@ export function registerDesignerAgent(config: Config, specOpsConfig: SpecOpsConf
             "Authors the technical OpenSpec design from approved requirements and repository " +
             "evidence. Use this agent to create design.md for SpecOps changes.",
         mode: "subagent",
+        hidden: true,
+        permission: DESIGNER_PERMISSION as unknown as RolePermission,
         prompt: loadPrompt(AGENT_IDS.designer),
         ...(model ? { model, ...(designer.variant ? { variant: designer.variant } : {}) } : {}),
     };

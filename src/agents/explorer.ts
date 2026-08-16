@@ -1,6 +1,7 @@
 import type { Config } from "@opencode-ai/plugin";
 import { loadPrompt } from "../prompts.js";
 import { AGENT_IDS } from "./ids.js";
+import { EXPLORER_PERMISSION, type RolePermission } from "./permissions.js";
 import type { SpecOpsConfig } from "../config.js";
 
 /**
@@ -31,6 +32,8 @@ export function registerExplorerAgent(config: Config, specOpsConfig: SpecOpsConf
             "risks for planning and design. Use when the SpecOps coordinator needs focused " +
             "repository evidence.",
         mode: "subagent",
+        hidden: true,
+        permission: EXPLORER_PERMISSION as unknown as RolePermission,
         prompt: loadPrompt(AGENT_IDS.explorer),
         ...(model ? { model, ...(explorer.variant ? { variant: explorer.variant } : {}) } : {}),
     };

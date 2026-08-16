@@ -2,6 +2,29 @@
 
 All notable changes to SpecOps are documented in this file.
 
+## [v0.6.0] - 2026-08-16
+
+### Changed
+
+- The internal `specops-*` specialist agents are now private to the SpecOps
+  workflow. Only the `SpecOps` and `SpecOps Auto` coordinators may dispatch
+  them; other OpenCode agents can no longer invoke them (previously any primary
+  agent could accidentally enter the SpecOps/OpenSpec workflow by dispatching,
+  for example, `specops-planner`). This is enforced through OpenCode's
+  `permission.task` glob rules at both the global and per-agent level rather
+  than through prompt prose, and the specialists are additionally marked
+  `hidden: true` so they no longer appear in the `@` autocomplete menu. The
+  specialists also gain an explicit `task: "*" deny` so they cannot delegate to
+  further subagents even if `subagent_depth` is raised. Existing user
+  permission configuration is preserved and merged rather than replaced.
+- SpecOps roles now use explicit role-based permissions. Coordinators can use
+  native `specops_*` lifecycle tools and only `openspec --help` shell lookups;
+  specialists receive headless-safe edit, shell, delegation, and lifecycle
+  boundaries. Ordinary primary agents retain only the user-facing
+  `specops_doctor` and `specops_onboard` lifecycle tools; context lookup, change
+  creation, and archive remain Coordinator-owned. Custom lifecycle tools now
+  perform an explicit runtime permission check before doing work.
+
 ## [v0.5.0] - 2026-08-15
 
 ### Fixed

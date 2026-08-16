@@ -12,6 +12,7 @@ import { registerDesignerAgent } from "./agents/designer.js";
 import { registerImplementerAgent } from "./agents/implementer.js";
 import { registerReviewerAgent } from "./agents/reviewer.js";
 import { registerFrontierAgent } from "./agents/frontier.js";
+import { applyLifecycleBoundary, applyTaskBoundary } from "./agents/boundary.js";
 import { doctorTool } from "./tools/doctor.js";
 import { onboardTool } from "./tools/onboard.js";
 import { archiveTool } from "./tools/archive.js";
@@ -61,6 +62,11 @@ export const SpecOpsPlugin: Plugin = async () => ({
     config: async (config: Config) => {
         config.command ??= {};
         Object.assign(config.command, COMMANDS);
+
+        // Apply host-agent boundaries before registering SpecOps roles so those
+        // roles can provide their own explicit permission overrides.
+        applyTaskBoundary(config);
+        applyLifecycleBoundary(config);
 
         try {
             const specOpsConfig = await loadConfig();

@@ -1,6 +1,7 @@
 import type { Config } from "@opencode-ai/plugin";
 import { loadPrompt } from "../prompts.js";
 import { AGENT_IDS } from "./ids.js";
+import { FRONTIER_PERMISSION, type RolePermission } from "./permissions.js";
 import type { SpecOpsConfig } from "../config.js";
 
 /**
@@ -35,6 +36,8 @@ export function registerFrontierAgent(config: Config, specOpsConfig: SpecOpsConf
             "not modify source, OpenSpec artifacts, tasks, workflow state, review " +
             "verdicts, or lifecycle state.",
         mode: "subagent",
+        hidden: true,
+        permission: FRONTIER_PERMISSION as unknown as RolePermission,
         prompt: loadPrompt(AGENT_IDS.frontier),
         ...(model ? { model, ...(frontier.variant ? { variant: frontier.variant } : {}) } : {}),
     };

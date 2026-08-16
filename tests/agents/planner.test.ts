@@ -2,6 +2,7 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import { PLANNER_AGENT_ID, registerPlannerAgent } from "../../src/agents/planner.js";
+import { PLANNER_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
@@ -21,10 +22,12 @@ describe("registerPlannerAgent", () => {
         const config: Config = {};
         registerPlannerAgent(config, makeConfig());
 
-        expect(config.agent?.[PLANNER_AGENT_ID]).toEqual({
+        expect(config.agent?.[PLANNER_AGENT_ID] as Record<string, unknown>).toEqual({
             description:
                 "Authors OpenSpec planning artifacts — proposals, capability specifications, and implementation tasks — from the user's goal and repository evidence. Use this agent for SpecOps planning artifacts.",
             mode: "subagent",
+            hidden: true,
+            permission: PLANNER_PERMISSION,
             prompt: loadPrompt(AGENT_IDS.planner),
         });
     });

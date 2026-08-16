@@ -1,6 +1,7 @@
 import { tool, type ToolDefinition } from "@opencode-ai/plugin/tool";
 import { isOpenSpecAvailable } from "../openspec/cli.js";
 import { initializeOpenSpec, isOpenSpecInitialized } from "../openspec/init.js";
+import { requireLifecyclePermission } from "./lifecycle-permission.js";
 
 /**
  * OpenSpec operations injected into onboarding.
@@ -49,6 +50,7 @@ export const onboardTool: ToolDefinition = tool({
         "Onboard the current project for OpenSpec: check availability, detect an existing root, and run openspec init if needed.",
     args: {},
     async execute(_args, context) {
+        await requireLifecyclePermission(context, "specops_onboard");
         context.metadata({ title: "Onboarding project for OpenSpec…" });
         return onboard({
             isAvailable: () => isOpenSpecAvailable(),

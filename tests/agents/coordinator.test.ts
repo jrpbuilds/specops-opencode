@@ -8,7 +8,11 @@ import {
     SPECOPS_AGENT_ID,
     SPECOPS_AUTO_AGENT_ID,
 } from "../../src/agents/coordinator.js";
-import { SPECOPS_AUTO_PERMISSION } from "../../src/agents/permissions.js";
+import {
+    COORDINATOR_PERMISSION,
+    SPECOPS_LIFECYCLE_PERMISSION,
+    SPECOPS_TASK_ALLOW,
+} from "../../src/agents/permissions.js";
 import { loadPrompt, loadPromptFile } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
@@ -23,6 +27,18 @@ function makeConfig(overrides: Partial<SpecOpsConfig["agents"]> = {}): SpecOpsCo
     };
 }
 
+function evaluateTask(task: Record<string, "allow" | "deny">, name: string): "allow" | "deny" {
+    let action: "allow" | "deny" | undefined;
+    for (const [pattern, effect] of Object.entries(task)) {
+        const matches =
+            pattern === "*" ||
+            (pattern.endsWith("*") && name.startsWith(pattern.slice(0, -1))) ||
+            pattern === name;
+        if (matches) action = effect;
+    }
+    return action ?? "deny";
+}
+
 describe("registerCoordinatorAgent", () => {
     test("registers the SpecOps primary agent with the coordinator prompt", () => {
         const config: Config = {};
@@ -32,7 +48,11 @@ describe("registerCoordinatorAgent", () => {
             description: "SpecOps coordinator for spec-driven development",
             mode: "primary",
             prompt: applyFrontierState(loadPrompt(AGENT_IDS.coordinator), false),
-            permission: { question: "allow" },
+            permission: {
+                ...COORDINATOR_PERMISSION,
+                question: "allow",
+                task: SPECOPS_TASK_ALLOW,
+            },
         });
         expect(
             (
@@ -42,8 +62,16 @@ describe("registerCoordinatorAgent", () => {
         ).toBe("allow");
         const interactivePermission = config.agent?.[SPECOPS_AGENT_ID]?.permission as
             Record<string, unknown> | undefined;
-        expect(interactivePermission?.external_directory).toBeUndefined();
-        expect(interactivePermission?.doom_loop).toBeUndefined();
+        expect(interactivePermission?.external_directory).toBe("deny");
+        expect(interactivePermission?.doom_loop).toBe("deny");
+        expect(interactivePermission?.bash).toEqual({
+            "*": "deny",
+            "openspec --help": "allow",
+            "openspec * --help": "allow",
+        });
+        expect(interactivePermission?.[SPECOPS_LIFECYCLE_PERMISSION]).toBe("allow");
+        expect(interactivePermission?.task).toEqual(SPECOPS_TASK_ALLOW);
+        expect(interactivePermission?.task).toEqual({ "*": "deny", "specops-*": "allow" });
     });
 
     test("registers the SpecOps Auto agent with the autonomous appendix and denied question", () => {
@@ -64,11 +92,65 @@ describe("registerCoordinatorAgent", () => {
             )?.question,
         ).toBe("deny");
         expect(config.agent?.[SPECOPS_AUTO_AGENT_ID]).toMatchObject({
-            permission: SPECOPS_AUTO_PERMISSION,
+            permission: COORDINATOR_PERMISSION,
         });
+        const autoPermission = config.agent?.[SPECOPS_AUTO_AGENT_ID]?.permission as
+            Record<string, unknown> | undefined;
+        expect(autoPermission?.task).toEqual(SPECOPS_TASK_ALLOW);
+        expect(autoPermission?.external_directory).toBe("deny");
+        expect(autoPermission?.doom_loop).toBe("deny");
+        expect(autoPermission?.bash).toEqual({
+            "*": "deny",
+            "openspec --help": "allow",
+            "openspec * --help": "allow",
+        });
+        expect(autoPermission?.[SPECOPS_LIFECYCLE_PERMISSION]).toBe("allow");
+        expect(autoPermission?.task).toEqual({ "*": "deny", "specops-*": "allow" });
         const prompt = config.agent?.[SPECOPS_AUTO_AGENT_ID]?.prompt as string;
         expect(prompt).toContain("## Autonomous operation (SpecOps Auto)");
         expect(prompt).not.toContain("{{AUTO_MODE_STATE}}");
+    });
+
+    test("restricts both coordinators to the private SpecOps subagent namespace", () => {
+        const configs = [
+            (() => {
+                const config: Config = {};
+                registerCoordinatorAgent(config, makeConfig());
+                return config;
+            })(),
+            (() => {
+                const config: Config = {};
+                registerAutoCoordinatorAgent(config, makeConfig());
+                return config;
+            })(),
+        ];
+        const names = [
+            "general",
+            "explore",
+            "scout",
+            "custom-non-specops",
+            "specops-explorer",
+            "specops-planner",
+            "specops-designer",
+            "specops-implementer",
+            "specops-reviewer",
+            "specops-frontier",
+        ];
+
+        for (const config of configs) {
+            const permission = (config.agent?.[SPECOPS_AGENT_ID]?.permission ??
+                config.agent?.[SPECOPS_AUTO_AGENT_ID]?.permission) as {
+                task: Record<string, "allow" | "deny">;
+            };
+            expect(permission.task).toEqual({ "*": "deny", "specops-*": "allow" });
+            expect(Object.keys(permission.task)).toEqual(["*", "specops-*"]);
+
+            for (const name of names) {
+                expect(evaluateTask(permission.task, name)).toBe(
+                    name.startsWith("specops-") ? "allow" : "deny",
+                );
+            }
+        }
     });
 
     test("auto coordinator prompt overrides checkpoints with the autonomous policy", () => {

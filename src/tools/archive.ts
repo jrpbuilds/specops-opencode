@@ -1,5 +1,6 @@
 import { tool, type ToolDefinition } from "@opencode-ai/plugin/tool";
 import { archiveChange, type OpenSpecArchiveResult } from "../openspec/archive.js";
+import { requireLifecyclePermission } from "./lifecycle-permission.js";
 
 /**
  * Dependencies for the deterministic archive operation.
@@ -47,6 +48,7 @@ export const archiveTool: ToolDefinition = tool({
         change: tool.schema.string(),
     },
     async execute(args, context) {
+        await requireLifecyclePermission(context, "specops_archive");
         context.metadata({ title: "Archiving OpenSpec change…" });
         return archive(args.change, {
             archiveChange: change => archiveChange(change, context.directory),

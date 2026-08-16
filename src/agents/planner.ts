@@ -1,6 +1,7 @@
 import type { Config } from "@opencode-ai/plugin";
 import { loadPrompt } from "../prompts.js";
 import { AGENT_IDS } from "./ids.js";
+import { PLANNER_PERMISSION, type RolePermission } from "./permissions.js";
 import type { SpecOpsConfig } from "../config.js";
 
 /**
@@ -31,6 +32,8 @@ export function registerPlannerAgent(config: Config, specOpsConfig: SpecOpsConfi
             "specifications, and implementation tasks — from the user's goal and " +
             "repository evidence. Use this agent for SpecOps planning artifacts.",
         mode: "subagent",
+        hidden: true,
+        permission: PLANNER_PERMISSION as unknown as RolePermission,
         prompt: loadPrompt(AGENT_IDS.planner),
         ...(model ? { model, ...(planner.variant ? { variant: planner.variant } : {}) } : {}),
     };

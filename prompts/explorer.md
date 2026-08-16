@@ -45,7 +45,7 @@ Constraints:
 
 Evidence:
 
-- <repository file/path references and relevant executed tooling/commands supporting the claims above; mark any inference with `(inferred)`>
+- <repository file/path references and repository-defined verification commands supporting the claims above; do not execute shell commands; mark any inference with `(inferred)`>
 
 Keep PROJECT CONTEXT concise and change-scoped: include only context that would materially affect planning, design, implementation, or review. Base every claim on concrete repository evidence. Omit any field with no material content. Do not duplicate OpenSpec requirements or specifications inside PROJECT CONTEXT.
 

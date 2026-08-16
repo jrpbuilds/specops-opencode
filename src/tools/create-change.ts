@@ -3,6 +3,7 @@ import {
     createOpenSpecChange,
     type OpenSpecCreateChangeResult,
 } from "../openspec/create-change.js";
+import { requireLifecyclePermission } from "./lifecycle-permission.js";
 
 /** Dependency boundary for deterministic OpenSpec change creation. */
 export type CreateChangeDeps = {
@@ -37,6 +38,7 @@ export const createChangeTool: ToolDefinition = tool({
         goal: tool.schema.string().optional(),
     },
     async execute(args, toolContext) {
+        await requireLifecyclePermission(toolContext, "specops_create_change");
         toolContext.metadata({ title: "Creating OpenSpec change…" });
         return createChange(args.change, args.goal, {
             createChange: (change, goal) =>

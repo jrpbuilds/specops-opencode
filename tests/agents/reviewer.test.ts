@@ -2,7 +2,7 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import { REVIEWER_AGENT_ID, registerReviewerAgent } from "../../src/agents/reviewer.js";
-import { SPECOPS_AUTO_PERMISSION } from "../../src/agents/permissions.js";
+import { REVIEWER_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";
 
@@ -22,12 +22,13 @@ describe("registerReviewerAgent", () => {
         const config: Config = {};
         registerReviewerAgent(config, makeConfig());
 
-        expect(config.agent?.[REVIEWER_AGENT_ID]).toEqual({
+        expect(config.agent?.[REVIEWER_AGENT_ID] as Record<string, unknown>).toEqual({
             description:
                 "Independently verifies implemented OpenSpec changes against requirements, design, tasks, source code, and tests. Use this agent as the final SpecOps quality gate before completion.",
             mode: "subagent",
+            hidden: true,
             prompt: loadPrompt(AGENT_IDS.reviewer),
-            permission: { ...SPECOPS_AUTO_PERMISSION },
+            permission: REVIEWER_PERMISSION,
         });
     });
 

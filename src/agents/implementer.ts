@@ -1,7 +1,7 @@
 import type { Config } from "@opencode-ai/plugin";
 import { loadPrompt } from "../prompts.js";
 import { AGENT_IDS } from "./ids.js";
-import { SPECOPS_AUTO_PERMISSION } from "./permissions.js";
+import { IMPLEMENTER_PERMISSION, type RolePermission } from "./permissions.js";
 import type { SpecOpsConfig } from "../config.js";
 
 /**
@@ -15,8 +15,9 @@ export const IMPLEMENTER_AGENT_ID = AGENT_IDS.implementer;
  *
  * A blank implementer model is preserved as the semantic "use the invoking primary
  * agent's model": the `model` and `variant` fields are omitted from the agent config.
- * The implementation boundary is enforced by the registered prompt; this
- * module only supplies the native OpenCode registration and model selection.
+ * The registered prompt defines the workflow boundary, while the native
+ * permission profile supplies the implementer's runtime capabilities. This
+ * module attaches both to the OpenCode registration and selects its model.
  *
  * @param config OpenCode configuration object mutated with the subagent.
  * @param specOpsConfig Validated persisted role-to-model configuration.
@@ -32,8 +33,9 @@ export function registerImplementerAgent(config: Config, specOpsConfig: SpecOpsC
             "marks completed tasks in tasks.md. Use this agent to execute SpecOps " +
             "implementation plans.",
         mode: "subagent",
+        hidden: true,
         prompt: loadPrompt(AGENT_IDS.implementer),
-        permission: { ...SPECOPS_AUTO_PERMISSION },
+        permission: IMPLEMENTER_PERMISSION as unknown as RolePermission,
         ...(model
             ? { model, ...(implementer.variant ? { variant: implementer.variant } : {}) }
             : {}),
