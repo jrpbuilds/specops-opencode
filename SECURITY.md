@@ -7,8 +7,8 @@ security fixes. Older releases are not backported.
 
 | Version | Supported |
 | ------- | --------- |
-| Latest  | ✓ |
-| Older   | ❌ |
+| Latest  | ✓         |
+| Older   | ❌        |
 
 ## Reporting a Vulnerability
 

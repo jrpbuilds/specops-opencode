@@ -11,18 +11,19 @@ const gettingStarted = readme.slice(
 describe("README", () => {
     test("documents Engram as an optional companion and not an artifact store", () => {
         expect(readme).toContain("https://github.com/Gentleman-Programming/engram");
-        expect(readme).toContain("works perfectly without Engram");
-        expect(readme).toContain("engram setup opencode");
+        expect(readme).toContain("SpecOps works without Engram");
         expect(readme).toContain("docs/AGENT-SETUP.md");
-        expect(readme).toContain("does not store OpenSpec artifacts or workflow state in Engram");
-        expect(readme).toContain("Engram is never required");
+        expect(readme).toContain("Engram is contextual memory only");
+        expect(readme).toContain(
+            "Current user instructions, OpenSpec artifacts, repository state, and executed evidence always take precedence",
+        );
         expect(readme).not.toContain("Stage 1 is read-only");
         expect(readme).not.toContain('"command": ["engram", "mcp"]');
         expect(readme).not.toContain("MCP-only, recommended for SpecOps");
     });
 
     test("getting started no longer requires manual onboarding before /specops", () => {
-        expect(gettingStarted).toContain("SpecOps self-onboards the project for OpenSpec");
+        expect(gettingStarted).toContain("SpecOps automatically initialises OpenSpec on first use");
         expect(gettingStarted).toContain("/specops-onboard");
         expect(gettingStarted).not.toContain(
             "This initialises the project for OpenSpec without installing OpenSpec's own OpenCode commands or skills.",

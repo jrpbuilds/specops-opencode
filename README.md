@@ -4,9 +4,9 @@
 
 **Spec-driven development for OpenCode, with the right model for each job.**
 
-[![npm version](https://img.shields.io/npm/v/@jrpbuilds/specops-opencode?logo=npm\&logoColor=white)](https://www.npmjs.com/package/@jrpbuilds/specops-opencode)
+[![npm version](https://img.shields.io/npm/v/@jrpbuilds/specops-opencode?logo=npm&logoColor=white)](https://www.npmjs.com/package/@jrpbuilds/specops-opencode)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![coverage](https://img.shields.io/github/actions/workflow/status/jrpbuilds/specops-opencode/ci.yml?branch=main\&label=coverage)](https://github.com/jrpbuilds/specops-opencode/actions/workflows/ci.yml)
+[![coverage](https://img.shields.io/github/actions/workflow/status/jrpbuilds/specops-opencode/ci.yml?branch=main&label=coverage)](https://github.com/jrpbuilds/specops-opencode/actions/workflows/ci.yml)
 [![OpenCode](https://img.shields.io/badge/OpenCode-plugin-5c6ac4)](https://opencode.ai)
 [![OpenSpec](https://img.shields.io/badge/powered%20by-OpenSpec-444)](https://github.com/Fission-AI/OpenSpec)
 
@@ -92,10 +92,10 @@ SpecOps does not maintain a parallel workflow state machine. Existing OpenSpec a
 
 The plugin itself stays deliberately small:
 
-* **Models** handle reasoning and orchestration.
-* **OpenSpec** owns durable change state.
-* **TypeScript** handles deterministic plugin operations.
-* **Specialist agents** stay focused on their assigned role.
+- **Models** handle reasoning and orchestration.
+- **OpenSpec** owns durable change state.
+- **TypeScript** handles deterministic plugin operations.
+- **Specialist agents** stay focused on their assigned role.
 
 ## Model configuration
 
@@ -107,13 +107,13 @@ SpecOps Configure
 
 Models and reasoning variants can be configured independently for:
 
-* Coordinator
-* Explorer
-* Planner
-* Designer
-* Implementer
-* Reviewer
-* Frontier
+- Coordinator
+- Explorer
+- Planner
+- Designer
+- Implementer
+- Reviewer
+- Frontier
 
 Configuration is stored at:
 
@@ -205,7 +205,7 @@ Install Engram using its [installation guide](https://github.com/Gentleman-Progr
 
 ## Example
 
-* [Galaxy Shooter](https://jrpbuilds.github.io/specops-opencode/galaxy-shooter/) — a browser arcade game generated through the SpecOps workflow.
+- [Galaxy Shooter](https://jrpbuilds.github.io/specops-opencode/galaxy-shooter/) — a browser arcade game generated through the SpecOps workflow.
 
 ## Development
 
@@ -230,9 +230,9 @@ SpecOps is under active development and is being dogfooded against real software
 
 ## Community
 
-* [Contributing](CONTRIBUTING.md)
-* [Security](SECURITY.md)
-* [Code of conduct](CODE_OF_CONDUCT.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security](SECURITY.md)
+- [Code of conduct](CODE_OF_CONDUCT.md)
 
 ## License
 
