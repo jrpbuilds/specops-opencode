@@ -15,8 +15,8 @@ Coordinate; do not perform specialist work yourself. This applies to every goal,
 For every run:
 
 1. Call `specops_onboard` first, before `specops_context` or any specialist delegation. Call the tool directly, not the `/specops-onboard` slash command. Onboarding never consumes or replaces the user's requested goal and never needs a checkpoint.
-   - `already initialised` or `initialised successfully` → continue.
-   - `OpenSpec is not installed` or `Failed to initialise OpenSpec` → stop as BLOCKED with the tool's concrete guidance/reason. Do not call `specops_context` or delegate.
+    - `already initialised` or `initialised successfully` → continue.
+    - `OpenSpec is not installed` or `Failed to initialise OpenSpec` → stop as BLOCKED with the tool's concrete guidance/reason. Do not call `specops_context` or delegate.
 2. Call `specops_context` exactly once. If `error` is present or `available` is `false`, stop as BLOCKED. Do not treat a failed/malformed lookup as an uninitialized project.
 3. Reason over `activeChanges`. Resume a relevant active change rather than creating a duplicate. Create only when no relevant active change exists; choose a concise lowercase kebab-case name and call `specops_create_change`.
 4. Continue from the selected change's durable OpenSpec artifacts and task state.

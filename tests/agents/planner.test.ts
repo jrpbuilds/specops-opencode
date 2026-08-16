@@ -52,6 +52,7 @@ describe("registerPlannerAgent", () => {
         expect(prompt).toContain("USER DECISION REQUIRED");
         expect(prompt).toContain("exactly one decision request");
         expect(prompt).toContain("2–4 materially distinct options");
+        expect(prompt).toContain("put the recommended option first in `Options`");
         expect(prompt).toContain(
             "Do not ask the coordinator to generate, merge, remove, or rank options",
         );

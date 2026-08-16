@@ -235,7 +235,10 @@ describe("interactive coordinator contract", () => {
         );
         expect(section).toContain("If the envelope is malformed");
         expect(section).toContain("return it to the same specialist for correction");
-        expect(section).toContain("prefix only that option's description with `(recommended) `");
+        expect(section).toContain("must identify the first supplied option");
+        expect(section).toContain("rather than reordering it yourself");
+        expect(section).toContain("append ` (Recommended)` to that first option's native label");
+        expect(section).toContain("leave its supplied trade-off unchanged");
         expect(section).toContain("custom answer back verbatim");
         expect(section).toContain("**same specialist**");
         expect(section).toContain("**same pass and same artifact**");
@@ -301,7 +304,7 @@ describe("Auto coordinator contract", () => {
         expect(prompt).toContain("## Autonomous plan continuation");
         expect(prompt).toContain("treat the current OpenSpec plan as approved");
         expect(prompt).toContain("continue to `specops-implementer`");
-        expect(prompt).toContain("Do not persist approval state");
+        expect(prompt).toContain("do not persist approval state");
     });
 
     test("chooses only within the supplied specialist decision domain", () => {
@@ -352,44 +355,41 @@ describe("Auto coordinator contract", () => {
 });
 
 describe("coordinator registration", () => {
-    test(
-        "registers interactive and Auto with their assembled prompts and hard question boundary",
-        () => {
-            const interactiveConfig: Config = {};
-            const autoConfig: Config = {};
-            registerCoordinatorAgent(interactiveConfig, makeConfig());
-            registerAutoCoordinatorAgent(autoConfig, makeConfig());
+    test("registers interactive and Auto with their assembled prompts and hard question boundary", () => {
+        const interactiveConfig: Config = {};
+        const autoConfig: Config = {};
+        registerCoordinatorAgent(interactiveConfig, makeConfig());
+        registerAutoCoordinatorAgent(autoConfig, makeConfig());
 
-            expect(promptOf(interactiveConfig, SPECOPS_AGENT_ID)).toBe(
-                buildCoordinatorPrompt("interactive", false),
-            );
-            expect(promptOf(autoConfig, SPECOPS_AUTO_AGENT_ID)).toBe(
-                buildCoordinatorPrompt("auto", false),
-            );
+        expect(promptOf(interactiveConfig, SPECOPS_AGENT_ID)).toBe(
+            buildCoordinatorPrompt("interactive", false),
+        );
+        expect(promptOf(autoConfig, SPECOPS_AUTO_AGENT_ID)).toBe(
+            buildCoordinatorPrompt("auto", false),
+        );
 
-            const interactivePermission = interactiveConfig.agent?.[SPECOPS_AGENT_ID]?.permission as
-                Record<string, unknown>;
-            const autoPermission = autoConfig.agent?.[SPECOPS_AUTO_AGENT_ID]?.permission as Record<
-                string,
-                unknown
-            >;
+        const interactivePermission = interactiveConfig.agent?.[SPECOPS_AGENT_ID]
+            ?.permission as Record<string, unknown>;
+        const autoPermission = autoConfig.agent?.[SPECOPS_AUTO_AGENT_ID]?.permission as Record<
+            string,
+            unknown
+        >;
 
-            expect(interactivePermission.question).toBe("allow");
-            expect(autoPermission.question).toBe("deny");
-            expect(interactivePermission.external_directory).toBe("deny");
-            expect(autoPermission.external_directory).toBe("deny");
-            expect(interactivePermission.doom_loop).toBe("deny");
-            expect(autoPermission.doom_loop).toBe("deny");
-            expect(interactivePermission.bash).toEqual({
-                "*": "deny",
-                "openspec --help": "allow",
-                "openspec * --help": "allow",
-            });
-            expect(autoPermission.bash).toEqual(interactivePermission.bash);
-            expect(interactivePermission[SPECOPS_LIFECYCLE_PERMISSION]).toBe("allow");
-            expect(autoPermission[SPECOPS_LIFECYCLE_PERMISSION]).toBe("allow");
-        },
-    );
+        expect(interactivePermission.question).toBe("allow");
+        expect(autoPermission.question).toBe("deny");
+        expect(interactivePermission.external_directory).toBe("deny");
+        expect(autoPermission.external_directory).toBe("deny");
+        expect(interactivePermission.doom_loop).toBe("deny");
+        expect(autoPermission.doom_loop).toBe("deny");
+        expect(interactivePermission.bash).toEqual({
+            "*": "deny",
+            "openspec --help": "allow",
+            "openspec * --help": "allow",
+        });
+        expect(autoPermission.bash).toEqual(interactivePermission.bash);
+        expect(interactivePermission[SPECOPS_LIFECYCLE_PERMISSION]).toBe("allow");
+        expect(autoPermission[SPECOPS_LIFECYCLE_PERMISSION]).toBe("allow");
+    });
 
     test("restricts both coordinators to the private SpecOps subagent namespace", () => {
         const configs: Config[] = [{}, {}];

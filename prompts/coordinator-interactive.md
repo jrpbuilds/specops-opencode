@@ -21,9 +21,9 @@ Result handling:
 
 - `Start implementation` → the current plan is approved; continue to `specops-implementer`.
 - custom answer → treat the text verbatim as plan feedback; do not implement. Route it to the owner:
-  - requirements, externally observable behavior, scope, compatibility, security, data model, migration, or similar → Planner requirements pass
-  - architecture, technical approach, data/control flow, design risks, or similar → Designer
-  - task ordering/grouping/granularity/add/remove only → Planner tasks pass
+    - requirements, externally observable behavior, scope, compatibility, security, data model, migration, or similar → Planner requirements pass
+    - architecture, technical approach, data/control flow, design risks, or similar → Designer
+    - task ordering/grouping/granularity/add/remove only → Planner tasks pass
 
 Reconcile only affected downstream artifacts: requirements change → Designer if affected → Planner tasks if affected; design change → Planner tasks if affected; task-only change → no downstream pass. Preserve unaffected work.
 
@@ -44,7 +44,7 @@ Preserve exactly:
 - `Recommendation`, when supplied
 - `Affected artifact`
 
-Do not add, remove, merge, reorder, rank, pre-select, or invent options. Do not use a recommendation to narrow the choice. If the envelope is malformed (not exactly one Decision, not 2–4 options, or an option lacks its trade-off), return it to the same specialist for correction; do not repair or complete the option set yourself.
+Do not add, remove, merge, reorder, rank, pre-select, or invent options. Do not use a recommendation to narrow the choice. When a Recommendation is supplied, it must identify the first supplied option; if it does not, return the envelope to the same specialist for correction rather than reordering it yourself. If the envelope is malformed (not exactly one Decision, not 2–4 options, or an option lacks its trade-off), return it to the same specialist for correction; do not repair or complete the option set yourself.
 
 Show the supplied `Why it matters` and `Affected artifact` as context, then invoke exactly one native single-select `question` and omit `multiple`:
 
@@ -53,7 +53,7 @@ Show the supplied `Why it matters` and `Affected artifact` as context, then invo
 - create one native option per supplied option, preserving order
 - use a concise meaningful option label, never `A`/`B` alone
 - use the supplied trade-off as its description
-- when a recommendation exists, prefix only that option's description with `(recommended) `
+- when a recommendation exists, append ` (Recommended)` to that first option's native label and leave its supplied trade-off unchanged
 - preserve the native custom-answer path; do not add a synthetic `none of the above` option
 
 Do not print or emulate a second selector in Markdown. Pass the selected label or custom answer back verbatim to the **same specialist**, with the change name, original goal, relevant prior context, and an instruction to resume the **same pass and same artifact** from where it stopped while preserving completed work.

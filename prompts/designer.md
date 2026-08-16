@@ -43,7 +43,7 @@ When you hit such a decision:
     Affected artifact: design.md
     ```
 
-    Provide 2–4 materially distinct options yourself. Every option must satisfy the approved requirements and include its trade-off. Do not ask the coordinator to generate, merge, remove, or rank options.
+    Provide 2–4 materially distinct options yourself. Every option must satisfy the approved requirements and include its trade-off. When you include a Recommendation, put the recommended option first in `Options`; otherwise keep the ordering neutral. Do not ask the coordinator to generate, merge, remove, or rank options.
 
 3. Do not modify `proposal.md` or capability specifications to resolve the ambiguity — that is a requirements conflict and must be reported to the coordinator as a conflict for Planner routing, not a decision request.
 

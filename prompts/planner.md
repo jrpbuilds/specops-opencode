@@ -45,7 +45,7 @@ When you hit such a decision during either pass:
     Affected artifact: <proposal.md | spec.md:<capability-path> | tasks.md>
     ```
 
-    Provide 2–4 materially distinct options yourself. Each option must include its trade-off. Do not ask the coordinator to generate, merge, remove, or rank options.
+    Provide 2–4 materially distinct options yourself. Each option must include its trade-off. When you include a Recommendation, put the recommended option first in `Options`; otherwise keep the ordering neutral. Do not ask the coordinator to generate, merge, remove, or rank options.
 
 3. Do not author partial requirements or tasks that depend on the unresolved decision. Do not guess and continue.
 
