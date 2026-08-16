@@ -1,5 +1,5 @@
 import { runCaptureStdout } from "../helpers.js";
-import { errorMessage, isRecord } from "./helpers.js";
+import { errorMessage, formatCommandFailure, isRecord } from "./helpers.js";
 
 /**
  * Normalized result of the native OpenSpec archive operation.
@@ -62,20 +62,5 @@ export async function archiveChange(change: string, cwd: string): Promise<OpenSp
         return { ok: true, archivedAs: archive.archivedAs, path: archive.path };
     }
 
-    return { ok: false, error: formatArchiveFailure(parsed, result.exitCode) };
-}
-
-/**
- * Extract the concise structured failure reported by OpenSpec archive.
- *
- * OpenSpec returns failures in a `status` array even when the process exits
- * non-zero. Prefer its message and optional fix text, falling back to the exit
- * code only when the response is missing those fields.
- */
-function formatArchiveFailure(parsed: Record<string, unknown>, exitCode: number): string {
-    const status = Array.isArray(parsed.status) ? parsed.status.find(isRecord) : undefined;
-    const message = typeof status?.message === "string" ? status.message : undefined;
-    const fix = typeof status?.fix === "string" ? status.fix : undefined;
-    if (message) return fix ? `${message} Fix: ${fix}` : message;
-    return `OpenSpec archive failed with exit code ${exitCode}`;
+    return { ok: false, error: formatCommandFailure(parsed, result.exitCode, "archive") };
 }

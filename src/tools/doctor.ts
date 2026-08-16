@@ -4,6 +4,7 @@ import { loadConfig, type SpecOpsConfig } from "../config.js";
 import { getOpenSpecVersion } from "../openspec/cli.js";
 import { runOpenSpecDoctor, type OpenSpecDoctorResult } from "../openspec/doctor.js";
 import { getSpecOpsVersion } from "../version.js";
+import { errorMessage } from "../openspec/helpers.js";
 
 /**
  * External operations used by the diagnostics report.
@@ -146,14 +147,4 @@ async function readOpenSpecVersion(read: () => Promise<string | null>): Promise<
     } catch {
         return null;
     }
-}
-
-/**
- * Convert any caught value into a stable human-readable report message.
- *
- * Error instances use their message; primitive or unknown values fall back to
- * normal string conversion for diagnostics that never throw while reporting.
- */
-function errorMessage(error: unknown): string {
-    return error instanceof Error ? error.message : String(error);
 }

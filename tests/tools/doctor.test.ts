@@ -103,4 +103,47 @@ describe("doctor", () => {
         expect(result).toContain("Open SpecOps Configure");
         expect(result).not.toContain("model roles configured");
     });
+
+    test("reports an OpenSpec doctor error without terminating the report", async () => {
+        const result = await doctor(
+            deps({
+                openspecDoctor: async () => ({
+                    initialized: false,
+                    healthy: false,
+                    issues: [],
+                    error: "openspec doctor crashed",
+                }),
+            }),
+        );
+
+        expect(result).toContain("✗ OpenSpec doctor failed: openspec doctor crashed");
+        expect(result).toContain("Run /specops-onboard");
+        expect(result).toContain("✓ SpecOps configuration valid");
+    });
+
+    test("normalizes a failed SpecOps version reader to unknown", async () => {
+        const result = await doctor(
+            deps({
+                specopsVersion: async () => {
+                    throw new Error("cannot read version");
+                },
+            }),
+        );
+
+        expect(result).toContain("SpecOps: unknown");
+        expect(result).toContain("OpenSpec: 1.8.0");
+    });
+
+    test("normalizes a failed OpenSpec version reader to unavailable", async () => {
+        const result = await doctor(
+            deps({
+                openspecVersion: async () => {
+                    throw new Error("openspec not found");
+                },
+            }),
+        );
+
+        expect(result).toContain("OpenSpec: unavailable");
+        expect(result).toContain("✗ OpenSpec CLI not found");
+    });
 });

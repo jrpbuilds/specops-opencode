@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { isRecord } from "./openspec/helpers.js";
 
 /**
  * Read and validate this package's published version from `package.json`.
@@ -14,9 +15,4 @@ export async function getSpecOpsVersion(
         throw new Error("package.json does not contain a valid version");
     }
     return value.version;
-}
-
-/** Narrow parsed package metadata to an object whose fields can be inspected. */
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }

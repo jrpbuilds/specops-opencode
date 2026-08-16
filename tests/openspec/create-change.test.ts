@@ -107,4 +107,99 @@ describe("createOpenSpecChange", () => {
             error: expect.stringContaining("invalid JSON"),
         });
     });
+
+    test("preserves native failure with message only", async () => {
+        const result = await createOpenSpecChange(
+            "existing-change",
+            "/project",
+            undefined,
+            async () => ({
+                exitCode: 1,
+                stdout: JSON.stringify({
+                    status: [{ message: "Change 'existing-change' exists" }],
+                }),
+            }),
+        );
+        expect(result).toEqual({ ok: false, error: "Change 'existing-change' exists" });
+    });
+
+    test("falls back to exit code for fix only", async () => {
+        const result = await createOpenSpecChange(
+            "existing-change",
+            "/project",
+            undefined,
+            async () => ({
+                exitCode: 1,
+                stdout: JSON.stringify({ status: [{ fix: "Use a different name" }] }),
+            }),
+        );
+        expect(result).toEqual({
+            ok: false,
+            error: "OpenSpec create change failed with exit code 1",
+        });
+    });
+
+    test("preserves native failure with message and fix", async () => {
+        const result = await createOpenSpecChange(
+            "existing-change",
+            "/project",
+            undefined,
+            async () => ({
+                exitCode: 1,
+                stdout: JSON.stringify({
+                    status: [{ message: "Name taken", fix: "Use a different name" }],
+                }),
+            }),
+        );
+        expect(result).toEqual({ ok: false, error: "Name taken Fix: Use a different name" });
+    });
+
+    test("reports termination before an exit code is available", async () => {
+        const result = await createOpenSpecChange(
+            "new-change",
+            "/project",
+            undefined,
+            async () => ({
+                exitCode: null,
+                stdout: "",
+            }),
+        );
+        expect(result).toEqual({
+            ok: false,
+            error: "OpenSpec create change was terminated before returning a result",
+        });
+    });
+
+    test("falls back to exit code when status is absent or malformed", async () => {
+        const empty = await createOpenSpecChange("test", "/project", undefined, async () => ({
+            exitCode: 1,
+            stdout: JSON.stringify({}),
+        }));
+        const notArray = await createOpenSpecChange("test", "/project", undefined, async () => ({
+            exitCode: 1,
+            stdout: JSON.stringify({ status: "bad" }),
+        }));
+        const nonRecordEntry = await createOpenSpecChange(
+            "test",
+            "/project",
+            undefined,
+            async () => ({
+                exitCode: 1,
+                stdout: JSON.stringify({ status: ["bad"] }),
+            }),
+        );
+
+        expect(empty).toEqual({
+            ok: false,
+            error: "OpenSpec create change failed with exit code 1",
+        });
+        expect(notArray).toEqual({
+            ok: false,
+            error: "OpenSpec create change failed with exit code 1",
+        });
+        expect(nonRecordEntry).toEqual({
+            ok: false,
+            error: "OpenSpec create change failed with exit code 1",
+        });
+    });
 });

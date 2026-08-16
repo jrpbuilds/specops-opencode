@@ -1,5 +1,6 @@
 import { runCaptureStdout } from "../helpers.js";
-import { isRecord } from "./helpers.js";
+import { formatCommandFailure, isRecord } from "./helpers.js";
+import type { CaptureStdout } from "./helpers.js";
 
 /** A deterministic active-change summary reported by OpenSpec. */
 export type OpenSpecActiveChange = {
@@ -17,12 +18,6 @@ export type OpenSpecContextResult = {
     activeChanges: readonly OpenSpecActiveChange[];
     error?: string;
 };
-
-type CaptureStdout = (
-    command: string,
-    args: string[],
-    cwd?: string,
-) => Promise<{ stdout: string; exitCode: number | null }>;
 
 /**
  * Read current OpenSpec startup facts using the canonical list command.
@@ -59,7 +54,7 @@ export async function getOpenSpecContext(
     if (!isRecord(parsed)) return contextError("OpenSpec list returned an invalid result");
 
     if (result.exitCode !== 0) {
-        return contextError(formatCommandFailure(parsed, result.exitCode));
+        return contextError(formatCommandFailure(parsed, result.exitCode, "list"));
     }
 
     const root = isRecord(parsed.root) ? parsed.root : null;
@@ -108,12 +103,4 @@ function isActiveChange(value: Record<string, unknown>): value is Record<string,
 
 function contextError(error: string): OpenSpecContextResult {
     return { available: true, initialized: false, activeChanges: [], error };
-}
-
-function formatCommandFailure(parsed: Record<string, unknown>, exitCode: number): string {
-    const status = Array.isArray(parsed.status) ? parsed.status.find(isRecord) : undefined;
-    const message = typeof status?.message === "string" ? status.message : undefined;
-    const fix = typeof status?.fix === "string" ? status.fix : undefined;
-    if (message) return fix ? `${message} Fix: ${fix}` : message;
-    return `OpenSpec list failed with exit code ${exitCode}`;
 }

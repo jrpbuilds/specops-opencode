@@ -1,0 +1,25 @@
+name: Feature Request
+description: Suggest an improvement or new capability for SpecOps.
+labels: [enhancement]
+body:
+    - type: textarea
+      id: motivation
+      attributes:
+          label: Motivation
+          description: What problem are you trying to solve? Why is this change valuable?
+      validations:
+          required: true
+    - type: textarea
+      id: proposal
+      attributes:
+          label: Proposal
+          description: Describe the behaviour or API you would like to see.
+      validations:
+          required: true
+    - type: textarea
+      id: alternatives
+      attributes:
+          label: Alternatives
+          description: What alternatives have you considered? What trade-offs are involved?
+      validations:
+          required: false

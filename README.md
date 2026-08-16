@@ -4,8 +4,9 @@
 
 **Spec-driven development for OpenCode, with the right model for each job.**
 
-[![npm version](https://img.shields.io/npm/v/@jrpbuilds/specops-opencode?logo=npm&logoColor=white)](https://www.npmjs.com/package/@jrpbuilds/specops-opencode)
+[![npm version](https://img.shields.io/npm/v/@jrpbuilds/specops-opencode?logo=npm\&logoColor=white)](https://www.npmjs.com/package/@jrpbuilds/specops-opencode)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![coverage](https://img.shields.io/github/actions/workflow/status/jrpbuilds/specops-opencode/ci.yml?branch=main\&label=coverage)](https://github.com/jrpbuilds/specops-opencode/actions/workflows/ci.yml)
 [![OpenCode](https://img.shields.io/badge/OpenCode-plugin-5c6ac4)](https://opencode.ai)
 [![OpenSpec](https://img.shields.io/badge/powered%20by-OpenSpec-444)](https://github.com/Fission-AI/OpenSpec)
 
@@ -19,9 +20,47 @@ Give it a goal:
 /specops add a health endpoint with tests
 ```
 
-SpecOps coordinates specialist models to investigate the repository, define the requirements, design the solution, build an implementation plan, write the code, and independently review the result.
+SpecOps coordinates specialist agents to investigate the repository, define the requirements, design the solution, plan the implementation, write the code, and independently review the result.
 
-OpenSpec artifacts are the durable source of truth. The models decide what work needs doing and which specialist should do it. TypeScript stays deliberately boring and handles only deterministic plugin operations.
+Each role can use a different model, while OpenSpec remains the durable source of truth for the change.
+
+## Install
+
+Install SpecOps through OpenCode:
+
+```bash
+opencode plugin @jrpbuilds/specops-opencode -g
+```
+
+Install the OpenSpec CLI:
+
+```bash
+npm install -g @fission-ai/openspec
+```
+
+Then restart OpenCode.
+
+Check the installation:
+
+```text
+/specops-doctor
+```
+
+## Getting started
+
+Open a project and give SpecOps a goal:
+
+```text
+/specops improve the API error responses and add coverage for the new behaviour
+```
+
+SpecOps automatically initialises OpenSpec on first use.
+
+You can also initialise it explicitly:
+
+```text
+/specops-onboard
+```
 
 ## How it works
 
@@ -32,21 +71,14 @@ OpenSpec artifacts are the durable source of truth. The models decide what work 
   Coordinator
       │
       ├── Explorer      repository investigation
-      │
-      ├── Planner       proposal + capability specs
-      │
+      ├── Planner       proposal + specifications
       ├── Designer      technical design
-      │
       ├── Planner       implementation tasks
-      │
       ├── Implementer   source + tests
-      │
       └── Reviewer      independent verification
 ```
 
-Each role can use a different model and reasoning variant.
-
-A typical change is persisted through normal OpenSpec artifacts:
+The workflow produces normal OpenSpec artifacts:
 
 ```text
 openspec/changes/<change>/
@@ -56,45 +88,14 @@ openspec/changes/<change>/
 └── tasks.md
 ```
 
-There is no parallel SpecOps workflow state machine. Existing OpenSpec artifacts and task completion are used to determine what needs to happen next, which also makes interrupted changes naturally resumable.
+SpecOps does not maintain a parallel workflow state machine. Existing OpenSpec artifacts and task completion determine what needs to happen next, so interrupted changes can be resumed naturally.
 
-## Install
+The plugin itself stays deliberately small:
 
-Install the plugin using OpenCode:
-
-```bash
-opencode plugin @jrpbuilds/specops-opencode -g
-```
-
-SpecOps also requires the OpenSpec CLI to be installed:
-
-```bash
-npm install -g @fission-ai/openspec
-```
-
-Then restart OpenCode.
-
-## Getting started
-
-Open a project and run a goal directly:
-
-```text
-/specops improve the API error responses and add coverage for the new behaviour
-```
-
-SpecOps self-onboards the project for OpenSpec on the first run. To initialise OpenSpec explicitly — for example before the first `/specops` run or on a fresh checkout — use:
-
-```text
-/specops-onboard
-```
-
-Check everything is ready:
-
-```text
-/specops-doctor
-```
-
-SpecOps will coordinate the change through the appropriate specialist agents.
+* **Models** handle reasoning and orchestration.
+* **OpenSpec** owns durable change state.
+* **TypeScript** handles deterministic plugin operations.
+* **Specialist agents** stay focused on their assigned role.
 
 ## Model configuration
 
@@ -106,15 +107,15 @@ SpecOps Configure
 
 Models and reasoning variants can be configured independently for:
 
-- Coordinator
-- Explorer
-- Planner
-- Designer
-- Implementer
-- Reviewer
-- Frontier
+* Coordinator
+* Explorer
+* Planner
+* Designer
+* Implementer
+* Reviewer
+* Frontier
 
-Configuration is stored in:
+Configuration is stored at:
 
 ```text
 ~/.config/opencode/specops.json
@@ -160,15 +161,15 @@ Example:
 }
 ```
 
-Leave a model unset to inherit OpenCode's default model.
+Leave a role unset to inherit OpenCode's default model.
 
-`frontierEscalation` controls whether the `specops-frontier` subagent is registered. Changing this setting requires restarting OpenCode to take effect, because the registered agent catalogue changes.
+`frontierEscalation` controls whether the Frontier agent is registered. Changing it requires restarting OpenCode.
 
 ## Commands
 
 ### `/specops <goal>`
 
-Starts or resumes SpecOps work using the SpecOps Coordinator.
+Starts or resumes a SpecOps change.
 
 ```text
 /specops stop the background animation when the game is over
@@ -176,7 +177,9 @@ Starts or resumes SpecOps work using the SpecOps Coordinator.
 
 ### `/specops-auto <goal>`
 
-Runs the same workflow autonomously with no human checkpoints, finishing with a terminal `COMPLETED` or `BLOCKED` report. Designed for headless runs:
+Runs the workflow autonomously without human checkpoints and finishes with a terminal `COMPLETED` or `BLOCKED` report.
+
+Useful for headless runs:
 
 ```bash
 opencode run --auto --command specops-auto "<goal>"
@@ -188,39 +191,21 @@ Initialises OpenSpec in the current project.
 
 ### `/specops-doctor`
 
-Checks the SpecOps installation, OpenSpec availability and project state, configuration, and configured model roles.
-
-## Design philosophy
-
-SpecOps intentionally keeps the plugin layer small.
-
-**Models own reasoning and orchestration.**
-
-The Coordinator decides what work is needed and delegates it to specialist agents using OpenCode's native subagent support.
-
-**OpenSpec owns durable workflow state.**
-
-Proposal, specifications, design, tasks, and task completion live in OpenSpec rather than a second SpecOps state system.
-
-**TypeScript owns deterministic operations.**
-
-Operations such as onboarding, diagnostics, and OpenSpec lifecycle mutations are implemented as small deterministic tools rather than spending model tokens on predictable plumbing.
-
-**Specialists stay specialised.**
-
-The Explorer investigates. The Planner defines requirements and tasks. The Designer designs. The Implementer implements. The Reviewer independently verifies.
-
-No agent needs to pretend it can do everything well.
+Checks the SpecOps installation, OpenSpec availability, project state, configuration, and configured models.
 
 ## Engram (optional)
 
-SpecOps uses OpenSpec for authoritative change state and works perfectly without Engram. For better cross-session project awareness, we recommend installing the [Engram](https://github.com/Gentleman-Programming/engram) MCP server so SpecOps agents can make use of historical architectural decisions, conventions, previous discoveries, and project-specific gotchas when useful.
+SpecOps works without Engram.
 
-When Engram's MCP tools are available, any SpecOps agent may use them selectively. Engram is contextual memory, not authority: current explicit user instructions and the current approved OpenSpec artifacts govern the change; current repository and executed evidence govern what exists today. Engram memory must yield whenever it conflicts with any of them. SpecOps does not store OpenSpec artifacts or workflow state in Engram, and Engram is never required - if its tools are unavailable, SpecOps continues unchanged.
+For cross-session project memory, you can optionally use the [Engram](https://github.com/Gentleman-Programming/engram) MCP server. SpecOps agents may use it for historical architectural decisions, conventions, previous discoveries, and project-specific context.
 
-### Setup
+Engram is contextual memory only. Current user instructions, OpenSpec artifacts, repository state, and executed evidence always take precedence.
 
-Install Engram (see [Engram's installation guide](https://github.com/Gentleman-Programming/engram/blob/main/docs/INSTALLATION.md)), then follow [Engram's documented OpenCode setup](https://github.com/Gentleman-Programming/engram/blob/main/docs/AGENT-SETUP.md) (`engram setup opencode`) to expose its MCP server and tools to OpenCode. Restart OpenCode afterwards.
+Install Engram using its [installation guide](https://github.com/Gentleman-Programming/engram/blob/main/docs/INSTALLATION.md), then follow its [OpenCode setup](https://github.com/Gentleman-Programming/engram/blob/main/docs/AGENT-SETUP.md).
+
+## Example
+
+* [Galaxy Shooter](https://jrpbuilds.github.io/specops-opencode/galaxy-shooter/) — a browser arcade game generated through the SpecOps workflow.
 
 ## Development
 
@@ -229,21 +214,25 @@ bun install
 bun run check
 ```
 
-The project uses Bun for development, building and testing, with TypeScript throughout.
-
 Build the plugin with:
 
 ```bash
 bun run build
 ```
 
+SpecOps uses Bun and TypeScript throughout.
+
 ## Status
 
-SpecOps is under active development and is being dogfooded against real software changes as the workflow is expanded.
-
-The goal is deliberately simple:
+SpecOps is under active development and is being dogfooded against real software changes.
 
 > Make structured multi-model software development useful without building another workflow engine.
+
+## Community
+
+* [Contributing](CONTRIBUTING.md)
+* [Security](SECURITY.md)
+* [Code of conduct](CODE_OF_CONDUCT.md)
 
 ## License
 

@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { ALL_AGENT_IDS, type AgentId } from "./agents/ids.js";
+import { isRecord } from "./openspec/helpers.js";
 
 /**
  * Model and optional reasoning variant selected for one role.
@@ -163,11 +164,6 @@ export async function writeFileAtomic(destination: string, content: string): Pro
     } finally {
         await unlink(temporary).catch(() => undefined);
     }
-}
-
-/** Narrow parsed JSON to a non-array object suitable for configuration validation. */
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 /** Return whether a record contains no keys outside the supplied allow-list. */

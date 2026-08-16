@@ -93,4 +93,91 @@ describe("getOpenSpecContext", () => {
         expect(result.activeChanges).toEqual([]);
         expect(result.error).toContain("invalid JSON");
     });
+
+    test("reports termination before an exit code is available", async () => {
+        const result = await getOpenSpecContext("/project", async () => ({
+            exitCode: null,
+            stdout: "",
+        }));
+
+        expect(result.available).toBe(true);
+        expect(result.initialized).toBe(false);
+        expect(result.error).toBe("OpenSpec list was terminated before returning a result");
+    });
+
+    test("reports an invalid result shape", async () => {
+        const result = await getOpenSpecContext("/project", async () => ({
+            exitCode: 0,
+            stdout: JSON.stringify("unexpected"),
+        }));
+
+        expect(result.available).toBe(true);
+        expect(result.initialized).toBe(false);
+        expect(result.error).toBe("OpenSpec list returned an invalid result");
+    });
+
+    test("reports a missing or incomplete root/changes as invalid", async () => {
+        const missingRoot = await getOpenSpecContext("/project", async () => ({
+            exitCode: 0,
+            stdout: JSON.stringify({ changes: [] }),
+        }));
+        const missingChanges = await getOpenSpecContext("/project", async () => ({
+            exitCode: 0,
+            stdout: JSON.stringify({ root: { source: "nearest" } }),
+        }));
+
+        expect(missingRoot.error).toBe("OpenSpec list returned an invalid result");
+        expect(missingChanges.error).toBe("OpenSpec list returned an invalid result");
+    });
+
+    test("reports a malformed active change entry as invalid", async () => {
+        const result = await getOpenSpecContext("/project", async () => ({
+            exitCode: 0,
+            stdout: JSON.stringify({
+                changes: [{ name: "bad" }],
+                root: { path: "/project", source: "nearest" },
+            }),
+        }));
+
+        expect(result.available).toBe(true);
+        expect(result.initialized).toBe(false);
+        expect(result.error).toBe("OpenSpec list returned an invalid change result");
+    });
+
+    test("preserves native command failures with message only", async () => {
+        const result = await getOpenSpecContext("/project", async () => ({
+            exitCode: 1,
+            stdout: JSON.stringify({ status: [{ message: "OpenSpec root is invalid" }] }),
+        }));
+
+        expect(result.error).toBe("OpenSpec root is invalid");
+    });
+
+    test("falls back to exit code for fix only", async () => {
+        const result = await getOpenSpecContext("/project", async () => ({
+            exitCode: 1,
+            stdout: JSON.stringify({ status: [{ fix: "Run openspec doctor" }] }),
+        }));
+
+        expect(result.error).toBe("OpenSpec list failed with exit code 1");
+    });
+
+    test("falls back to exit code when status is absent or malformed", async () => {
+        const empty = await getOpenSpecContext("/project", async () => ({
+            exitCode: 1,
+            stdout: JSON.stringify({}),
+        }));
+        const notArray = await getOpenSpecContext("/project", async () => ({
+            exitCode: 1,
+            stdout: JSON.stringify({ status: "bad" }),
+        }));
+        const nonRecordEntry = await getOpenSpecContext("/project", async () => ({
+            exitCode: 1,
+            stdout: JSON.stringify({ status: ["bad"] }),
+        }));
+
+        expect(empty.error).toBe("OpenSpec list failed with exit code 1");
+        expect(notArray.error).toBe("OpenSpec list failed with exit code 1");
+        expect(nonRecordEntry.error).toBe("OpenSpec list failed with exit code 1");
+    });
 });

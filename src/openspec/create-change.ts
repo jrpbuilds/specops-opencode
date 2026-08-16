@@ -1,15 +1,10 @@
 import { runCaptureStdout } from "../helpers.js";
-import { errorMessage, isRecord } from "./helpers.js";
+import { errorMessage, formatCommandFailure, isRecord } from "./helpers.js";
+import type { CaptureStdout } from "./helpers.js";
 
 /** Normalized result of creating one named OpenSpec change. */
 export type OpenSpecCreateChangeResult =
     { ok: true; name: string; path: string } | { ok: false; error: string };
-
-type CaptureStdout = (
-    command: string,
-    args: string[],
-    cwd?: string,
-) => Promise<{ stdout: string; exitCode: number | null }>;
 
 /**
  * Create a change through OpenSpec's canonical non-interactive command.
@@ -65,13 +60,5 @@ export async function createOpenSpecChange(
         return { ok: true, name: created.id, path: created.path };
     }
 
-    return { ok: false, error: formatCommandFailure(parsed, result.exitCode) };
-}
-
-function formatCommandFailure(parsed: Record<string, unknown>, exitCode: number): string {
-    const status = Array.isArray(parsed.status) ? parsed.status.find(isRecord) : undefined;
-    const message = typeof status?.message === "string" ? status.message : undefined;
-    const fix = typeof status?.fix === "string" ? status.fix : undefined;
-    if (message) return fix ? `${message} Fix: ${fix}` : message;
-    return `OpenSpec create change failed with exit code ${exitCode}`;
+    return { ok: false, error: formatCommandFailure(parsed, result.exitCode, "create change") };
 }
