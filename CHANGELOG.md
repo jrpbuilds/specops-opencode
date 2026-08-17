@@ -2,6 +2,26 @@
 
 All notable changes to SpecOps are documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- Coordinator-owned `specops_status` lifecycle tool that reports authoritative
+  OpenSpec workflow status for a selected change without crawling `openspec/`.
+  It wraps the native `openspec status --change <name> --json` command through a
+  deterministic `getOpenSpecStatus` wrapper (`src/openspec/status.ts`) that
+  normalizes the schema-agnostic fields SpecOps needs — change name, schema
+  name, planning completion, `applyRequires`, and per-artifact id, output path,
+  status (`done`/`skipped`/`ready`/`blocked`), and dependency/missing-dependency
+  lists. The wrapper reports OpenSpec state only and makes no routing decisions;
+  it treats non-zero exits, terminated commands, invalid JSON, and malformed
+  response shapes as explicit errors, and omits optional fields OpenSpec does
+  not provide rather than synthesizing defaults. The tool enforces the existing
+  lifecycle permission boundary (it is intentionally not added to
+  `ORDINARY_LIFECYCLE_PERMISSION`), so ordinary agents and specialists remain
+  denied while only the coordinators may invoke it. Existing startup/context
+  behaviour is unchanged. (issue #5)
+
 ## [v0.7.1] - 2026-08-17
 
 ### Fixed

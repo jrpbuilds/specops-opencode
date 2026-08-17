@@ -18,6 +18,7 @@ import { onboardTool } from "./tools/onboard.js";
 import { archiveTool } from "./tools/archive.js";
 import { contextTool } from "./tools/context.js";
 import { createChangeTool } from "./tools/create-change.js";
+import { statusTool } from "./tools/status.js";
 
 /**
  * Slash commands installed by the plugin.
@@ -95,6 +96,7 @@ export const SpecOpsPlugin: Plugin = async () => ({
         specops_create_change: createChangeTool,
         specops_doctor: doctorTool,
         specops_onboard: onboardTool,
+        specops_status: statusTool,
     },
 });
 

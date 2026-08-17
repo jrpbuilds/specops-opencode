@@ -5,6 +5,7 @@ import { contextTool } from "../../src/tools/context.js";
 import { createChangeTool } from "../../src/tools/create-change.js";
 import { doctorTool } from "../../src/tools/doctor.js";
 import { onboardTool } from "../../src/tools/onboard.js";
+import { statusTool } from "../../src/tools/status.js";
 import { SpecOpsPlugin } from "../../src/index.js";
 import { withTempDir } from "../helpers.js";
 
@@ -20,6 +21,7 @@ const LIFECYCLE_TOOLS: Array<{
     { id: "specops_create_change", definition: createChangeTool, args: { change: "example" } },
     { id: "specops_doctor", definition: doctorTool, args: {} },
     { id: "specops_onboard", definition: onboardTool, args: {} },
+    { id: "specops_status", definition: statusTool, args: { change: "example" } },
 ];
 
 function pluginInput(directory: string) {

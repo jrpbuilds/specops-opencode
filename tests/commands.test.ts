@@ -87,6 +87,7 @@ describe("SpecOps server plugin", () => {
                     "specops_create_change",
                     "specops_doctor",
                     "specops_onboard",
+                    "specops_status",
                 ]);
             } finally {
                 process.env.XDG_CONFIG_HOME = original;

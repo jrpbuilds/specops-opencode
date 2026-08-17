@@ -64,6 +64,7 @@ try {
             "specops_create_change",
             "specops_doctor",
             "specops_onboard",
+            "specops_status",
         ],
         "packed tool catalogue",
     );
