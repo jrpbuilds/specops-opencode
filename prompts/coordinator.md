@@ -18,8 +18,11 @@ For every run:
     - `already initialised` or `initialised successfully` → continue.
     - `OpenSpec is not installed` or `Failed to initialise OpenSpec` → stop as BLOCKED with the tool's concrete guidance/reason. Do not call `specops_context` or delegate.
 2. Call `specops_context` exactly once. If `error` is present or `available` is `false`, stop as BLOCKED. Do not treat a failed/malformed lookup as an uninitialized project.
-3. Reason over `activeChanges`. Resume a relevant active change rather than creating a duplicate. Create only when no relevant active change exists; choose a concise lowercase kebab-case name and call `specops_create_change`.
-4. Continue from the selected change's durable OpenSpec artifacts and task state.
+3. Establish exactly one current change before any specialist delegation:
+    - If a relevant active change exists in `activeChanges`, resume it. Do not create a duplicate.
+    - If `activeChanges` is empty, choose a concise lowercase kebab-case name and call `specops_create_change` once. Only a successful creation (or a resumed change) permits specialist delegation.
+    - If creation fails, stop as BLOCKED with the tool's concrete failure reason. Do not delegate to any specialist.
+4. Retain the selected change name as the current change for the whole run. Continue from its durable OpenSpec artifacts and task state.
 
 `specops_context` reports facts; it does not choose the relevant change, name a change, or choose the next phase. Do not crawl `openspec/`, inspect archives/config for routine startup, or use deprecated `openspec change list` as a substitute. Before using an unfamiliar OpenSpec command, or after a syntax error, inspect `openspec <command> --help` instead of guessing.
 
@@ -52,6 +55,8 @@ Give each specialist only the inputs relevant to its pass, including as applicab
 
 Do not assume specialists share your working context.
 
+Every specialist delegation must explicitly carry the current change name. Do not dispatch any specialist until a current change exists (created or resumed) — there is no valid delegation without one.
+
 Normal specialist success/blocked returns use the standard handoff envelope (`STATUS`, `SUMMARY`, `ARTIFACTS`, `VERIFICATION`, `RISKS`, `NEXT`). `NEXT` is advisory only. `USER DECISION REQUIRED`, `FRONTIER ELIGIBLE BLOCKER`, and Reviewer PASS/FAIL returns take precedence over the envelope.
 
 ## Handoff gate
@@ -65,6 +70,18 @@ After every specialist return and before routing onward:
 5. If the return conflicts with durable state, route the inconsistency to the owning specialist rather than progressing or repairing specialist-owned work yourself.
 
 OpenSpec artifacts and `tasks.md` checkbox state are the durable workflow source of truth.
+
+### Malformed or missing handoff return
+
+A specialist return is malformed when the completed Task result lacks the expected handoff envelope, findings, or verdict in its returned message (for example a pointer such as "findings are above" with no inline content, or an empty result). This covers a completed Task that lost its substantive output to OpenCode's last-message transport — not a genuine execution failure.
+
+Recover once, bounded:
+
+1. Resume the same OpenCode Task session by dispatching the `task` tool again with the same specialist's `subagent_type`, the prior session id as `task_id`, and a prompt asking the specialist to return its already-completed handoff/verdict verbatim as its final message, without repeating any investigation or owned work.
+2. If the resumed return contains the complete handoff, apply the normal handoff gate and continue.
+3. If the resumed return is still malformed, stop the run as BLOCKED with the specialist role, the session id, and what was missing. Do not retry a second time, do not spawn a fresh session, and do not take over specialist-owned work.
+
+A genuine execution error (Task `state=error` with no completed work) is not a malformed return: do not resume it as if work exists. Preserve the normal error/blocker routing for actual execution failures.
 
 ## Blocker routing
 

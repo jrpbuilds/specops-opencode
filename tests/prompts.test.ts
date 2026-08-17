@@ -2,7 +2,12 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, test } from "bun:test";
-import { resolveIncludes } from "../src/prompts.js";
+import { AGENT_IDS } from "../src/agents/ids.js";
+import { loadPrompt, resolveIncludes } from "../src/prompts.js";
+
+function loadSpecialistPrompt(id: keyof typeof AGENT_IDS): string {
+    return loadPrompt(AGENT_IDS[id]);
+}
 
 async function withTempPromptDirectory(run: (directory: string) => Promise<void>): Promise<void> {
     const directory = await mkdtemp(path.join(os.tmpdir(), "specops-prompts-"));
@@ -74,5 +79,63 @@ describe("resolveIncludes", () => {
 
             expect(resolveIncludes("{{include:shared/fragment.md}}\n", directory)).toBe("Shared\n");
         });
+    });
+});
+
+describe("specialist terminal handoff contract", () => {
+    const ENVELOPE_ROLES: Array<keyof typeof AGENT_IDS> = [
+        "explorer",
+        "planner",
+        "designer",
+        "implementer",
+    ];
+
+    test("prompts using the standard handoff envelope require terminal handoff message", () => {
+        for (const role of ENVELOPE_ROLES) {
+            const prompt = loadSpecialistPrompt(role);
+            expect(prompt).toContain("This handoff is terminal");
+            expect(prompt).toContain(
+                "After emitting it, make no tool calls and emit no further text",
+            );
+            expect(prompt).toContain(
+                "Every tool call you need (including any Engram write) must occur before this handoff",
+            );
+        }
+    });
+
+    test("reviewer treats PASS/FAIL/blocker as a terminal return", () => {
+        const prompt = loadSpecialistPrompt("reviewer");
+        expect(prompt).toContain("## Terminal return");
+        expect(prompt).toContain(
+            "Your `PASS`/`FAIL` verdict, and any `FRONTIER ELIGIBLE BLOCKER` return, is terminal",
+        );
+        expect(prompt).toContain("After emitting it, make no tool calls and emit no further text");
+    });
+
+    test("frontier treats FRONTIER ADVICE as a terminal return", () => {
+        const prompt = loadSpecialistPrompt("frontier");
+        expect(prompt).toContain("This advice block is terminal");
+        expect(prompt).toContain("After emitting it, make no tool calls and emit no further text");
+    });
+});
+
+describe("engram ordering contract", () => {
+    const ENGRAM_ROLES: Array<keyof typeof AGENT_IDS> = [
+        "explorer",
+        "planner",
+        "designer",
+        "implementer",
+        "reviewer",
+        "frontier",
+    ];
+
+    test("every specialist prompt orders Engram writes before the final handoff/verdict", () => {
+        for (const role of ENGRAM_ROLES) {
+            const prompt = loadSpecialistPrompt(role);
+            expect(prompt).toContain(
+                "Order every Engram write before your final SpecOps handoff or verdict",
+            );
+            expect(prompt).toContain("Never call an Engram tool after emitting your handoff");
+        }
     });
 });

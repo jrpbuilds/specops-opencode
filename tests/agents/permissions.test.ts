@@ -87,6 +87,25 @@ describe("role permission profiles", () => {
         });
     });
 
+    test("keeps lifecycle authority unchanged for the v0.7.1 hotfix", () => {
+        expect(COORDINATOR_PERMISSION[SPECOPS_LIFECYCLE_PERMISSION]).toBe("allow");
+        for (const permission of [
+            EXPLORER_PERMISSION,
+            PLANNER_PERMISSION,
+            DESIGNER_PERMISSION,
+            IMPLEMENTER_PERMISSION,
+            REVIEWER_PERMISSION,
+            FRONTIER_PERMISSION,
+        ]) {
+            expect(permission[SPECOPS_LIFECYCLE_PERMISSION]).toBe("deny");
+        }
+        expect(ORDINARY_LIFECYCLE_PERMISSION).toEqual({
+            "*": "deny",
+            specops_doctor: "allow",
+            specops_onboard: "allow",
+        });
+    });
+
     test("gives each specialist an explicit headless-safe role boundary", () => {
         for (const permission of [
             EXPLORER_PERMISSION,

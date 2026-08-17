@@ -2,6 +2,32 @@
 
 All notable changes to SpecOps are documented in this file.
 
+## [v0.7.1] - 2026-08-17
+
+### Fixed
+
+- Specialist handoffs into OpenCode's `task` tool were lost when a specialist
+  emitted its handoff, called `engram_mem_session_summary`, and then emitted a
+  closing pointer as a follow-up message. The shared handoff envelope now
+  declares that the handoff is the terminal message, all tool calls (including
+  Engram) must precede it, and no tool calls or text may follow it. The Reviewer
+  and Frontier prompts explicitly require the same terminal-message behaviour for
+  `PASS`/`FAIL`, `FRONTIER ELIGIBLE BLOCKER`, and `FRONTIER ADVICE`.
+- The coordinator could skip `specops_create_change` when `specops_context`
+  reported no active changes and delegate to specialists anyway. The coordinator
+  prompt now establishes exactly one current change as a hard precondition: if
+  `activeChanges` is empty, it must create a change and only successful creation
+  permits specialist delegation; every delegation must carry the current change
+  name.
+- A malformed or missing Task result caused a fresh specialist investigation
+  instead of recovering the already-completed work. The coordinator prompt now
+  recovers once by resuming the same OpenCode Task session via `task_id` and
+  asking the specialist to re-emit its completed handoff; if the re-emission is
+  still malformed, it stops clearly without retrying or spawning a fresh session.
+  This recovery applies only to completed tasks that lost their substantive
+  output; genuine execution errors still follow the normal error/blocker path.
+- Role permissions and lifecycle authority are unchanged.
+
 ## [v0.7.0] - 2026-08-16
 
 ### Changed

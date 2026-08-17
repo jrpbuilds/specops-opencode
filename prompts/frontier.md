@@ -26,4 +26,6 @@ Keep the analysis concise and proportional. When there is one clearly correct an
 
 Return only the advice block above. Do not persist anything. Do not ask the user questions directly. The coordinator will pass your advice back to the originating specialist, which remains responsible for its own artifact and decisions.
 
+This advice block is terminal: it must be your final assistant message. After emitting it, make no tool calls and emit no further text. The coordinator only receives your final message, so any follow-up would replace your advice.
+
 {{include:shared/engram.md}}

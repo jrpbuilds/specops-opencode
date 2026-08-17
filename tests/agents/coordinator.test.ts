@@ -74,9 +74,9 @@ describe("coordinator prompt composition", () => {
     });
 
     test("assembled prompts stay within regression budgets", () => {
-        expect(buildCoordinatorPrompt("interactive", false).length).toBeLessThan(16_000);
-        expect(buildCoordinatorPrompt("auto", false).length).toBeLessThan(13_000);
-        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(18_000);
+        expect(buildCoordinatorPrompt("interactive", false).length).toBeLessThan(17_000);
+        expect(buildCoordinatorPrompt("auto", false).length).toBeLessThan(14_000);
+        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(19_000);
         expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(15_000);
     });
 });
@@ -88,10 +88,11 @@ describe("shared coordinator contract", () => {
         expect(prompt).toContain("Call `specops_onboard` first");
         expect(prompt).toContain("Call `specops_context` exactly once");
         expect(prompt).toContain(
-            "Resume a relevant active change rather than creating a duplicate",
+            "Establish exactly one current change before any specialist delegation",
         );
-        expect(prompt).toContain("Create only when no relevant active change exists");
-        expect(prompt).toContain("call `specops_create_change`");
+        expect(prompt).toContain("resume it. Do not create a duplicate");
+        expect(prompt).toContain("If `activeChanges` is empty");
+        expect(prompt).toContain("call `specops_create_change` once");
         expect(prompt).toContain("Do not crawl `openspec/`");
         expect(prompt).toContain("deprecated `openspec change list`");
     });
@@ -147,6 +148,39 @@ describe("shared coordinator contract", () => {
         expect(prompt).toContain("Use Engram as contextual memory, not authority");
         expect(prompt).toContain("Engram is optional");
         expect(prompt).toContain("must not block your pass");
+    });
+
+    test("establishes a change before any specialist delegation", () => {
+        expect(prompt).toContain(
+            "Establish exactly one current change before any specialist delegation",
+        );
+        expect(prompt).toContain("If `activeChanges` is empty");
+        expect(prompt).toContain("call `specops_create_change` once");
+        expect(prompt).toContain(
+            "Only a successful creation (or a resumed change) permits specialist delegation",
+        );
+        expect(prompt).toContain("If creation fails, stop as BLOCKED");
+        expect(prompt).toContain("Do not delegate to any specialist");
+    });
+
+    test("requires every delegation to carry the current change name", () => {
+        expect(prompt).toContain(
+            "Every specialist delegation must explicitly carry the current change name",
+        );
+        expect(prompt).toContain("Do not dispatch any specialist until a current change exists");
+    });
+
+    test("recovers a malformed completed Task return via task_id once", () => {
+        const malformed = prompt.slice(prompt.indexOf("### Malformed or missing handoff return"));
+        expect(malformed).toContain("Resume the same OpenCode Task session");
+        expect(malformed).toContain("task_id");
+        expect(malformed).toContain("return its already-completed handoff");
+        expect(malformed).toContain("without repeating any investigation or owned work");
+        expect(malformed).toContain("Do not retry a second time");
+        expect(malformed).toContain("do not spawn a fresh session");
+        expect(malformed).toContain("A genuine execution error");
+        expect(malformed).toContain("is not a malformed return");
+        expect(malformed).not.toContain("launch a fresh specialist investigation");
     });
 
     test("gates every handoff against durable state", () => {
