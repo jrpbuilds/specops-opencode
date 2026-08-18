@@ -2,31 +2,24 @@
 
 All notable changes to SpecOps are documented in this file.
 
-## [Unreleased]
+## [v1.0.0] - Unreleased
 
 ### Added
 
-- Graph-driven coordinator routing via `specops_status`, using the `applyRequires`
-  closure and per-artifact `ready`/`blocked`/`done`/`skipped` state. Skipped
-  artifacts are satisfied, custom schemas can reach apply when their closure is
-  satisfied, and the interactive plan checkpoint uses `isPlanningComplete` /
-  closure readiness instead of four hardcoded files. A pure `nextPlanningRoute`
-  reference helper and fixture tests pin the semantics. (issue #6)
-- Coordinator-owned `specops_status` lifecycle tool that reports authoritative
-  OpenSpec workflow status for a selected change without crawling `openspec/`.
-  It wraps the native `openspec status --change <name> --json` command through a
-  deterministic `getOpenSpecStatus` wrapper (`src/openspec/status.ts`) that
-  normalizes the schema-agnostic fields SpecOps needs — change name, schema
-  name, planning completion, `applyRequires`, and per-artifact id, output path,
-  status (`done`/`skipped`/`ready`/`blocked`), and dependency/missing-dependency
-  lists. The wrapper reports OpenSpec state only and makes no routing decisions;
-  it treats non-zero exits, terminated commands, invalid JSON, and malformed
-  response shapes as explicit errors, and omits optional fields OpenSpec does
-  not provide rather than synthesizing defaults. The tool enforces the existing
-  lifecycle permission boundary (it is intentionally not added to
-  `ORDINARY_LIFECYCLE_PERMISSION`), so ordinary agents and specialists remain
-  denied while only the coordinators may invoke it. Existing startup/context
-  behaviour is unchanged. (issue #5)
+- SpecOps now works with any OpenSpec schema, not just the default one. Planning
+  specialists follow whatever artifacts your schema defines — including custom,
+  renamed, reordered, or omitted ones — and use OpenSpec's own instructions and
+  output paths instead of assuming the standard file names. The Designer
+  specialist remains a dedicated option for the conventional `design` artifact,
+  while everything else is handled by the Planner. (issue #7)
+- The coordinator now routes the workflow from OpenSpec's live change status
+  rather than hardcoded file assumptions. It sees which artifacts are done,
+  ready, blocked, or skipped and plans the next step accordingly — so skipped
+  artifacts and custom schemas are handled correctly, and the interactive plan
+  approval appears at the right time. (issue #6)
+- New `specops_status` tool: the coordinator can check the current state of a
+  change at any time, so it always works from up-to-date OpenSpec information
+  instead of browsing the `openspec/` folder. (issue #5)
 
 ## [v0.7.1] - 2026-08-17
 
