@@ -108,6 +108,7 @@ function isStringArray(value: unknown): value is string[] {
     return Array.isArray(value) && value.every(item => typeof item === "string");
 }
 
+/** Type guard for one artifact entry of the normalized OpenSpec status shape. */
 function isNormalizedArtifact(value: Record<string, unknown>): value is Record<string, unknown> & {
     id: string;
     outputPath: string;

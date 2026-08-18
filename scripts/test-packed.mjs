@@ -204,6 +204,15 @@ try {
     await rm(temporaryRoot, { recursive: true, force: true });
 }
 
+/**
+ * Build a minimal plugin input fixture for the packed smoke test.
+ *
+ * All fields except `directory` are stubs: the `worktree`/`project`/`client`
+ * objects are empty, `serverUrl` is a dummy URL, and `$` and
+ * `experimental_workspace.register` are no-ops — just enough to satisfy the
+ * plugin's `Plugin` signature without a real OpenCode runtime, so the test
+ * can assert prompt composition and agent registration.
+ */
 function pluginInput(directory) {
     return {
         directory,

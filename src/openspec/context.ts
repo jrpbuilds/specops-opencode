@@ -85,6 +85,7 @@ export async function getOpenSpecContext(
     };
 }
 
+/** Type guard for one entry of `openspec change list`'s active-change shape. */
 function isActiveChange(value: Record<string, unknown>): value is Record<string, unknown> & {
     name: string;
     status: string;
