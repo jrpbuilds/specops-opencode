@@ -25,8 +25,7 @@ export type NormalizedInstructions = {
 
 /** Result of reading and normalizing OpenSpec instructions. */
 export type OpenSpecInstructionsResult =
-    | { ok: true; instructions: NormalizedInstructions }
-    | { ok: false; error: string };
+    { ok: true; instructions: NormalizedInstructions } | { ok: false; error: string };
 
 /**
  * Read authoritative authoring instructions for one OpenSpec artifact.
@@ -87,9 +86,10 @@ export async function getOpenSpecInstructions(
  * `skipped`/`warning` fields, so the normalizer can spread the optionals
  * without re-checking their types.
  */
-function isInstructionsResponse(
-    value: Record<string, unknown>,
-): value is Record<string, unknown> & {
+function isInstructionsResponse(value: Record<string, unknown>): value is Record<
+    string,
+    unknown
+> & {
     artifactId: string;
     resolvedOutputPath: string;
     template: string;

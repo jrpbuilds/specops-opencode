@@ -1,8 +1,7 @@
 import type { NormalizedArtifact, NormalizedStatus } from "./status.js";
 
 /** Specialist pass selected for a planning artifact. */
-export type SpecialistPass =
-    "designer" | "planner-generic";
+export type SpecialistPass = "designer" | "planner-generic";
 
 /** The next planning action derived from an OpenSpec artifact graph. */
 export type PlanningRoute =

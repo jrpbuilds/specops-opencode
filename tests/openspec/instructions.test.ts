@@ -61,7 +61,12 @@ describe("getOpenSpecInstructions", () => {
             warning: "This artifact is optional.",
         };
 
-        const result = await getOpenSpecInstructions("proposal", "example", "/project", captureJson(response));
+        const result = await getOpenSpecInstructions(
+            "proposal",
+            "example",
+            "/project",
+            captureJson(response),
+        );
 
         expect(result).toEqual({
             ok: true,
@@ -84,7 +89,11 @@ describe("getOpenSpecInstructions", () => {
             "research",
             "example",
             "/project",
-            captureJson({ ...completeInstructions, artifactId: "research", resolvedOutputPath: "specs/**/*.md" }),
+            captureJson({
+                ...completeInstructions,
+                artifactId: "research",
+                resolvedOutputPath: "specs/**/*.md",
+            }),
         );
 
         expect(result.ok).toBe(true);
@@ -98,9 +107,14 @@ describe("getOpenSpecInstructions", () => {
     });
 
     test("reports capture failures", async () => {
-        const result = await getOpenSpecInstructions("proposal", "example", "/project", async () => {
-            throw new Error("spawn openspec ENOENT");
-        });
+        const result = await getOpenSpecInstructions(
+            "proposal",
+            "example",
+            "/project",
+            async () => {
+                throw new Error("spawn openspec ENOENT");
+            },
+        );
 
         expect(result).toEqual({
             ok: false,
@@ -109,10 +123,15 @@ describe("getOpenSpecInstructions", () => {
     });
 
     test("reports a terminated process", async () => {
-        const result = await getOpenSpecInstructions("proposal", "example", "/project", async () => ({
-            stdout: "result unavailable",
-            exitCode: null,
-        }));
+        const result = await getOpenSpecInstructions(
+            "proposal",
+            "example",
+            "/project",
+            async () => ({
+                stdout: "result unavailable",
+                exitCode: null,
+            }),
+        );
 
         expect(result).toEqual({
             ok: false,
@@ -121,10 +140,15 @@ describe("getOpenSpecInstructions", () => {
     });
 
     test("reports invalid JSON including stdout", async () => {
-        const result = await getOpenSpecInstructions("proposal", "example", "/project", async () => ({
-            stdout: "not json",
-            exitCode: 0,
-        }));
+        const result = await getOpenSpecInstructions(
+            "proposal",
+            "example",
+            "/project",
+            async () => ({
+                stdout: "not json",
+                exitCode: 0,
+            }),
+        );
 
         expect(result).toEqual({
             ok: false,
@@ -135,10 +159,15 @@ describe("getOpenSpecInstructions", () => {
     test.each(["[]", JSON.stringify("unexpected"), "null"])(
         "reports an invalid top-level result for %s",
         async stdout => {
-            const result = await getOpenSpecInstructions("proposal", "example", "/project", async () => ({
-                stdout,
-                exitCode: 0,
-            }));
+            const result = await getOpenSpecInstructions(
+                "proposal",
+                "example",
+                "/project",
+                async () => ({
+                    stdout,
+                    exitCode: 0,
+                }),
+            );
 
             expect(result).toEqual({
                 ok: false,
