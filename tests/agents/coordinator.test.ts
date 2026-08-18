@@ -97,11 +97,15 @@ describe("shared coordinator contract", () => {
         expect(prompt).toContain("deprecated `openspec change list`");
     });
 
-    test("routes every mandatory workflow phase from durable state", () => {
+    test("routes planning from the artifact graph and preserves apply/review phases", () => {
         const expected = [
-            "`specops-planner` requirements pass",
+            "## Routing from the OpenSpec artifact graph",
+            "`specops_status`",
+            "`applyRequires` closure",
+            "reverse-dependency reachability",
+            "specops-planner requirements",
             "`specops-designer`",
-            "`specops-planner` tasks pass",
+            "specops-planner tasks pass",
             "mode-specific plan policy",
             "`specops-implementer`",
             "`specops-reviewer`",
@@ -109,22 +113,22 @@ describe("shared coordinator contract", () => {
         ];
         for (const marker of expected) expect(prompt).toContain(marker);
 
-        expect(prompt).toContain("focused `specops-explorer` pass for current repository evidence");
-        expect(prompt).toContain(
-            "This applies on every run, including greenfield and resumed changes",
-        );
+        expect(prompt).toContain("run `specops-explorer`");
+        expect(prompt).toContain("Startup: read `specops_status`");
         expect(prompt).toContain("greenfield, small, single-file");
         expect(prompt).toContain(
-            "never skips exploration, planning, design, implementation, or review",
+            "never skips exploration, planning, or apply-readiness (and, after apply, independent review)",
         );
     });
 
     test("keeps specialist ownership explicit without duplicating specialist procedures", () => {
         expect(prompt).toContain("`specops-explorer` — repository evidence");
         expect(prompt).toContain(
-            "`specops-planner` — `proposal.md`, capability specifications, and `tasks.md`",
+            "`specops-planner` — requirements and task-planning artifacts as declared by the change's schema",
         );
-        expect(prompt).toContain("`specops-designer` — `design.md`");
+        expect(prompt).toContain(
+            "`specops-designer` — technical design artifact(s) as declared by the schema",
+        );
         expect(prompt).toContain("`specops-implementer` — source/tests");
         expect(prompt).toContain("`specops-reviewer` — independent verification");
         expect(prompt).toContain("Coordinate; do not perform specialist work yourself");
@@ -186,10 +190,13 @@ describe("shared coordinator contract", () => {
     test("gates every handoff against durable state", () => {
         expect(prompt).toContain("## Handoff gate");
         expect(prompt).toContain("After every specialist return and before routing onward");
-        expect(prompt).toContain("Confirm the expected output actually exists");
+        expect(prompt).toContain("Read fresh `specops_status`");
+        expect(prompt).toContain("dispatched artifact's reported status transition");
         expect(prompt).toContain("Route from durable OpenSpec state");
         expect(prompt).toContain("not from `NEXT` or a claimed success alone");
-        expect(prompt).toContain("OpenSpec artifacts and `tasks.md` checkbox state");
+        expect(prompt).toContain(
+            "`specops_status` (the OpenSpec artifact graph) and task checkbox state",
+        );
     });
 
     test("routes blockers by ownership rather than taking work over", () => {
@@ -209,8 +216,11 @@ describe("interactive coordinator contract", () => {
     test("keeps the plan approval checkpoint and resume semantics", () => {
         expect(prompt).toContain("## Plan checkpoint");
         expect(prompt).toContain("implementation has not started");
-        expect(prompt).toContain("`totalTasks > 0`");
-        expect(prompt).toContain("`completedTasks == 0`");
+        expect(prompt).toContain("`isPlanningComplete: true`");
+        expect(prompt).toContain("omits that flag while the `applyRequires` closure is satisfied");
+        expect(prompt).toContain("tasks-mapped artifact's checkbox state");
+        expect(prompt).not.toContain("`totalTasks > 0`");
+        expect(prompt).not.toContain("`completedTasks == 0`");
         expect(prompt).toContain("If any task is already complete");
         expect(prompt).toContain("skip this checkpoint and resume the workflow");
         expect(prompt).toContain("do not call `specops_context` again");
@@ -336,9 +346,79 @@ describe("Auto coordinator contract", () => {
 
     test("continues automatically from a completed plan", () => {
         expect(prompt).toContain("## Autonomous plan continuation");
-        expect(prompt).toContain("treat the current OpenSpec plan as approved");
-        expect(prompt).toContain("continue to `specops-implementer`");
-        expect(prompt).toContain("do not persist approval state");
+        expect(prompt).toContain("`isPlanningComplete: true`");
+        expect(prompt).toContain("absent plus satisfied `applyRequires`");
+        expect(prompt).toContain("auto-approves `specops-implementer`");
+        expect(prompt).toContain("auto-approves `specops-implementer`");
+        expect(prompt).toContain("No checkpoint/state");
+    });
+
+    test("does not retain the old workflow state machine or four-artifact sequence", () => {
+        for (const prompt of [
+            buildCoordinatorPrompt("interactive", false),
+            buildCoordinatorPrompt("auto", false),
+        ]) {
+            expect(prompt).not.toContain("## Workflow state machine");
+            expect(prompt).not.toContain("proposal → specs → design → tasks");
+        }
+    });
+
+    test("scenario a: the default flow maps requirements, design, tasks, and plan readiness", () => {
+        expect(prompt).toContain("proposal/specs output");
+        expect(prompt).toContain("design → specops-designer");
+        expect(prompt).toContain("`specops-designer`");
+        expect(prompt).toContain("id containing tasks");
+        expect(prompt).toContain("mode-specific plan policy");
+    });
+
+    test("scenario b: reordered and parallel artifacts use readiness and schema order", () => {
+        expect(prompt).toContain("reverse-dependency reachability");
+        expect(prompt).toContain("then schema order");
+        expect(prompt).toContain("Registry (mapping, not ordering)");
+        expect(prompt).toContain("ignore outside artifacts");
+    });
+
+    test("scenario c: omitted artifacts are not required by the coordinator", () => {
+        expect(prompt).toContain("Planning artifacts are exactly those declared by the schema");
+        expect(prompt).not.toContain("design.md");
+        expect(prompt).not.toContain("tasks.md");
+    });
+
+    test("scenario d: skipped artifacts satisfy dependents and are never authored", () => {
+        expect(prompt).toContain("`done`/`skipped` satisfy");
+        expect(prompt).toContain("skipped never targets authoring");
+        expect(prompt).toContain("skipped paths are do-not-read/do-not-author");
+    });
+
+    test("scenario e: custom ids use role metadata and the generic planner fallback", () => {
+        expect(prompt).toContain("other →");
+        expect(prompt).toContain("specops-planner generic");
+        expect(prompt).toContain("Dispatch `id`/`outputPath`");
+    });
+
+    test("scenario f: resumed changes re-derive routing from fresh status", () => {
+        expect(prompt).toContain("read `specops_status`");
+        expect(prompt).toContain("fresh-read status after every handoff that completes/skips");
+        expect(prompt).toContain("never cache");
+    });
+
+    test("scenario g: planning completion reaches interactive approval or auto approval", () => {
+        const interactive = buildCoordinatorPrompt("interactive", false);
+        const auto = buildCoordinatorPrompt("auto", false);
+        expect(interactive).toContain(
+            "Satisfied closure plus `isPlanningComplete: true` or absent flag permits mode-specific plan policy",
+        );
+        expect(interactive).toContain("## Plan checkpoint");
+        expect(auto).toContain("Fresh status: `isPlanningComplete: true`");
+        expect(auto).toContain("auto-approves `specops-implementer`");
+    });
+
+    test("BLOCKED paths route to planner decisions instead of auto-recovery", () => {
+        expect(prompt).toContain("Missing ids are BLOCKED");
+        expect(prompt).toContain("through Planner");
+        expect(prompt).toContain("never fabricate");
+        expect(prompt).toContain("`false` with satisfied closure is BLOCKED");
+        expect(prompt).toContain("No feasible artifact is BLOCKED");
     });
 
     test("chooses only within the supplied specialist decision domain", () => {

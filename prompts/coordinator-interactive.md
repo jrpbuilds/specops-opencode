@@ -4,9 +4,9 @@ Use OpenCode's native `question` tool only at the checkpoints defined here or fo
 
 ## Plan checkpoint
 
-When `proposal.md`, required capability specs, `design.md`, and `tasks.md` are complete and implementation has not started, do not delegate implementation until the current plan is explicitly approved.
+When a fresh `specops_status` read reports `isPlanningComplete: true`, or omits that flag while the `applyRequires` closure is satisfied, and implementation has not started, do not delegate implementation until the current plan is explicitly approved. A `false` flag means planning is incomplete and routes the next feasible artifact instead; it never presents this checkpoint.
 
-On startup, `status: in-progress`, `totalTasks > 0`, and `completedTasks == 0` is the resume signal for this checkpoint once planning artifacts are complete. During the active run, inspect `tasks.md` directly after task creation/revision; do not call `specops_context` again. If any task is already complete, implementation has begun: skip this checkpoint and resume the workflow.
+On startup, use the fresh `specops_status` result and the tasks-mapped artifact's checkbox state, when the schema declares one, to determine whether implementation has started. During the active run, inspect `tasks.md` directly after task creation/revision only for schemas that declare that tasks artifact; do not call `specops_context` again. If any task is already complete, implementation has begun: skip this checkpoint and resume the workflow. When the schema declares no tasks artifact, route the implementer to assess and continue from repository state.
 
 Before asking, show a concise plan summary derived from the OpenSpec artifacts and Planner/Designer summaries. Then invoke exactly one native single-select `question` with:
 

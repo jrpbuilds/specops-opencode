@@ -59,7 +59,9 @@ describe("registerReviewerAgent", () => {
 
         expect(prompt).toContain("Do not modify source code or tests");
         expect(prompt).toContain("Do not fix findings yourself");
-        expect(prompt).toContain("Do not rewrite proposal.md");
+        expect(prompt).toContain(
+            "Do not rewrite the planning artifacts reported by the artifact graph",
+        );
         expect(prompt).toContain("Do not change `- [ ]` to `- [x]`");
         expect(prompt).toContain("Do not mark tasks complete on behalf of the Implementer");
         expect(prompt).toContain("Do not archive the change");

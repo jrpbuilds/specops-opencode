@@ -32,15 +32,15 @@ describe("registerPlannerAgent", () => {
         });
     });
 
-    test("planner prompt owns both proposal/specs and tasks.md across two passes", () => {
+    test("planner prompt owns schema-declared requirements and task artifacts across two passes", () => {
         const prompt = loadPrompt(AGENT_IDS.planner);
 
         expect(prompt).toContain("## Requirements planning");
         expect(prompt).toContain("## Task planning");
-        expect(prompt).toContain("`proposal.md`, when missing or incomplete");
-        expect(prompt).toContain("capability `spec.md` files that are missing or incomplete");
+        expect(prompt).toContain("default schema example is `proposal` and capability specs");
+        expect(prompt).toContain("requirements-role artifacts");
         expect(prompt).toContain("Preserve completed artifacts");
-        expect(prompt).toContain("author or revise `tasks.md`");
+        expect(prompt).toContain("author or revise only that dispatched artifact");
     });
 
     test("planner prompt defines material-decision escalation and resume behavior", () => {
@@ -70,12 +70,20 @@ describe("registerPlannerAgent", () => {
         expect(prompt).toContain("escalate that conflict as a USER DECISION REQUIRED request");
     });
 
-    test("planner prompt gates tasks on design.md and forbids implementation and checkboxes", () => {
+    test("planner prompt gates tasks on graph readiness and forbids implementation and checkboxes", () => {
         const prompt = loadPrompt(AGENT_IDS.planner);
 
-        expect(prompt).toContain("`design.md` exists, and `tasks.md` is missing");
+        expect(prompt).toContain("tasks-role artifact whose `requires` are satisfied");
+        expect(prompt).toContain(
+            "If the design-role artifact(s), when the schema declares any, record Open Questions",
+        );
+        expect(prompt).toContain(
+            "check the design-role artifact(s), when the schema declares any, for unresolved conflicts",
+        );
+        expect(prompt).not.toContain("If `design.md` records Open Questions");
+        expect(prompt).not.toContain("check `design.md` for unresolved conflicts");
         expect(prompt).toContain("Do not inspect repository source code yourself");
-        expect(prompt).toContain("Do not author `design.md` or `tasks.md` during this pass");
+        expect(prompt).toContain("Do not author artifacts outside the dispatched set");
         expect(prompt).toContain("Do not implement source changes yourself");
         expect(prompt).toContain("Do not mark tasks complete");
         expect(prompt).toContain("- [ ]");
@@ -89,9 +97,7 @@ describe("registerPlannerAgent", () => {
     test("planner prompt allows tasks.md revision and preserves unaffected tasks", () => {
         const prompt = loadPrompt(AGENT_IDS.planner);
 
-        expect(prompt).toContain(
-            "`tasks.md` is missing or the coordinator explicitly returns it for revision",
-        );
+        expect(prompt).toContain("When the coordinator returns the tasks artifact for revision");
         expect(prompt).toContain("revise only the affected tasks");
         expect(prompt).toContain("preserve everything else");
         expect(prompt).toContain("including any existing `- [x]` completion state");

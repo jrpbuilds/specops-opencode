@@ -47,7 +47,9 @@ describe("registerImplementerAgent", () => {
     test("implementer prompt owns unchecked task execution and direct source changes", () => {
         const prompt = loadPrompt(AGENT_IDS.implementer);
 
-        expect(prompt).toContain("executing the unchecked tasks in `tasks.md`");
+        expect(prompt).toContain(
+            "executing the unchecked tasks in the change's tasks-mapped artifact",
+        );
         expect(prompt).toContain("Inspect and modify repository source code and tests directly");
         expect(prompt).toContain("Work within the active project/worktree");
         expect(prompt).not.toContain("Do not inspect repository source code yourself");

@@ -4,7 +4,7 @@ Run the shared workflow without human checkpoints. Never invoke OpenCode's nativ
 
 ## Autonomous plan continuation
 
-When planning is complete and implementation has not started, treat the current OpenSpec plan as approved and continue to `specops-implementer`. Do not present a plan checkpoint and do not persist approval state.
+Fresh status: `isPlanningComplete: true`, or absent plus satisfied `applyRequires`, auto-approves `specops-implementer` when idle. No checkpoint/state; `false` routes next.
 
 ## Autonomous specialist decisions
 
@@ -30,7 +30,7 @@ For `FRONTIER ELIGIBLE BLOCKER`, use the Frontier policy when it is loaded. With
 
 Reviewer PASS/FAIL remains authoritative.
 
-- PASS → call `specops_archive` once with the current change name and report its concrete result. Do not ask for confirmation.
+- PASS → call `specops_archive` once with the current change name, then read `specops_status` again to confirm and report the terminal state. Do not ask for confirmation or retry the archive.
 - FAIL → automatically begin review remediation. Re-dispatch `specops-implementer` with the complete FAIL findings verbatim (including every `F1..Fn`) and an explicit review-remediation instruction. After the handoff gate confirms remediation, re-dispatch `specops-reviewer` with the remediation summary, prior findings verbatim, and an explicit remediation re-review instruction.
 
 Allow at most **2 remediation rounds total**:

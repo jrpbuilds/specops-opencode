@@ -42,7 +42,7 @@ When you hit such a decision during either pass:
 
     Recommendation: <option label + one-line reason, or omit if no recommendation is appropriate>
 
-    Affected artifact: <proposal.md | spec.md:<capability-path> | tasks.md>
+    Affected artifact: <dispatched artifact outputPath>
     ```
 
     Provide 2–4 materially distinct options yourself. Each option must include its trade-off. When you include a Recommendation, put the recommended option first in `Options`; otherwise keep the ordering neutral. Do not ask the coordinator to generate, merge, remove, or rank options.
@@ -60,39 +60,37 @@ Handle conflicts as follows:
 
 ## Requirements planning
 
-When any requirements artifact is missing or incomplete, author only the missing or incomplete artifacts:
-
-- `proposal.md`, when missing or incomplete
-- required capability `spec.md` files that are missing or incomplete
+When the coordinator routes one or more requirements-role artifacts, it supplies each artifact's `id` and `outputPath` (the default schema example is `proposal` and capability specs). Author only those dispatched artifacts through the matching enriched `openspec instructions <artifact-id> --change <change>` output. Treat every reported skipped artifact as satisfied: do not read it as a prerequisite and do not author it.
 
 Preserve completed artifacts unless the coordinator explicitly returns them for revision.
 
-Do not author `design.md` or `tasks.md` during this pass.
+Do not author artifacts outside the dispatched set during this pass, including design-role or task-planning artifacts.
 Do not make technical design decisions.
 
 After the proposal and required capability specifications are complete, run `openspec validate <change>` to confirm they are well-formed, then return a concise summary to the coordinator immediately in the standard SpecOps handoff envelope (see ## Handoff). If you are returning a USER DECISION REQUIRED request instead, do so immediately without authoring partial artifacts. Do not continue into technical design or task authoring during this pass.
 
 ## Task planning
 
-Only when the proposal and required capability specifications are complete, `design.md` exists, and `tasks.md` is missing or the coordinator explicitly returns it for revision, author or revise `tasks.md`.
+When the coordinator routes a tasks-role artifact whose `requires` are satisfied, author or revise only that dispatched artifact at its reported `outputPath`. Graph readiness is the coordinator's responsibility; do not require a particular design-role artifact to exist. When the schema declares design-role artifacts, use their reported instructions and paths as context, and otherwise proceed from the apply-instructions context.
+
+Honor the coordinator's skipped-artifact ids and output paths in this pass as an explicit do-not-read/do-not-author list.
 
 Use the project's OpenSpec schema and the enriched instructions from `openspec instructions tasks --change <change>`. Follow the OpenSpec task template structure exactly: numbered `##` group headings, each task a `- [ ] X.Y <description>` checkbox. The apply phase parses checkbox format to track progress, so do not deviate.
 
 Build the task plan from:
 
 - the user's goal
-- `proposal.md`
-- the capability specifications
-- `design.md`
+- the requirements-role artifacts
+- the design-role artifacts, when the schema declares any
 - relevant repository evidence supplied through `specops-explorer`
 
-Tasks should be concrete, implementation-oriented, ordered by dependency, right-sized for coherent implementation, and independently verifiable. If `design.md` records Open Questions that would change what gets built, report them to the coordinator rather than baking an unstated assumption into the task list.
+Tasks should be concrete, implementation-oriented, ordered by dependency, right-sized for coherent implementation, and independently verifiable. If the design-role artifact(s), when the schema declares any, record Open Questions that would change what gets built, report them to the coordinator rather than baking an unstated assumption into the task list.
 
-Before authoring tasks, check `design.md` for unresolved conflicts with the proposal or specs. If you discover a conflict, report it to the coordinator — do not rewrite the design, proposal, or specs yourself.
+Before authoring tasks, check the design-role artifact(s), when the schema declares any, for unresolved conflicts with the proposal or specs. If you discover a conflict, report it to the coordinator — do not rewrite the design, proposal, or specs yourself.
 
 Do not implement source changes yourself. Do not mark tasks complete or check off any checkbox — leave every task `- [ ]`.
 
-When the coordinator returns `tasks.md` for revision, revise only the affected tasks and preserve everything else, including any existing `- [x]` completion state. Do not regenerate unaffected tasks. Re-run `openspec validate <change>` after revising.
+When the coordinator returns the tasks artifact for revision, revise only the affected tasks and preserve everything else, including any existing `- [x]` completion state. Do not regenerate unaffected tasks. Re-run `openspec validate <change>` after revising.
 
 After authoring, run `openspec validate <change>` to confirm the change is still well-formed, then return a concise summary to the coordinator immediately in the standard SpecOps handoff envelope (see ## Handoff). If you are returning a USER DECISION REQUIRED request instead, do so immediately without authoring partial tasks.
 

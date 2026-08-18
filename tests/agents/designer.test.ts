@@ -36,13 +36,13 @@ describe("registerDesignerAgent", () => {
         const prompt = loadPrompt(AGENT_IDS.designer);
 
         expect(prompt).toContain("Do not inspect repository source code yourself");
-        expect(prompt).toContain("Do not modify the proposal or capability specifications");
+        expect(prompt).toContain("Do not modify requirements-role artifacts");
         expect(prompt).toContain("stop and report it to the coordinator for resolution");
-        expect(prompt).toContain("Do not author `tasks.md`");
+        expect(prompt).toContain("Do not author task-planning artifacts");
         expect(prompt).toContain("Do not implement source changes");
         expect(prompt).toContain("`design.md` proportional to the change");
         expect(prompt).toContain(
-            "If the coordinator explicitly returns `design.md` for revision after an upstream change",
+            "If the coordinator explicitly returns the dispatched design-role artifact for revision after an upstream change",
         );
         expect(prompt).toContain("revise only the affected design decisions");
         expect(prompt).toContain("preserve the rest");
@@ -79,7 +79,7 @@ describe("registerDesignerAgent", () => {
     test("designer prompt routes requirements conflicts instead of changing requirements", () => {
         const prompt = loadPrompt(AGENT_IDS.designer);
 
-        expect(prompt).toContain("Do not modify `proposal.md` or capability specifications");
+        expect(prompt).toContain("Do not modify requirements-role artifacts");
         expect(prompt).toContain("reported to the coordinator as a conflict for Planner routing");
     });
 

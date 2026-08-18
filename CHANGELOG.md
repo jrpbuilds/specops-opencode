@@ -6,6 +6,12 @@ All notable changes to SpecOps are documented in this file.
 
 ### Added
 
+- Graph-driven coordinator routing via `specops_status`, using the `applyRequires`
+  closure and per-artifact `ready`/`blocked`/`done`/`skipped` state. Skipped
+  artifacts are satisfied, custom schemas can reach apply when their closure is
+  satisfied, and the interactive plan checkpoint uses `isPlanningComplete` /
+  closure readiness instead of four hardcoded files. A pure `nextPlanningRoute`
+  reference helper and fixture tests pin the semantics. (issue #6)
 - Coordinator-owned `specops_status` lifecycle tool that reports authoritative
   OpenSpec workflow status for a selected change without crawling `openspec/`.
   It wraps the native `openspec status --change <name> --json` command through a

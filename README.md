@@ -64,6 +64,8 @@ You can also initialise it explicitly:
 
 ## How it works
 
+The default `spec-driven` schema typically routes a change through these roles; custom schemas may declare a different artifact graph.
+
 ```text
 /specops <goal>
       │
@@ -78,7 +80,7 @@ You can also initialise it explicitly:
       └── Reviewer      independent verification
 ```
 
-The workflow produces normal OpenSpec artifacts:
+In the default `spec-driven` schema, a typical change produces normal OpenSpec artifacts:
 
 ```text
 openspec/changes/<change>/
@@ -88,7 +90,7 @@ openspec/changes/<change>/
 └── tasks.md
 ```
 
-SpecOps does not maintain a parallel workflow state machine. Existing OpenSpec artifacts and task completion determine what needs to happen next, so interrupted changes can be resumed naturally.
+SpecOps maintains no parallel state machine because the coordinator derives the next step from OpenSpec's own artifact graph via the `specops_status` tool plus task checkbox state, so custom schemas and interrupted changes resume naturally.
 
 The plugin itself stays deliberately small:
 
