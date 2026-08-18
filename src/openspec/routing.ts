@@ -2,7 +2,7 @@ import type { NormalizedArtifact, NormalizedStatus } from "./status.js";
 
 /** Specialist pass selected for a planning artifact. */
 export type SpecialistPass =
-    "planner-requirements" | "planner-tasks" | "designer" | "planner-generic";
+    "designer" | "planner-generic";
 
 /** The next planning action derived from an OpenSpec artifact graph. */
 export type PlanningRoute =
@@ -70,6 +70,13 @@ export function nextPlanningRoute(status: NormalizedStatus): PlanningRoute {
     };
 }
 
+/**
+ * Collect artifact ids referenced by `applyRequires` or any artifact's
+ * `requires` that do not exist in the artifact graph.
+ *
+ * Surfaced as a "blocked" route reason so the coordinator never fabricates an
+ * artifact to satisfy an unknown dependency.
+ */
 function collectUnknownRequired(
     status: NormalizedStatus,
     artifactsById: ReadonlyMap<string, NormalizedArtifact>,
@@ -86,6 +93,13 @@ function collectUnknownRequired(
     return [...unknown];
 }
 
+/**
+ * Compute the transitive closure of artifact ids that must be satisfied for
+ * `applyRequires` to complete.
+ *
+ * Iterative depth-first walk over each artifact's `requires` edges; the
+ * closure is what `nextPlanningRoute` treats as in-scope for feasibility.
+ */
 function requiredClosure(
     applyRequires: readonly string[],
     artifactsById: ReadonlyMap<string, NormalizedArtifact>,
@@ -105,6 +119,13 @@ function requiredClosure(
     return closure;
 }
 
+/**
+ * Pick the feasible artifact that transitively unblocks the most other
+ * unsatisfied closure members.
+ *
+ * Deterministic tie-breaker so routing prefers artifacts that unlock
+ * downstream work over equally-feasible but leaf-shaped artifacts.
+ */
 function selectMostUnblocking(
     feasible: readonly NormalizedArtifact[],
     closure: ReadonlySet<string>,
@@ -128,6 +149,14 @@ function selectMostUnblocking(
     return selected;
 }
 
+/**
+ * Reachability check: does `artifactId` transitively require `targetId`
+ * through the `requires` graph?
+ *
+ * The `visited` set guards against cycles (a schema could declare
+ * mutually-requiring artifacts); cyclic paths return false to terminate
+ * the recursion safely.
+ */
 function transitiveRequires(
     artifactId: string,
     targetId: string,
@@ -150,15 +179,5 @@ function transitiveRequires(
 }
 
 function specialistFor(artifact: NormalizedArtifact): SpecialistPass {
-    if (artifact.id === "proposal" || isSpecsArtifact(artifact.outputPath)) {
-        return "planner-requirements";
-    }
-    if (artifact.id === "design") return "designer";
-    if (artifact.id.includes("tasks")) return "planner-tasks";
-    return "planner-generic";
-}
-
-function isSpecsArtifact(outputPath: string): boolean {
-    const segments = outputPath.split(/[\\/]/);
-    return segments.some((segment, index) => segment === "specs" && index < segments.length - 1);
+    return artifact.id === "design" ? "designer" : "planner-generic";
 }

@@ -38,7 +38,7 @@ function expectAuthor(
 }
 
 describe("nextPlanningRoute", () => {
-    test("spec-driven-baseline routes proposal to planner requirements", () => {
+    test("spec-driven-baseline routes proposal to the generic planner", () => {
         const status = fixture(
             [
                 artifact("proposal", "ready"),
@@ -57,7 +57,7 @@ describe("nextPlanningRoute", () => {
         expectAuthor(nextPlanningRoute(status), {
             artifactId: "proposal",
             outputPath: output("proposal"),
-            specialist: "planner-requirements",
+            specialist: "planner-generic",
         });
     });
 
@@ -145,7 +145,148 @@ describe("nextPlanningRoute", () => {
         expectAuthor(nextPlanningRoute(status), {
             artifactId: "tasks",
             outputPath: output("tasks"),
-            specialist: "planner-tasks",
+            specialist: "planner-generic",
+        });
+    });
+
+    test("proposal-and-tasks-only routes both artifacts to the generic planner", () => {
+        const initial = fixture(
+            [artifact("proposal", "ready"), artifact("tasks", "blocked", ["proposal"])],
+            ["proposal", "tasks"],
+            false,
+        );
+        expectAuthor(nextPlanningRoute(initial), {
+            artifactId: "proposal",
+            outputPath: output("proposal"),
+            specialist: "planner-generic",
+        });
+
+        const afterProposal = fixture(
+            [artifact("proposal", "done"), artifact("tasks", "ready", ["proposal"])],
+            ["proposal", "tasks"],
+            false,
+        );
+        expectAuthor(nextPlanningRoute(afterProposal), {
+            artifactId: "tasks",
+            outputPath: output("tasks"),
+            specialist: "planner-generic",
+        });
+    });
+
+    test("research-then-proposal-then-tasks preserves chain order with the generic planner", () => {
+        const research = fixture(
+            [
+                artifact("research", "ready"),
+                artifact("proposal", "blocked", ["research"]),
+                artifact("tasks", "blocked", ["proposal"]),
+            ],
+            ["research", "proposal", "tasks"],
+            false,
+        );
+        expectAuthor(nextPlanningRoute(research), {
+            artifactId: "research",
+            outputPath: output("research"),
+            specialist: "planner-generic",
+        });
+
+        const proposal = fixture(
+            [
+                artifact("research", "done"),
+                artifact("proposal", "ready", ["research"]),
+                artifact("tasks", "blocked", ["proposal"]),
+            ],
+            ["research", "proposal", "tasks"],
+            false,
+        );
+        expectAuthor(nextPlanningRoute(proposal), {
+            artifactId: "proposal",
+            outputPath: output("proposal"),
+            specialist: "planner-generic",
+        });
+
+        const tasks = fixture(
+            [
+                artifact("research", "done"),
+                artifact("proposal", "done", ["research"]),
+                artifact("tasks", "ready", ["proposal"]),
+            ],
+            ["research", "proposal", "tasks"],
+            false,
+        );
+        expectAuthor(nextPlanningRoute(tasks), {
+            artifactId: "tasks",
+            outputPath: output("tasks"),
+            specialist: "planner-generic",
+        });
+    });
+
+    test("default-plus-extra-review routes the conventional design to the designer", () => {
+        const proposal = fixture(
+            [
+                artifact("proposal", "ready"),
+                artifact("specs/example", "blocked", ["proposal"]),
+                artifact("design", "blocked", ["specs/example"]),
+                artifact("tasks", "blocked", ["design"]),
+                artifact("review", "blocked", ["tasks"]),
+            ],
+            ["proposal", "specs/example", "design", "tasks", "review"],
+            false,
+        );
+        expectAuthor(nextPlanningRoute(proposal), {
+            artifactId: "proposal",
+            outputPath: output("proposal"),
+            specialist: "planner-generic",
+        });
+
+        const design = fixture(
+            [
+                artifact("proposal", "done"),
+                artifact("specs/example", "done", ["proposal"]),
+                artifact("design", "ready", ["specs/example"]),
+                artifact("tasks", "blocked", ["design"]),
+                artifact("review", "blocked", ["tasks"]),
+            ],
+            ["proposal", "specs/example", "design", "tasks", "review"],
+            false,
+        );
+        expectAuthor(nextPlanningRoute(design), {
+            artifactId: "design",
+            outputPath: output("design"),
+            specialist: "designer",
+        });
+
+        const tasks = fixture(
+            [
+                artifact("proposal", "done"),
+                artifact("specs/example", "done", ["proposal"]),
+                artifact("design", "done", ["specs/example"]),
+                artifact("tasks", "ready", ["design"]),
+                artifact("review", "blocked", ["tasks"]),
+            ],
+            ["proposal", "specs/example", "design", "tasks", "review"],
+            false,
+        );
+        expectAuthor(nextPlanningRoute(tasks), {
+            artifactId: "tasks",
+            outputPath: output("tasks"),
+            specialist: "planner-generic",
+        });
+
+        const review = fixture(
+            [
+                artifact("proposal", "done"),
+                artifact("specs/example", "done", ["proposal"]),
+                artifact("design", "done", ["specs/example"]),
+                artifact("tasks", "done", ["design"]),
+                artifact("review", "ready", ["tasks"]),
+            ],
+            ["proposal", "specs/example", "design", "tasks", "review"],
+            false,
+        );
+        expectAuthor(nextPlanningRoute(review), {
+            artifactId: "review",
+            outputPath: output("review"),
+            specialist: "planner-generic",
         });
     });
 
@@ -186,7 +327,7 @@ describe("nextPlanningRoute", () => {
         expectAuthor(route, {
             artifactId: "tasks",
             outputPath: output("tasks"),
-            specialist: "planner-tasks",
+            specialist: "planner-generic",
         });
         expect(route).not.toMatchObject({ artifactId: "design" });
     });

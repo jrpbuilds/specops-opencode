@@ -37,10 +37,14 @@ describe("registerPlannerAgent", () => {
 
         expect(prompt).toContain("## Requirements planning");
         expect(prompt).toContain("## Task planning");
-        expect(prompt).toContain("default schema example is `proposal` and capability specs");
-        expect(prompt).toContain("requirements-role artifacts");
+        expect(prompt).toContain(
+            "Each dispatch assigns exactly one artifact; author only that artifact in that pass",
+        );
+        expect(prompt).toContain(
+            "Author exactly the dispatched artifact using `openspec instructions <id> --change <change>`, at its reported `outputPath`.",
+        );
         expect(prompt).toContain("Preserve completed artifacts");
-        expect(prompt).toContain("author or revise only that dispatched artifact");
+        expect(prompt).toContain("Treat every reported skipped artifact as satisfied");
     });
 
     test("planner prompt defines material-decision escalation and resume behavior", () => {
@@ -73,7 +77,7 @@ describe("registerPlannerAgent", () => {
     test("planner prompt gates tasks on graph readiness and forbids implementation and checkboxes", () => {
         const prompt = loadPrompt(AGENT_IDS.planner);
 
-        expect(prompt).toContain("tasks-role artifact whose `requires` are satisfied");
+        expect(prompt).toContain("Graph readiness is the coordinator's responsibility");
         expect(prompt).toContain(
             "If the design-role artifact(s), when the schema declares any, record Open Questions",
         );
@@ -88,7 +92,7 @@ describe("registerPlannerAgent", () => {
         expect(prompt).toContain("Do not mark tasks complete");
         expect(prompt).toContain("- [ ]");
         expect(prompt).toContain("return a concise summary");
-        expect(prompt).toContain("openspec instructions <artifact> --change <change>");
+        expect(prompt).toContain("openspec instructions <id> --change <change>");
         expect(prompt).toContain("artifact scope and detail proportional to the change");
         expect(prompt).toContain("right-sized for coherent implementation");
         expect(prompt).not.toContain("no implementation specialist is available");

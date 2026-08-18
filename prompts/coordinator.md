@@ -32,16 +32,14 @@ Startup: read `specops_status`, run `specops-explorer`; fresh-read status after 
 
 1. Closure: `applyRequires` + `requires`; `done`/`skipped` satisfy, and skipped never targets authoring. Feasible: unsatisfied closure with satisfied requirements, including skipped dependencies.
 2. Missing ids are BLOCKED through Planner; never fabricate. Otherwise select by reverse-dependency reachability, then schema order; ignore outside artifacts.
-3. Registry (mapping, not ordering):
+3. Static specialist rule (mapping, not ordering):
 
     ```text
-    proposal/specs output → specops-planner requirements
     design → specops-designer
-    id containing tasks → specops-planner tasks pass
-    other → specops-planner generic
+    other → specops-planner
     ```
 
-4. Dispatch `id`/`outputPath` via `openspec instructions <id> --change <change>`; skipped paths are do-not-read/do-not-author.
+4. One specialist invocation handles each feasible artifact with a structured per-dispatch payload: dispatch id; dispatch output path (OpenSpec `resolvedOutputPath`/`outputPath`); optional role hint; completed dependency output paths as prerequisites; skipped-artifact ids to ignore as do-not-read/do-not-author. Ids and paths come only from `openspec status` and `openspec instructions <id> --change <change>`, never hardcoded artifact names or SpecOps filenames. Fan-out means one planner invocation per artifact.
 5. Satisfied closure plus `isPlanningComplete: true` or absent flag permits mode-specific plan policy; `false` with satisfied closure is BLOCKED. No feasible artifact is BLOCKED.
 6. Approval → `specops-implementer`; re-read before `specops-reviewer`; PASS/FAIL follows mode-specific lifecycle policy.
 

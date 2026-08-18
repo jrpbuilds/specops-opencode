@@ -74,10 +74,10 @@ describe("coordinator prompt composition", () => {
     });
 
     test("assembled prompts stay within regression budgets", () => {
-        expect(buildCoordinatorPrompt("interactive", false).length).toBeLessThan(17_000);
-        expect(buildCoordinatorPrompt("auto", false).length).toBeLessThan(14_000);
+        expect(buildCoordinatorPrompt("interactive", false).length).toBeLessThan(17_700);
+        expect(buildCoordinatorPrompt("auto", false).length).toBeLessThan(14_700);
         expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(19_000);
-        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(15_000);
+        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(15_700);
     });
 });
 
@@ -103,9 +103,9 @@ describe("shared coordinator contract", () => {
             "`specops_status`",
             "`applyRequires` closure",
             "reverse-dependency reachability",
-            "specops-planner requirements",
+            "design → specops-designer",
             "`specops-designer`",
-            "specops-planner tasks pass",
+            "other → specops-planner",
             "mode-specific plan policy",
             "`specops-implementer`",
             "`specops-reviewer`",
@@ -364,17 +364,16 @@ describe("Auto coordinator contract", () => {
     });
 
     test("scenario a: the default flow maps requirements, design, tasks, and plan readiness", () => {
-        expect(prompt).toContain("proposal/specs output");
         expect(prompt).toContain("design → specops-designer");
         expect(prompt).toContain("`specops-designer`");
-        expect(prompt).toContain("id containing tasks");
+        expect(prompt).toContain("other → specops-planner");
         expect(prompt).toContain("mode-specific plan policy");
     });
 
     test("scenario b: reordered and parallel artifacts use readiness and schema order", () => {
         expect(prompt).toContain("reverse-dependency reachability");
         expect(prompt).toContain("then schema order");
-        expect(prompt).toContain("Registry (mapping, not ordering)");
+        expect(prompt).toContain("Static specialist rule (mapping, not ordering)");
         expect(prompt).toContain("ignore outside artifacts");
     });
 
@@ -387,13 +386,13 @@ describe("Auto coordinator contract", () => {
     test("scenario d: skipped artifacts satisfy dependents and are never authored", () => {
         expect(prompt).toContain("`done`/`skipped` satisfy");
         expect(prompt).toContain("skipped never targets authoring");
-        expect(prompt).toContain("skipped paths are do-not-read/do-not-author");
+        expect(prompt).toContain("skipped-artifact ids to ignore as do-not-read/do-not-author");
     });
 
     test("scenario e: custom ids use role metadata and the generic planner fallback", () => {
         expect(prompt).toContain("other →");
-        expect(prompt).toContain("specops-planner generic");
-        expect(prompt).toContain("Dispatch `id`/`outputPath`");
+        expect(prompt).toContain("other → specops-planner");
+        expect(prompt).toContain("structured per-dispatch payload");
     });
 
     test("scenario f: resumed changes re-derive routing from fresh status", () => {
