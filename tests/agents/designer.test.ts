@@ -86,7 +86,10 @@ describe("registerDesignerAgent", () => {
     test("designer honors revision dispatch metadata while preserving unaffected decisions", () => {
         const prompt = loadPrompt(AGENT_IDS.designer);
         const start = prompt.indexOf("A revision dispatch");
-        const section = prompt.slice(start, prompt.indexOf("Do not author task-planning artifacts", start));
+        const section = prompt.slice(
+            start,
+            prompt.indexOf("Do not author task-planning artifacts", start),
+        );
         expect(section).toContain("`revisionTarget`");
         expect(section).toContain("`upstreamFeedback`");
         expect(section).toContain("revise only the affected design decisions");

@@ -86,7 +86,9 @@ describe("registerImplementerAgent", () => {
     test("implementer reports planning conflicts to the coordinator and keeps checkbox workflow", () => {
         const prompt = loadPrompt(AGENT_IDS.implementer);
         expect(prompt).toContain("stop and report the conflict to the SpecOps coordinator");
-        expect(prompt).toContain("Do not modify `proposal.md`, capability specifications, or `design.md`");
+        expect(prompt).toContain(
+            "Do not modify `proposal.md`, capability specifications, or `design.md`",
+        );
         expect(prompt).toContain("only then change `- [ ]` to `- [x]`");
         expect(prompt).toContain("Do not mark incomplete or partially completed tasks complete");
     });

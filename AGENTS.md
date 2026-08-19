@@ -9,3 +9,7 @@ Add docblocks to functions/classes that provide useful context, especially for n
 Add inline comments only where something needs explanation. Prefer comments that explain **why** rather than narrating what the code already makes obvious.
 
 Do not add comments or documentation just for the sake of it.
+
+## Formatting before commit
+
+Run `bun run format` and verify `bun run format:check` passes before staging a commit or pushing. Never commit or push changes that fail the Prettier check.

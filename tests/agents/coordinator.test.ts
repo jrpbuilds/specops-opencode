@@ -541,13 +541,19 @@ describe("reconciliation coverage cases", () => {
     });
 
     test("bidirectional — design↔requirements conflict permits one re-dispatch then terminates", () => {
-        expect(section).toContain("bidirectional conflict→considered-set, one changed-content re-dispatch");
-        expect(section).toContain("repeat only after content change OR new evidence; else terminate");
+        expect(section).toContain(
+            "bidirectional conflict→considered-set, one changed-content re-dispatch",
+        );
+        expect(section).toContain(
+            "repeat only after content change OR new evidence; else terminate",
+        );
     });
 
     test("task-only — tasks-role revision with no upstream inconsistency makes no further dispatch", () => {
         expect(section).toContain("task-only→no upstream");
-        expect(section).toContain("repeat only after content change OR new evidence; else terminate");
+        expect(section).toContain(
+            "repeat only after content change OR new evidence; else terminate",
+        );
     });
 
     test("no-op — revision that affects no other artifact exits via the status re-read", () => {
