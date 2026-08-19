@@ -121,6 +121,33 @@ describe("shared coordinator contract", () => {
         );
     });
 
+    test("pins the shared reconciliation contract and propagation order", () => {
+        const sectionStart = prompt.indexOf("## Reconciling revised planning artifacts");
+        const sectionEnd = prompt.indexOf("## Delegation contract", sectionStart);
+        const section = prompt.slice(sectionStart, sectionEnd);
+
+        expect(section).toContain("coordinator-initiated revision");
+        expect(section).toContain("planner/designer/implementer material inconsistency handoff");
+        expect(section).toContain("checkpoint feedback revision");
+        expect(section).toContain("Forward progress never triggers");
+        expect(section).toContain("downstream reverse-dependency reachability");
+        expect(section).toContain("upstream transitive `requires`");
+        expect(section).toContain("design-role → `specops-designer`");
+        expect(section).toContain("other → `specops-planner`");
+        expect(section).toContain("coordinator never self-repairs");
+        expect(section).toContain("considered-set");
+        expect(section).toContain("content change OR new evidence");
+        expect(section).toContain("never create missing");
+        expect(section).toContain("`## Handoff gate`");
+        expect(section).toContain("normal routing");
+        expect(section).toContain("requirements-role→design-role→tasks-role");
+        expect(prompt).toContain("revisionTarget");
+        expect(prompt).toContain("upstreamFeedback");
+        expect(prompt).toContain(
+            "omit or leave both empty on first-pass forward-pipeline dispatches",
+        );
+    });
+
     test("keeps specialist ownership explicit without duplicating specialist procedures", () => {
         expect(prompt).toContain("`specops-explorer` — repository evidence");
         expect(prompt).toContain(
@@ -243,6 +270,20 @@ describe("interactive coordinator contract", () => {
         );
     });
 
+    test("interactive intent changes use a distinct native decision", () => {
+        const section = prompt.slice(
+            prompt.indexOf("## Intent-change decision"),
+            prompt.indexOf("## Lossless specialist decisions"),
+        );
+        expect(section).toContain("native single-select `question`");
+        expect(section).toContain("header `Plan intent changed`");
+        expect(section).toContain("Start a new change");
+        expect(section).toContain("preserve custom answers");
+        expect(section).not.toContain("Plan ready");
+        expect(section).not.toContain("Review passed");
+        expect(section).not.toContain("Review needs attention");
+    });
+
     test("plan feedback routes to owners and always requires reapproval", () => {
         const section = prompt.slice(
             prompt.indexOf("## Plan checkpoint"),
@@ -252,9 +293,8 @@ describe("interactive coordinator contract", () => {
         expect(section).toContain("Planner requirements pass");
         expect(section).toContain("Designer");
         expect(section).toContain("Planner tasks pass");
-        expect(section).toContain(
-            "requirements change → Designer if affected → Planner tasks if affected",
-        );
+        expect(section).toContain("See the shared reconciliation rule");
+        expect(section).toContain("a task-only change may affect nothing else");
         expect(section).toContain("Any revision invalidates prior approval");
         expect(section).toContain(
             "implementation starts only after `Start implementation` is selected",
@@ -351,6 +391,23 @@ describe("Auto coordinator contract", () => {
         expect(prompt).toContain("auto-approves `specops-implementer`");
         expect(prompt).toContain("auto-approves `specops-implementer`");
         expect(prompt).toContain("No checkpoint/state");
+    });
+
+    test("pins deterministic autonomous reconciliation and terminal intent blocking", () => {
+        const sectionStart = prompt.indexOf("## Autonomous reconciliation");
+        const sectionEnd = prompt.indexOf("## Autonomous specialist decisions", sectionStart);
+        const section = prompt.slice(sectionStart, sectionEnd);
+
+        expect(section).toContain("Triggers are deterministic and revision-originated only");
+        expect(section).toContain("specialist material conflict/inconsistency handoff");
+        expect(section).toContain("coordinator `revisionTarget` dispatch");
+        expect(section).toContain("Never a status transition");
+        expect(section).toContain("Never a status transition or the `question` tool");
+        expect(section).toContain("existing `BLOCKED` shape");
+        expect(section).toContain("`stopped at` names reconciliation");
+        expect(section).toContain("`blocker` names the premise");
+        expect(section).toContain("`evidence` carries feedback");
+        expect(section).toContain("`to continue` recommends a new OpenSpec change");
     });
 
     test("does not retain the old workflow state machine or four-artifact sequence", () => {
@@ -464,6 +521,44 @@ describe("Auto coordinator contract", () => {
         expect(prompt).toContain("`BLOCKED`");
         expect(prompt).toContain("stopped at: <workflow phase>");
         expect(prompt).toContain("to continue: <required information or action>");
+    });
+});
+
+describe("reconciliation coverage cases", () => {
+    const prompt = buildCoordinatorPrompt("interactive", false);
+    const sectionStart = prompt.indexOf("## Reconciling revised planning artifacts");
+    const sectionEnd = prompt.indexOf("## Delegation contract", sectionStart);
+    const section = prompt.slice(sectionStart, sectionEnd);
+
+    test("upstream — requirements-role revision cascades to design-role and tasks-role", () => {
+        expect(section).toContain("requirements-role→design-role→tasks-role");
+        expect(section).toContain("valid `- [x]`");
+    });
+
+    test("downstream — design-role revision affects tasks-role but not requirements-role when consistent", () => {
+        expect(section).toContain("design-role→tasks-role");
+        expect(section).toContain("consistent requirements");
+    });
+
+    test("bidirectional — design↔requirements conflict permits one re-dispatch then terminates", () => {
+        expect(section).toContain(
+            "bidirectional conflict→considered-set, one changed-content re-dispatch",
+        );
+        expect(section).toContain(
+            "repeat only after content change OR new evidence; else terminate",
+        );
+    });
+
+    test("task-only — tasks-role revision with no upstream inconsistency makes no further dispatch", () => {
+        expect(section).toContain("task-only→no upstream");
+        expect(section).toContain(
+            "repeat only after content change OR new evidence; else terminate",
+        );
+    });
+
+    test("no-op — revision that affects no other artifact exits via the status re-read", () => {
+        expect(section).toContain("no-op→no dispatch/status reread");
+        expect(section).toContain("fresh status; normal routing");
     });
 });
 

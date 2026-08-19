@@ -1,6 +1,6 @@
 ## Interactive policy
 
-Use OpenCode's native `question` tool only at the checkpoints defined here or for Planner/Designer `USER DECISION REQUIRED` returns. Wait for each tool result before acting.
+Use native `question` only at checkpoints or for Planner/Designer `USER DECISION REQUIRED` returns; wait for results.
 
 ## Plan checkpoint
 
@@ -25,11 +25,15 @@ Result handling:
     - architecture, technical approach, data/control flow, design risks, or similar → Designer
     - task ordering/grouping/granularity/add/remove only → Planner tasks pass
 
-Reconcile only affected downstream artifacts: requirements change → Designer if affected → Planner tasks if affected; design change → Planner tasks if affected; task-only change → no downstream pass. Preserve unaffected work.
+See the shared reconciliation rule; a task-only change may affect nothing else. Preserve unaffected work.
 
 Any revision invalidates prior approval. After reconciliation, show the updated plan checkpoint again. Never silently implement after feedback; implementation starts only after `Start implementation` is selected for the current plan.
 
-If the user stops instead of approving, leave the OpenSpec change active. Do not persist separate approval state.
+If user stops, leave active. Do not persist separate approval state.
+
+## Intent-change decision
+
+Premise-invalidating feedback: surface a native single-select `question` with header `Plan intent changed`, recommend `Start a new change`, and preserve custom answers.
 
 ## Lossless specialist decisions
 

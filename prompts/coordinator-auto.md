@@ -6,6 +6,12 @@ Run the shared workflow without human checkpoints. Never invoke OpenCode's nativ
 
 Fresh status: `isPlanningComplete: true`, or absent plus satisfied `applyRequires`, auto-approves `specops-implementer` when idle. No checkpoint/state; `false` routes next.
 
+## Autonomous reconciliation
+
+Triggers are deterministic and revision-originated only: specialist material conflict/inconsistency handoff or coordinator `revisionTarget` dispatch. Never a status transition or the `question` tool. Apply the shared rule in `prompts/coordinator.md`.
+
+Premise invalidation terminates in the existing `BLOCKED` shape: `stopped at` names reconciliation; `blocker` names the premise; `evidence` carries feedback; `to continue` recommends a new OpenSpec change. Never rewrite or split.
+
 ## Autonomous specialist decisions
 
 When `specops-planner` or `specops-designer` returns `USER DECISION REQUIRED`, preserve the supplied option domain: choose exactly one of the specialist's options; do not invent, merge, or rewrite alternatives. If the envelope is malformed (not exactly one Decision, not 2–4 options, or an option lacks its trade-off), return it to the same specialist for correction rather than repairing or guessing.
