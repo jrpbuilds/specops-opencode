@@ -83,6 +83,17 @@ describe("registerDesignerAgent", () => {
         expect(prompt).toContain("reported to the coordinator as a conflict for Planner routing");
     });
 
+    test("designer honors revision dispatch metadata while preserving unaffected decisions", () => {
+        const prompt = loadPrompt(AGENT_IDS.designer);
+        const start = prompt.indexOf("A revision dispatch");
+        const section = prompt.slice(start, prompt.indexOf("Do not author task-planning artifacts", start));
+        expect(section).toContain("`revisionTarget`");
+        expect(section).toContain("`upstreamFeedback`");
+        expect(section).toContain("revise only the affected design decisions");
+        expect(section).toContain("preserve the rest");
+        expect(section).toContain("preservation clause below");
+    });
+
     test("applies configured designer model and variant", () => {
         const config: Config = {};
         registerDesignerAgent(

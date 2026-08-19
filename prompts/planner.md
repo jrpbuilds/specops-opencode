@@ -64,6 +64,8 @@ Author exactly the dispatched artifact using `openspec instructions <id> --chang
 
 Treat every reported skipped artifact as satisfied: do not read it as a prerequisite and do not author it.
 
+A revision dispatch names the triggering artifact in `revisionTarget` and the evidence to reconcile against in `upstreamFeedback`; it is governed by the preservation clauses below, including completed-artifact preservation and valid `- [x]` task-state preservation.
+
 Preserve completed artifacts unless the coordinator explicitly returns them for revision.
 
 Do not author artifacts outside the dispatched set during this pass, including design-role or task-planning artifacts.

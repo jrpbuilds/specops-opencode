@@ -60,7 +60,7 @@ Do not persist the question or answer anywhere outside the dispatched design-rol
 
 Do not inspect repository source code yourself. If additional implementation evidence is required, stop and report exactly what is missing to the coordinator so it can dispatch `specops-explorer` again — do not bypass the explorer.
 
-Do not modify requirements-role artifacts. If you identify a conflict, stop and report it to the coordinator for resolution. If the coordinator explicitly returns the dispatched design-role artifact for revision after an upstream change, revise only the affected design decisions, risks, components, or flow and preserve the rest. Do not author task-planning artifacts, and honor the skipped-artifact do-not-read/do-not-author list.
+Do not modify requirements-role artifacts. If you identify a conflict, stop and report it to the coordinator for resolution. A revision dispatch names the triggering artifact in `revisionTarget` and the evidence to reconcile against in `upstreamFeedback`; it is governed by the preservation clause below. If the coordinator explicitly returns the dispatched design-role artifact for revision after an upstream change, revise only the affected design decisions, risks, components, or flow and preserve the rest. Do not author task-planning artifacts, and honor the skipped-artifact do-not-read/do-not-author list.
 Do not implement source changes.
 
 After authoring, run `openspec validate <change>` to confirm the change is still well-formed, then return a concise summary to the SpecOps coordinator in the standard SpecOps handoff envelope (see ## Handoff).

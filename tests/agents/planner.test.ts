@@ -108,6 +108,20 @@ describe("registerPlannerAgent", () => {
         expect(prompt).toContain("Do not regenerate unaffected tasks");
     });
 
+    test("planner honors revision dispatch metadata without resetting valid tasks", () => {
+        const prompt = loadPrompt(AGENT_IDS.planner);
+        const section = prompt.slice(
+            prompt.indexOf("A revision dispatch"),
+            prompt.indexOf("After authoring, run `openspec validate", prompt.indexOf("A revision dispatch")),
+        );
+        expect(section).toContain("`revisionTarget`");
+        expect(section).toContain("`upstreamFeedback`");
+        expect(section).toContain("Preserve completed artifacts unless the coordinator explicitly returns them for revision");
+        expect(section).toContain("revise only the affected tasks");
+        expect(section).toContain("including any existing `- [x]` completion state");
+        expect(section).toContain("Do not regenerate unaffected tasks");
+    });
+
     test("applies configured planner model and variant", () => {
         const config: Config = {};
         registerPlannerAgent(
