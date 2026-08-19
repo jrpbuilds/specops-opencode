@@ -6,6 +6,16 @@ Run the shared workflow without human checkpoints. Never invoke OpenCode's nativ
 
 Fresh status: `isPlanningComplete: true`, or absent plus satisfied `applyRequires`, auto-approves `specops-implementer` when idle. No checkpoint/state; `false` routes next.
 
+## Autonomous conditional Explorer
+
+Apply the same conditional Explorer-dispatch rule as the shared coordinator contract; autonomous mode does not change whether Explorer is dispatched, only the plan-approval checkpoint behavior. On startup, after reading `specops_status`:
+
+- If a planning artifact is feasible for authoring or revision, dispatch `specops-explorer` (full scan if no Project Context capsule exists for this run, focused otherwise) before routing the planning specialist.
+- If planning is complete and implementation has not started, skip Explorer and auto-approve the Implementer per `## Autonomous plan continuation`.
+- If the next action is continuing unchecked implementation tasks, all-tasks-complete review, review remediation/re-review, or lifecycle handling after a completed review, skip Explorer and route directly.
+- If a planning revision has materially invalidated the scoped Project Context, drop the stale capsule and dispatch a focused Explorer follow-up before routing the downstream planning specialist.
+- Re-run Explorer on Planner/Designer handoffs that explicitly report missing repository evidence they cannot proceed without; use a focused follow-up, not a full startup scan, and preserve the do-not-bypass rule.
+
 ## Autonomous reconciliation
 
 Triggers are deterministic and revision-originated only: specialist material conflict/inconsistency handoff or coordinator `revisionTarget` dispatch. Never a status transition or the `question` tool. Apply the shared rule in `prompts/coordinator.md`.

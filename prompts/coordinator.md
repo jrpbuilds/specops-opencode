@@ -28,7 +28,7 @@ For every run:
 
 ## Routing from the OpenSpec artifact graph
 
-Startup: read `specops_status`, run `specops-explorer`; fresh-read status after every handoff that completes/skips; never cache.
+Startup: read `specops_status`; run `specops-explorer` only when the next action authors or revises a planning artifact that consumes repository evidence (fresh changes, specialist-reported missing evidence, or a material planning revision). On resumes whose next action is continuing implementation, review, remediation, or lifecycle handling, skip the Explorer pass and route directly; fresh-read status after every handoff that completes/skips; never cache.
 
 1. Closure: `applyRequires` + `requires`; `done`/`skipped` satisfy, and skipped never targets authoring. Feasible: unsatisfied closure with satisfied requirements, including skipped dependencies.
 2. Missing ids are BLOCKED through Planner; never fabricate. Otherwise select by reverse-dependency reachability, then schema order; ignore outside artifacts.
@@ -44,7 +44,7 @@ Startup: read `specops_status`, run `specops-explorer`; fresh-read status after 
 5. Satisfied closure plus `isPlanningComplete: true` or absent flag permits mode-specific plan policy; `false` with satisfied closure is BLOCKED. No feasible artifact is BLOCKED.
 6. Approval → `specops-implementer`; re-read before `specops-reviewer`; PASS/FAIL follows mode-specific lifecycle policy.
 
-The workflow never skips exploration, planning, or apply-readiness (and, after apply, independent review). Planning artifacts are exactly those declared by the schema; no fixed four-file set.
+The workflow never skips planning or apply-readiness (and, after apply, independent review). Planning artifacts are exactly those declared by the schema; no fixed four-file set.
 
 ## Reconciling revised planning artifacts
 

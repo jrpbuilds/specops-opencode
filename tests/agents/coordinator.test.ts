@@ -14,6 +14,7 @@ import {
     SPECOPS_TASK_ALLOW,
 } from "../../src/agents/permissions.js";
 import type { SpecOpsConfig } from "../../src/config.js";
+import { loadPrompt } from "../../src/prompts.js";
 
 function makeConfig(
     overrides: Partial<SpecOpsConfig["agents"]> = {},
@@ -74,10 +75,10 @@ describe("coordinator prompt composition", () => {
     });
 
     test("assembled prompts stay within regression budgets", () => {
-        expect(buildCoordinatorPrompt("interactive", false).length).toBeLessThan(17_700);
-        expect(buildCoordinatorPrompt("auto", false).length).toBeLessThan(14_700);
-        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(19_000);
-        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(15_700);
+        expect(buildCoordinatorPrompt("interactive", false).length).toBeLessThan(19_000);
+        expect(buildCoordinatorPrompt("auto", false).length).toBeLessThan(16_000);
+        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(21_000);
+        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(18_000);
     });
 });
 
@@ -113,11 +114,11 @@ describe("shared coordinator contract", () => {
         ];
         for (const marker of expected) expect(prompt).toContain(marker);
 
-        expect(prompt).toContain("run `specops-explorer`");
+        expect(prompt).toContain("run `specops-explorer` only when");
         expect(prompt).toContain("Startup: read `specops_status`");
         expect(prompt).toContain("greenfield, small, single-file");
         expect(prompt).toContain(
-            "never skips exploration, planning, or apply-readiness (and, after apply, independent review)",
+            "never skips planning or apply-readiness (and, after apply, independent review)",
         );
     });
 
@@ -368,6 +369,54 @@ describe("interactive coordinator contract", () => {
         expect(section).toContain("same review lifecycle checkpoint");
         expect(section).toContain("Never auto-remediate in interactive mode");
         expect(section).toContain("only if the user selects `Revise implementation` again");
+    });
+});
+
+describe("conditional Explorer dispatch contract", () => {
+    test("prompts skip the Explorer pass on routine resumes", () => {
+        const prompt = buildCoordinatorPrompt("interactive", false);
+        expect(prompt).toContain("skip the Explorer pass");
+        expect(prompt).toContain("continuing implementation");
+        expect(prompt).toContain("remediation");
+        expect(prompt).toContain("lifecycle handling");
+    });
+
+    test("prompts still dispatch Explorer on fresh changes", () => {
+        const prompt = buildCoordinatorPrompt("interactive", false);
+        expect(prompt).toContain("run `specops-explorer` only when");
+        expect(prompt).toContain("fresh changes");
+    });
+
+    test("prompts define focused follow-up contract for specialist-reported missing evidence", () => {
+        const prompt = buildCoordinatorPrompt("interactive", false);
+        expect(prompt).toContain("focused follow-up, not a full startup scan");
+        expect(prompt).toContain("Planner/Designer handoffs");
+        expect(loadPrompt(AGENT_IDS.planner)).toContain(
+            "Do not inspect repository source code yourself",
+        );
+        expect(loadPrompt(AGENT_IDS.designer)).toContain(
+            "Do not inspect repository source code yourself",
+        );
+        expect(loadPrompt(AGENT_IDS.implementer)).toContain(
+            "Inspect and modify repository source code and tests directly",
+        );
+        expect(loadPrompt(AGENT_IDS.reviewer)).toContain(
+            "Inspect the implemented source code and tests directly",
+        );
+    });
+
+    test("prompts re-dispatch Explorer when a planning revision invalidates the scoped Project Context", () => {
+        const prompt = buildCoordinatorPrompt("interactive", false);
+        expect(prompt).toContain("scoped Project Context");
+        expect(prompt).toContain("material");
+        expect(prompt).toContain("drop the stale capsule");
+    });
+
+    test("autonomous mode mirrors the same conditional rule", () => {
+        const prompt = buildCoordinatorPrompt("auto", false);
+        expect(prompt).toContain("run `specops-explorer` only when");
+        expect(prompt).toContain("skip the Explorer pass");
+        expect(prompt).toContain("focused follow-up, not a full startup scan");
     });
 });
 
