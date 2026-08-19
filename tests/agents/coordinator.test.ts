@@ -642,6 +642,8 @@ describe("coordinator registration", () => {
             "*": "deny",
             "openspec --help": "allow",
             "openspec * --help": "allow",
+            "openspec instructions *": "allow",
+            "openspec change show *": "allow",
         });
         expect(autoPermission.bash).toEqual(interactivePermission.bash);
         expect(interactivePermission[SPECOPS_LIFECYCLE_PERMISSION]).toBe("allow");

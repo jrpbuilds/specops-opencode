@@ -32,6 +32,8 @@ describe("role permission profiles", () => {
                 "*": "deny",
                 "openspec --help": "allow",
                 "openspec * --help": "allow",
+                "openspec instructions *": "allow",
+                "openspec change show *": "allow",
             },
             [SPECOPS_LIFECYCLE_PERMISSION]: "allow",
         });
@@ -43,6 +45,8 @@ describe("role permission profiles", () => {
             "*": "deny",
             "openspec --help": "allow",
             "openspec * --help": "allow",
+            "openspec instructions *": "allow",
+            "openspec change show *": "allow",
         });
         expect(COORDINATOR_PERMISSION.external_directory).toBe("deny");
         expect(COORDINATOR_PERMISSION.doom_loop).toBe("deny");

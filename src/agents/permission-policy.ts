@@ -15,7 +15,16 @@ export const ROLE_CAPABILITY_POLICY = {
         external_directory: "deny",
         doom_loop: "deny",
         edit: { "*": "deny" },
-        bash: { "*": "deny", "openspec --help": "allow", "openspec * --help": "allow" },
+        // Read-only OpenSpec inspection: instructions fetches template text for
+        // subagents, `change show` renders deltas/JSON for orchestration. Neither
+        // mutates openspec state, so the coordinator cannot drift specs through bash.
+        bash: {
+            "*": "deny",
+            "openspec --help": "allow",
+            "openspec * --help": "allow",
+            "openspec instructions *": "allow",
+            "openspec change show *": "allow",
+        },
     },
     "specops-explorer": {
         external_directory: "deny",
