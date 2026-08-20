@@ -2,7 +2,7 @@
 
 All notable changes to SpecOps are documented in this file.
 
-## [v1.0.0] - Unreleased
+## [v1.0.0] - 2026-08-20
 
 ### Added
 
@@ -20,6 +20,16 @@ All notable changes to SpecOps are documented in this file.
 - New `specops_status` tool: the coordinator can check the current state of a
   change at any time, so it always works from up-to-date OpenSpec information
   instead of browsing the `openspec/` folder. (issue #5)
+
+### Fixed
+
+- The coordinator's bash policy only permitted `openspec --help` patterns, which
+  blocked the read-only `openspec instructions <artifact> --change <id>` and
+  `openspec change show <id> --json --deltas-only` commands. Both are
+  inspection-only and neither mutates OpenSpec state, so allowing them removes
+  an orchestration deadlock (the coordinator could not fetch spec instructions
+  for subagents nor inspect the change it was coordinating) without opening a
+  spec-drift path. The planner and designer policies are unchanged.
 
 ## [v0.7.1] - 2026-08-17
 

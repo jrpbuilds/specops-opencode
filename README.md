@@ -240,7 +240,10 @@ SpecOps uses Bun and TypeScript throughout.
 
 ## Status
 
-SpecOps is under active development and is being dogfooded against real software changes.
+SpecOps v1.0.0 is released and being dogfooded against real software changes.
+The v1.0.0 milestone delivers schema-aware planning specialists, status-routed
+coordinator orchestration, and the `specops_status` lifecycle tool. Post-1.0
+work is tracked in the [issue tracker](https://github.com/jrpbuilds/specops-opencode/issues).
 
 > Make structured multi-model software development useful without building another workflow engine.
 
