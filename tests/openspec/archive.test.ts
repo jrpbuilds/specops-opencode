@@ -12,9 +12,12 @@ describe("archiveChange", () => {
             exitCode: 0,
             stdout: JSON.stringify({
                 archive: {
+                    change: "example",
                     archivedAs: "2026-08-09-example",
                     path: "/project/openspec/changes/archive/2026-08-09-example",
+                    specsUpdated: false,
                 },
+                root: { path: "/project", source: "nearest" },
             }),
         });
 
@@ -119,5 +122,24 @@ describe("archiveChange", () => {
         expect(result).toEqual({ ok: false, error: "OpenSpec archive failed with exit code 1" });
         result = await archiveChange("example", "/project");
         expect(result).toEqual({ ok: false, error: "OpenSpec archive failed with exit code 1" });
+    });
+
+    test("rejects an unexpected success field", async () => {
+        spyOn(helpers, "runCaptureStdout").mockResolvedValue({
+            exitCode: 0,
+            stdout: JSON.stringify({
+                archive: {
+                    change: "example",
+                    archivedAs: "example",
+                    path: "/project/archive",
+                    specsUpdated: false,
+                },
+                root: { path: "/project", source: "nearest" },
+                extra: true,
+            }),
+        });
+        const result = await archiveChange("example", "/project");
+        expect(result.ok).toBe(false);
+        if (!result.ok) expect(result.error).toContain("extra");
     });
 });

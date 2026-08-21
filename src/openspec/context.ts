@@ -1,6 +1,7 @@
 import { runCaptureStdout } from "../helpers.js";
 import { formatCommandFailure, isRecord } from "./helpers.js";
 import type { CaptureStdout } from "./helpers.js";
+import { assertNoExtraFields, assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
 /** A deterministic active-change summary reported by OpenSpec. */
 export type OpenSpecActiveChange = {
@@ -19,14 +20,31 @@ export type OpenSpecContextResult = {
     error?: string;
 };
 
-/**
- * Read current OpenSpec startup facts using the canonical list command.
- *
- * Spawn failures represent an unavailable CLI. A command failure or malformed
- * response remains an error rather than being mistaken for an uninitialized
- * repository. OpenSpec's root source is intentionally interpreted as
- * `source !== "implicit"` so future valid source values remain initialized.
- */
+const changeSchema: Schema = {
+    name: { kind: "string", required: true },
+    status: { kind: "string", required: true },
+    completedTasks: { kind: "number", required: true },
+    totalTasks: { kind: "number", required: true },
+    lastModified: { kind: "string", required: true },
+};
+
+const contextSchema: Schema = {
+    changes: {
+        kind: "record",
+        required: true,
+        arrayItem: { kind: "record", required: true, schema: changeSchema },
+    } as never,
+    root: {
+        kind: "record",
+        required: true,
+        schema: {
+            path: { kind: "string", required: true },
+            source: { kind: "string", required: true },
+        },
+    },
+};
+
+/** Read current OpenSpec startup facts using the canonical list command. */
 export async function getOpenSpecContext(
     cwd: string,
     capture: CaptureStdout = runCaptureStdout,
@@ -51,55 +69,38 @@ export async function getOpenSpecContext(
         );
     }
 
-    if (!isRecord(parsed)) return contextError("OpenSpec list returned an invalid result");
-
     if (result.exitCode !== 0) {
+        if (!isRecord(parsed)) return contextError("OpenSpec list returned an invalid result");
         return contextError(formatCommandFailure(parsed, result.exitCode, "list"));
     }
 
-    const root = isRecord(parsed.root) ? parsed.root : null;
-    const changes = Array.isArray(parsed.changes) ? parsed.changes : null;
-    if (typeof root?.source !== "string" || !changes) {
+    try {
+        assertShape(parsed, contextSchema, "openspec list");
+        const validated = parsed as Record<string, unknown>;
+        assertNoExtraFields(validated, contextSchema, "openspec list");
+        const root = validated.root as Record<string, unknown>;
+        const changes = validated.changes as Array<Record<string, unknown>>;
+        for (const change of changes) {
+            assertNoExtraFields(change, changeSchema, "openspec list change");
+        }
+
+        const activeChanges = changes.map(change => ({
+            name: change.name as string,
+            status: change.status as string,
+            completedTasks: change.completedTasks as number,
+            totalTasks: change.totalTasks as number,
+            lastModified: change.lastModified as string,
+        }));
+        const initialized = root.source !== "implicit";
+        return {
+            available: true,
+            initialized,
+            activeChanges: initialized ? activeChanges : [],
+        };
+    } catch (error) {
+        if (error instanceof OpenSpecShapeError) return contextError(error.message);
         return contextError("OpenSpec list returned an invalid result");
     }
-
-    const activeChanges: OpenSpecActiveChange[] = [];
-    for (const change of changes) {
-        if (!isRecord(change) || !isActiveChange(change)) {
-            return contextError("OpenSpec list returned an invalid change result");
-        }
-        activeChanges.push({
-            name: change.name,
-            status: change.status,
-            completedTasks: change.completedTasks,
-            totalTasks: change.totalTasks,
-            lastModified: change.lastModified,
-        });
-    }
-
-    const initialized = root.source !== "implicit";
-    return {
-        available: true,
-        initialized,
-        activeChanges: initialized ? activeChanges : [],
-    };
-}
-
-/** Type guard for one entry of `openspec change list`'s active-change shape. */
-function isActiveChange(value: Record<string, unknown>): value is Record<string, unknown> & {
-    name: string;
-    status: string;
-    completedTasks: number;
-    totalTasks: number;
-    lastModified: string;
-} {
-    return (
-        typeof value.name === "string" &&
-        typeof value.status === "string" &&
-        typeof value.completedTasks === "number" &&
-        typeof value.totalTasks === "number" &&
-        typeof value.lastModified === "string"
-    );
 }
 
 function contextError(error: string): OpenSpecContextResult {

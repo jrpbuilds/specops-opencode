@@ -46,6 +46,18 @@ Check the installation:
 /specops-doctor
 ```
 
+`/specops-doctor` checks the installed OpenSpec CLI before trusting its JSON
+responses. It probes the required read-only command capabilities with
+`--help`; if the CLI is too old or a capability is unavailable, the report
+shows an incompatible-install state with the required minimum version and
+remediation. Upgrade the CLI and run `/specops-doctor` again before starting a
+change.
+
+SpecOps also validates the active change with the positional command
+`openspec validate <change> --strict --json` before planning artifacts are
+authored or a review can pass. Validation is scoped to the active change, so
+unrelated changes do not block the workflow.
+
 ## Getting started
 
 Open a project and give SpecOps a goal:

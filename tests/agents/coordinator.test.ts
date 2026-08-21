@@ -75,7 +75,7 @@ describe("coordinator prompt composition", () => {
     });
 
     test("assembled prompts stay within regression budgets", () => {
-        expect(buildCoordinatorPrompt("interactive", false).length).toBeLessThan(19_000);
+        expect(buildCoordinatorPrompt("interactive", false).length).toBeLessThan(19_100);
         expect(buildCoordinatorPrompt("auto", false).length).toBeLessThan(16_000);
         expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(21_000);
         expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(18_000);

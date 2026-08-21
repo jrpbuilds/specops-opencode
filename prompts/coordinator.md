@@ -46,6 +46,11 @@ Startup: read `specops_status`; run `specops-explorer` only when the next action
 
 The workflow never skips planning or apply-readiness (and, after apply, independent review). Planning artifacts are exactly those declared by the schema; no fixed four-file set.
 
+## Validation gates
+
+- Before dispatching planner or designer to author or revise any planning artifact, call `specops_validate_change` for the active change. If it returns `{valid: false, …}`, do not dispatch; surface the blocking error and remediation.
+- Before dispatching reviewer for PASS verdict, call `specops_validate_change` for the active change. If it returns `{valid: false, …}`, block the review and route the violations back to the implementer as findings.
+
 ## Reconciling revised planning artifacts
 
 Triggers: coordinator-initiated revision; planner/designer/implementer material inconsistency handoff; checkpoint feedback revision. Forward progress never triggers.

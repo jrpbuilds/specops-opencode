@@ -1,10 +1,32 @@
 import { runCaptureStdout } from "../helpers.js";
 import { errorMessage, formatCommandFailure, isRecord } from "./helpers.js";
 import type { CaptureStdout } from "./helpers.js";
+import { assertNoExtraFields, assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
 /** Normalized result of creating one named OpenSpec change. */
 export type OpenSpecCreateChangeResult =
     { ok: true; name: string; path: string } | { ok: false; error: string };
+
+const createChangeSchema: Schema = {
+    change: {
+        kind: "record",
+        required: true,
+        schema: {
+            id: { kind: "string", required: true },
+            path: { kind: "string", required: true },
+            metadataPath: { kind: "string", required: true },
+            schema: { kind: "string", required: true },
+        },
+    },
+    root: {
+        kind: "record",
+        required: true,
+        schema: {
+            path: { kind: "string", required: true },
+            source: { kind: "string", required: true },
+        },
+    },
+};
 
 /**
  * Create a change through OpenSpec's canonical non-interactive command.
@@ -51,14 +73,33 @@ export async function createOpenSpecChange(
         return { ok: false, error: "OpenSpec create change returned an invalid result" };
     }
 
-    const created = isRecord(parsed.change) ? parsed.change : null;
-    if (
-        result.exitCode === 0 &&
-        typeof created?.id === "string" &&
-        typeof created.path === "string"
-    ) {
-        return { ok: true, name: created.id, path: created.path };
+    if (result.exitCode === 0) {
+        try {
+            assertShape(parsed, createChangeSchema, "openspec create change");
+            const validated = parsed as Record<string, unknown>;
+            assertNoExtraFields(validated, createChangeSchema, "openspec create change");
+            const created = validated.change as Record<string, unknown>;
+            assertNoExtraFields(
+                created,
+                createChangeSchema.change.schema!,
+                "openspec create change change",
+            );
+            return {
+                ok: true,
+                name: created.id as string,
+                path: created.path as string,
+            };
+        } catch (error) {
+            if (error instanceof OpenSpecShapeError) return { ok: false, error: error.message };
+        }
     }
 
-    return { ok: false, error: formatCommandFailure(parsed, result.exitCode, "create change") };
+    return {
+        ok: false,
+        error: formatCommandFailure(
+            parsed as Record<string, unknown>,
+            result.exitCode,
+            "create change",
+        ),
+    };
 }

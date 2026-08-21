@@ -1,5 +1,29 @@
 import { runCaptureStdout } from "../helpers.js";
 import { errorMessage, formatCommandFailure, isRecord } from "./helpers.js";
+import { assertNoExtraFields, assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
+
+const archiveSchema: Schema = {
+    archive: {
+        kind: "record",
+        required: true,
+        schema: {
+            change: { kind: "string", required: true },
+            archivedAs: { kind: "string", required: true },
+            path: { kind: "string", required: true },
+            specsUpdated: { kind: "boolean", required: true },
+            totals: { kind: "record", required: false },
+            warnings: { kind: "stringArray", required: false },
+        },
+    },
+    root: {
+        kind: "record",
+        required: true,
+        schema: {
+            path: { kind: "string", required: true },
+            source: { kind: "string", required: true },
+        },
+    },
+};
 
 /**
  * Normalized result of the native OpenSpec archive operation.
@@ -53,14 +77,25 @@ export async function archiveChange(change: string, cwd: string): Promise<OpenSp
         return { ok: false, error: "OpenSpec archive returned an invalid result" };
     }
 
-    const archive = isRecord(parsed.archive) ? parsed.archive : null;
-    if (
-        result.exitCode === 0 &&
-        typeof archive?.archivedAs === "string" &&
-        typeof archive.path === "string"
-    ) {
-        return { ok: true, archivedAs: archive.archivedAs, path: archive.path };
+    if (result.exitCode === 0) {
+        try {
+            assertShape(parsed, archiveSchema, "openspec archive");
+            const validated = parsed as Record<string, unknown>;
+            assertNoExtraFields(validated, archiveSchema, "openspec archive");
+            const archive = validated.archive as Record<string, unknown>;
+            assertNoExtraFields(archive, archiveSchema.archive.schema!, "openspec archive result");
+            return {
+                ok: true,
+                archivedAs: archive.archivedAs as string,
+                path: archive.path as string,
+            };
+        } catch (error) {
+            if (error instanceof OpenSpecShapeError) return { ok: false, error: error.message };
+        }
     }
 
-    return { ok: false, error: formatCommandFailure(parsed, result.exitCode, "archive") };
+    return {
+        ok: false,
+        error: formatCommandFailure(parsed as Record<string, unknown>, result.exitCode, "archive"),
+    };
 }

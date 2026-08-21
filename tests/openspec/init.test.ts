@@ -50,4 +50,13 @@ describe("initializeOpenSpec", () => {
 
         expect(result).toEqual({ ok: false, stderr: "permission denied" });
     });
+
+    test("rejects an unexpected init response field", async () => {
+        spyOn(helpers, "runCaptured").mockResolvedValue({
+            ok: true,
+            stderr: "",
+            extra: "unexpected",
+        } as never);
+        await expect(initializeOpenSpec("/project")).rejects.toThrow("extra");
+    });
 });

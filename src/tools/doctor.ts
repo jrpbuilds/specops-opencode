@@ -5,6 +5,7 @@ import { getOpenSpecVersion } from "../openspec/cli.js";
 import { runOpenSpecDoctor, type OpenSpecDoctorResult } from "../openspec/doctor.js";
 import { getSpecOpsVersion } from "../version.js";
 import { errorMessage } from "../openspec/helpers.js";
+import { formatRemediation } from "../openspec/remediation.js";
 import { requireLifecyclePermission } from "./lifecycle-permission.js";
 
 /**
@@ -44,14 +45,29 @@ export async function doctor(deps: DoctorDeps): Promise<string> {
     let openspecHealthy = false;
     let openspecInitialized = false;
     let openspecUnavailable = openspecVersion === null;
+    let openspecIncompatible = false;
 
     if (openspecUnavailable) {
         lines.push("✗ OpenSpec CLI not found");
+        lines.push(
+            ...formatRemediation("OPENSPEC_UNAVAILABLE", { wrapper: "OpenSpec" }).split("\n"),
+        );
     } else {
         lines.push("✓ OpenSpec CLI available");
         const result = await deps.openspecDoctor();
-        if (result.error) {
+        if (result.incompatible) {
+            openspecIncompatible = true;
+            lines.push("✗ incompatible install");
+            for (const capability of result.incompatible.missingCapabilities) {
+                lines.push(`  missing: ${capability.id} — ${capability.description}`);
+            }
+            lines.push(
+                `  installed: ${result.incompatible.installedVersion ?? "unknown"} (minimum ${result.incompatible.minimumVersion})`,
+            );
+            lines.push(...result.incompatible.remediation.split("\n"));
+        } else if (result.error) {
             lines.push(`✗ OpenSpec doctor failed: ${result.error}`);
+            if (result.remediation) lines.push(...result.remediation.split("\n"));
         } else if (!result.initialized) {
             lines.push("✗ OpenSpec project not initialized");
         } else {
@@ -90,8 +106,8 @@ export async function doctor(deps: DoctorDeps): Promise<string> {
 
     if (configError) {
         lines.push("", "Open SpecOps Configure to fix the configuration.");
-    } else if (openspecUnavailable) {
-        lines.push("", "Install OpenSpec: npm install -g @fission-ai/openspec");
+    } else if (openspecIncompatible) {
+        // The incompatible state already includes its concrete Fix block.
     } else if (!openspecInitialized) {
         lines.push("", "Run /specops-onboard to initialize this project.");
     } else if (openspecHealthy) {

@@ -1,6 +1,12 @@
 import { stat } from "node:fs/promises";
 import path from "node:path";
 import { runCaptured } from "../helpers.js";
+import { assertNoExtraFields, assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
+
+const initResultSchema: Schema = {
+    ok: { kind: "boolean", required: true },
+    stderr: { kind: "string", required: true },
+};
 
 /**
  * Check whether `cwd` is itself an initialized OpenSpec root.
@@ -20,6 +26,18 @@ export function isOpenSpecInitialized(cwd: string): Promise<boolean> {
  *
  * The raw success flag and stderr are preserved for the onboarding report.
  */
-export function initializeOpenSpec(cwd: string): Promise<{ ok: boolean; stderr: string }> {
-    return runCaptured("openspec", ["init", "--tools", "none", "--no-animation"], cwd);
+export async function initializeOpenSpec(cwd: string): Promise<{ ok: boolean; stderr: string }> {
+    const result = await runCaptured(
+        "openspec",
+        ["init", "--tools", "none", "--no-animation"],
+        cwd,
+    );
+    try {
+        assertShape(result, initResultSchema, "openspec init");
+        assertNoExtraFields(result, initResultSchema, "openspec init");
+        return result;
+    } catch (error) {
+        if (error instanceof OpenSpecShapeError) throw error;
+        throw new Error("OpenSpec init returned an invalid result");
+    }
 }

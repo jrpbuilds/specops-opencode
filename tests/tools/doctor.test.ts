@@ -6,7 +6,12 @@ function deps(overrides: Partial<DoctorDeps> = {}): DoctorDeps {
     return {
         specopsVersion: async () => "0.1.0",
         openspecVersion: async () => "1.8.0",
-        openspecDoctor: async () => ({ initialized: true, healthy: true, issues: [] }),
+        openspecDoctor: async () => ({
+            initialized: true,
+            healthy: true,
+            incompatible: null,
+            issues: [],
+        }),
         loadConfig: async () => structuredClone(DEFAULT_CONFIG),
         ...overrides,
     };
@@ -21,6 +26,38 @@ function configWithExplicitModels(count: number) {
 }
 
 describe("doctor", () => {
+    test("renders an incompatible OpenSpec install with capability remediation", async () => {
+        const result = await doctor(
+            deps({
+                openspecDoctor: async () => ({
+                    initialized: false,
+                    healthy: false,
+                    incompatible: {
+                        missingCapabilities: [
+                            {
+                                id: "validate-strict-scoped",
+                                description: "strict scoped validation",
+                            },
+                            { id: "doctor-json", description: "doctor JSON output" },
+                        ],
+                        installedVersion: "1.7.0",
+                        minimumVersion: "1.8.0",
+                        remediation:
+                            "OPENSPEC_INCOMPATIBLE: missing capabilities\nFix:\n  1. Upgrade",
+                    },
+                    issues: [],
+                }),
+            }),
+        );
+
+        expect(result).toContain("✗ incompatible install");
+        expect(result).toContain("missing: validate-strict-scoped — strict scoped validation");
+        expect(result).toContain("missing: doctor-json — doctor JSON output");
+        expect(result).toContain("installed: 1.7.0 (minimum 1.8.0)");
+        expect(result).toContain("Fix:");
+        expect(result).not.toContain("OpenSpec project not initialized");
+    });
+
     test("reports OpenSpec unavailable but still reports valid SpecOps configuration", async () => {
         let doctorCalled = false;
         const result = await doctor(
@@ -28,7 +65,7 @@ describe("doctor", () => {
                 openspecVersion: async () => null,
                 openspecDoctor: async () => {
                     doctorCalled = true;
-                    return { initialized: true, healthy: true, issues: [] };
+                    return { initialized: true, healthy: true, incompatible: null, issues: [] };
                 },
                 loadConfig: async () => configWithExplicitModels(2),
             }),
@@ -36,6 +73,8 @@ describe("doctor", () => {
 
         expect(result).toContain("OpenSpec: unavailable");
         expect(result).toContain("✗ OpenSpec CLI not found");
+        expect(result).toContain("OPENSPEC_UNAVAILABLE: OpenSpec is unavailable");
+        expect(result).toContain("Fix:");
         expect(result).toContain("✓ SpecOps configuration valid");
         expect(result).toContain("- 2 explicit models");
         expect(result).toContain("- 5 OpenCode default");
@@ -45,7 +84,12 @@ describe("doctor", () => {
     test("reports an uninitialized project and still includes the role summary", async () => {
         const result = await doctor(
             deps({
-                openspecDoctor: async () => ({ initialized: false, healthy: false, issues: [] }),
+                openspecDoctor: async () => ({
+                    initialized: false,
+                    healthy: false,
+                    incompatible: null,
+                    issues: [],
+                }),
                 loadConfig: async () => configWithExplicitModels(3),
             }),
         );
@@ -77,6 +121,7 @@ describe("doctor", () => {
                 openspecDoctor: async () => ({
                     initialized: true,
                     healthy: false,
+                    incompatible: null,
                     issues: ["schema: invalid config\nfix: update openspec/config.yaml"],
                 }),
             }),
@@ -110,6 +155,7 @@ describe("doctor", () => {
                 openspecDoctor: async () => ({
                     initialized: false,
                     healthy: false,
+                    incompatible: null,
                     issues: [],
                     error: "openspec doctor crashed",
                 }),
@@ -119,6 +165,26 @@ describe("doctor", () => {
         expect(result).toContain("✗ OpenSpec doctor failed: openspec doctor crashed");
         expect(result).toContain("Run /specops-onboard");
         expect(result).toContain("✓ SpecOps configuration valid");
+    });
+
+    test("renders doctor unavailable remediation returned by the OpenSpec wrapper", async () => {
+        const result = await doctor(
+            deps({
+                openspecDoctor: async () => ({
+                    initialized: false,
+                    healthy: false,
+                    incompatible: null,
+                    issues: [],
+                    error: "OpenSpec probe failed",
+                    remediation:
+                        "OPENSPEC_UNAVAILABLE: OpenSpec is unavailable\nFix:\n  1. Install OpenSpec.",
+                }),
+            }),
+        );
+
+        expect(result).toContain("✗ OpenSpec doctor failed: OpenSpec probe failed");
+        expect(result).toContain("OPENSPEC_UNAVAILABLE: OpenSpec is unavailable");
+        expect(result).toContain("Fix:");
     });
 
     test("normalizes a failed SpecOps version reader to unknown", async () => {

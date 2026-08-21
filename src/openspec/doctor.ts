@@ -1,89 +1,153 @@
+import { getOpenSpecVersion } from "./cli.js";
+import { probeCompatibility, type CompatibilityReport } from "./compatibility.js";
 import { runCaptureStdout } from "../helpers.js";
-import { errorMessage, isRecord } from "./helpers.js";
+import { formatRemediation } from "./remediation.js";
+import { errorMessage, formatCommandFailure } from "./helpers.js";
+import type { CaptureStdout } from "./helpers.js";
+import { assertNoExtraFields, assertShape, type Schema, OpenSpecShapeError } from "./validation.js";
 
-/**
- * Normalized result of OpenSpec's project health check.
- *
- * `initialized` describes whether a root was found, `healthy` reflects the
- * root and error-level status entries, and `issues` contains display-ready
- * status text for the doctor tool.
- */
+export type OpenSpecIncompatible = {
+    missingCapabilities: { id: string; description: string }[];
+    installedVersion: string | null;
+    minimumVersion: string;
+    remediation: string;
+};
+
+/** Normalized result of OpenSpec's project health check. */
 export type OpenSpecDoctorResult = {
     initialized: boolean;
     healthy: boolean;
+    incompatible: OpenSpecIncompatible | null;
     issues: readonly string[];
     error?: string;
+    remediation?: string;
+};
+
+type DoctorProbe = (
+    cwd: string,
+    capture: CaptureStdout,
+    readVersion: () => Promise<string | null>,
+) => Promise<CompatibilityReport>;
+
+const statusEntrySchema: Schema = {
+    severity: { kind: "string", required: true },
+    code: { kind: "string", required: true },
+    message: { kind: "string", required: true },
+    fix: { kind: "string", required: false },
+};
+
+const doctorSchema: Schema = {
+    root: {
+        kind: "record",
+        required: false,
+        schema: {
+            path: { kind: "string", required: true },
+            source: { kind: "string", required: true },
+            healthy: { kind: "boolean", required: true },
+            status: { kind: "stringArray", required: false },
+        },
+    },
+    status: {
+        kind: "record",
+        required: true,
+        arrayItem: { kind: "record", required: true, schema: statusEntrySchema },
+    } as never,
+    store: { kind: "record", required: true, nullable: true },
+    references: { kind: "stringArray", required: true },
 };
 
 /**
- * Run `openspec doctor --json` and normalize its root, health, and status data.
+ * Check availability and compatibility before trusting OpenSpec doctor output.
  *
- * Command failures, invalid JSON, and malformed response shapes are returned as
- * structured errors so the doctor tool can report them without throwing.
+ * Compatibility is deliberately checked before `openspec doctor --json`: an
+ * unsupported install cannot be trusted to produce the response contract.
  */
-export async function runOpenSpecDoctor(cwd: string): Promise<OpenSpecDoctorResult> {
-    let result: { stdout: string; exitCode: number | null };
+export async function runOpenSpecDoctor(
+    cwd: string,
+    capture: CaptureStdout = runCaptureStdout,
+    readVersion: () => Promise<string | null> = getOpenSpecVersion,
+    checkCompatibility: DoctorProbe = probeCompatibility,
+): Promise<OpenSpecDoctorResult> {
+    let installedVersion: string | null;
     try {
-        result = await runCaptureStdout("openspec", ["doctor", "--json"], cwd);
+        installedVersion = await readVersion();
     } catch (error) {
+        return unavailable(errorMessage(error));
+    }
+    if (installedVersion === null) return unavailable("OpenSpec CLI is unavailable");
+
+    let compatibility: CompatibilityReport;
+    try {
+        compatibility = await checkCompatibility(cwd, capture, async () => installedVersion);
+    } catch (error) {
+        return unavailable(errorMessage(error));
+    }
+
+    if (!compatibility.compatible) {
+        const missingCapabilities = compatibility.missingCapabilities.map(
+            ({ id, description }) => ({
+                id,
+                description,
+            }),
+        );
         return {
             initialized: false,
             healthy: false,
+            incompatible: {
+                missingCapabilities,
+                installedVersion: compatibility.installedVersion,
+                minimumVersion: compatibility.minimumVersion,
+                remediation: formatRemediation("OPENSPEC_INCOMPATIBLE", {
+                    missingCapabilities: missingCapabilities.map(item => item.id).join(", "),
+                    installedVersion: compatibility.installedVersion ?? "unknown",
+                    minimumVersion: compatibility.minimumVersion,
+                }),
+            },
             issues: [],
-            error: errorMessage(error),
         };
     }
 
+    let result: { stdout: string; exitCode: number | null };
+    try {
+        result = await capture("openspec", ["doctor", "--json"], cwd);
+    } catch (error) {
+        return unavailable(errorMessage(error));
+    }
+
     if (result.exitCode === null) {
-        return {
-            initialized: false,
-            healthy: false,
-            issues: [],
-            error: "OpenSpec doctor was terminated before returning a result",
-        };
+        return failure("OpenSpec doctor was terminated before returning a result");
     }
 
     let parsed: unknown;
     try {
         parsed = JSON.parse(result.stdout);
     } catch {
-        return {
-            initialized: false,
-            healthy: false,
-            issues: [],
-            error: `OpenSpec doctor returned invalid JSON${result.stdout ? `: ${result.stdout}` : ""}`,
-        };
+        return failure(
+            `OpenSpec doctor returned invalid JSON${result.stdout ? `: ${result.stdout}` : ""}`,
+        );
     }
 
-    if (!isRecord(parsed)) {
+    try {
+        assertShape(parsed, doctorSchema, "openspec doctor");
+        const validated = parsed as Record<string, unknown>;
+        assertNoExtraFields(validated, doctorSchema, "openspec doctor");
+        const root = validated.root as Record<string, unknown> | undefined;
+        const status = validated.status as Array<Record<string, unknown>>;
+        const issues = status.map(formatStatus);
         return {
-            initialized: false,
-            healthy: false,
-            issues: [],
-            error: "OpenSpec doctor returned an invalid result",
+            initialized: root !== undefined,
+            healthy: root?.healthy === true && !issues.some(issue => issue.severity === "error"),
+            incompatible: null,
+            issues: issues.map(issue => issue.text),
         };
+    } catch (error) {
+        if (error instanceof OpenSpecShapeError) return failure(error.message);
+        return failure(
+            formatCommandFailure(parsed as Record<string, unknown>, result.exitCode, "doctor"),
+        );
     }
-
-    const root = isRecord(parsed.root) ? parsed.root : null;
-    const issues = Array.isArray(parsed.status)
-        ? parsed.status.filter(isRecord).map(formatStatus)
-        : [];
-    const healthy = root?.healthy === true && !issues.some(issue => issue.severity === "error");
-
-    return {
-        initialized: root !== null,
-        healthy,
-        issues: issues.map(issue => issue.text),
-    };
 }
 
-/**
- * Normalize one raw OpenSpec doctor status entry for the plugin result.
- *
- * The CLI may provide a code, message, and suggested fix independently. Keep
- * the result readable by combining the code with the message and appending the
- * fix on its own line. Missing or malformed fields receive safe fallbacks.
- */
 function formatStatus(value: Record<string, unknown>): { severity: string; text: string } {
     const code = typeof value.code === "string" ? value.code : undefined;
     const message = typeof value.message === "string" ? value.message : undefined;
@@ -94,4 +158,19 @@ function formatStatus(value: Record<string, unknown>): { severity: string; text:
         severity: typeof value.severity === "string" ? value.severity : "error",
         text: fix ? `${text}\nfix: ${fix}` : text,
     };
+}
+
+function unavailable(error: string): OpenSpecDoctorResult {
+    return {
+        initialized: false,
+        healthy: false,
+        incompatible: null,
+        issues: [],
+        error,
+        remediation: formatRemediation("OPENSPEC_UNAVAILABLE", { wrapper: "OpenSpec" }),
+    };
+}
+
+function failure(error: string): OpenSpecDoctorResult {
+    return { initialized: false, healthy: false, incompatible: null, issues: [], error };
 }

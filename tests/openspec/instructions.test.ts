@@ -1,28 +1,34 @@
 import { describe, expect, test } from "bun:test";
-import {
-    getOpenSpecInstructions,
-    type NormalizedInstructions,
-} from "../../src/openspec/instructions.js";
+import path from "node:path";
+import { getOpenSpecInstructions } from "../../src/openspec/instructions.js";
 import type { CaptureStdout } from "../../src/openspec/helpers.js";
+import { withTempDir } from "../helpers.js";
 
 function captureJson(value: unknown, exitCode = 0): CaptureStdout {
     return async () => ({ stdout: JSON.stringify(value), exitCode });
 }
 
 const completeInstructions = {
+    changeName: "harden-openspec-validation-compatibility",
     artifactId: "proposal",
+    schemaName: "spec-driven",
+    changeDir: path.join(
+        process.cwd(),
+        "openspec/changes/harden-openspec-validation-compatibility",
+    ),
+    planningHome: {
+        kind: "repo",
+        root: process.cwd(),
+        changesDir: path.join(process.cwd(), "openspec/changes"),
+        defaultSchema: "spec-driven",
+    },
     outputPath: "proposal.md",
-    resolvedOutputPath: "openspec/changes/example/proposal.md",
-    template: "# Proposal",
-    instruction: "Describe the change.",
-    dependencies: [
-        {
-            id: "research",
-            done: true,
-            path: "research.md",
-            description: "Repository research",
-        },
-    ],
+    resolvedOutputPath: path.join("/tmp", "specops-proposal.md"),
+    existingOutputPaths: [path.join("/tmp", "specops-proposal.md")],
+    description: "Initial proposal document outlining the change",
+    instruction: "Create the proposal document that establishes WHY this change is needed.",
+    unlocks: ["specs", "design"],
+    root: { path: process.cwd(), source: "nearest" },
 } as const;
 
 describe("getOpenSpecInstructions", () => {
@@ -44,10 +50,10 @@ describe("getOpenSpecInstructions", () => {
             ok: true,
             instructions: {
                 id: "proposal",
-                resolvedOutputPath: "openspec/changes/example/proposal.md",
-                template: "# Proposal",
-                instruction: "Describe the change.",
-                dependencies: completeInstructions.dependencies,
+                resolvedOutputPath: completeInstructions.resolvedOutputPath,
+                template: completeInstructions.description,
+                instruction: completeInstructions.instruction,
+                dependencies: [],
             },
         });
     });
@@ -55,6 +61,15 @@ describe("getOpenSpecInstructions", () => {
     test("normalizes optional fields when OpenSpec provides them", async () => {
         const response = {
             ...completeInstructions,
+            template: "# Proposal",
+            dependencies: [
+                {
+                    id: "research",
+                    done: true,
+                    path: "research.md",
+                    description: "Repository research",
+                },
+            ],
             context: "Use repository evidence.",
             rules: "Preserve completed artifacts.",
             skipped: true,
@@ -72,10 +87,10 @@ describe("getOpenSpecInstructions", () => {
             ok: true,
             instructions: {
                 id: "proposal",
-                resolvedOutputPath: "openspec/changes/example/proposal.md",
+                resolvedOutputPath: completeInstructions.resolvedOutputPath,
                 template: "# Proposal",
-                instruction: "Describe the change.",
-                dependencies: completeInstructions.dependencies,
+                instruction: completeInstructions.instruction,
+                dependencies: response.dependencies,
                 context: response.context,
                 rules: response.rules,
                 skipped: response.skipped,
@@ -84,7 +99,7 @@ describe("getOpenSpecInstructions", () => {
         });
     });
 
-    test("passes glob output paths through without routing fields or filesystem access", async () => {
+    test("rejects relative and glob output paths as unusable", async () => {
         const result = await getOpenSpecInstructions(
             "research",
             "example",
@@ -96,13 +111,62 @@ describe("getOpenSpecInstructions", () => {
             }),
         );
 
+        expect(result.ok).toBe(false);
+        if (!result.ok) expect(result.error).toContain("OPENSPEC_OUTPUT_PATH_INVALID");
+    });
+
+    test("accepts a pending artifact whose parent exists but target file does not", async () => {
+        await withTempDir(async dir => {
+            const pendingPath = path.join(dir, "new-artifact.md");
+            const result = await getOpenSpecInstructions(
+                "proposal",
+                "example",
+                dir,
+                captureJson({ ...completeInstructions, resolvedOutputPath: pendingPath }),
+            );
+            expect(result.ok).toBe(true);
+            expect(await Bun.file(pendingPath).exists()).toBe(false);
+        });
+    });
+
+    test("accepts an existing file output path", async () => {
+        const result = await getOpenSpecInstructions(
+            "proposal",
+            "example",
+            process.cwd(),
+            captureJson({
+                ...completeInstructions,
+                resolvedOutputPath: path.join(process.cwd(), "README.md"),
+            }),
+        );
         expect(result.ok).toBe(true);
-        if (result.ok) {
-            expect(result.instructions.resolvedOutputPath).toBe("specs/**/*.md");
-            expect("specialist" in result.instructions).toBe(false);
-            expect("routing" in result.instructions).toBe(false);
-            expect("workflow" in result.instructions).toBe(false);
-            expect(result.instructions satisfies NormalizedInstructions).toBeDefined();
+    });
+
+    test("rejects a relative output path", async () => {
+        const result = await getOpenSpecInstructions(
+            "proposal",
+            "example",
+            process.cwd(),
+            captureJson({ ...completeInstructions, resolvedOutputPath: "relative/artifact.md" }),
+        );
+        expect(result.ok).toBe(false);
+        if (!result.ok) expect(result.error).toContain("OPENSPEC_OUTPUT_PATH_INVALID");
+    });
+
+    test("rejects an output path whose parent directory does not exist", async () => {
+        const result = await getOpenSpecInstructions(
+            "proposal",
+            "example",
+            process.cwd(),
+            captureJson({
+                ...completeInstructions,
+                resolvedOutputPath: path.join(process.cwd(), "missing-parent", "artifact.md"),
+            }),
+        );
+        expect(result.ok).toBe(false);
+        if (!result.ok) {
+            expect(result.error).toContain("OPENSPEC_OUTPUT_PATH_INVALID");
+            expect(result.error).toContain("openspec instructions proposal --change example");
         }
     });
 
@@ -169,26 +233,22 @@ describe("getOpenSpecInstructions", () => {
                 }),
             );
 
-            expect(result).toEqual({
-                ok: false,
-                error: "OpenSpec instructions returned an invalid result",
-            });
+            expect(result.ok).toBe(false);
+            if (!result.ok) expect(result.error).toContain("OPENSPEC_MALFORMED_RESPONSE");
         },
     );
 
     test("reports a missing required field without a partial result", async () => {
-        const { template: _template, ...missingTemplate } = completeInstructions;
+        const { instruction: _instruction, ...missingInstruction } = completeInstructions;
         const result = await getOpenSpecInstructions(
             "proposal",
             "example",
             "/project",
-            captureJson(missingTemplate),
+            captureJson(missingInstruction),
         );
 
-        expect(result).toEqual({
-            ok: false,
-            error: "OpenSpec instructions failed with exit code 0",
-        });
+        expect(result.ok).toBe(false);
+        if (!result.ok) expect(result.error).toContain("OPENSPEC_MALFORMED_RESPONSE");
         expect(result.ok).toBe(false);
     });
 
@@ -222,9 +282,7 @@ describe("getOpenSpecInstructions", () => {
             captureJson({ ...completeInstructions, dependencies: [{ id: "research" }] }),
         );
 
-        expect(result).toEqual({
-            ok: false,
-            error: "OpenSpec instructions failed with exit code 0",
-        });
+        expect(result.ok).toBe(false);
+        if (!result.ok) expect(result.error).toContain("OPENSPEC_MALFORMED_RESPONSE");
     });
 });

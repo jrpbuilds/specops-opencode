@@ -1,6 +1,10 @@
+import { existsSync, statSync } from "node:fs";
+import path from "node:path";
 import { runCaptureStdout } from "../helpers.js";
 import { errorMessage, formatCommandFailure, isRecord } from "./helpers.js";
+import { formatRemediation } from "./remediation.js";
 import type { CaptureStdout } from "./helpers.js";
+import { assertNoExtraFields, assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
 /** Stable dependency facts exposed by the OpenSpec instructions wrapper. */
 export type NormalizedInstructionDependency = {
@@ -27,12 +31,51 @@ export type NormalizedInstructions = {
 export type OpenSpecInstructionsResult =
     { ok: true; instructions: NormalizedInstructions } | { ok: false; error: string };
 
-/**
- * Read authoritative authoring instructions for one OpenSpec artifact.
- *
- * The wrapper only validates and normalizes the command response. It does not
- * resolve output globs or make routing and workflow decisions.
- */
+const dependencySchema: Schema = {
+    id: { kind: "string", required: true },
+    path: { kind: "string", required: true },
+    done: { kind: "boolean", required: false },
+    description: { kind: "string", required: false },
+};
+
+const planningHomeSchema: Schema = {
+    kind: { kind: "string", required: true },
+    root: { kind: "string", required: true },
+    changesDir: { kind: "string", required: true },
+    defaultSchema: { kind: "string", required: true },
+};
+
+const rootSchema: Schema = {
+    path: { kind: "string", required: true },
+    source: { kind: "string", required: true },
+};
+
+const instructionsSchema: Schema = {
+    changeName: { kind: "string", required: true },
+    artifactId: { kind: "string", required: true },
+    schemaName: { kind: "string", required: true },
+    changeDir: { kind: "string", required: true },
+    planningHome: { kind: "record", required: true, schema: planningHomeSchema },
+    outputPath: { kind: "string", required: true },
+    resolvedOutputPath: { kind: "string", required: true },
+    existingOutputPaths: { kind: "stringArray", required: true },
+    description: { kind: "string", required: true },
+    instruction: { kind: "string", required: true },
+    unlocks: { kind: "stringArray", required: true },
+    root: { kind: "record", required: true, schema: rootSchema },
+    template: { kind: "string", required: false },
+    dependencies: {
+        kind: "record",
+        required: false,
+        arrayItem: { kind: "record", required: true, schema: dependencySchema },
+    } as never,
+    context: { kind: "string", required: false },
+    rules: { kind: "string", required: false },
+    skipped: { kind: "boolean", required: false },
+    warning: { kind: "string", required: false },
+};
+
+/** Read authoritative authoring instructions for one OpenSpec artifact. */
 export async function getOpenSpecInstructions(
     artifactId: string,
     change: string,
@@ -67,86 +110,66 @@ export async function getOpenSpecInstructions(
         };
     }
 
-    if (!isRecord(parsed)) {
-        return { ok: false, error: "OpenSpec instructions returned an invalid result" };
-    }
-
-    if (result.exitCode !== 0 || !isInstructionsResponse(parsed)) {
+    if (result.exitCode !== 0) {
+        if (!isRecord(parsed))
+            return { ok: false, error: "OpenSpec instructions returned an invalid result" };
         return { ok: false, error: formatCommandFailure(parsed, result.exitCode, "instructions") };
     }
 
-    return { ok: true, instructions: normalizeInstructions(parsed) };
+    try {
+        assertShape(parsed, instructionsSchema, "openspec instructions");
+        const validated = parsed as Record<string, unknown>;
+        assertNoExtraFields(validated, instructionsSchema, "openspec instructions");
+        const dependencies = (validated.dependencies ?? []) as Array<Record<string, unknown>>;
+        for (const dependency of dependencies) {
+            assertNoExtraFields(dependency, dependencySchema, "openspec instructions dependency");
+        }
+
+        const outputPath = validated.resolvedOutputPath as string;
+        if (!isUsableOutputPath(outputPath)) {
+            return {
+                ok: false,
+                error: formatRemediation("OPENSPEC_OUTPUT_PATH_INVALID", {
+                    path: outputPath,
+                    id: validated.artifactId as string,
+                    change,
+                    wrapper: "openspec instructions",
+                }),
+            };
+        }
+
+        return {
+            ok: true,
+            instructions: normalizeInstructions(validated, dependencies),
+        };
+    } catch (error) {
+        if (error instanceof OpenSpecShapeError) return { ok: false, error: error.message };
+        return { ok: false, error: "OpenSpec instructions returned an invalid result" };
+    }
 }
 
-/**
- * Type guard for the full `openspec instructions --json` response.
- *
- * Validates the required `artifactId`/`resolvedOutputPath`/`template`/
- * `instruction`/`dependencies` fields plus the optional `context`/`rules`/
- * `skipped`/`warning` fields, so the normalizer can spread the optionals
- * without re-checking their types.
- */
-function isInstructionsResponse(value: Record<string, unknown>): value is Record<
-    string,
-    unknown
-> & {
-    artifactId: string;
-    resolvedOutputPath: string;
-    template: string;
-    instruction: string;
-    dependencies: Array<Record<string, unknown>>;
-} {
-    return (
-        typeof value.artifactId === "string" &&
-        typeof value.resolvedOutputPath === "string" &&
-        typeof value.template === "string" &&
-        typeof value.instruction === "string" &&
-        Array.isArray(value.dependencies) &&
-        value.dependencies.every(isInstructionDependency) &&
-        (!("context" in value) || typeof value.context === "string") &&
-        (!("rules" in value) || typeof value.rules === "string") &&
-        (!("skipped" in value) || typeof value.skipped === "boolean") &&
-        (!("warning" in value) || typeof value.warning === "string")
-    );
-}
-
-/** Type guard for one entry of the instructions response `dependencies` array. */
-function isInstructionDependency(value: unknown): value is Record<string, unknown> & {
-    id: string;
-    path: string;
-} {
-    if (!isRecord(value) || typeof value.id !== "string" || typeof value.path !== "string") {
+function isUsableOutputPath(outputPath: string): boolean {
+    if (!outputPath.trim() || !path.isAbsolute(outputPath)) return false;
+    const parent = path.dirname(outputPath);
+    if (!existsSync(parent)) return false;
+    if (!existsSync(outputPath)) return true;
+    try {
+        return statSync(outputPath).isFile();
+    } catch {
         return false;
     }
-    return (
-        (!("done" in value) || typeof value.done === "boolean") &&
-        (!("description" in value) || typeof value.description === "string")
-    );
 }
 
-/**
- * Flatten a validated CLI response into the stable `NormalizedInstructions`.
- *
- * Maps the CLI's `artifactId` to the wrapper's `id`, preserves
- * `resolvedOutputPath` verbatim (callers expand globs), and conditionally
- * spreads the optional `context`/`rules`/`skipped`/`warning` fields so the
- * normalized shape omits them when the CLI omits them.
- */
 function normalizeInstructions(
-    value: Record<string, unknown> & {
-        artifactId: string;
-        resolvedOutputPath: string;
-        template: string;
-        instruction: string;
-        dependencies: Array<Record<string, unknown>>;
-    },
+    value: Record<string, unknown>,
+    dependencies: Array<Record<string, unknown>>,
 ): NormalizedInstructions {
     return {
-        id: value.artifactId,
-        resolvedOutputPath: value.resolvedOutputPath,
-        template: value.template,
-        instruction: value.instruction,
-        dependencies: value.dependencies.map(dependency => ({
+        id: value.artifactId as string,
+        resolvedOutputPath: value.resolvedOutputPath as string,
+        template: (value.template ?? value.description) as string,
+        instruction: value.instruction as string,
+        dependencies: dependencies.map(dependency => ({
             id: dependency.id as string,
             path: dependency.path as string,
             ...(!("done" in dependency) ? {} : { done: dependency.done as boolean }),

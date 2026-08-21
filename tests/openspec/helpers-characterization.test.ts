@@ -165,7 +165,12 @@ describe("errorMessage characterization (doctor wrapper)", () => {
         return {
             specopsVersion: async () => "0.1.0",
             openspecVersion: async () => "1.8.0",
-            openspecDoctor: async () => ({ initialized: true, healthy: true, issues: [] }),
+            openspecDoctor: async () => ({
+                initialized: true,
+                healthy: true,
+                incompatible: null,
+                issues: [],
+            }),
             loadConfig: overrides.loadConfig,
         };
     }

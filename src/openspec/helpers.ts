@@ -3,6 +3,23 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+/** Validate the normalized artifact shape shared by status-based wrappers. */
+export function isNormalizedArtifact(value: Record<string, unknown>): boolean {
+    return (
+        typeof value.id === "string" &&
+        typeof value.outputPath === "string" &&
+        (value.status === "done" ||
+            value.status === "skipped" ||
+            value.status === "ready" ||
+            value.status === "blocked") &&
+        Array.isArray(value.requires) &&
+        value.requires.every(item => typeof item === "string") &&
+        (!("missingDeps" in value) ||
+            (Array.isArray(value.missingDeps) &&
+                value.missingDeps.every(item => typeof item === "string")))
+    );
+}
+
 /** Convert an unknown caught value into a stable message suitable for a tool result. */
 export function errorMessage(error: unknown): string {
     return error instanceof Error ? error.message : String(error);

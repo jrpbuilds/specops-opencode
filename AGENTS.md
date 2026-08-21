@@ -10,6 +10,14 @@ Add inline comments only where something needs explanation. Prefer comments that
 
 Do not add comments or documentation just for the sake of it.
 
+## Changelog entries
+
+Write short, user-facing release notes. Each entry should briefly describe one
+addition, change, or fix and its user-visible benefit. Avoid internal
+implementation details, file paths, test results, architecture, and long
+rationale. Keep entries to one concise sentence or two short lines, and include
+an issue reference when relevant.
+
 ## Formatting before commit
 
 Run `bun run format` and verify `bun run format:check` passes before staging a commit or pushing. Never commit or push changes that fail the Prettier check.

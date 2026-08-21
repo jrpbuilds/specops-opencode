@@ -113,7 +113,7 @@ describe("getOpenSpecContext", () => {
 
         expect(result.available).toBe(true);
         expect(result.initialized).toBe(false);
-        expect(result.error).toBe("OpenSpec list returned an invalid result");
+        expect(result.error).toContain("OPENSPEC_MALFORMED_RESPONSE");
     });
 
     test("reports a missing or incomplete root/changes as invalid", async () => {
@@ -126,8 +126,8 @@ describe("getOpenSpecContext", () => {
             stdout: JSON.stringify({ root: { source: "nearest" } }),
         }));
 
-        expect(missingRoot.error).toBe("OpenSpec list returned an invalid result");
-        expect(missingChanges.error).toBe("OpenSpec list returned an invalid result");
+        expect(missingRoot.error).toContain("OPENSPEC_MALFORMED_RESPONSE");
+        expect(missingChanges.error).toContain("OPENSPEC_MALFORMED_RESPONSE");
     });
 
     test("reports a malformed active change entry as invalid", async () => {
@@ -141,7 +141,7 @@ describe("getOpenSpecContext", () => {
 
         expect(result.available).toBe(true);
         expect(result.initialized).toBe(false);
-        expect(result.error).toBe("OpenSpec list returned an invalid change result");
+        expect(result.error).toContain("OPENSPEC_MALFORMED_RESPONSE");
     });
 
     test("preserves native command failures with message only", async () => {
@@ -179,5 +179,18 @@ describe("getOpenSpecContext", () => {
         expect(empty.error).toBe("OpenSpec list failed with exit code 1");
         expect(notArray.error).toBe("OpenSpec list failed with exit code 1");
         expect(nonRecordEntry.error).toBe("OpenSpec list failed with exit code 1");
+    });
+
+    test("rejects an unexpected response field", async () => {
+        const result = await getOpenSpecContext("/project", async () => ({
+            exitCode: 0,
+            stdout: JSON.stringify({
+                changes: [],
+                root: { path: "/project", source: "nearest" },
+                extra: true,
+            }),
+        }));
+        expect(result.error).toContain("extra");
+        expect(result.error).toContain("not declared");
     });
 });

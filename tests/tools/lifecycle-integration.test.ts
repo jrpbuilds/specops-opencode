@@ -6,6 +6,7 @@ import { createChangeTool } from "../../src/tools/create-change.js";
 import { doctorTool } from "../../src/tools/doctor.js";
 import { onboardTool } from "../../src/tools/onboard.js";
 import { statusTool } from "../../src/tools/status.js";
+import { validateChangeTool } from "../../src/tools/validate-change.js";
 import { SpecOpsPlugin } from "../../src/index.js";
 import { withTempDir } from "../helpers.js";
 
@@ -22,6 +23,11 @@ const LIFECYCLE_TOOLS: Array<{
     { id: "specops_doctor", definition: doctorTool, args: {} },
     { id: "specops_onboard", definition: onboardTool, args: {} },
     { id: "specops_status", definition: statusTool, args: { change: "example" } },
+    {
+        id: "specops_validate_change",
+        definition: validateChangeTool,
+        args: { change: "example" },
+    },
 ];
 
 function pluginInput(directory: string) {
@@ -124,7 +130,8 @@ describe("lifecycle tool integration", () => {
                     },
                 );
 
-                await expect(definition.execute({}, context)).rejects.toThrow("lifecycle denied");
+                const args = id === "specops_validate_change" ? { change: "example" } : {};
+                await expect(definition.execute(args, context)).rejects.toThrow("lifecycle denied");
                 expect(requests).toHaveLength(1);
                 expect(requests[0]).toEqual({
                     permission: "specops_lifecycle",

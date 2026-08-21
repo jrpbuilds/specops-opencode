@@ -16,7 +16,11 @@ describe("createOpenSpecChange", () => {
                         change: {
                             id: "improve-bird-graphics",
                             path: "/project/openspec/changes/improve-bird-graphics",
+                            metadataPath:
+                                "/project/openspec/changes/improve-bird-graphics/.openspec.yaml",
+                            schema: "spec-driven",
                         },
+                        root: { path: "/project", source: "nearest" },
                     }),
                 };
             },
@@ -52,7 +56,13 @@ describe("createOpenSpecChange", () => {
                 return {
                     exitCode: 0,
                     stdout: JSON.stringify({
-                        change: { id: "new-change", path: "/project/openspec/changes/new-change" },
+                        change: {
+                            id: "new-change",
+                            path: "/project/openspec/changes/new-change",
+                            metadataPath: "/project/openspec/changes/new-change/.openspec.yaml",
+                            schema: "spec-driven",
+                        },
+                        root: { path: "/project", source: "nearest" },
                     }),
                 };
             },
@@ -201,5 +211,28 @@ describe("createOpenSpecChange", () => {
             ok: false,
             error: "OpenSpec create change failed with exit code 1",
         });
+    });
+
+    test("rejects an unexpected success field", async () => {
+        const result = await createOpenSpecChange(
+            "new-change",
+            "/project",
+            undefined,
+            async () => ({
+                exitCode: 0,
+                stdout: JSON.stringify({
+                    change: {
+                        id: "new-change",
+                        path: "/project/change",
+                        metadataPath: "/project/change/.openspec.yaml",
+                        schema: "spec-driven",
+                    },
+                    root: { path: "/project", source: "nearest" },
+                    extra: true,
+                }),
+            }),
+        );
+        expect(result.ok).toBe(false);
+        if (!result.ok) expect(result.error).toContain("extra");
     });
 });

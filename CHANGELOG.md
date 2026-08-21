@@ -2,213 +2,110 @@
 
 All notable changes to SpecOps are documented in this file.
 
+## [v1.1.0] - 2026-08-21
+
+### Added
+
+- Added OpenSpec compatibility diagnostics and strict validation gates, so
+  incompatible installs and malformed responses are caught early with
+  actionable guidance. (issue #10)
+
 ## [v1.0.0] - 2026-08-20
 
 ### Added
 
-- SpecOps now works with any OpenSpec schema, not just the default one. Planning
-  specialists follow whatever artifacts your schema defines — including custom,
-  renamed, reordered, or omitted ones — and use OpenSpec's own instructions and
-  output paths instead of assuming the standard file names. The Designer
-  specialist remains a dedicated option for the conventional `design` artifact,
-  while everything else is handled by the Planner. (issue #7)
-- The coordinator now routes the workflow from OpenSpec's live change status
-  rather than hardcoded file assumptions. It sees which artifacts are done,
-  ready, blocked, or skipped and plans the next step accordingly — so skipped
-  artifacts and custom schemas are handled correctly, and the interactive plan
-  approval appears at the right time. (issue #6)
-- New `specops_status` tool: the coordinator can check the current state of a
-  change at any time, so it always works from up-to-date OpenSpec information
-  instead of browsing the `openspec/` folder. (issue #5)
+- Added support for custom OpenSpec schemas, so planning follows each project's
+  artifacts and structure instead of assuming the default layout. (issue #7)
+- Improved workflow routing from live OpenSpec status, so skipped, blocked, and
+  custom artifacts advance correctly. (issue #6)
+- Added `specops_status`, so the coordinator can check the current change state
+  without browsing project files. (issue #5)
 
 ### Fixed
 
-- The coordinator's bash policy only permitted `openspec --help` patterns, which
-  blocked the read-only `openspec instructions <artifact> --change <id>` and
-  `openspec change show <id> --json --deltas-only` commands. Both are
-  inspection-only and neither mutates OpenSpec state, so allowing them removes
-  an orchestration deadlock (the coordinator could not fetch spec instructions
-  for subagents nor inspect the change it was coordinating) without opening a
-  spec-drift path. The planner and designer policies are unchanged.
+- Fixed blocked read-only OpenSpec inspection, so the coordinator can fetch
+  artifact instructions and inspect changes when needed.
 
 ## [v0.7.1] - 2026-08-17
 
 ### Fixed
 
-- Specialist handoffs into OpenCode's `task` tool were lost when a specialist
-  emitted its handoff, called `engram_mem_session_summary`, and then emitted a
-  closing pointer as a follow-up message. The shared handoff envelope now
-  declares that the handoff is the terminal message, all tool calls (including
-  Engram) must precede it, and no tool calls or text may follow it. The Reviewer
-  and Frontier prompts explicitly require the same terminal-message behaviour for
-  `PASS`/`FAIL`, `FRONTIER ELIGIBLE BLOCKER`, and `FRONTIER ADVICE`.
-- The coordinator could skip `specops_create_change` when `specops_context`
-  reported no active changes and delegate to specialists anyway. The coordinator
-  prompt now establishes exactly one current change as a hard precondition: if
-  `activeChanges` is empty, it must create a change and only successful creation
-  permits specialist delegation; every delegation must carry the current change
-  name.
-- A malformed or missing Task result caused a fresh specialist investigation
-  instead of recovering the already-completed work. The coordinator prompt now
-  recovers once by resuming the same OpenCode Task session via `task_id` and
-  asking the specialist to re-emit its completed handoff; if the re-emission is
-  still malformed, it stops clearly without retrying or spawning a fresh session.
-  This recovery applies only to completed tasks that lost their substantive
-  output; genuine execution errors still follow the normal error/blocker path.
-- Role permissions and lifecycle authority are unchanged.
+- Fixed lost specialist handoffs, so completed work remains available after
+  tool calls.
+- Fixed delegation without an active change, so the coordinator establishes the
+  current change before specialist work begins.
+- Improved recovery from malformed task results by resuming the original task
+  once instead of restarting the investigation.
 
 ## [v0.7.0] - 2026-08-16
 
 ### Changed
 
-- Refactored built-in role capabilities into declarative data in
-  `src/agents/permission-policy.ts`, while architectural security invariants
-  (`task`, `question`, `specops_*`, `specops_lifecycle`, the private `specops-*`
-  subagent boundary, and lifecycle ownership) remain enforced in
-  `src/agents/permissions.ts` and `src/agents/boundary.ts`.
-- `specops-implementer` and `specops-reviewer` now deny native external-directory
-  access and retain `doom_loop: "allow"` for legitimate iteration and
-  re-verification. Their unrestricted bash permission remains a residual
-  capability for commands OpenCode does not detect; this is a native/tool-level
-  guardrail, not an OS filesystem sandbox. The previous external-directory allow
-  was a headless approval workaround, not a current workflow requirement.
-- Split the monolithic `prompts/coordinator.md` into a shared core plus
-  mode-specific `coordinator-interactive.md` and `coordinator-auto.md`, with
-  `coordinator-frontier.md` loaded only when Frontier escalation is enabled. The
-  coordinator prompt is now composed by `buildCoordinatorPrompt` in
-  `src/agents/coordinator.ts`, replacing the previous `{{FRONTIER_ESCALATION_STATE}}`
-  placeholder substitution so disabled Frontier policy stays out of the model
-  context rather than being overridden at prompt time.
-- Aligned the interactive plan and `USER DECISION REQUIRED` checkpoints with
-  OpenCode's native `question` tool: the type-your-own-answer path is left on its
-  default (no `custom` field), and a specialist recommendation is surfaced by
-  appending ` (Recommended)` to the first option's label rather than mutating its
-  trade-off. `specops-planner` and `specops-designer` now place any recommended
-  option first in `Options`, with neutral ordering otherwise.
+- Improved role permissions and workflow boundaries, so each agent has access to
+  the tools and actions it needs without taking over another role's work.
+- Improved headless operation for implementation and review while preserving
+  safety prompts for interactive runs.
+- Separated coordinator behavior by mode and Frontier settings, making each run
+  use the appropriate workflow guidance.
+- Improved planning checkpoints with clearer native questions and
+  recommendations.
 
 ## [v0.6.0] - 2026-08-16
 
 ### Changed
 
-- The internal `specops-*` specialist agents are now private to the SpecOps
-  workflow. Only the `SpecOps` and `SpecOps Auto` coordinators may dispatch
-  them; other OpenCode agents can no longer invoke them (previously any primary
-  agent could accidentally enter the SpecOps/OpenSpec workflow by dispatching,
-  for example, `specops-planner`). This is enforced through OpenCode's
-  `permission.task` glob rules at both the global and per-agent level rather
-  than through prompt prose, and the specialists are additionally marked
-  `hidden: true` so they no longer appear in the `@` autocomplete menu. The
-  specialists also gain an explicit `task: "*" deny` so they cannot delegate to
-  further subagents even if `subagent_depth` is raised. Existing user
-  permission configuration is preserved and merged rather than replaced.
-- SpecOps roles now use explicit role-based permissions. Coordinators can use
-  native `specops_*` lifecycle tools and only `openspec --help` shell lookups;
-  specialists receive headless-safe edit, shell, delegation, and lifecycle
-  boundaries. Ordinary primary agents retain only the user-facing
-  `specops_doctor` and `specops_onboard` lifecycle tools; context lookup, change
-  creation, and archive remain Coordinator-owned. Custom lifecycle tools now
-  perform an explicit runtime permission check before doing work.
+- Restricted specialist agents to the SpecOps coordinators, preventing
+  accidental workflow entry and unauthorized delegation.
+- Added role-based permissions for lifecycle tools, keeping workflow ownership
+  explicit and predictable.
 
 ## [v0.5.0] - 2026-08-15
 
 ### Fixed
 
-- `/specops-auto` (and any headless run) could silently deadlock the first
-  time a subagent made a `bash` call with a `workdir` outside `--dir`
-  (smoke tests from `/tmp`, reading a global config, checking installed
-  binaries, linting from a sibling checkout). None of the SpecOps agents set
-  an explicit `external_directory` permission, so OpenCode's default `ask`
-  applied — and `--auto` does not propagate to subagent sessions
-  ([opencode#35073](https://github.com/anomalyco/opencode/issues/35073)),
-  parent agent permissions don't propagate to subagents
-  ([opencode#12566](https://github.com/anomalyco/opencode/issues/12566)), and
-  session-inherited `external_directory` allows get clobbered on the way
-  into the child session
-  ([opencode#30527](https://github.com/anomalyco/opencode/issues/30527)). The
-  `SpecOps Auto` coordinator and the bash-heavy subagents it dispatches
-  (`specops-implementer`, `specops-reviewer`) now carry a shared
-  `SPECOPS_AUTO_PERMISSION` that sets the two OpenCode permission keys that
-  default to `ask` (`external_directory`, `doom_loop`) to `"allow"`, which is
-  exactly what `--auto` would auto-approve. Because these are the agent's own
-  registered rules (evaluated via `merge(taskAgent.permission, …)`), no `ask`
-  is ever generated, short-circuiting all three upstream bugs. The
-  interactive `SpecOps` coordinator and the read-only specialists
-  (`specops-explorer`, `specops-planner`, `specops-designer`,
-  `specops-frontier`) keep OpenCode's default `ask`, so interactive
-  `/specops` still prompts before cross-directory access by those agents.
-  Residual risk: Auto's read-only specialists can still stall in headless if
-  they touch a cross-directory path (opencode#35073); accepted tradeoff for
-  the interactive safety net. (issue #3)
+- Fixed headless `/specops-auto` runs stalling on cross-directory commands.
+  (issue #3)
 
 ## [v0.4.0] - 2026-08-14
 
 ### Added
 
-- Optional Engram project-memory capability available to every SpecOps agent when Engram's MCP
-  tools are present. Agents may use historical architectural decisions, conventions, previous
-  discoveries, and project-specific gotchas selectively when they materially help their pass.
-- One shared Engram policy across prompts: memory is contextual, not authority. Current explicit
-  user instructions and the current approved OpenSpec artifacts govern the change; current
-  repository and executed evidence govern what exists today; Engram memory yields whenever it
-  conflicts with any of them. Engram absence or failure never blocks `/specops` or `/specops-auto`.
-- SpecOps does not use Engram as an alternative store for OpenSpec change artifacts or workflow
-  state. The previous global read-only restriction is removed so normal Engram memory behaviour
-  can coexist with SpecOps.
+- Added optional Engram memory support, so agents can use relevant project
+  history without making memory a requirement.
 
 ### Changed
 
-- README Getting Started no longer requires running `/specops-onboard` before `/specops`;
-  `/specops` self-onboards and `/specops-onboard` is documented as an explicit/manual command.
-- README documents Engram as an optional companion and recommends Engram's current documented
-  OpenCode setup for exposing its MCP server and tools.
-- Prompt contracts now compose shared fragments in `prompts/shared/` for the Engram policy, handoff
-  envelope, Frontier blocker template, and Frontier advice line via a minimal whole-line
-  `{{include:...}}` directive resolved when prompts load.
+- Simplified onboarding: `/specops` now initializes OpenSpec automatically, while
+  `/specops-onboard` remains available for explicit setup.
+- Added optional Engram setup guidance and shared prompt policies for more
+  consistent agent behavior.
 
 ## [v0.3.0] - 2026-08-13
 
 ### Added
 
-- `specops-auto` command and autonomous `SpecOps Auto` coordinator for headless runs: shares the
-  standard coordinator prompt with an appended autonomous appendix and denies the `question`
-  permission, executing the full workflow without human checkpoints and finishing with a terminal
-  `COMPLETED` or `BLOCKED` report.
-- Self-onboarding: every `/specops` run calls `specops_onboard` first, initialising OpenSpec
-  automatically on fresh projects and terminating BLOCKED on unavailable or failed initialisation.
-- Evidence-backed Reviewer compliance matrix: each independently verifiable approved behaviour is
-  reported as `VERIFIED`, `COMPLIANT`, `UNPROVEN`, or `FAILING`, with executed evidence preferred
-  where appropriate and manual/runtime verification accepted where no automated test is the right
-  evidence.
-- Standard specialist handoff envelope (`STATUS`, `SUMMARY`, `ARTIFACTS`, `VERIFICATION`, `RISKS`,
-  `NEXT`) for specialist returns, with `USER DECISION REQUIRED`, `FRONTIER ELIGIBLE BLOCKER`, and
-  Reviewer `PASS`/`FAIL` preserved as standalone returns.
-- Explorer-generated `PROJECT CONTEXT` capsule, scoped to the current change and passed to
-  Planner, Designer, Implementer, and Reviewer as orientation (never authoritative).
-- Six review lenses inside the Reviewer — correctness/spec compliance, reliability,
-  resilience/edge cases, security/risk, maintainability/readability, and regression risk —
-  applied proportionally with findings flowing into the compliance matrix and `F1..Fn` contract.
-- Delta-focused remediation re-review: after remediation the Reviewer re-checks each prior
-  `F1..Fn` finding against the remediation delta, tagging `RESOLVED`, `UNRESOLVED`, or `REGRESSED`
-  with stable finding IDs instead of re-critiquing the entire change.
+- Added `/specops-auto` for headless workflows without interactive checkpoints.
+- Added automatic OpenSpec onboarding for new projects.
+- Added structured specialist handoffs and evidence-based review results.
+- Added shared project context and focused review remediation for more reliable
+  multi-agent workflows.
 
 ### Changed
 
-- Hardened the Coordinator workflow contract: every `/specops` goal now runs the full SpecOps
-  workflow, including greenfield and self-contained deliverables, preventing the Coordinator from
-  implementing goals directly.
-- Regenerated the Galaxy Shooter example with the updated workflow and new model mapping.
+- Ensured every `/specops` goal follows the full SpecOps workflow, including
+  greenfield work.
+- Updated the Galaxy Shooter example for the current workflow.
 
 ## [v0.2.0] - 2026-08-10
 
 ### Added
 
-- Optional `specops-frontier` consultation for genuinely difficult unresolved technical blockers,
-  gated by `frontierEscalation` in `specops.json`. Frontier is advice-only, registered only when the
-  capability is enabled, and preserves the Reviewer's sole ownership of the final PASS/FAIL verdict.
+- Added optional Frontier guidance for difficult blockers while keeping final
+  decisions with the Reviewer.
 
 ## [v0.1.0] - 2026-08-08
 
 ### Added
 
-- Initial release of SpecOps for OpenCode: Coordinator, Explorer, Planner, Designer,
-  Implementer, and Reviewer specialists with spec-driven OpenSpec workflow support.
+- Initial release of SpecOps for OpenCode with a spec-driven workflow and
+  Coordinator, Explorer, Planner, Designer, Implementer, and Reviewer agents.
