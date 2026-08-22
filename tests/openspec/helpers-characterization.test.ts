@@ -164,7 +164,7 @@ describe("errorMessage characterization (doctor wrapper)", () => {
     function deps(overrides: { loadConfig: () => Promise<typeof DEFAULT_CONFIG> }) {
         return {
             specopsVersion: async () => "0.1.0",
-            openspecVersion: async () => "1.8.0",
+            openspecVersion: async () => "1.10.0",
             openspecDoctor: async () => ({
                 initialized: true,
                 healthy: true,

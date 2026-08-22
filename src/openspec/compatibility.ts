@@ -17,11 +17,12 @@ export type CompatibilityReport = {
     compatible: boolean;
     missingCapabilities: Capability[];
     installedVersion: string | null;
-    minimumVersion: string;
+    targetVersion: string;
+    warnings: string[];
 };
 
-// 1.8.0 is the oldest OpenSpec version this plugin is developed and tested against.
-export const MINIMUM_OPENSPEC_VERSION = "1.8.0";
+// 1.10.0 is the OpenSpec version SpecOps is developed and tested against. It is a target, not a floor: installs older or newer than the target are compatible when every capability probe succeeds.
+export const TARGET_OPENSPEC_VERSION = "1.10.0";
 
 // Probes intentionally run only `<command> --help`; they never execute target
 // commands, so mutating surfaces such as `new` and `archive` cannot touch a workspace.
@@ -71,7 +72,7 @@ export const OPENSPEC_CAPABILITIES: readonly Capability[] = [
 ];
 
 /** Compare normalized major/minor/patch versions without adding a dependency. */
-export function compareVersions(installed: string, minimum: string): -1 | 0 | 1 {
+export function compareVersions(installed: string, target: string): -1 | 0 | 1 {
     const normalize = (version: string): number[] => {
         const numbers = version.trim().replace(/^v/i, "").split(/[+-]/, 1)[0].split(".");
         return [0, 1, 2].map(index => {
@@ -80,7 +81,7 @@ export function compareVersions(installed: string, minimum: string): -1 | 0 | 1 
         });
     };
     const actual = normalize(installed);
-    const expected = normalize(minimum);
+    const expected = normalize(target);
     for (let index = 0; index < 3; index += 1) {
         if (actual[index] < expected[index]) return -1;
         if (actual[index] > expected[index]) return 1;
@@ -96,14 +97,17 @@ export async function probeCompatibility(
 ): Promise<CompatibilityReport> {
     const installedVersion = await readVersion();
     const missingCapabilities: Capability[] = [];
+    const warnings: string[] = [];
 
     for (const capability of OPENSPEC_CAPABILITIES) {
         if (!capability.probe) {
             if (
                 installedVersion === null ||
-                compareVersions(installedVersion, MINIMUM_OPENSPEC_VERSION) < 0
+                compareVersions(installedVersion, TARGET_OPENSPEC_VERSION) < 0
             ) {
-                missingCapabilities.push(capability);
+                warnings.push(
+                    `OpenSpec ${installedVersion ?? "unknown"} is below SpecOps target ${TARGET_OPENSPEC_VERSION} — capability ${capability.id} not directly verifiable`,
+                );
             }
             continue;
         }
@@ -129,6 +133,7 @@ export async function probeCompatibility(
         compatible: missingCapabilities.length === 0,
         missingCapabilities,
         installedVersion,
-        minimumVersion: MINIMUM_OPENSPEC_VERSION,
+        targetVersion: TARGET_OPENSPEC_VERSION,
+        warnings,
     };
 }

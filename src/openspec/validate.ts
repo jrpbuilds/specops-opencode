@@ -1,6 +1,6 @@
 import { runCaptureStdout } from "../helpers.js";
 import type { CaptureStdout } from "./helpers.js";
-import { assertNoExtraFields, assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
+import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
 export type ChangeValidation = {
     valid: boolean;
@@ -84,7 +84,6 @@ export async function validateChange(
 
     assertShape(parsed, responseSchema, "openspec validate");
     const validated = parsed as Record<string, unknown>;
-    assertNoExtraFields(validated, responseSchema, "openspec validate");
 
     const items = validated.items as Array<Record<string, unknown>>;
     const issues = items.flatMap(item => item.issues as Array<Record<string, string>>);

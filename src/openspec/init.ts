@@ -1,7 +1,7 @@
 import { stat } from "node:fs/promises";
 import path from "node:path";
 import { runCaptured } from "../helpers.js";
-import { assertNoExtraFields, assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
+import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
 const initResultSchema: Schema = {
     ok: { kind: "boolean", required: true },
@@ -34,7 +34,6 @@ export async function initializeOpenSpec(cwd: string): Promise<{ ok: boolean; st
     );
     try {
         assertShape(result, initResultSchema, "openspec init");
-        assertNoExtraFields(result, initResultSchema, "openspec init");
         return result;
     } catch (error) {
         if (error instanceof OpenSpecShapeError) throw error;

@@ -68,17 +68,15 @@ describe("validateChange", () => {
         ).rejects.toBeInstanceOf(OpenSpecShapeError);
     });
 
-    test("rejects unexpected summary fields", async () => {
+    test("accepts unknown summary fields as forward-compatible", async () => {
         const invalid = {
             ...response,
             summary: { ...response.summary, unexpected: true },
         };
 
-        await expect(
-            validateChange("example", "/project", captureJson(invalid)),
-        ).rejects.toMatchObject({
-            code: "OPENSPEC_MALFORMED_RESPONSE",
-            field: "unexpected",
+        await expect(validateChange("example", "/project", captureJson(invalid))).resolves.toEqual({
+            valid: true,
+            issues: [],
         });
     });
 

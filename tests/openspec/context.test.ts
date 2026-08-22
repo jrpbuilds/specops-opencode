@@ -181,7 +181,7 @@ describe("getOpenSpecContext", () => {
         expect(nonRecordEntry.error).toBe("OpenSpec list failed with exit code 1");
     });
 
-    test("rejects an unexpected response field", async () => {
+    test("accepts an unknown response field as forward-compatible", async () => {
         const result = await getOpenSpecContext("/project", async () => ({
             exitCode: 0,
             stdout: JSON.stringify({
@@ -190,7 +190,10 @@ describe("getOpenSpecContext", () => {
                 extra: true,
             }),
         }));
-        expect(result.error).toContain("extra");
-        expect(result.error).toContain("not declared");
+        expect(result).toEqual({
+            available: true,
+            initialized: true,
+            activeChanges: [],
+        });
     });
 });

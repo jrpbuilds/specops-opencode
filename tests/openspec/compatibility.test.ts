@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
     compareVersions,
-    MINIMUM_OPENSPEC_VERSION,
     OPENSPEC_CAPABILITIES,
     probeCompatibility,
+    TARGET_OPENSPEC_VERSION,
 } from "../../src/openspec/compatibility.js";
 import type { CaptureStdout } from "../../src/openspec/helpers.js";
 
@@ -25,10 +25,11 @@ describe("OpenSpec compatibility policy", () => {
         const result = await probeCompatibility(
             "/project",
             completeHelp(),
-            async () => MINIMUM_OPENSPEC_VERSION,
+            async () => TARGET_OPENSPEC_VERSION,
         );
         expect(result.compatible).toBe(true);
         expect(result.missingCapabilities).toEqual([]);
+        expect(result.warnings).toEqual([]);
     });
 
     test("names each individually missing help capability", async () => {
@@ -36,7 +37,7 @@ describe("OpenSpec compatibility policy", () => {
             const result = await probeCompatibility(
                 "/project",
                 completeHelp(capability.id),
-                async () => MINIMUM_OPENSPEC_VERSION,
+                async () => TARGET_OPENSPEC_VERSION,
             );
             expect(result.compatible).toBe(false);
             expect(result.missingCapabilities.map(item => item.id)).toContain(capability.id);
@@ -50,7 +51,7 @@ describe("OpenSpec compatibility policy", () => {
                 stdout: args[0] === "list" ? "--json" : "",
                 exitCode: args[0] === "list" ? 1 : 0,
             }),
-            async () => MINIMUM_OPENSPEC_VERSION,
+            async () => TARGET_OPENSPEC_VERSION,
         );
         expect(result.missingCapabilities.map(item => item.id)).toContain("list-json");
     });
@@ -72,7 +73,7 @@ describe("OpenSpec compatibility policy", () => {
                     exitCode: 0,
                 };
             },
-            async () => MINIMUM_OPENSPEC_VERSION,
+            async () => TARGET_OPENSPEC_VERSION,
         );
 
         expect(result.compatible).toBe(true);
@@ -94,7 +95,7 @@ describe("OpenSpec compatibility policy", () => {
                     exitCode: 0,
                 };
             },
-            async () => MINIMUM_OPENSPEC_VERSION,
+            async () => TARGET_OPENSPEC_VERSION,
         );
 
         expect(result.missingCapabilities.map(item => item.id)).toContain("new-change-json");
@@ -104,14 +105,43 @@ describe("OpenSpec compatibility policy", () => {
         const pass = await probeCompatibility(
             "/project",
             completeHelp(),
-            async () => "v1.8.0-beta.1+build",
+            async () => "v1.10.0-beta.1+build",
         );
         expect(pass.missingCapabilities).toEqual([]);
+        expect(pass.warnings).toEqual([]);
 
         const fail = await probeCompatibility("/project", completeHelp(), async () => "1.7.9");
-        expect(fail.missingCapabilities.map(item => item.id)).toEqual([
-            "instructions-resolved-output-path",
-        ]);
+        expect(fail.missingCapabilities).toEqual([]);
+        expect(fail.warnings).toHaveLength(1);
+        expect(fail.warnings[0]).toContain("instructions-resolved-output-path");
+        expect(fail.warnings[0]).toContain(TARGET_OPENSPEC_VERSION);
+        expect(fail.warnings[0]).toContain("1.7.9");
+    });
+
+    test("accepts a newer-than-target version when every probe succeeds", async () => {
+        const result = await probeCompatibility("/project", completeHelp(), async () => "2.0.0");
+
+        expect(result.compatible).toBe(true);
+        expect(result.missingCapabilities).toEqual([]);
+        expect(result.warnings).toEqual([]);
+    });
+
+    test("accepts an older-than-target version when every probe succeeds", async () => {
+        const result = await probeCompatibility("/project", completeHelp(), async () => "1.7.9");
+
+        expect(result.compatible).toBe(true);
+        expect(result.missingCapabilities).toEqual([]);
+        expect(result.warnings).toHaveLength(1);
+        expect(result.warnings[0]).toContain("instructions-resolved-output-path");
+    });
+
+    test("warns but stays compatible when the version is unavailable", async () => {
+        const result = await probeCompatibility("/project", completeHelp(), async () => null);
+
+        expect(result.compatible).toBe(true);
+        expect(result.missingCapabilities).toEqual([]);
+        expect(result.warnings).toHaveLength(1);
+        expect(result.warnings[0]).toContain("OpenSpec unknown");
     });
 
     test("does not execute a capability probe without --help", () => {
@@ -121,16 +151,16 @@ describe("OpenSpec compatibility policy", () => {
     });
 
     test("compares versions after normalizing prefixes and suffixes", () => {
-        expect(compareVersions("v1.8.0-beta.1+build", "1.8.0")).toBe(0);
-        expect(compareVersions("1.8.0", "1.8.0")).toBe(0);
-        expect(compareVersions("1.7.9", "1.8.0")).toBe(-1);
-        expect(compareVersions("1.9.0", "1.8.0")).toBe(1);
+        expect(compareVersions("v1.10.0-beta.1+build", "1.10.0")).toBe(0);
+        expect(compareVersions("1.10.0", "1.10.0")).toBe(0);
+        expect(compareVersions("1.9.0", "1.10.0")).toBe(-1);
+        expect(compareVersions("1.11.0", "1.10.0")).toBe(1);
     });
 
     test("is deterministic for an unchanged stubbed install", async () => {
         const capture = completeHelp("doctor-json");
-        const first = await probeCompatibility("/project", capture, async () => "1.8.0");
-        const second = await probeCompatibility("/project", capture, async () => "1.8.0");
+        const first = await probeCompatibility("/project", capture, async () => "1.10.0");
+        const second = await probeCompatibility("/project", capture, async () => "1.10.0");
         expect(second).toEqual(first);
     });
 });

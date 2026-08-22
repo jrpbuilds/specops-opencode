@@ -1,6 +1,6 @@
 {
     "name": "@jrpbuilds/specops-opencode",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "description": "A lightweight OpenSpec workflow layer for OpenCode with per-phase model selection",
     "license": "MIT",
     "author": "Jake Paine <jrp.builds@proton.me>",

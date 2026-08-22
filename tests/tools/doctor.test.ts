@@ -5,7 +5,7 @@ import { doctor, type DoctorDeps } from "../../src/tools/doctor.js";
 function deps(overrides: Partial<DoctorDeps> = {}): DoctorDeps {
     return {
         specopsVersion: async () => "0.1.0",
-        openspecVersion: async () => "1.8.0",
+        openspecVersion: async () => "1.10.0",
         openspecDoctor: async () => ({
             initialized: true,
             healthy: true,
@@ -41,7 +41,7 @@ describe("doctor", () => {
                             { id: "doctor-json", description: "doctor JSON output" },
                         ],
                         installedVersion: "1.7.0",
-                        minimumVersion: "1.8.0",
+                        targetVersion: "1.10.0",
                         remediation:
                             "OPENSPEC_INCOMPATIBLE: missing capabilities\nFix:\n  1. Upgrade",
                     },
@@ -53,7 +53,8 @@ describe("doctor", () => {
         expect(result).toContain("✗ incompatible install");
         expect(result).toContain("missing: validate-strict-scoped — strict scoped validation");
         expect(result).toContain("missing: doctor-json — doctor JSON output");
-        expect(result).toContain("installed: 1.7.0 (minimum 1.8.0)");
+        expect(result).toContain("installed: 1.7.0 (SpecOps targets 1.10.0)");
+        expect(result).not.toContain("(minimum");
         expect(result).toContain("Fix:");
         expect(result).not.toContain("OpenSpec project not initialized");
     });
@@ -106,7 +107,7 @@ describe("doctor", () => {
         const result = await doctor(deps({ loadConfig: async () => configWithExplicitModels(5) }));
 
         expect(result).toContain("SpecOps: 0.1.0");
-        expect(result).toContain("OpenSpec: 1.8.0");
+        expect(result).toContain("OpenSpec: 1.10.0");
         expect(result).toContain("✓ OpenSpec project initialized");
         expect(result).toContain("✓ OpenSpec doctor healthy");
         expect(result).toContain("✓ 7 model roles configured");
@@ -197,7 +198,7 @@ describe("doctor", () => {
         );
 
         expect(result).toContain("SpecOps: unknown");
-        expect(result).toContain("OpenSpec: 1.8.0");
+        expect(result).toContain("OpenSpec: 1.10.0");
     });
 
     test("normalizes a failed OpenSpec version reader to unavailable", async () => {

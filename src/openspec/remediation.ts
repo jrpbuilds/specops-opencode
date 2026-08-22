@@ -25,7 +25,8 @@ export function formatRemediation(
     const issues = details.issues ?? "the listed violations";
     const missingCapabilities = details.missingCapabilities ?? "the missing capabilities";
     const installedVersion = details.installedVersion ?? "unknown";
-    const minimumVersion = details.minimumVersion ?? "the minimum supported version";
+    const targetVersion = details.targetVersion ?? "the target version";
+    void targetVersion;
 
     switch (code) {
         case "OPENSPEC_UNAVAILABLE":
@@ -37,17 +38,18 @@ export function formatRemediation(
             ].join("\n");
         case "OPENSPEC_INCOMPATIBLE":
             return [
-                `${code}: OpenSpec ${installedVersion} is missing ${missingCapabilities} (minimum ${minimumVersion})`,
+                `${code}: OpenSpec ${installedVersion} is missing required capability: ${missingCapabilities}`,
                 "Fix:",
-                "  1. Upgrade OpenSpec: bun install -g @fission-ai/openspec@latest",
-                "  2. Re-run specops_doctor.",
+                "  1. Install or upgrade to the latest OpenSpec: bun install -g @fission-ai/openspec@latest",
+                `  2. Alternatively, ensure your OpenSpec install exposes the failing capability (${missingCapabilities}).`,
+                "  3. Re-run specops_doctor.",
             ].join("\n");
         case "OPENSPEC_MALFORMED_RESPONSE":
             return [
                 `${code}: ${wrapper} field \"${field}\" provided ${observed}; expected ${expected}`,
                 "Fix:",
                 `  1. Check the OpenSpec install and the ${wrapper} response contract; the install may be mismatched (see openspec-compatibility).`,
-                "  2. Upgrade OpenSpec or update the supported response contract, then retry.",
+                "  2. Report the response shape to SpecOps, or update the supported contract if newer fields should be consumed.",
             ].join("\n");
         case "OPENSPEC_OUTPUT_PATH_INVALID":
             return [

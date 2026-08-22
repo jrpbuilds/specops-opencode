@@ -47,11 +47,11 @@ Check the installation:
 ```
 
 `/specops-doctor` checks the installed OpenSpec CLI before trusting its JSON
-responses. It probes the required read-only command capabilities with
-`--help`; if the CLI is too old or a capability is unavailable, the report
-shows an incompatible-install state with the required minimum version and
-remediation. Upgrade the CLI and run `/specops-doctor` again before starting a
-change.
+responses. SpecOps targets the latest OpenSpec version and probes the required
+read-only command capabilities with `--help`. Older versions whose capability
+probes still pass work too — only a genuine capability gap (a probe that fails)
+is reported as an incompatible-install state with remediation. If you upgrade
+the CLI later, just run `/specops-doctor` again.
 
 SpecOps also validates the active change with the positional command
 `openspec validate <change> --strict --json` before planning artifacts are

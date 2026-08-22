@@ -10,10 +10,10 @@ describe("getOpenSpecVersion", () => {
     test("returns the version string when openspec responds successfully", async () => {
         spyOn(helpers, "runCaptureStdout").mockResolvedValue({
             exitCode: 0,
-            stdout: "1.8.0",
+            stdout: "1.10.0",
         });
 
-        expect(await getOpenSpecVersion()).toBe("1.8.0");
+        expect(await getOpenSpecVersion()).toBe("1.10.0");
     });
 
     test("returns null when openspec exits non-zero", async () => {
@@ -36,7 +36,7 @@ describe("isOpenSpecAvailable", () => {
     test("reflects version availability", async () => {
         spyOn(helpers, "runCaptureStdout").mockResolvedValue({
             exitCode: 0,
-            stdout: "1.8.0",
+            stdout: "1.10.0",
         });
 
         expect(await isOpenSpecAvailable()).toBe(true);

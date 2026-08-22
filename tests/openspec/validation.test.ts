@@ -64,7 +64,17 @@ describe("OpenSpec response validator", () => {
         ).toThrow('field "artifact" expected artifact');
     });
 
-    test("rejects unexpected fields with wrapper and key details", () => {
+    test("ignores unknown fields by default, including nested records", () => {
+        expect(() =>
+            assertShape(
+                { ...validValue, extra: true, nested: { label: "nested", extra: true } },
+                schema,
+                "openspec fixture",
+            ),
+        ).not.toThrow();
+    });
+
+    test("rejects unexpected fields when explicitly opted in", () => {
         expect(() =>
             assertNoExtraFields({ ...validValue, extra: true }, schema, "openspec fixture"),
         ).toThrow(OpenSpecShapeError);

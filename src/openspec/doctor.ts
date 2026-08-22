@@ -4,12 +4,12 @@ import { runCaptureStdout } from "../helpers.js";
 import { formatRemediation } from "./remediation.js";
 import { errorMessage, formatCommandFailure } from "./helpers.js";
 import type { CaptureStdout } from "./helpers.js";
-import { assertNoExtraFields, assertShape, type Schema, OpenSpecShapeError } from "./validation.js";
+import { assertShape, type Schema, OpenSpecShapeError } from "./validation.js";
 
 export type OpenSpecIncompatible = {
     missingCapabilities: { id: string; description: string }[];
     installedVersion: string | null;
-    minimumVersion: string;
+    targetVersion: string;
     remediation: string;
 };
 
@@ -83,6 +83,8 @@ export async function runOpenSpecDoctor(
         return unavailable(errorMessage(error));
     }
 
+    // This branch is reachable only when a capability probe failed; a version
+    // shortfall surfaces as a warning on the compatible path instead.
     if (!compatibility.compatible) {
         const missingCapabilities = compatibility.missingCapabilities.map(
             ({ id, description }) => ({
@@ -96,11 +98,11 @@ export async function runOpenSpecDoctor(
             incompatible: {
                 missingCapabilities,
                 installedVersion: compatibility.installedVersion,
-                minimumVersion: compatibility.minimumVersion,
+                targetVersion: compatibility.targetVersion,
                 remediation: formatRemediation("OPENSPEC_INCOMPATIBLE", {
                     missingCapabilities: missingCapabilities.map(item => item.id).join(", "),
                     installedVersion: compatibility.installedVersion ?? "unknown",
-                    minimumVersion: compatibility.minimumVersion,
+                    targetVersion: compatibility.targetVersion,
                 }),
             },
             issues: [],
@@ -130,7 +132,6 @@ export async function runOpenSpecDoctor(
     try {
         assertShape(parsed, doctorSchema, "openspec doctor");
         const validated = parsed as Record<string, unknown>;
-        assertNoExtraFields(validated, doctorSchema, "openspec doctor");
         const root = validated.root as Record<string, unknown> | undefined;
         const status = validated.status as Array<Record<string, unknown>>;
         const issues = status.map(formatStatus);
@@ -138,7 +139,10 @@ export async function runOpenSpecDoctor(
             initialized: root !== undefined,
             healthy: root?.healthy === true && !issues.some(issue => issue.severity === "error"),
             incompatible: null,
-            issues: issues.map(issue => issue.text),
+            issues: [
+                ...issues.map(issue => issue.text),
+                ...compatibility.warnings.map(warning => `warning: ${warning}`),
+            ],
         };
     } catch (error) {
         if (error instanceof OpenSpecShapeError) return failure(error.message);

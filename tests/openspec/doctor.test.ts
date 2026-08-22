@@ -19,11 +19,12 @@ const compatibleProbe = async (
     compatible: true,
     missingCapabilities: [],
     installedVersion: await readVersion(),
-    minimumVersion: "1.8.0",
+    targetVersion: "1.10.0",
+    warnings: [],
 });
 
 function runDoctor() {
-    return runOpenSpecDoctor("/project", undefined, async () => "1.8.0", compatibleProbe);
+    return runOpenSpecDoctor("/project", undefined, async () => "1.10.0", compatibleProbe);
 }
 
 function doctorResponse(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -52,17 +53,55 @@ describe("runOpenSpecDoctor", () => {
                     { id: "validate-strict-scoped", description: "strict scoped validation" },
                 ],
                 installedVersion: "1.7.0",
-                minimumVersion: "1.8.0",
+                targetVersion: "1.10.0",
+                warnings: [],
             }),
         );
 
         expect(result.healthy).toBe(false);
         expect(result.incompatible).toMatchObject({
             installedVersion: "1.7.0",
-            minimumVersion: "1.8.0",
+            targetVersion: "1.10.0",
         });
-        expect(result.incompatible?.remediation).toContain("validate-strict-scoped");
+        const remediation = result.incompatible?.remediation ?? "";
+        expect(remediation.split("\n", 1)[0]).toContain("validate-strict-scoped");
+        expect(remediation).toContain("bun install -g @fission-ai/openspec@latest");
+        expect(remediation).toContain("exposes the failing capability");
         expect(calls).toEqual([]);
+    });
+
+    test("surfaces a version shortfall warning without incompatible-install", async () => {
+        const warning =
+            "OpenSpec 1.7.9 is below SpecOps target 1.10.0 — capability instructions-resolved-output-path not directly verifiable";
+        const checkCompatibility = async (
+            _cwd: string,
+            _capture: Parameters<typeof runOpenSpecDoctor>[1],
+            readVersion: () => Promise<string | null>,
+        ): Promise<CompatibilityReport> => ({
+            compatible: true,
+            missingCapabilities: [],
+            installedVersion: await readVersion(),
+            targetVersion: "1.10.0",
+            warnings: [warning],
+        });
+        const response = JSON.stringify(doctorResponse());
+        const runWithResponse = (stdout: string) =>
+            runOpenSpecDoctor(
+                "/project",
+                async () => ({ stdout, exitCode: 0 }),
+                async () => "1.7.9",
+                checkCompatibility,
+            );
+
+        const initialized = await runWithResponse(response);
+        expect(initialized.incompatible).toBeNull();
+        expect(initialized.issues).toContain(`warning: ${warning}`);
+
+        const { root: _root, ...withoutRoot } = doctorResponse();
+        const uninitialized = await runWithResponse(JSON.stringify(withoutRoot));
+        expect(uninitialized.initialized).toBe(false);
+        expect(uninitialized.incompatible).toBeNull();
+        expect(uninitialized.issues).toContain(`warning: ${warning}`);
     });
 
     test("reports a healthy initialized project", async () => {
@@ -173,7 +212,7 @@ describe("runOpenSpecDoctor", () => {
         expect(result.error).toContain("OPENSPEC_MALFORMED_RESPONSE");
     });
 
-    test("rejects status entries with unexpected fields", async () => {
+    test("accepts status entries with unexpected fields", async () => {
         capture(
             JSON.stringify(
                 doctorResponse({
@@ -184,8 +223,8 @@ describe("runOpenSpecDoctor", () => {
         );
 
         const result = await runDoctor();
-        expect(result.error).toContain('field "extra"');
-        expect(result.error).toContain("OPENSPEC_MALFORMED_RESPONSE");
+        expect(result.error).toBeUndefined();
+        expect(result.issues).toEqual(["E001: invalid"]);
     });
 
     test("rejects status entries missing consumed fields", async () => {

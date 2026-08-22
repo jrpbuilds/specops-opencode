@@ -1,7 +1,7 @@
 import { runCaptureStdout } from "../helpers.js";
 import { errorMessage, formatCommandFailure, isRecord } from "./helpers.js";
 import type { CaptureStdout } from "./helpers.js";
-import { assertNoExtraFields, assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
+import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
 /** Normalized result of creating one named OpenSpec change. */
 export type OpenSpecCreateChangeResult =
@@ -77,13 +77,7 @@ export async function createOpenSpecChange(
         try {
             assertShape(parsed, createChangeSchema, "openspec create change");
             const validated = parsed as Record<string, unknown>;
-            assertNoExtraFields(validated, createChangeSchema, "openspec create change");
             const created = validated.change as Record<string, unknown>;
-            assertNoExtraFields(
-                created,
-                createChangeSchema.change.schema!,
-                "openspec create change change",
-            );
             return {
                 ok: true,
                 name: created.id as string,

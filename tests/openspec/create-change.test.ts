@@ -213,7 +213,7 @@ describe("createOpenSpecChange", () => {
         });
     });
 
-    test("rejects an unexpected success field", async () => {
+    test("accepts an unknown success field as forward-compatible", async () => {
         const result = await createOpenSpecChange(
             "new-change",
             "/project",
@@ -232,7 +232,10 @@ describe("createOpenSpecChange", () => {
                 }),
             }),
         );
-        expect(result.ok).toBe(false);
-        if (!result.ok) expect(result.error).toContain("extra");
+        expect(result).toEqual({
+            ok: true,
+            name: "new-change",
+            path: "/project/change",
+        });
     });
 });

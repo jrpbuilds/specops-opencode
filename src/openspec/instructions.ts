@@ -4,7 +4,7 @@ import { runCaptureStdout } from "../helpers.js";
 import { errorMessage, formatCommandFailure, isRecord } from "./helpers.js";
 import { formatRemediation } from "./remediation.js";
 import type { CaptureStdout } from "./helpers.js";
-import { assertNoExtraFields, assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
+import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
 /** Stable dependency facts exposed by the OpenSpec instructions wrapper. */
 export type NormalizedInstructionDependency = {
@@ -119,11 +119,7 @@ export async function getOpenSpecInstructions(
     try {
         assertShape(parsed, instructionsSchema, "openspec instructions");
         const validated = parsed as Record<string, unknown>;
-        assertNoExtraFields(validated, instructionsSchema, "openspec instructions");
         const dependencies = (validated.dependencies ?? []) as Array<Record<string, unknown>>;
-        for (const dependency of dependencies) {
-            assertNoExtraFields(dependency, dependencySchema, "openspec instructions dependency");
-        }
 
         const outputPath = validated.resolvedOutputPath as string;
         if (!isUsableOutputPath(outputPath)) {

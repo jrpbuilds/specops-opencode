@@ -2,6 +2,15 @@
 
 All notable changes to SpecOps are documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- Revised the OpenSpec compatibility policy to target the latest release and
+  accept older versions whose capability probes still pass. (issue #10)
+- Updated the OpenSpec compatibility target to 1.10.0 and removed the legacy
+  version alias.
+
 ## [v1.1.0] - 2026-08-21
 
 ### Added

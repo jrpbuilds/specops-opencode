@@ -1,7 +1,7 @@
 import { runCaptureStdout } from "../helpers.js";
 import { formatCommandFailure, isRecord } from "./helpers.js";
 import type { CaptureStdout } from "./helpers.js";
-import { assertNoExtraFields, assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
+import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
 /** A deterministic active-change summary reported by OpenSpec. */
 export type OpenSpecActiveChange = {
@@ -77,12 +77,8 @@ export async function getOpenSpecContext(
     try {
         assertShape(parsed, contextSchema, "openspec list");
         const validated = parsed as Record<string, unknown>;
-        assertNoExtraFields(validated, contextSchema, "openspec list");
         const root = validated.root as Record<string, unknown>;
         const changes = validated.changes as Array<Record<string, unknown>>;
-        for (const change of changes) {
-            assertNoExtraFields(change, changeSchema, "openspec list change");
-        }
 
         const activeChanges = changes.map(change => ({
             name: change.name as string,

@@ -57,7 +57,13 @@ export function assertShape(value: unknown, schema: Schema, ctx: string): void {
     }
 }
 
-/** Reject response fields that are outside the wrapper's declared contract. */
+/**
+ * Reject response fields that are outside the wrapper's declared contract.
+ *
+ * This is opt-in and default-off: call it explicitly only where an unknown
+ * field would be unsafe, and record any future opt-in as a decision in its
+ * own change.
+ */
 export function assertNoExtraFields(
     value: Record<string, unknown>,
     schema: Schema,
@@ -91,7 +97,6 @@ function assertField(value: unknown, field: string, spec: FieldSpec, ctx: string
     }
     if (spec.kind === "record" && spec.schema) {
         assertShape(value, spec.schema, `${ctx}.${field}`);
-        assertNoExtraFields(value as Record<string, unknown>, spec.schema, `${ctx}.${field}`);
     }
 }
 

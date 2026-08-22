@@ -256,16 +256,12 @@ describe("getOpenSpecStatus", () => {
         if (!result.ok) expect(result.error).toContain("OPENSPEC_MALFORMED_RESPONSE");
     });
 
-    test("rejects an unexpected response field", async () => {
+    test("accepts an unknown response field as forward-compatible", async () => {
         const result = await getOpenSpecStatus(
             "example",
             "/project",
             captureJson({ ...completeStatus, newerField: true }),
         );
-        expect(result.ok).toBe(false);
-        if (!result.ok) {
-            expect(result.error).toContain("newerField");
-            expect(result.error).toContain("not declared");
-        }
+        expect(result).toEqual({ ok: true, status: normalizedStatus });
     });
 });

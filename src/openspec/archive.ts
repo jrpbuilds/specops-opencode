@@ -1,6 +1,6 @@
 import { runCaptureStdout } from "../helpers.js";
 import { errorMessage, formatCommandFailure, isRecord } from "./helpers.js";
-import { assertNoExtraFields, assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
+import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
 const archiveSchema: Schema = {
     archive: {
@@ -81,9 +81,7 @@ export async function archiveChange(change: string, cwd: string): Promise<OpenSp
         try {
             assertShape(parsed, archiveSchema, "openspec archive");
             const validated = parsed as Record<string, unknown>;
-            assertNoExtraFields(validated, archiveSchema, "openspec archive");
             const archive = validated.archive as Record<string, unknown>;
-            assertNoExtraFields(archive, archiveSchema.archive.schema!, "openspec archive result");
             return {
                 ok: true,
                 archivedAs: archive.archivedAs as string,

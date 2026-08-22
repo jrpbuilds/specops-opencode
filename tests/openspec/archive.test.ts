@@ -124,7 +124,7 @@ describe("archiveChange", () => {
         expect(result).toEqual({ ok: false, error: "OpenSpec archive failed with exit code 1" });
     });
 
-    test("rejects an unexpected success field", async () => {
+    test("accepts an unknown success field as forward-compatible", async () => {
         spyOn(helpers, "runCaptureStdout").mockResolvedValue({
             exitCode: 0,
             stdout: JSON.stringify({
@@ -139,7 +139,10 @@ describe("archiveChange", () => {
             }),
         });
         const result = await archiveChange("example", "/project");
-        expect(result.ok).toBe(false);
-        if (!result.ok) expect(result.error).toContain("extra");
+        expect(result).toEqual({
+            ok: true,
+            archivedAs: "example",
+            path: "/project/archive",
+        });
     });
 });

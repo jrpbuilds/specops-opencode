@@ -1,7 +1,7 @@
 import { runCaptureStdout } from "../helpers.js";
 import { errorMessage, formatCommandFailure, isRecord } from "./helpers.js";
 import type { CaptureStdout } from "./helpers.js";
-import { assertNoExtraFields, assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
+import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
 /** Artifact states reported by the OpenSpec status command. */
 export type OpenSpecArtifactStatus = "done" | "skipped" | "ready" | "blocked";
@@ -81,14 +81,6 @@ const artifactPathSchema: Schema = {
     existingOutputPaths: { kind: "stringArray", required: true },
 };
 
-const artifactSchema: Schema = {
-    id: { kind: "string", required: true },
-    outputPath: { kind: "string", required: true },
-    status: { kind: "string", required: true },
-    requires: { kind: "stringArray", required: true },
-    missingDeps: { kind: "stringArray", required: false },
-};
-
 /** Read and strictly normalize authoritative status for one named change. */
 export async function getOpenSpecStatus(
     change: string,
@@ -125,17 +117,10 @@ export async function getOpenSpecStatus(
     try {
         assertShape(parsed, statusSchema, "openspec status");
         const validated = parsed as Record<string, unknown>;
-        assertNoExtraFields(validated, statusSchema, "openspec status");
         const artifacts = validated.artifacts as Array<Record<string, unknown>> | undefined;
-        if (artifacts) {
-            for (const artifact of artifacts) {
-                assertNoExtraFields(artifact, artifactSchema, "openspec status artifact");
-            }
-        }
         const artifactPaths = validated.artifactPaths as Record<string, Record<string, unknown>>;
         for (const artifactPath of Object.values(artifactPaths)) {
             assertShape(artifactPath, artifactPathSchema, "openspec status artifact path");
-            assertNoExtraFields(artifactPath, artifactPathSchema, "openspec status artifact path");
         }
 
         const normalizedArtifacts: NormalizedArtifact[] = artifacts

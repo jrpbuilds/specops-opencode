@@ -62,7 +62,7 @@ export async function doctor(deps: DoctorDeps): Promise<string> {
                 lines.push(`  missing: ${capability.id} — ${capability.description}`);
             }
             lines.push(
-                `  installed: ${result.incompatible.installedVersion ?? "unknown"} (minimum ${result.incompatible.minimumVersion})`,
+                `  installed: ${result.incompatible.installedVersion ?? "unknown"} (SpecOps targets ${result.incompatible.targetVersion})`,
             );
             lines.push(...result.incompatible.remediation.split("\n"));
         } else if (result.error) {

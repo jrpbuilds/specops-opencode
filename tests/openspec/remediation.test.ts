@@ -12,7 +12,7 @@ const details = {
     issues: "tasks.md: missing checkbox",
     missingCapabilities: "validate-strict-scoped",
     installedVersion: "1.7.0",
-    minimumVersion: "1.8.0",
+    targetVersion: "1.10.0",
 };
 
 describe("formatRemediation", () => {
@@ -33,5 +33,26 @@ describe("formatRemediation", () => {
         expect(output).toContain("Fix:");
         expect(output).toMatch(/\n  1\./);
         expect(output).toContain(fix);
+    });
+
+    test("leads incompatible remediation with the failing capability and both fix paths", () => {
+        const output = formatRemediation("OPENSPEC_INCOMPATIBLE", details);
+        const firstLine = output.split("\n", 1)[0];
+
+        expect(firstLine).toContain("validate-strict-scoped");
+        expect(firstLine).not.toContain("minimum");
+        expect(output).toContain("Install or upgrade to the latest OpenSpec");
+        expect(output).toContain("ensure your OpenSpec install exposes the failing capability");
+        expect(output).toContain("Re-run specops_doctor");
+    });
+
+    test("reports malformed response shapes without an upgrade-first instruction", () => {
+        const output = formatRemediation("OPENSPEC_MALFORMED_RESPONSE", details);
+
+        expect(output).toContain("Report the response shape to SpecOps");
+        expect(output).toContain(
+            "update the supported contract if newer fields should be consumed",
+        );
+        expect(output).not.toContain("  2. Upgrade OpenSpec");
     });
 });
