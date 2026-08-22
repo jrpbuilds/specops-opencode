@@ -2,11 +2,29 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, test } from "bun:test";
+import { buildCoordinatorPrompt } from "../src/agents/coordinator.js";
 import { AGENT_IDS } from "../src/agents/ids.js";
 import { loadPrompt, resolveIncludes } from "../src/prompts.js";
 
 function loadSpecialistPrompt(id: keyof typeof AGENT_IDS): string {
     return loadPrompt(AGENT_IDS[id]);
+}
+
+function expectSyncFlowContract(prompt: string): void {
+    expect(prompt).toContain("## Sync flow");
+    const syncFlowStart = prompt.indexOf("## Sync flow");
+    const syncFlowEnd = prompt.indexOf("## Delegation contract", syncFlowStart);
+    const syncFlow = prompt.slice(syncFlowStart, syncFlowEnd);
+    expect(syncFlow).not.toContain("specops_status");
+    expect(syncFlow).toContain("openspec instructions specs --change <name> --json");
+    expect(syncFlow).toMatch(
+        /canonical source for `existingOutputPaths` and\s+`planningHome\.root`/,
+    );
+    expect(syncFlow).toContain("If `existingOutputPaths` is empty");
+    expect(syncFlow).toMatch(/report\s+"nothing to sync"\s+and stop/);
+    expect(prompt).toContain("specops-implementer");
+    expect(prompt).toContain("merge steps 4a–4d");
+    expect(prompt).toContain("never invoke `openspec archive`");
 }
 
 async function withTempPromptDirectory(run: (directory: string) => Promise<void>): Promise<void> {
@@ -116,6 +134,16 @@ describe("specialist terminal handoff contract", () => {
         const prompt = loadSpecialistPrompt("frontier");
         expect(prompt).toContain("This advice block is terminal");
         expect(prompt).toContain("After emitting it, make no tool calls and emit no further text");
+    });
+});
+
+describe("coordinator sync-flow contract", () => {
+    test("loads the sync flow and its lifecycle invariants", () => {
+        expectSyncFlowContract(loadPrompt(AGENT_IDS.coordinator));
+    });
+
+    test.each(["interactive", "auto"] as const)("%s coordinator includes the sync flow", mode => {
+        expectSyncFlowContract(buildCoordinatorPrompt(mode, false));
     });
 });
 

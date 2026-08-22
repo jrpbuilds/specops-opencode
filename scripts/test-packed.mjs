@@ -43,7 +43,14 @@ try {
 
     assertEqual(
         Object.keys(config.command).sort(),
-        ["specops", "specops-auto", "specops-doctor", "specops-onboard", "specops-update"],
+        [
+            "specops",
+            "specops-auto",
+            "specops-doctor",
+            "specops-onboard",
+            "specops-sync",
+            "specops-update",
+        ],
         "packed command catalogue",
     );
     assert(config.command.specops.agent === "SpecOps", "specops command agent mismatch");
@@ -63,6 +70,14 @@ try {
     assert(
         config.command["specops-update"].template === "$ARGUMENTS",
         "specops-update command template mismatch",
+    );
+    assert(
+        config.command["specops-sync"].agent === "SpecOps",
+        "specops-sync command agent mismatch",
+    );
+    assert(
+        config.command["specops-sync"].template === "$ARGUMENTS",
+        "specops-sync command template mismatch",
     );
     assertEqual(
         Object.keys(hooks.tool).sort(),

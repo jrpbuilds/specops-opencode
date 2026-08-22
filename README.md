@@ -223,6 +223,13 @@ Revises an active change in place from a goal:
 
 The workflow resumes the active change, determines the owning artifact, dispatches the owning specialist with feedback verbatim, reconciles the revision, and re-presents the plan checkpoint if the effective plan changed. (issue #11)
 
+### `/specops-sync`
+
+Synchronizes an active change's delta specs into the main specs without
+archiving it. Use it when a parallel change needs to build on newly defined
+specs, or when you want to review the merged main spec before archive. Archive
+remains the right path once the change is finished and ready to be finalized.
+
 ### `/specops-onboard`
 
 Initialises OpenSpec in the current project.

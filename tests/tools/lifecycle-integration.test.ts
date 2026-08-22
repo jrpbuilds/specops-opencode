@@ -113,6 +113,22 @@ describe("lifecycle tool integration", () => {
         });
     });
 
+    test("registers exactly the current lifecycle tool catalogue", async () => {
+        await withTempDir(async directory => {
+            const hooks = await SpecOpsPlugin(pluginInput(directory));
+
+            expect(Object.keys(hooks.tool ?? {}).sort()).toEqual([
+                "specops_archive",
+                "specops_context",
+                "specops_create_change",
+                "specops_doctor",
+                "specops_onboard",
+                "specops_status",
+                "specops_validate_change",
+            ]);
+        });
+    });
+
     test("every registered SpecOps tool performs the lifecycle check", async () => {
         await withTempDir(async directory => {
             const hooks = await SpecOpsPlugin(pluginInput(directory));

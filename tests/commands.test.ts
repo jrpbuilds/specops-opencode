@@ -68,6 +68,7 @@ describe("SpecOps server plugin", () => {
                     "specops-auto",
                     "specops-doctor",
                     "specops-onboard",
+                    "specops-sync",
                     "specops-update",
                 ]);
                 expect(config.command).toEqual(COMMANDS);
@@ -84,6 +85,12 @@ describe("SpecOps server plugin", () => {
                 });
                 expect(config.command?.["specops-update"]).toEqual({
                     description: "Revise an active SpecOps change's planning artifacts in place",
+                    agent: SPECOPS_AGENT_ID,
+                    template: "$ARGUMENTS",
+                });
+                expect(config.command?.["specops-sync"]).toEqual({
+                    description:
+                        "Synchronize an active SpecOps change's delta specs into main specs without archiving it.",
                     agent: SPECOPS_AGENT_ID,
                     template: "$ARGUMENTS",
                 });

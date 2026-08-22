@@ -15,6 +15,8 @@ All notable changes to SpecOps are documented in this file.
 
 - Added `/specops-update`, so users can revise an active change in place without
   losing completed planning work. (issue #11)
+- Added `/specops-sync`, so users can sync an active change's delta specs into
+  main specs without archiving it. (issue #12)
 
 ## [v1.1.0] - 2026-08-21
 

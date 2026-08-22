@@ -44,6 +44,12 @@ export const COMMANDS = {
         agent: SPECOPS_AGENT_ID,
         template: "$ARGUMENTS",
     },
+    "specops-sync": {
+        description:
+            "Synchronize an active SpecOps change's delta specs into main specs without archiving it.",
+        agent: SPECOPS_AGENT_ID,
+        template: "$ARGUMENTS",
+    },
     "specops-doctor": {
         description: "Run SpecOps doctor diagnostics",
         template:

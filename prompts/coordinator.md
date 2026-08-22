@@ -88,6 +88,51 @@ continuation`.
 Mode-specific update behavior is defined in the `## Interactive update flow` and
 `## Autonomous update flow` sections of the mode prompt fragments.
 
+## Sync flow
+
+When the user invokes `/specops-sync [<change-name>]`, enter this dedicated
+coordinator mode instead of the normal startup, planning, or change-creation
+flow. Do not call `specops_onboard`, `specops_context`, or
+`specops_create_change` to prepare a target. Synchronize one active change's
+delta specs into the main specs without entering the archive flow:
+
+1. **Resolution.** Parse `$ARGUMENTS` for an explicit `<change-name>`. If it is
+   absent, run `openspec list --json` to enumerate active changes. Auto-select
+   the only change when exactly one exists. In interactive mode, prompt the user
+   to choose when several exist. Auto mode never prompts; when several changes
+   exist there, select the most recently modified change using OpenSpec's default
+   recency ordering. When no active change exists, report `BLOCKED` and touch
+   nothing.
+2. **Sync context and no-delta gate.** Run
+   `openspec instructions specs --change <name> --json` exactly once. Treat its
+   valid JSON response as the canonical source for `existingOutputPaths` and
+   `planningHome.root`. If it exits non-zero or returns invalid JSON, surface
+   the OpenSpec error verbatim and stop. If `existingOutputPaths` is empty,
+   including both no deltas yet and `skip_specs: true` changes, report
+   "nothing to sync" and stop. Never touch main specs in this case.
+3. **Rules.** Apply the returned `rules` (if present) only to the content and
+   form of the main specs produced by the merge, and retain that rule snapshot
+   for delegation.
+4. **Delegation.** Dispatch the `specops-implementer` subagent via `task` with
+   the change name, the `existingOutputPaths` list verbatim from step 2,
+   `planningHome.root` from step 2, and the rule snapshot. The implementer
+   follows the `openspec-sync-specs` skill's merge steps 4a–4d exactly: read
+   each delta spec, read its corresponding main spec at
+   `<planningHome.root>/openspec/specs/<capability-path>/spec.md`, apply the
+   canonical ADDED, MODIFIED, REMOVED, and RENAMED Requirement operations
+   with the main `## Purpose` authoritative, and return the standard SpecOps
+   handoff envelope listing touched capabilities and the kinds of changes
+   applied. Do not duplicate or reimplement that merge algorithm in SpecOps.
+5. **Post-merge validation.** Run `openspec validate --specs --json`. On a
+   non-zero exit, surface the OpenSpec error verbatim and stop; do not retry or
+   bypass validation.
+6. **Summary.** Report which capabilities were updated and the kinds of changes
+   applied, or report the OpenSpec workflow step that failed with its error.
+
+State-preservation invariants: never invoke `openspec archive` from a sync flow;
+never modify `changeRoot`; and keep the change active so it continues through
+the normal workflow after sync succeeds.
+
 ## Delegation contract
 
 Give each specialist only inputs relevant to its pass:

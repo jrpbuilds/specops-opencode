@@ -75,11 +75,11 @@ describe("coordinator prompt composition", () => {
     });
 
     test("assembled prompts stay within regression budgets", () => {
-        // Update-flow policy adds shared, interactive, and autonomous prompt sections.
-        expect(buildCoordinatorPrompt("interactive", false).length).toBeLessThan(22_000);
-        expect(buildCoordinatorPrompt("auto", false).length).toBeLessThan(19_000);
-        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(24_000);
-        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(20_500);
+        // Update and sync policies add shared, interactive, and autonomous prompt sections.
+        expect(buildCoordinatorPrompt("interactive", false).length).toBeLessThan(25_000);
+        expect(buildCoordinatorPrompt("auto", false).length).toBeLessThan(22_000);
+        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(27_000);
+        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(23_500);
     });
 });
 
@@ -716,7 +716,9 @@ describe("coordinator registration", () => {
             "*": "deny",
             "openspec --help": "allow",
             "openspec * --help": "allow",
+            "openspec list *": "allow",
             "openspec instructions *": "allow",
+            "openspec validate *": "allow",
             "openspec change show *": "allow",
         });
         expect(autoPermission.bash).toEqual(interactivePermission.bash);
