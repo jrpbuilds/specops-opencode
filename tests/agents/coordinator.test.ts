@@ -75,10 +75,11 @@ describe("coordinator prompt composition", () => {
     });
 
     test("assembled prompts stay within regression budgets", () => {
-        expect(buildCoordinatorPrompt("interactive", false).length).toBeLessThan(19_100);
-        expect(buildCoordinatorPrompt("auto", false).length).toBeLessThan(16_000);
-        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(21_000);
-        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(18_000);
+        // Update-flow policy adds shared, interactive, and autonomous prompt sections.
+        expect(buildCoordinatorPrompt("interactive", false).length).toBeLessThan(22_000);
+        expect(buildCoordinatorPrompt("auto", false).length).toBeLessThan(19_000);
+        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(24_000);
+        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(20_500);
     });
 });
 
@@ -570,6 +571,79 @@ describe("Auto coordinator contract", () => {
         expect(prompt).toContain("`BLOCKED`");
         expect(prompt).toContain("stopped at: <workflow phase>");
         expect(prompt).toContain("to continue: <required information or action>");
+    });
+});
+
+describe("specops-update contract (issue #11)", () => {
+    const interactive = buildCoordinatorPrompt("interactive", false);
+    const auto = buildCoordinatorPrompt("auto", false);
+
+    function section(prompt: string, header: string): string {
+        const marker = `\n${header}\n`;
+        const markerStart = prompt.indexOf(marker);
+        expect(markerStart).toBeGreaterThanOrEqual(0);
+        const start = markerStart + 1;
+        const nextHeader = prompt.indexOf("\n## ", start + header.length);
+        return prompt.slice(start, nextHeader === -1 ? prompt.length : nextHeader);
+    }
+
+    test("composes shared and mode-specific update sections", () => {
+        expect(interactive).toContain("## Update flow");
+        expect(interactive).toContain("## Interactive update flow");
+        expect(auto).toContain("## Update flow");
+        expect(auto).toContain("## Autonomous update flow");
+    });
+
+    test("documents ownership, intent refusal, and fresh approval", () => {
+        for (const prompt of [interactive, auto]) {
+            expect(prompt).toContain(
+                "`proposal`/`specs`/`tasks` → `specops-planner`; `design` → `specops-designer`",
+            );
+            expect(prompt).toContain("Plan intent changed");
+            expect(prompt).toContain("feedback verbatim");
+            expect(prompt).toContain("`- [x]` task completion state");
+            expect(prompt).toContain("`## Reconciling revised planning artifacts`");
+        }
+
+        expect(interactive).toContain("re-present the existing `Plan ready` checkpoint");
+        expect(auto).toContain("`## Autonomous plan continuation`");
+    });
+
+    test("resolves active changes without auto-creating and blocks when none exist", () => {
+        for (const prompt of [interactive, auto]) {
+            expect(prompt).toContain("reusing `specops_context` and `specops_status`");
+            expect(prompt).toContain("never call `specops_create_change`");
+            expect(prompt).toContain("no active");
+            expect(prompt).toContain("stop `BLOCKED`");
+            expect(prompt).toContain("Never auto-create a change");
+        }
+    });
+
+    test("documents mode-specific ambiguous active-change handling", () => {
+        expect(interactive).toContain("multiple active changes are found");
+        expect(interactive).toContain("native single-select question");
+        expect(auto).toContain("most recently modified active change");
+        expect(auto).toContain("Do not use the `question` tool");
+    });
+
+    test("does not add tools, parallel commands, or a replacement workflow", () => {
+        for (const prompt of [interactive, auto]) {
+            expect(prompt).not.toContain("specops_update");
+            expect(prompt).not.toContain("specops-update-auto");
+            expect(prompt).not.toContain("## Workflow state machine");
+            expect(prompt).not.toContain("proposal → specs → design → tasks");
+        }
+    });
+
+    test("references reconciliation instead of duplicating its rule body", () => {
+        const sharedUpdate = section(interactive, "## Update flow");
+        const autoUpdate = section(auto, "## Autonomous update flow");
+
+        expect(sharedUpdate).toContain("## Reconciling revised planning artifacts");
+        expect(sharedUpdate).not.toContain("downstream reverse-dependency reachability");
+        expect(sharedUpdate).not.toContain("requirements-role→design-role→tasks-role");
+        expect(autoUpdate).toContain("## Autonomous reconciliation");
+        expect(autoUpdate).not.toContain("Triggers are deterministic and revision-originated only");
     });
 });
 

@@ -213,6 +213,16 @@ Useful for headless runs:
 opencode run --auto --command specops-auto "<goal>"
 ```
 
+### `/specops-update <revision>`
+
+Revises an active change in place from a goal:
+
+```text
+/specops-update <revision>
+```
+
+The workflow resumes the active change, determines the owning artifact, dispatches the owning specialist with feedback verbatim, reconciles the revision, and re-presents the plan checkpoint if the effective plan changed. (issue #11)
+
 ### `/specops-onboard`
 
 Initialises OpenSpec in the current project.

@@ -11,6 +11,11 @@ All notable changes to SpecOps are documented in this file.
 - Updated the OpenSpec compatibility target to 1.10.0 and removed the legacy
   version alias.
 
+### Added
+
+- Added `/specops-update`, so users can revise an active change in place without
+  losing completed planning work. (issue #11)
+
 ## [v1.1.0] - 2026-08-21
 
 ### Added

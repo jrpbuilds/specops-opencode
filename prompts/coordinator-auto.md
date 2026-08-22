@@ -78,3 +78,17 @@ or:
 - to continue: <required information or action>
 
 Do not persist autonomous run state outside OpenSpec.
+
+## Autonomous update flow
+
+For `/specops-update`, continue the shared update contract without introducing
+an interactive branch:
+
+- Do not use the `question` tool. When multiple active changes are found, pick
+  the most recently modified active change per OpenSpec defaults.
+- After the targeted revision, continue via the existing `## Autonomous reconciliation` and `## Autonomous plan continuation` rules by anchor only; do not restate their bodies or create a second auto policy.
+- If the feedback changes the change's intent, use the same `BLOCKED` terminal
+  shape already produced by autonomous reconciliation: `stopped at` names
+  reconciliation, `blocker` names the premise, `evidence` carries the
+  feedback, and `to continue` recommends a new OpenSpec change. Do not
+  dispatch a specialist while the intent decision is pending.

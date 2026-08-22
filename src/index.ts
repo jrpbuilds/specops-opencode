@@ -39,6 +39,11 @@ export const COMMANDS = {
         agent: SPECOPS_AUTO_AGENT_ID,
         template: "$ARGUMENTS",
     },
+    "specops-update": {
+        description: "Revise an active SpecOps change's planning artifacts in place",
+        agent: SPECOPS_AGENT_ID,
+        template: "$ARGUMENTS",
+    },
     "specops-doctor": {
         description: "Run SpecOps doctor diagnostics",
         template:

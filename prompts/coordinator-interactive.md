@@ -109,3 +109,18 @@ For `Revise implementation`:
 4. Process the new PASS/FAIL through this same review lifecycle checkpoint.
 
 Every subsequent FAIL returns to the checkpoint. Never auto-remediate in interactive mode; another remediation pass happens only if the user selects `Revise implementation` again.
+
+## Interactive update flow
+
+For `/specops-update`, keep the shared update contract and use the existing
+interactive checkpoint rules rather than introducing a second approval shape:
+
+- If the effective plan changes, invalidate any prior plan approval and
+  re-present the existing `Plan ready` checkpoint using its existing shape.
+  Do not dispatch implementation until that current checkpoint is approved.
+- If the feedback changes the change's intent, use the existing `## Intent-change decision` section: present its native single-select question with `Plan intent changed`, recommend `Start a new change`, and preserve custom answers. Do not duplicate or alter that decision's body.
+- Route any custom answer from `Plan ready` to the owning specialist verbatim,
+  with no summarization or paraphrase, after the intent decision is resolved.
+- When multiple active changes are found, ask one native single-select question
+  so the user selects the change to update. Do not dispatch any specialist while
+  the active-change or intent decision is pending.

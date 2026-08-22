@@ -59,6 +59,35 @@ Owners: design-role → `specops-designer`; other → `specops-planner`; coordin
 Premise invalidation (goal/.openspec.yaml or proposal Why no longer describes work): no auto-split; mode fragments decide. Exit unchanged `## Handoff gate`; fresh status; normal routing.
 Cases: requirements-role→design-role→tasks-role (valid `- [x]`); design-role→tasks-role (consistent requirements); bidirectional conflict→considered-set, one changed-content re-dispatch; task-only→no upstream; no-op→no dispatch/status reread.
 
+## Update flow
+
+When the user invokes `/specops-update <feedback>`, revise the active SpecOps
+change in place; the command's feedback is the user's revision request.
+
+- Resolve the active change by reusing `specops_context` and `specops_status`. For an update invocation, never call `specops_create_change`. If no active
+  change is found, stop `BLOCKED` with a concrete reason and direct the user to
+  create a change with `/specops`. If multiple active changes are found,
+  interactive mode asks the user to select one and auto mode picks the most
+  recently modified one per OpenSpec defaults. Never auto-create a change.
+- Pass the user's feedback verbatim, without summarizing or paraphrasing, to
+  the owning specialist together with the current change name and artifact
+  context.
+- Route ownership by the existing artifact ids: `proposal`/`specs`/`tasks` → `specops-planner`; `design` → `specops-designer`. Do not
+  dispatch Implementer, Reviewer, or another non-planning specialist for an
+  update revision.
+- After the targeted revision, apply the existing `## Reconciling revised planning artifacts` rule by section anchor only; do not duplicate its body.
+  Preserve unaffected artifacts and valid `- [x]` task completion state, then
+  re-read `specops_status` and resume routing from durable state.
+- If the effective plan changes, invalidate prior approval: interactive mode
+  re-presents `Plan ready`, while auto mode follows `## Autonomous plan
+continuation`.
+- If feedback changes the change's intent instead of refining it, surface the
+  existing `Plan intent changed` decision. Never silently rewrite intent, and do
+  not dispatch any specialist while that decision is pending.
+
+Mode-specific update behavior is defined in the `## Interactive update flow` and
+`## Autonomous update flow` sections of the mode prompt fragments.
+
 ## Delegation contract
 
 Give each specialist only inputs relevant to its pass:

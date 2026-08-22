@@ -68,6 +68,7 @@ describe("SpecOps server plugin", () => {
                     "specops-auto",
                     "specops-doctor",
                     "specops-onboard",
+                    "specops-update",
                 ]);
                 expect(config.command).toEqual(COMMANDS);
                 expect(config.command?.specops).toEqual({
@@ -79,6 +80,11 @@ describe("SpecOps server plugin", () => {
                     description:
                         "Run a goal under the SpecOps Auto coordinator (autonomous, no human checkpoints)",
                     agent: SPECOPS_AUTO_AGENT_ID,
+                    template: "$ARGUMENTS",
+                });
+                expect(config.command?.["specops-update"]).toEqual({
+                    description: "Revise an active SpecOps change's planning artifacts in place",
+                    agent: SPECOPS_AGENT_ID,
                     template: "$ARGUMENTS",
                 });
                 expect(Object.keys(hooks.tool ?? {}).sort()).toEqual([
