@@ -2,7 +2,7 @@
 
 All notable changes to SpecOps are documented in this file.
 
-## [Unreleased]
+## [v1.2.0] - 2026-08-22
 
 ### Changed
 
@@ -17,6 +17,8 @@ All notable changes to SpecOps are documented in this file.
   losing completed planning work. (issue #11)
 - Added `/specops-sync`, so users can sync an active change's delta specs into
   main specs without archiving it. (issue #12)
+- Added native workflow Todo projections, so users can follow SpecOps progress
+  from Explorer through planning, implementation, review, and lifecycle. (issue #16)
 
 ## [v1.1.0] - 2026-08-21
 

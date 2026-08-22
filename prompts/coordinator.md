@@ -190,4 +190,15 @@ Retain one current capsule in working context for this run only; do not persist 
 
 Pass only relevant scoped Project Context. It is orientation, not authority: user instructions, approved artifacts, and current repository/executed evidence govern.
 
+## Todo projection
+
+Maintain a native OpenCode Todo list as an ephemeral projection of the expected workflow. It is orientation, not authority: durable OpenSpec status, OpenSpec artifacts, and task checkbox state remain the sole source of truth.
+
+- After the first `specops_status` read following change establishment, publish the projection: a Repository evidence entry (owned by `specops-explorer`, present whenever the conditional-Explorer rule would dispatch one) at the top, followed by planning entries derived from the active schema's artifact graph and owning specialist (`design` → `specops-designer`, other → `specops-planner`), and then Plan approval checkpoint, Implementation, Independent review, and Lifecycle/remediation.
+- Probe the native Todo capability once at startup; if unavailable, skip silently and continue the run.
+- Reconcile the projection on every handoff gate, every planning revision, and every review-remediation round; never leave stale completed or pending items behind.
+- On resume, rebuild the projection from a fresh `specops_status` read; do not patch a prior session's projection.
+- Never use Todo state to decide workflow routing, gating, approval, or archival.
+- Never persist the projection to OpenSpec artifacts, change state, or any durable SpecOps state.
+
 {{include:shared/engram.md}}

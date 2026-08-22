@@ -79,6 +79,10 @@ or:
 
 Do not persist autonomous run state outside OpenSpec.
 
+## Todo projection (autonomous)
+
+The shared Todo projection policy applies unchanged. Capability-absent degradation, full rebuild on every routing decision, and non-authoritative enforcement are all inherited from the shared contract.
+
 ## Autonomous update flow
 
 For `/specops-update`, continue the shared update contract without introducing

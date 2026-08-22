@@ -76,10 +76,50 @@ describe("coordinator prompt composition", () => {
 
     test("assembled prompts stay within regression budgets", () => {
         // Update and sync policies add shared, interactive, and autonomous prompt sections.
-        expect(buildCoordinatorPrompt("interactive", false).length).toBeLessThan(25_000);
-        expect(buildCoordinatorPrompt("auto", false).length).toBeLessThan(22_000);
-        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(27_000);
-        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(23_500);
+        expect(buildCoordinatorPrompt("interactive", false).length).toBeLessThan(27_000);
+        expect(buildCoordinatorPrompt("auto", false).length).toBeLessThan(24_000);
+        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(29_000);
+        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(26_000);
+    });
+});
+
+describe("Todo projection contract", () => {
+    test("both coordinator modes include the projection contract", () => {
+        const interactive = buildCoordinatorPrompt("interactive", false);
+        const auto = buildCoordinatorPrompt("auto", false);
+
+        expect(interactive).toContain("## Todo projection");
+        expect(auto).toContain("## Todo projection");
+        expect(auto).toContain("## Todo projection (autonomous)");
+        expect(interactive).toContain("Repository evidence");
+        expect(interactive).toContain("specops-explorer");
+    });
+
+    test("degrades silently when the native capability is unavailable", () => {
+        expect(buildCoordinatorPrompt("interactive", false)).toContain(
+            "Probe the native Todo capability once at startup; if unavailable, skip silently",
+        );
+        expect(buildCoordinatorPrompt("auto", false)).toContain("Capability-absent degradation");
+    });
+
+    test("keeps Todo state non-authoritative and ephemeral", () => {
+        for (const prompt of [
+            buildCoordinatorPrompt("interactive", false),
+            buildCoordinatorPrompt("auto", false),
+        ]) {
+            expect(prompt).toContain("Never use Todo state to decide workflow routing");
+            expect(prompt).toContain("Never persist the projection");
+        }
+    });
+
+    test("rebuilds and reconciles from durable status", () => {
+        const prompt = buildCoordinatorPrompt("interactive", false);
+
+        expect(prompt).toContain("Reconcile the projection on every handoff gate");
+        expect(prompt).toContain("every planning revision");
+        expect(prompt).toContain("every review-remediation round");
+        expect(prompt).toContain("On resume, rebuild the projection");
+        expect(prompt).toContain("fresh `specops_status` read");
     });
 });
 
