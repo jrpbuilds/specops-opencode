@@ -11,10 +11,10 @@ describe("ROLE_CAPABILITY_POLICY", () => {
         expect(Object.keys(ROLE_CAPABILITY_POLICY).sort()).toEqual([...ALL_AGENT_IDS].sort());
     });
 
-    test("every entry contains only the four capability fields", () => {
+    test("every entry contains only the three capability fields", () => {
         for (const entry of Object.values(ROLE_CAPABILITY_POLICY)) {
             expect([...Object.keys(entry)].sort()).toEqual(
-                ["external_directory", "doom_loop", "edit", "bash"].sort(),
+                ["external_directory", "edit", "bash"].sort(),
             );
         }
     });
@@ -28,18 +28,22 @@ describe("ROLE_CAPABILITY_POLICY", () => {
         }
     });
 
-    test("external_directory and doom_loop are always allow or deny (never ask)", () => {
+    test("no entry contains host runtime guard keys", () => {
+        for (const entry of Object.values(ROLE_CAPABILITY_POLICY)) {
+            expect("doom_loop" in entry).toBe(false);
+        }
+    });
+
+    test("external_directory is always allow or deny (never ask)", () => {
         for (const entry of Object.values(ROLE_CAPABILITY_POLICY)) {
             expect(entry.external_directory).toMatch(/^(allow|deny)$/);
-            expect(entry.doom_loop).toMatch(/^(allow|deny)$/);
         }
     });
 });
 
-test("RoleCapabilityShape rejects ask for external_directory/doom_loop at typecheck time", () => {
+test("RoleCapabilityShape rejects ask for external_directory at typecheck time", () => {
     const valid: RoleCapabilityShape = {
         external_directory: "allow",
-        doom_loop: "deny",
         edit: "allow",
         bash: "allow",
     };

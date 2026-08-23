@@ -1,11 +1,14 @@
 import type { Config } from "@opencode-ai/plugin";
-import { SPECOPS_AGENT_ID, SPECOPS_AUTO_AGENT_ID } from "./coordinator.js";
+import { SPECOPS_AGENT_ID, SPECOPS_AUTO_AGENT_ID } from "../agents/coordinator.js";
 import {
     ORDINARY_LIFECYCLE_PERMISSION,
     SPECOPS_LIFECYCLE_PERMISSION,
     SPECOPS_TASK_GLOB,
     denyTaskGlob,
-} from "./permissions.js";
+} from "../agents/permissions.js";
+
+/** OpenCode's narrower SDK permission shape for one registered agent. */
+export type RolePermission = NonNullable<NonNullable<Config["agent"]>[string]>["permission"];
 
 /**
  * Whether an agent key belongs to the SpecOps workflow itself (a coordinator or

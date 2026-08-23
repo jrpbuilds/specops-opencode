@@ -1,68 +1,20 @@
 import type { Config, Plugin } from "@opencode-ai/plugin";
 import { loadConfig } from "./config.js";
+import { applyCommands } from "./host/commands.js";
 import {
     registerAutoCoordinatorAgent,
     registerCoordinatorAgent,
-    SPECOPS_AGENT_ID,
-    SPECOPS_AUTO_AGENT_ID,
-} from "./agents/coordinator.js";
-import { registerExplorerAgent } from "./agents/explorer.js";
-import { registerPlannerAgent } from "./agents/planner.js";
-import { registerDesignerAgent } from "./agents/designer.js";
-import { registerImplementerAgent } from "./agents/implementer.js";
-import { registerReviewerAgent } from "./agents/reviewer.js";
-import { registerFrontierAgent } from "./agents/frontier.js";
-import { applyLifecycleBoundary, applyTaskBoundary } from "./agents/boundary.js";
-import { doctorTool } from "./tools/doctor.js";
-import { onboardTool } from "./tools/onboard.js";
-import { archiveTool } from "./tools/archive.js";
-import { contextTool } from "./tools/context.js";
-import { createChangeTool } from "./tools/create-change.js";
-import { statusTool } from "./tools/status.js";
-import { validateChangeTool } from "./tools/validate-change.js";
+    registerDesignerAgent,
+    registerExplorerAgent,
+    registerFrontierAgent,
+    registerImplementerAgent,
+    registerPlannerAgent,
+    registerReviewerAgent,
+} from "./host/agents.js";
+import { applyLifecycleBoundary, applyTaskBoundary } from "./host/permissions.js";
+import { TOOLS } from "./host/tools.js";
 
-/**
- * Slash commands installed by the plugin.
- *
- * Lifecycle tools such as archive are intentionally not duplicated as slash
- * commands; the Coordinator invokes them when the workflow reaches that step.
- */
-export const COMMANDS = {
-    specops: {
-        description: "Run a goal under the SpecOps coordinator",
-        agent: SPECOPS_AGENT_ID,
-        template: "$ARGUMENTS",
-    },
-    "specops-auto": {
-        description:
-            "Run a goal under the SpecOps Auto coordinator (autonomous, no human checkpoints)",
-        agent: SPECOPS_AUTO_AGENT_ID,
-        template: "$ARGUMENTS",
-    },
-    "specops-update": {
-        description: "Revise an active SpecOps change's planning artifacts in place",
-        agent: SPECOPS_AGENT_ID,
-        template: "$ARGUMENTS",
-    },
-    "specops-sync": {
-        description:
-            "Synchronize an active SpecOps change's delta specs into main specs without archiving it.",
-        agent: SPECOPS_AGENT_ID,
-        template: "$ARGUMENTS",
-    },
-    "specops-doctor": {
-        description: "Run SpecOps doctor diagnostics",
-        template:
-            "Call the specops_doctor tool to run SpecOps diagnostics, then report its " +
-            "result to the user.",
-    },
-    "specops-onboard": {
-        description: "Onboard the current project for OpenSpec",
-        template:
-            "Call the specops_onboard tool to onboard the current project for OpenSpec, then " +
-            "report its result to the user.",
-    },
-} satisfies NonNullable<Config["command"]>;
+export { COMMANDS } from "./host/commands.js";
 
 /**
  * Build the OpenCode plugin hooks for commands, agents, and deterministic tools.
@@ -73,8 +25,7 @@ export const COMMANDS = {
  */
 export const SpecOpsPlugin: Plugin = async () => ({
     config: async (config: Config) => {
-        config.command ??= {};
-        Object.assign(config.command, COMMANDS);
+        applyCommands(config);
 
         // Apply host-agent boundaries before registering SpecOps roles so those
         // roles can provide their own explicit permission overrides.
@@ -102,15 +53,7 @@ export const SpecOpsPlugin: Plugin = async () => ({
             );
         }
     },
-    tool: {
-        specops_archive: archiveTool,
-        specops_context: contextTool,
-        specops_create_change: createChangeTool,
-        specops_doctor: doctorTool,
-        specops_onboard: onboardTool,
-        specops_status: statusTool,
-        specops_validate_change: validateChangeTool,
-    },
+    tool: TOOLS,
 });
 
 /**

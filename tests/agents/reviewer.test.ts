@@ -1,7 +1,8 @@
 import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
-import { REVIEWER_AGENT_ID, registerReviewerAgent } from "../../src/agents/reviewer.js";
+import { REVIEWER_AGENT_ID } from "../../src/agents/reviewer.js";
+import { registerReviewerAgent } from "../../src/host/agents.js";
 import { REVIEWER_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";

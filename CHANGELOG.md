@@ -2,6 +2,19 @@
 
 All notable changes to SpecOps are documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- Loop detection no longer ends a `/specops` phase without warning. Interactive
+  runs now pause and ask whether to continue; autonomous runs still stop right
+  away rather than waiting for an answer that will never arrive.
+- Explorer, planner, designer, and frontier subagents recover from repeated
+  failed tool calls instead of abandoning their pass midway.
+- Internal restructuring isolates the OpenCode integration behind a small
+  adapter layer, keeping behaviour identical today while making future OpenCode
+  2 compatibility work much smaller.
+
 ## [v1.3.0] - 2026-08-23
 
 ### Added

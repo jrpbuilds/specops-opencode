@@ -13,7 +13,7 @@ import {
     applyLifecycleBoundary,
     applyTaskBoundary,
     isSpecOpsAgentKey,
-} from "../../src/agents/boundary.js";
+} from "../../src/host/permissions.js";
 import {
     ORDINARY_LIFECYCLE_PERMISSION,
     SPECOPS_LIFECYCLE_PERMISSION,

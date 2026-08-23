@@ -3,11 +3,10 @@ import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import {
     buildCoordinatorPrompt,
-    registerAutoCoordinatorAgent,
-    registerCoordinatorAgent,
     SPECOPS_AGENT_ID,
     SPECOPS_AUTO_AGENT_ID,
 } from "../../src/agents/coordinator.js";
+import { registerAutoCoordinatorAgent, registerCoordinatorAgent } from "../../src/host/agents.js";
 import {
     COORDINATOR_PERMISSION,
     SPECOPS_LIFECYCLE_PERMISSION,
@@ -750,7 +749,7 @@ describe("coordinator registration", () => {
         expect(autoPermission.question).toBe("deny");
         expect(interactivePermission.external_directory).toBe("deny");
         expect(autoPermission.external_directory).toBe("deny");
-        expect(interactivePermission.doom_loop).toBe("deny");
+        expect(interactivePermission.doom_loop).toBeUndefined();
         expect(autoPermission.doom_loop).toBe("deny");
         expect(interactivePermission.bash).toEqual({
             "*": "deny",

@@ -1,7 +1,8 @@
 import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
-import { FRONTIER_AGENT_ID, registerFrontierAgent } from "../../src/agents/frontier.js";
+import { FRONTIER_AGENT_ID } from "../../src/agents/frontier.js";
+import { registerFrontierAgent } from "../../src/host/agents.js";
 import { FRONTIER_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";

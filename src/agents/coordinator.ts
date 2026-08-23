@@ -1,13 +1,8 @@
-import type { Config } from "@opencode-ai/plugin";
 import { loadPrompt, loadPromptFile } from "../prompts.js";
 import { AGENT_IDS } from "./ids.js";
-import { COORDINATOR_PERMISSION, SPECOPS_TASK_ALLOW, type RolePermission } from "./permissions.js";
+import { COORDINATOR_PERMISSION, SPECOPS_TASK_ALLOW } from "./permissions.js";
 import type { SpecOpsConfig } from "../config.js";
-
-type RegisteredAgentConfig = NonNullable<NonNullable<Config["agent"]>[string]>;
-type CoordinatorAgentConfig = Omit<RegisteredAgentConfig, "permission"> & {
-    permission: RolePermission;
-};
+import type { SpecOpsAgentDefinition } from "./definition.js";
 
 export type CoordinatorMode = "interactive" | "auto";
 
@@ -39,19 +34,28 @@ export function buildCoordinatorPrompt(mode: CoordinatorMode, frontierEscalation
     return fragments.join("\n\n");
 }
 
+function coordinatorModelFields(specOpsConfig: SpecOpsConfig) {
+    const coordinator = specOpsConfig.agents[AGENT_IDS.coordinator];
+    const model = coordinator.model?.trim();
+    return model ? { model, ...(coordinator.variant ? { variant: coordinator.variant } : {}) } : {};
+}
+
 /**
- * Register the interactive SpecOps primary agent.
+ * Build the interactive SpecOps primary agent definition.
  *
  * A blank coordinator model means "use OpenCode's global default", so model
  * and variant fields are omitted. Native question permission is explicitly
  * allowed because this mode owns plan, decision, and lifecycle checkpoints.
+ *
+ * The runtime loop guard is intentionally NOT pinned here: an interactive
+ * session has a human present, so OpenCode's configured default (`ask`)
+ * governs loop detection instead of a silent abort.
  */
-export function registerCoordinatorAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    config.agent ??= {};
-    const coordinator = specOpsConfig.agents[AGENT_IDS.coordinator];
-    const model = coordinator.model?.trim();
-
-    const agent: CoordinatorAgentConfig = {
+export function interactiveCoordinatorAgentDefinition(
+    specOpsConfig: SpecOpsConfig,
+): SpecOpsAgentDefinition {
+    return {
+        id: SPECOPS_AGENT_ID,
         description: "SpecOps coordinator for spec-driven development",
         mode: "primary",
         prompt: buildCoordinatorPrompt("interactive", specOpsConfig.frontierEscalation),
@@ -59,27 +63,27 @@ export function registerCoordinatorAgent(config: Config, specOpsConfig: SpecOpsC
             ...COORDINATOR_PERMISSION,
             question: "allow",
             task: SPECOPS_TASK_ALLOW,
-        } as unknown as RolePermission,
-        ...(model
-            ? { model, ...(coordinator.variant ? { variant: coordinator.variant } : {}) }
-            : {}),
+        },
+        ...coordinatorModelFields(specOpsConfig),
     };
-    config.agent[SPECOPS_AGENT_ID] = agent as RegisteredAgentConfig;
 }
 
 /**
- * Register the autonomous SpecOps Auto primary agent.
+ * Build the autonomous SpecOps Auto primary agent definition.
  *
  * Auto receives the shared workflow plus only the autonomous policy. Runtime
  * question denial provides a second hard boundary against accidental human
  * checkpoints in headless operation. Auto shares the coordinator model config.
+ *
+ * The runtime loop guard is pinned to deny because headless runs cannot answer
+ * permission asks (opencode#35073, #12566, #30527): an ask would deadlock the
+ * run, so detection ends the turn deterministically instead.
  */
-export function registerAutoCoordinatorAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    config.agent ??= {};
-    const coordinator = specOpsConfig.agents[AGENT_IDS.coordinator];
-    const model = coordinator.model?.trim();
-
-    const agent: CoordinatorAgentConfig = {
+export function autoCoordinatorAgentDefinition(
+    specOpsConfig: SpecOpsConfig,
+): SpecOpsAgentDefinition {
+    return {
+        id: SPECOPS_AUTO_AGENT_ID,
         description:
             "Autonomous SpecOps coordinator for headless runs: executes the SpecOps workflow " +
             "without human checkpoints. Use via the specops-auto command.",
@@ -89,10 +93,8 @@ export function registerAutoCoordinatorAgent(config: Config, specOpsConfig: Spec
             ...COORDINATOR_PERMISSION,
             question: "deny",
             task: SPECOPS_TASK_ALLOW,
-        } as unknown as RolePermission,
-        ...(model
-            ? { model, ...(coordinator.variant ? { variant: coordinator.variant } : {}) }
-            : {}),
+            doom_loop: "deny",
+        },
+        ...coordinatorModelFields(specOpsConfig),
     };
-    config.agent[SPECOPS_AUTO_AGENT_ID] = agent as RegisteredAgentConfig;
 }

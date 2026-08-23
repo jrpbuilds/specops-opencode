@@ -1,7 +1,8 @@
 import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
-import { PLANNER_AGENT_ID, registerPlannerAgent } from "../../src/agents/planner.js";
+import { PLANNER_AGENT_ID } from "../../src/agents/planner.js";
+import { registerPlannerAgent } from "../../src/host/agents.js";
 import { PLANNER_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import type { SpecOpsConfig } from "../../src/config.js";

@@ -1,38 +1,38 @@
-import type { Config } from "@opencode-ai/plugin";
 import { loadPrompt } from "../prompts.js";
 import { AGENT_IDS } from "./ids.js";
-import { DESIGNER_PERMISSION, type RolePermission } from "./permissions.js";
+import { DESIGNER_PERMISSION } from "./permissions.js";
 import type { SpecOpsConfig } from "../config.js";
+import type { SpecOpsAgentDefinition } from "./definition.js";
 
 /**
- * OpenCode subagent ID used by the Coordinator to delegate technical design
- * artifact authorship.
+ * Subagent ID used by the Coordinator to delegate technical design artifact
+ * authorship.
  */
 export const DESIGNER_AGENT_ID = AGENT_IDS.designer;
 
 /**
- * Register the SpecOps designer subagent using the persisted designer role config.
+ * Build the SpecOps designer subagent definition using the persisted designer
+ * role config.
  *
  * A blank designer model is preserved as the semantic "use the invoking primary
- * agent's model": the `model` and `variant` fields are omitted from the agent config.
- * The designer is registered separately so design ownership remains distinct
- * from planning and implementation ownership.
+ * agent's model": the `model` and `variant` fields are omitted from the
+ * definition. The designer is registered separately so design ownership remains
+ * distinct from planning and implementation ownership.
  *
- * @param config OpenCode configuration object mutated with the subagent.
  * @param specOpsConfig Validated persisted role-to-model configuration.
  */
-export function registerDesignerAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    config.agent ??= {};
+export function designerAgentDefinition(specOpsConfig: SpecOpsConfig): SpecOpsAgentDefinition {
     const designer = specOpsConfig.agents[AGENT_IDS.designer];
     const model = designer.model?.trim();
 
-    config.agent[DESIGNER_AGENT_ID] = {
+    return {
+        id: DESIGNER_AGENT_ID,
         description:
             "Authors the technical OpenSpec design from approved requirements and repository " +
             "evidence. Use this agent to create design.md for SpecOps changes.",
         mode: "subagent",
         hidden: true,
-        permission: DESIGNER_PERMISSION as unknown as RolePermission,
+        permission: DESIGNER_PERMISSION,
         prompt: loadPrompt(AGENT_IDS.designer),
         ...(model ? { model, ...(designer.variant ? { variant: designer.variant } : {}) } : {}),
     };

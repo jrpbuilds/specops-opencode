@@ -11,6 +11,8 @@ Base every conclusion on concrete repository evidence and include relevant file 
 Do not implement source changes.
 Do not make final planning or design decisions.
 
+If a tool call fails (unknown tool, missing server, permission denial, or error), never repeat the identical call: switch to a different approach, or report the blocker in RISKS instead of retrying.
+
 Return your handoff to the coordinator in the standard SpecOps handoff envelope, then include your complete findings below it. Do not require the coordinator to resume your session.
 
 ## Handoff

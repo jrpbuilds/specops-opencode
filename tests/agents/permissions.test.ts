@@ -26,7 +26,6 @@ describe("role permission profiles", () => {
     test("gives coordinators help-only shell and lifecycle authority", () => {
         expect(COORDINATOR_PERMISSION).toMatchObject({
             external_directory: "deny",
-            doom_loop: "deny",
             edit: { "*": "deny" },
             bash: {
                 "*": "deny",
@@ -53,7 +52,10 @@ describe("role permission profiles", () => {
             "openspec change show *": "allow",
         });
         expect(COORDINATOR_PERMISSION.external_directory).toBe("deny");
-        expect(COORDINATOR_PERMISSION.doom_loop).toBe("deny");
+        // The shared coordinator base carries no runtime loop guard; the
+        // interactive registration omits it (host default `ask`) and the auto
+        // registration pins "deny" at definition time.
+        expect("doom_loop" in COORDINATOR_PERMISSION).toBe(false);
 
         expect(EXPLORER_PERMISSION.edit).toEqual({ "*": "deny" });
         expect(EXPLORER_PERMISSION.bash).toBe("deny");

@@ -1,4 +1,3 @@
-import type { Config } from "@opencode-ai/plugin";
 import { ROLE_CAPABILITY_POLICY } from "./permission-policy.js";
 
 /**
@@ -8,9 +7,19 @@ import { ROLE_CAPABILITY_POLICY } from "./permission-policy.js";
  */
 export const SPECOPS_LIFECYCLE_PERMISSION = "specops_lifecycle";
 
-/** Architectural invariant overlay applied to every specialist role. */
+/**
+ * Architectural invariant overlay applied to every specialist role.
+ *
+ * The runtime loop guard is pinned to allow: specialists serve both the
+ * interactive and auto coordinators through one static registration, so a
+ * pinned deny would silently abort spurious loop detection mid-phase, and an
+ * ask would stall headless runs. Allow matches the shipped implementer and
+ * reviewer precedent; each role's edit/bash scope bounds any loop's blast
+ * radius instead.
+ */
 const SPECIALIST_INVARIANT = {
     question: "deny",
+    doom_loop: "allow",
     task: { "*": "deny" },
     "specops_*": "deny",
     [SPECOPS_LIFECYCLE_PERMISSION]: "deny",
@@ -127,19 +136,3 @@ export function denyTaskGlob(
     }
     return { [glob]: "deny" };
 }
-
-/** OpenCode's narrower SDK permission target used for registration casts. */
-export type RolePermission = NonNullable<NonNullable<Config["agent"]>[string]>["permission"];
-
-/**
- * Structural description available to code that normalizes permissions before
- * casting them to the SDK type; registration constants use the narrower
- * `RolePermission` cast directly.
- */
-export type RolePermissionShape = {
-    [key: string]: unknown;
-    edit?: "allow" | "ask" | "deny" | Record<string, "allow" | "ask" | "deny">;
-    bash?: "allow" | "ask" | "deny" | Record<string, "allow" | "ask" | "deny">;
-    task?: Record<string, "allow" | "ask" | "deny">;
-    question?: "allow" | "ask" | "deny";
-};
