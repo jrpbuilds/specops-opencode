@@ -22,20 +22,20 @@ jobs:
                   bun-version: 1.3.14
             - name: Install pinned dependencies
               run: bun install --frozen-lockfile
-            - name: Check V2 server phase
+            - name: Check V2 host integration
               id: phase
               continue-on-error: true
               run: |
                   set -o pipefail
-                  bun run check:v2-server 2>&1 | tee .migration/ci-server.log
+                  bun run check:v2-host 2>&1 | tee .migration/ci-host.log
             - name: Commit failure log for inspection
               if: steps.phase.outcome == 'failure' && github.actor != 'github-actions[bot]'
               run: |
                   git config user.name github-actions[bot]
                   git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-                  git add .migration/ci-server.log
-                  git commit -m "ci(beta): capture V2 server failure" || exit 0
+                  git add .migration/ci-host.log
+                  git commit -m "ci(beta): capture V2 host failure" || exit 0
                   git push origin HEAD:beta
-            - name: Fail when V2 server gate failed
+            - name: Fail when V2 host gate failed
               if: steps.phase.outcome == 'failure'
               run: exit 1
