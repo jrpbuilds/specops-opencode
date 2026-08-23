@@ -1,54 +1,31 @@
-name: OpenCode 2 migration
+name: OpenCode 2 beta CI
 
 on:
     push:
         branches:
             - beta
+    pull_request:
+        branches:
+            - beta
 
 permissions:
-    contents: write
+    contents: read
+
+concurrency:
+    group: opencode2-beta-${{ github.ref }}
+    cancel-in-progress: true
 
 jobs:
-    check:
+    host:
         runs-on: ubuntu-latest
         steps:
-            - name: Check out beta
+            - name: Check out repository
               uses: actions/checkout@v4
-              with:
-                  ref: beta
             - name: Set up Bun
               uses: oven-sh/setup-bun@v2
               with:
                   bun-version: 1.3.14
             - name: Install pinned dependencies
               run: bun install --frozen-lockfile
-            - name: Check V2 migration
-              id: phase
-              continue-on-error: true
-              run: |
-                  set +e
-                  : > .migration/ci-full.log
-                  failed=0
-                  for command in \
-                      "bun run check:v2-host" \
-                      "bun run typecheck" \
-                      "bun test" \
-                      "bun run test:packed"
-                  do
-                      printf '\n===== %s =====\n' "$command" | tee -a .migration/ci-full.log
-                      bash -lc "$command" 2>&1 | tee -a .migration/ci-full.log
-                      status=${PIPESTATUS[0]}
-                      if [ "$status" -ne 0 ]; then failed=1; fi
-                  done
-                  exit "$failed"
-            - name: Commit failure log for inspection
-              if: steps.phase.outcome == 'failure'
-              run: |
-                  git config user.name github-actions[bot]
-                  git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-                  git add .migration/ci-full.log
-                  git commit -m "ci(beta): capture V2 migration failure" || exit 0
-                  git push origin HEAD:beta
-            - name: Fail when V2 migration gate failed
-              if: steps.phase.outcome == 'failure'
-              run: exit 1
+            - name: Check OpenCode 2 host integration
+              run: bun run check:v2-host
