@@ -45,7 +45,7 @@ export function applyAgentDefinition(draft: AgentItem, definition: SpecOpsAgentD
     draft.permissions = [...draft.permissions, ...toV2PermissionRules(definition.permission)];
 
     if (definition.model?.trim()) {
-        draft.model = toV2ModelRef(definition.model.trim(), definition.variant) as AgentItem["model"];
+        draft.model = toV2ModelRef(definition.model.trim(), definition.variant) as unknown as AgentItem["model"];
     } else {
         delete draft.model;
     }
