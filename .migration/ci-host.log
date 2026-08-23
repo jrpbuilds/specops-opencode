@@ -1,0 +1,16 @@
+$ bun run check:v2-server && bun run typecheck:v2-tui && bun run build:v2-tui
+$ bun run typecheck:v2-server && bun run build:v2-server
+$ tsc --noEmit -p tsconfig.v2-server.json
+$ rm -rf dist-server && bun build src/index.ts --outdir dist-server --target node
+Bundled 170 modules in 52ms
+
+  index.js  0.74 MB  (entry point)
+
+$ tsc --noEmit -p tsconfig.v2-tui.json
+$ rm -rf dist-tui && bun build src/tui/index.ts --outdir dist-tui --target node
+1 | import { createComponent, createContext, useContext } from "solid-js";
+                                                               ^
+error: Could not resolve: "solid-js". Maybe you need to "bun install"?
+    at /home/runner/work/specops-opencode/specops-opencode/node_modules/@opencode-ai/plugin/dist/tui/solid.js:1:60
+error: script "build:v2-tui" exited with code 1
+error: script "check:v2-host" exited with code 1
