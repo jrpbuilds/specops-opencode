@@ -7,25 +7,23 @@ import { resolveSessionDirectory } from "../session.js";
 import { EMPTY_INPUT, type ToolDraft } from "./shared.js";
 
 export function addOnboardTool(tools: ToolDraft, ctx: Plugin.Context): void {
-    tools.add(
-        "specops_onboard",
-        {
-            description:
-                "Onboard the current project for OpenSpec: check availability, detect an existing root, and run openspec init if needed.",
-            input: EMPTY_INPUT,
-            execute: async (_input, context) => {
-                await assertLifecycleAuthority(ctx, "specops_onboard", context);
-                await context.progress({ title: "Onboarding project for OpenSpec…" });
-                const directory = await resolveSessionDirectory(ctx, context.sessionID);
-                return {
-                    content: await onboard({
-                        isAvailable: () => isOpenSpecAvailable(),
-                        isInitialized: () => isOpenSpecInitialized(directory),
-                        initialize: () => initializeOpenSpec(directory),
-                    }),
-                };
-            },
+    tools.add({
+        name: "specops_onboard",
+        description:
+            "Onboard the current project for OpenSpec: check availability, detect an existing root, and run openspec init if needed.",
+        input: EMPTY_INPUT,
+        options: { codemode: false },
+        execute: async (_input, context) => {
+            await assertLifecycleAuthority(ctx, "specops_onboard", context);
+            await context.progress({ title: "Onboarding project for OpenSpec…" });
+            const directory = await resolveSessionDirectory(ctx, context.sessionID);
+            return {
+                content: await onboard({
+                    isAvailable: () => isOpenSpecAvailable(),
+                    isInitialized: () => isOpenSpecInitialized(directory),
+                    initialize: () => initializeOpenSpec(directory),
+                }),
+            };
         },
-        { codemode: false },
-    );
+    });
 }

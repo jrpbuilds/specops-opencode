@@ -6,19 +6,17 @@ import { resolveSessionDirectory } from "../session.js";
 import { EMPTY_INPUT, type ToolDraft } from "./shared.js";
 
 export function addContextTool(tools: ToolDraft, ctx: Plugin.Context): void {
-    tools.add(
-        "specops_context",
-        {
-            description:
-                "Return deterministic current OpenSpec facts: availability, initialization, and active changes.",
-            input: EMPTY_INPUT,
-            execute: async (_input, context) => {
-                await assertLifecycleAuthority(ctx, "specops_context", context);
-                await context.progress({ title: "Reading OpenSpec context…" });
-                const directory = await resolveSessionDirectory(ctx, context.sessionID);
-                return { content: await readContext({ getContext: () => getOpenSpecContext(directory) }) };
-            },
+    tools.add({
+        name: "specops_context",
+        description:
+            "Return deterministic current OpenSpec facts: availability, initialization, and active changes.",
+        input: EMPTY_INPUT,
+        options: { codemode: false },
+        execute: async (_input, context) => {
+            await assertLifecycleAuthority(ctx, "specops_context", context);
+            await context.progress({ title: "Reading OpenSpec context…" });
+            const directory = await resolveSessionDirectory(ctx, context.sessionID);
+            return { content: await readContext({ getContext: () => getOpenSpecContext(directory) }) };
         },
-        { codemode: false },
-    );
+    });
 }

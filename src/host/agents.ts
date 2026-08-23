@@ -15,6 +15,9 @@ import { reviewerAgentDefinition } from "../agents/reviewer.js";
 import { frontierAgentDefinition } from "../agents/frontier.js";
 import { denyPrivateSpecOpsSubagents, toV2PermissionRules } from "./permissions.js";
 
+type AgentDraft = Parameters<Parameters<Plugin.Context["agent"]["transform"]>[0]>[0];
+type AgentItem = NonNullable<ReturnType<AgentDraft["get"]>>;
+
 /** Whether an agent belongs to the private SpecOps workflow namespace. */
 export function isSpecOpsAgentKey(key: string): boolean {
     return key === SPECOPS_AGENT_ID || key === SPECOPS_AUTO_AGENT_ID || key.startsWith("specops-");
@@ -34,21 +37,7 @@ export function toV2ModelRef(model: string, variant?: string) {
 }
 
 /** Apply one host-neutral SpecOps role definition to an OpenCode 2 agent draft. */
-export function applyAgentDefinition(
-    draft: {
-        id: string;
-        name: string;
-        description?: string;
-        system?: string;
-        mode: "primary" | "subagent" | "all";
-        hidden: boolean;
-        model?: { providerID: string; id: string; variant?: string };
-        permissions: Array<{ action: string; resource: string; effect: "allow" | "ask" | "deny" }>;
-    },
-    definition: SpecOpsAgentDefinition,
-): void {
-    draft.id = definition.id;
-    draft.name = definition.id;
+export function applyAgentDefinition(draft: AgentItem, definition: SpecOpsAgentDefinition): void {
     draft.description = definition.description;
     draft.system = definition.prompt;
     draft.mode = definition.mode;
@@ -56,7 +45,7 @@ export function applyAgentDefinition(
     draft.permissions = [...draft.permissions, ...toV2PermissionRules(definition.permission)];
 
     if (definition.model?.trim()) {
-        draft.model = toV2ModelRef(definition.model.trim(), definition.variant);
+        draft.model = toV2ModelRef(definition.model.trim(), definition.variant) as AgentItem["model"];
     } else {
         delete draft.model;
     }
@@ -68,11 +57,8 @@ export async function registerAgents(
     specOpsConfig?: SpecOpsConfig,
 ): Promise<void> {
     await ctx.agent.transform(agents => {
-        // Protect every agent already known to OpenCode from reaching the private
-        // SpecOps subagent namespace. SpecOps roles added below provide their own
-        // explicit, ordered subagent rules.
         for (const agent of agents.list()) {
-            if (isSpecOpsAgentKey(agent.id)) continue;
+            if (isSpecOpsAgentKey(String(agent.id))) continue;
             agent.permissions = denyPrivateSpecOpsSubagents(agent.permissions);
         }
 

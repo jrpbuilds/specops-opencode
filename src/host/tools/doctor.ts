@@ -9,26 +9,24 @@ import { resolveSessionDirectory } from "../session.js";
 import { EMPTY_INPUT, type ToolDraft } from "./shared.js";
 
 export function addDoctorTool(tools: ToolDraft, ctx: Plugin.Context): void {
-    tools.add(
-        "specops_doctor",
-        {
-            description:
-                "Run SpecOps diagnostics: report versions, OpenSpec health, configuration validity, and model-role mappings.",
-            input: EMPTY_INPUT,
-            execute: async (_input, context) => {
-                await assertLifecycleAuthority(ctx, "specops_doctor", context);
-                await context.progress({ title: "Running SpecOps doctor…" });
-                const directory = await resolveSessionDirectory(ctx, context.sessionID);
-                return {
-                    content: await doctor({
-                        specopsVersion: getSpecOpsVersion,
-                        openspecVersion: getOpenSpecVersion,
-                        openspecDoctor: () => runOpenSpecDoctor(directory),
-                        loadConfig: () => loadConfig(),
-                    }),
-                };
-            },
+    tools.add({
+        name: "specops_doctor",
+        description:
+            "Run SpecOps diagnostics: report versions, OpenSpec health, configuration validity, and model-role mappings.",
+        input: EMPTY_INPUT,
+        options: { codemode: false },
+        execute: async (_input, context) => {
+            await assertLifecycleAuthority(ctx, "specops_doctor", context);
+            await context.progress({ title: "Running SpecOps doctor…" });
+            const directory = await resolveSessionDirectory(ctx, context.sessionID);
+            return {
+                content: await doctor({
+                    specopsVersion: getSpecOpsVersion,
+                    openspecVersion: getOpenSpecVersion,
+                    openspecDoctor: () => runOpenSpecDoctor(directory),
+                    loadConfig: () => loadConfig(),
+                }),
+            };
         },
-        { codemode: false },
-    );
+    });
 }

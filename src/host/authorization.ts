@@ -20,18 +20,13 @@ export function isSpecOpsSpecialist(agent: string): boolean {
     return agent.startsWith("specops-");
 }
 
-/** Fast visibility decision used immediately before model dispatch. */
 export function lifecycleToolVisible(tool: LifecycleToolId, agent: string): boolean {
     if (COORDINATORS.has(agent)) return true;
     if (isSpecOpsSpecialist(agent)) return false;
     return USER_FACING_TOOLS.has(tool);
 }
 
-/**
- * Hard execution authorization for V2 lifecycle tools. Visibility filtering is
- * not an authorization boundary, so every executor calls this before progress,
- * filesystem access, or OpenSpec work.
- */
+/** Hard V2 execution authorization; definition filtering alone is not trusted. */
 export async function assertLifecycleAuthority(
     ctx: Plugin.Context,
     tool: LifecycleToolId,
@@ -43,7 +38,8 @@ export async function assertLifecycleAuthority(
     }
 
     const session = await ctx.session.get({ sessionID: invocation.sessionID });
-    const agent = await ctx.agent.get({ agentID: invocation.agent, location: session.location });
+    const response = await ctx.agent.get({ agentID: invocation.agent, location: session.location });
+    const agent = response.data;
     if (agent.mode !== "primary" && agent.mode !== "all") {
         throw new Error(`${invocation.agent} is not authorized to execute ${tool}`);
     }
@@ -53,7 +49,7 @@ export async function assertLifecycleAuthority(
 export async function registerLifecycleToolVisibility(ctx: Plugin.Context): Promise<void> {
     await ctx.session.hook("context", event => {
         for (const tool of LIFECYCLE_TOOL_IDS) {
-            if (!lifecycleToolVisible(tool, event.agent)) delete event.tools[tool];
+            if (!lifecycleToolVisible(tool, String(event.agent))) delete event.tools[tool];
         }
     });
 }
