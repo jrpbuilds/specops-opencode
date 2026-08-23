@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { requireLifecyclePermission } from "../../src/tools/lifecycle-permission.js";
+import { requireLifecyclePermission } from "../../src/host/lifecycle-permission.js";
 
 describe("requireLifecyclePermission", () => {
     test("asks for the lifecycle permission scoped to the current tool", async () => {

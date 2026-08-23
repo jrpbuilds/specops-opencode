@@ -1,6 +1,7 @@
 import type { ToolContext } from "@opencode-ai/plugin/tool";
 import { describe, expect, test } from "bun:test";
-import { status, statusTool, type StatusDeps } from "../../src/tools/status.js";
+import { status, type StatusDeps } from "../../src/tools/status.js";
+import { statusTool } from "../../src/host/tools/status.js";
 
 const normalizedStatus = {
     changeName: "example",

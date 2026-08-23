@@ -12,7 +12,7 @@ import {
     registerReviewerAgent,
 } from "./host/agents.js";
 import { applyLifecycleBoundary, applyTaskBoundary } from "./host/permissions.js";
-import { TOOLS } from "./host/tools.js";
+import { TOOLS } from "./host/tools/index.js";
 
 export { COMMANDS } from "./host/commands.js";
 

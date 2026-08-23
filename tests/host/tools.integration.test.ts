@@ -1,32 +1,65 @@
 import type { ToolContext, ToolDefinition } from "@opencode-ai/plugin/tool";
 import { describe, expect, test } from "bun:test";
-import { archiveTool } from "../../src/tools/archive.js";
-import { contextTool } from "../../src/tools/context.js";
-import { createChangeTool } from "../../src/tools/create-change.js";
-import { doctorTool } from "../../src/tools/doctor.js";
-import { onboardTool } from "../../src/tools/onboard.js";
-import { statusTool } from "../../src/tools/status.js";
-import { validateChangeTool } from "../../src/tools/validate-change.js";
+import { archiveTool } from "../../src/host/tools/archive.js";
+import { contextTool } from "../../src/host/tools/context.js";
+import { createChangeTool } from "../../src/host/tools/create-change.js";
+import { doctorTool } from "../../src/host/tools/doctor.js";
+import { onboardTool } from "../../src/host/tools/onboard.js";
+import { statusTool } from "../../src/host/tools/status.js";
+import { validateChangeTool } from "../../src/host/tools/validate-change.js";
 import { SpecOpsPlugin } from "../../src/index.js";
 import { withTempDir } from "../helpers.js";
 
 type AskRequest = Parameters<ToolContext["ask"]>[0];
+type MetadataRequest = Parameters<ToolContext["metadata"]>[0];
 
 const LIFECYCLE_TOOLS: Array<{
     id: string;
     definition: ToolDefinition;
     args: Record<string, unknown>;
+    metadataTitle: string;
 }> = [
-    { id: "specops_archive", definition: archiveTool, args: { change: "example" } },
-    { id: "specops_context", definition: contextTool, args: {} },
-    { id: "specops_create_change", definition: createChangeTool, args: { change: "example" } },
-    { id: "specops_doctor", definition: doctorTool, args: {} },
-    { id: "specops_onboard", definition: onboardTool, args: {} },
-    { id: "specops_status", definition: statusTool, args: { change: "example" } },
+    {
+        id: "specops_archive",
+        definition: archiveTool,
+        args: { change: "example" },
+        metadataTitle: "Archiving OpenSpec change…",
+    },
+    {
+        id: "specops_context",
+        definition: contextTool,
+        args: {},
+        metadataTitle: "Reading OpenSpec context…",
+    },
+    {
+        id: "specops_create_change",
+        definition: createChangeTool,
+        args: { change: "example" },
+        metadataTitle: "Creating OpenSpec change…",
+    },
+    {
+        id: "specops_doctor",
+        definition: doctorTool,
+        args: {},
+        metadataTitle: "Running SpecOps doctor…",
+    },
+    {
+        id: "specops_onboard",
+        definition: onboardTool,
+        args: {},
+        metadataTitle: "Onboarding project for OpenSpec…",
+    },
+    {
+        id: "specops_status",
+        definition: statusTool,
+        args: { change: "example" },
+        metadataTitle: "Reading OpenSpec status…",
+    },
     {
         id: "specops_validate_change",
         definition: validateChangeTool,
         args: { change: "example" },
+        metadataTitle: "Validating OpenSpec change…",
     },
 ];
 
@@ -66,14 +99,14 @@ describe("lifecycle tool integration", () => {
             process.env.XDG_CONFIG_HOME = directory;
             try {
                 const requests: AskRequest[] = [];
-                let metadataCalls = 0;
+                const metadataRequests: MetadataRequest[] = [];
                 const context = toolContext(
                     directory,
                     async request => {
                         requests.push(request);
                     },
-                    () => {
-                        metadataCalls += 1;
+                    metadata => {
+                        metadataRequests.push(metadata);
                     },
                 );
 
@@ -87,7 +120,7 @@ describe("lifecycle tool integration", () => {
                         metadata: { tool: item.id },
                     },
                 ]);
-                expect(metadataCalls).toBe(1);
+                expect(metadataRequests).toEqual([{ title: item.metadataTitle }]);
             } finally {
                 process.env.XDG_CONFIG_HOME = originalConfigHome;
             }

@@ -1,11 +1,8 @@
 import type { ToolContext } from "@opencode-ai/plugin/tool";
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 import * as helpers from "../../src/helpers.js";
-import {
-    validateChange,
-    validateChangeTool,
-    type ValidateChangeDeps,
-} from "../../src/tools/validate-change.js";
+import { validateChange, type ValidateChangeDeps } from "../../src/tools/validate-change.js";
+import { validateChangeTool } from "../../src/host/tools/validate-change.js";
 
 afterEach(() => {
     mock.restore();

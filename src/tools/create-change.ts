@@ -1,9 +1,4 @@
-import { tool, type ToolDefinition } from "@opencode-ai/plugin/tool";
-import {
-    createOpenSpecChange,
-    type OpenSpecCreateChangeResult,
-} from "../openspec/create-change.js";
-import { requireLifecyclePermission } from "./lifecycle-permission.js";
+import type { OpenSpecCreateChangeResult } from "../openspec/create-change.js";
 
 /** Dependency boundary for deterministic OpenSpec change creation. */
 export type CreateChangeDeps = {
@@ -29,20 +24,3 @@ export async function createChange(
     if (!result.ok) return `Failed to create OpenSpec change '${name}': ${result.error}`;
     return `OpenSpec change '${result.name}' created successfully at ${result.path}.`;
 }
-
-/** Expose native OpenSpec change creation through the SpecOps tool surface. */
-export const createChangeTool: ToolDefinition = tool({
-    description: "Create a named OpenSpec change using the native OpenSpec creation operation.",
-    args: {
-        change: tool.schema.string(),
-        goal: tool.schema.string().optional(),
-    },
-    async execute(args, toolContext) {
-        await requireLifecyclePermission(toolContext, "specops_create_change");
-        toolContext.metadata({ title: "Creating OpenSpec change…" });
-        return createChange(args.change, args.goal, {
-            createChange: (change, goal) =>
-                createOpenSpecChange(change, toolContext.directory, goal),
-        });
-    },
-});

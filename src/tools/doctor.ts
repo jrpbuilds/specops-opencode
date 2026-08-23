@@ -1,12 +1,8 @@
-import { tool, type ToolDefinition } from "@opencode-ai/plugin/tool";
 import { ALL_AGENT_IDS } from "../agents/ids.js";
-import { loadConfig, type SpecOpsConfig } from "../config.js";
-import { getOpenSpecVersion } from "../openspec/cli.js";
-import { runOpenSpecDoctor, type OpenSpecDoctorResult } from "../openspec/doctor.js";
-import { getSpecOpsVersion } from "../version.js";
+import type { SpecOpsConfig } from "../config.js";
+import type { OpenSpecDoctorResult } from "../openspec/doctor.js";
 import { errorMessage } from "../openspec/helpers.js";
 import { formatRemediation } from "../openspec/remediation.js";
-import { requireLifecyclePermission } from "./lifecycle-permission.js";
 
 /**
  * External operations used by the diagnostics report.
@@ -116,28 +112,6 @@ export async function doctor(deps: DoctorDeps): Promise<string> {
 
     return lines.join("\n");
 }
-
-/**
- * Expose the diagnostics report through the SpecOps tool surface.
- *
- * The tool supplies the current configuration and project directory through
- * injected operations while leaving report formatting in `doctor`.
- */
-export const doctorTool: ToolDefinition = tool({
-    description:
-        "Run SpecOps diagnostics: report versions, OpenSpec health, configuration validity, and model-role mappings.",
-    args: {},
-    async execute(_args, context) {
-        await requireLifecyclePermission(context, "specops_doctor");
-        context.metadata({ title: "Running SpecOps doctor…" });
-        return doctor({
-            specopsVersion: getSpecOpsVersion,
-            openspecVersion: getOpenSpecVersion,
-            openspecDoctor: () => runOpenSpecDoctor(context.directory),
-            loadConfig: () => loadConfig(),
-        });
-    },
-});
 
 /**
  * Read a required version defensively, normalizing blank or failed reads to

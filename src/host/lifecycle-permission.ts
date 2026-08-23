@@ -4,11 +4,12 @@ import { SPECOPS_LIFECYCLE_PERMISSION } from "../agents/permissions.js";
 /**
  * Require the current agent's permission before a lifecycle tool performs work.
  *
- * Custom plugin tools are not automatically checked by OpenCode's permission
- * evaluator, so each tool must make this request explicitly. `toolId` must
- * exactly match the registered tool name because it is used both as the
- * permission pattern and the allowlist entry. Callers must invoke this before
- * producing metadata or performing any other side effect.
+ * This is OpenCode 1 adapter behaviour: custom plugin tools are not
+ * automatically checked by OpenCode's permission evaluator, so each V1 tool
+ * wrapper must make this request explicitly. `toolId` must exactly match the
+ * registered tool name because it is used both as the permission pattern and
+ * the allowlist entry. Callers must invoke this before producing metadata or
+ * performing any other side effect.
  *
  * @param context Tool context used to request the current agent's permission.
  * @param toolId Exact registered lifecycle tool name.
