@@ -1,0 +1,1759 @@
+
+===== bun run check:v2-host =====
+$ bun run check:v2-server && bun run typecheck:v2-tui && bun run build:v2-tui
+$ bun run typecheck:v2-server && bun run build:v2-server
+$ tsc --noEmit -p tsconfig.v2-server.json
+$ rm -rf dist-server && bun build src/index.ts --outdir dist-server --target node
+Bundled 170 modules in 50ms
+
+  index.js  0.74 MB  (entry point)
+
+$ tsc --noEmit -p tsconfig.v2-tui.json
+$ rm -rf dist-tui && bun build src/tui/index.ts --outdir dist-tui --target node
+Bundled 12 modules in 5ms
+
+  index.js  17.48 KB  (entry point)
+
+
+===== bun run typecheck =====
+$ tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json
+tests/agents/boundary.test.ts(1,15): error TS2305: Module '"@opencode-ai/plugin"' has no exported member 'Config'.
+tests/agents/boundary.test.ts(13,5): error TS2305: Module '"../../src/host/permissions.js"' has no exported member 'applyLifecycleBoundary'.
+tests/agents/boundary.test.ts(14,5): error TS2305: Module '"../../src/host/permissions.js"' has no exported member 'applyTaskBoundary'.
+tests/agents/boundary.test.ts(15,5): error TS2305: Module '"../../src/host/permissions.js"' has no exported member 'isSpecOpsAgentKey'.
+tests/agents/boundary.test.ts(22,10): error TS2614: Module '"../../src/index.js"' has no exported member 'SpecOpsPlugin'. Did you mean to use 'import SpecOpsPlugin from "../../src/index.js"' instead?
+tests/agents/coordinator.test.ts(1,15): error TS2305: Module '"@opencode-ai/plugin"' has no exported member 'Config'.
+tests/agents/coordinator.test.ts(9,10): error TS2305: Module '"../../src/host/agents.js"' has no exported member 'registerAutoCoordinatorAgent'.
+tests/agents/coordinator.test.ts(9,40): error TS2305: Module '"../../src/host/agents.js"' has no exported member 'registerCoordinatorAgent'.
+tests/agents/designer.test.ts(1,15): error TS2305: Module '"@opencode-ai/plugin"' has no exported member 'Config'.
+tests/agents/designer.test.ts(5,10): error TS2305: Module '"../../src/host/agents.js"' has no exported member 'registerDesignerAgent'.
+tests/agents/explorer.test.ts(1,15): error TS2305: Module '"@opencode-ai/plugin"' has no exported member 'Config'.
+tests/agents/explorer.test.ts(5,10): error TS2305: Module '"../../src/host/agents.js"' has no exported member 'registerExplorerAgent'.
+tests/agents/frontier.test.ts(1,15): error TS2305: Module '"@opencode-ai/plugin"' has no exported member 'Config'.
+tests/agents/frontier.test.ts(5,10): error TS2305: Module '"../../src/host/agents.js"' has no exported member 'registerFrontierAgent'.
+tests/agents/implementer.test.ts(1,15): error TS2305: Module '"@opencode-ai/plugin"' has no exported member 'Config'.
+tests/agents/implementer.test.ts(5,10): error TS2305: Module '"../../src/host/agents.js"' has no exported member 'registerImplementerAgent'.
+tests/agents/planner.test.ts(1,15): error TS2305: Module '"@opencode-ai/plugin"' has no exported member 'Config'.
+tests/agents/planner.test.ts(5,10): error TS2724: '"../../src/host/agents.js"' has no exported member named 'registerPlannerAgent'. Did you mean 'registerAgents'?
+tests/agents/reviewer.test.ts(1,15): error TS2305: Module '"@opencode-ai/plugin"' has no exported member 'Config'.
+tests/agents/reviewer.test.ts(5,10): error TS2305: Module '"../../src/host/agents.js"' has no exported member 'registerReviewerAgent'.
+tests/commands.test.ts(1,15): error TS2305: Module '"@opencode-ai/plugin"' has no exported member 'Config'.
+tests/commands.test.ts(25,10): error TS2614: Module '"../src/index.js"' has no exported member 'COMMANDS'. Did you mean to use 'import COMMANDS from "../src/index.js"' instead?
+tests/commands.test.ts(25,20): error TS2614: Module '"../src/index.js"' has no exported member 'SpecOpsPlugin'. Did you mean to use 'import SpecOpsPlugin from "../src/index.js"' instead?
+tests/host/agents.test.ts(2,15): error TS2305: Module '"@opencode-ai/plugin"' has no exported member 'Config'.
+tests/host/lifecycle-permission.test.ts(2,10): error TS2305: Module '"../../src/host/lifecycle-permission.js"' has no exported member 'requireLifecyclePermission'.
+tests/host/lifecycle-permission.test.ts(10,28): error TS7006: Parameter 'input' implicitly has an 'any' type.
+tests/host/tools.integration.test.ts(1,50): error TS2307: Cannot find module '@opencode-ai/plugin/tool' or its corresponding type declarations.
+tests/host/tools.integration.test.ts(3,10): error TS2724: '"../../src/host/tools/archive.js"' has no exported member named 'archiveTool'. Did you mean 'addArchiveTool'?
+tests/host/tools.integration.test.ts(4,10): error TS2724: '"../../src/host/tools/context.js"' has no exported member named 'contextTool'. Did you mean 'addContextTool'?
+tests/host/tools.integration.test.ts(5,10): error TS2724: '"../../src/host/tools/create-change.js"' has no exported member named 'createChangeTool'. Did you mean 'addCreateChangeTool'?
+tests/host/tools.integration.test.ts(6,10): error TS2724: '"../../src/host/tools/doctor.js"' has no exported member named 'doctorTool'. Did you mean 'addDoctorTool'?
+tests/host/tools.integration.test.ts(7,10): error TS2724: '"../../src/host/tools/onboard.js"' has no exported member named 'onboardTool'. Did you mean 'addOnboardTool'?
+tests/host/tools.integration.test.ts(8,10): error TS2724: '"../../src/host/tools/status.js"' has no exported member named 'statusTool'. Did you mean 'addStatusTool'?
+tests/host/tools.integration.test.ts(9,10): error TS2724: '"../../src/host/tools/validate-change.js"' has no exported member named 'validateChangeTool'. Did you mean 'addValidateChangeTool'?
+tests/host/tools.integration.test.ts(10,10): error TS2614: Module '"../../src/index.js"' has no exported member 'SpecOpsPlugin'. Did you mean to use 'import SpecOpsPlugin from "../../src/index.js"' instead?
+tests/host/tools.integration.test.ts(105,27): error TS7006: Parameter 'request' implicitly has an 'any' type.
+tests/host/tools.integration.test.ts(108,21): error TS7006: Parameter 'metadata' implicitly has an 'any' type.
+tests/host/tools.integration.test.ts(173,27): error TS7006: Parameter 'request' implicitly has an 'any' type.
+tests/host/tools.integration.test.ts(183,30): error TS18046: 'definition' is of type 'unknown'.
+tests/host/tools.registry.test.ts(2,10): error TS2305: Module '"../../src/host/tools/index.js"' has no exported member 'TOOLS'.
+tests/index.test.ts(2,15): error TS2305: Module '"@opencode-ai/plugin"' has no exported member 'PluginInput'.
+tests/index.test.ts(4,10): error TS2614: Module '"../src/index.js"' has no exported member 'SpecOpsPlugin'. Did you mean to use 'import SpecOpsPlugin from "../src/index.js"' instead?
+tests/tools/status.test.ts(1,34): error TS2307: Cannot find module '@opencode-ai/plugin/tool' or its corresponding type declarations.
+tests/tools/status.test.ts(4,10): error TS2724: '"../../src/host/tools/status.js"' has no exported member named 'statusTool'. Did you mean 'addStatusTool'?
+tests/tools/status.test.ts(97,19): error TS7006: Parameter 'request' implicitly has an 'any' type.
+tests/tools/validate-change.test.ts(1,34): error TS2307: Cannot find module '@opencode-ai/plugin/tool' or its corresponding type declarations.
+tests/tools/validate-change.test.ts(5,10): error TS2724: '"../../src/host/tools/validate-change.js"' has no exported member named 'validateChangeTool'. Did you mean 'addValidateChangeTool'?
+tests/tui/helpers.ts(1,15): error TS2305: Module '"@opencode-ai/plugin/tui"' has no exported member 'TuiPluginApi'.
+tests/tui/plugin.test.ts(9,33): error TS2339: Property 'tui' does not exist on type 'Definition'.
+tests/tui/plugin.test.ts(15,32): error TS2339: Property 'tui' does not exist on type 'Definition'.
+tests/tui/plugin.test.ts(28,32): error TS2339: Property 'tui' does not exist on type 'Definition'.
+
+===== bun test =====
+bun test v1.3.14 (0d9b296a)
+
+::group::tests/commands.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+SyntaxError: Export named 'SpecOpsPlugin' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/index.ts'.
+
+::error title=SyntaxError: Export named 'SpecOpsPlugin' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/index.ts'.::
+-------------------------------
+
+
+::group::tests/helpers.test.ts:
+(pass) runExitZero > resolves when the command exits with code 0 [21.41ms]
+(pass) runExitZero > rejects when the command exits non-zero [12.41ms]
+(pass) runExitZero > rejects when the command cannot be spawned [1.08ms]
+(pass) runCaptured > captures stderr and reports success for exit code 0 [31.61ms]
+(pass) runCaptured > captures stderr and reports failure for a non-zero exit [25.89ms]
+(pass) runCaptured > rejects when the command cannot be spawned [0.75ms]
+(pass) runCaptureStdout > captures stdout and exit code 0 [28.14ms]
+(pass) runCaptureStdout > captures stdout and a non-zero exit code [28.80ms]
+(pass) runCaptureStdout > rejects when the command cannot be spawned [0.63ms]
+
+::endgroup::
+
+::group::tests/readme.test.ts:
+(pass) README > documents Engram as an optional companion and not an artifact store [0.10ms]
+(pass) README > getting started no longer requires manual onboarding before /specops [0.04ms]
+
+::endgroup::
+
+::group::tests/index.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+SyntaxError: Export named 'SpecOpsPlugin' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/index.ts'.
+
+::error title=SyntaxError: Export named 'SpecOpsPlugin' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/index.ts'.::
+-------------------------------
+
+
+::group::tests/version.test.ts:
+(pass) getSpecOpsVersion > reads the version from package.json [1.70ms]
+
+::endgroup::
+
+::group::tests/prompts.test.ts:
+(pass) resolveIncludes > resolves nested whole-line includes and preserves other placeholders [0.98ms]
+(pass) resolveIncludes > rejects missing and empty fragments [0.86ms]
+(pass) resolveIncludes > rejects include cycles and paths outside the prompt directory [0.91ms]
+(pass) resolveIncludes > allows fragments in nested directories [0.62ms]
+(pass) specialist terminal handoff contract > prompts using the standard handoff envelope require terminal handoff message [1.10ms]
+(pass) specialist terminal handoff contract > reviewer treats PASS/FAIL/blocker as a terminal return [0.21ms]
+(pass) specialist terminal handoff contract > frontier treats FRONTIER ADVICE as a terminal return [0.14ms]
+(pass) coordinator sync-flow contract > loads the sync flow and its lifecycle invariants [0.46ms]
+(pass) coordinator sync-flow contract > interactive coordinator includes the sync flow [0.41ms]
+(pass) coordinator sync-flow contract > auto coordinator includes the sync flow [0.21ms]
+(pass) engram ordering contract > every specialist prompt orders Engram writes before the final handoff/verdict [0.55ms]
+
+::endgroup::
+
+::group::tests/agents/permissions.test.ts:
+(pass) role permission profiles > does not retain execution-mode permission exports [0.14ms]
+(pass) role permission profiles > gives coordinators help-only shell and lifecycle authority [0.05ms]
+(pass) role permission profiles > keeps critical role capability fields explicit [0.14ms]
+(pass) role permission profiles > restricts ordinary lifecycle access to doctor and onboarding [0.03ms]
+(pass) role permission profiles > keeps lifecycle authority unchanged for the v0.7.1 hotfix [0.08ms]
+(pass) role permission profiles > gives each specialist an explicit headless-safe role boundary [0.13ms]
+(pass) policy vs invariant split > built-in capability catalogue contains every role exactly once [0.05ms]
+(pass) policy vs invariant split > capability data does not contain architectural invariant keys [0.08ms]
+(pass) SPECOPS_TASK_GLOB > identifies the private specops namespace [0.04ms]
+(pass) SPECOPS_TASK_GLOB > deny and allow carry exactly the glob with the intended action [0.07ms]
+(pass) planner and designer edit scope > allows OpenSpec paths from git and non-git worktree roots [0.32ms]
+(pass) denyTaskGlob > builds a bare deny map for undefined [0.10ms]
+(pass) denyTaskGlob > normalizes a scalar allow into a star rule plus a trailing deny [0.05ms]
+(pass) denyTaskGlob > normalizes a scalar ask preserving the ask semantics [0.04ms]
+(pass) denyTaskGlob > normalizes a scalar deny [0.04ms]
+(pass) denyTaskGlob > preserves existing map entries and appends the deny glob last [0.11ms]
+(pass) denyTaskGlob > deduplicates an existing glob key and re-orders it last [0.07ms]
+(pass) denyTaskGlob > falls back to a bare deny for non-object non-string values [0.06ms]
+
+::endgroup::
+
+::group::tests/agents/explorer.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+SyntaxError: Export named 'registerExplorerAgent' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts'.
+
+::error title=SyntaxError: Export named 'registerExplorerAgent' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts'.::
+-------------------------------
+
+
+::group::tests/agents/coordinator-explorer-dispatch.test.ts:
+(pass) coordinator-explorer-dispatch contract > fresh-change dispatch matrix > interactive dispatches Explorer on a fresh change [0.05ms]
+(pass) coordinator-explorer-dispatch contract > fresh-change dispatch matrix > auto dispatches Explorer on a fresh change [0.04ms]
+(pass) coordinator-explorer-dispatch contract > fresh-change dispatch matrix > partially planned resumes with a feasible artifact dispatch Explorer [0.05ms]
+(pass) coordinator-explorer-dispatch contract > resume skip matrix > interactive skips Explorer at the plan-approval checkpoint [0.06ms]
+(pass) coordinator-explorer-dispatch contract > resume skip matrix > auto skips Explorer when the plan is ready [0.06ms]
+(pass) coordinator-explorer-dispatch contract > resume skip matrix > both modes skip Explorer while implementation is in progress [0.07ms]
+(pass) coordinator-explorer-dispatch contract > resume skip matrix > both modes skip Explorer for review, remediation, and lifecycle resumes [0.22ms]
+(pass) coordinator-explorer-dispatch contract > specialist-requested follow-up contract > Planner and Designer missing-evidence handoffs trigger focused follow-up [0.09ms]
+(pass) coordinator-explorer-dispatch contract > specialist-requested follow-up contract > an implementation conflict gets focused evidence before upstream routing [0.07ms]
+(pass) coordinator-explorer-dispatch contract > revision-invalidated Project Context contract > material planning revision re-dispatches Explorer [0.08ms]
+(pass) coordinator-explorer-dispatch contract > revision-invalidated Project Context contract > trivial planning revision does not re-dispatch Explorer [0.06ms]
+(pass) coordinator-explorer-dispatch contract > role-boundary preservation > Planner and Designer do not bypass Explorer [0.31ms]
+(pass) coordinator-explorer-dispatch contract > role-boundary preservation > Implementer and Reviewer retain direct source inspection [0.20ms]
+
+::endgroup::
+
+::group::tests/agents/frontier.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+SyntaxError: Export named 'registerFrontierAgent' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts'.
+
+::error title=SyntaxError: Export named 'registerFrontierAgent' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts'.::
+-------------------------------
+
+
+::group::tests/agents/boundary.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+SyntaxError: Export named 'SpecOpsPlugin' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/index.ts'.
+
+::error title=SyntaxError: Export named 'SpecOpsPlugin' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/index.ts'.::
+-------------------------------
+
+
+::group::tests/agents/permission-policy.test.ts:
+(pass) ROLE_CAPABILITY_POLICY > contains exactly one entry for every configurable role [0.04ms]
+(pass) ROLE_CAPABILITY_POLICY > every entry contains only the three capability fields [0.13ms]
+(pass) ROLE_CAPABILITY_POLICY > no entry contains architectural invariant keys [0.11ms]
+(pass) ROLE_CAPABILITY_POLICY > no entry contains host runtime guard keys [0.06ms]
+(pass) ROLE_CAPABILITY_POLICY > external_directory is always allow or deny (never ask) [0.04ms]
+(pass) RoleCapabilityShape rejects ask for external_directory at typecheck time [0.03ms]
+
+::endgroup::
+
+::group::tests/agents/coordinator.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+SyntaxError: Export named 'registerCoordinatorAgent' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts'.
+
+::error title=SyntaxError: Export named 'registerCoordinatorAgent' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts'.::
+-------------------------------
+
+
+::group::tests/agents/planner.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+SyntaxError: Export named 'registerPlannerAgent' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts'.
+
+::error title=SyntaxError: Export named 'registerPlannerAgent' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts'.::
+-------------------------------
+
+
+::group::tests/agents/implementer.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+SyntaxError: Export named 'registerImplementerAgent' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts'.
+
+::error title=SyntaxError: Export named 'registerImplementerAgent' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts'.::
+-------------------------------
+
+
+::group::tests/agents/reviewer.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+SyntaxError: Export named 'registerReviewerAgent' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts'.
+
+::error title=SyntaxError: Export named 'registerReviewerAgent' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts'.::
+-------------------------------
+
+
+::group::tests/agents/designer.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+SyntaxError: Export named 'registerDesignerAgent' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts'.
+
+::error title=SyntaxError: Export named 'registerDesignerAgent' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts'.::
+-------------------------------
+
+
+::group::tests/openspec/status.test.ts:
+(pass) getOpenSpecStatus > normalizes a successful response with every field [0.85ms]
+(pass) getOpenSpecStatus > preserves skipped artifacts [0.39ms]
+(pass) getOpenSpecStatus > preserves blocked artifacts and their missing dependencies [0.23ms]
+(pass) getOpenSpecStatus > omits isPlanningComplete when the schema does not provide it [0.48ms]
+(pass) getOpenSpecStatus > omits missingDeps when an artifact does not provide it [0.27ms]
+(pass) getOpenSpecStatus > reports malformed JSON [0.16ms]
+(pass) getOpenSpecStatus > reports a capture failure [0.18ms]
+(pass) getOpenSpecStatus > reports a terminated process [0.15ms]
+(pass) getOpenSpecStatus > surfaces the first status message and fix on command failure [0.23ms]
+(pass) getOpenSpecStatus > reports an invalid top-level result for [] [0.21ms]
+(pass) getOpenSpecStatus > reports an invalid top-level result for "unexpected" [0.03ms]
+(pass) getOpenSpecStatus > reports an invalid top-level result for null [0.03ms]
+(pass) getOpenSpecStatus > reports an unknown artifact status as a shape failure [0.28ms]
+(pass) getOpenSpecStatus > reports a missing required top-level field as a shape failure [0.21ms]
+(pass) getOpenSpecStatus > accepts an unknown response field as forward-compatible [0.19ms]
+
+::endgroup::
+
+::group::tests/openspec/helpers.test.ts:
+(pass) isRecord > accepts plain objects [0.76ms]
+(pass) isRecord > rejects arrays [0.06ms]
+(pass) isRecord > rejects null [0.03ms]
+(pass) isRecord > rejects primitives [0.03ms]
+(pass) errorMessage > returns the message of an Error [0.02ms]
+(pass) errorMessage > leaves strings intact [0.03ms]
+(pass) errorMessage > stringifies objects [0.03ms]
+(pass) errorMessage > stringifies null and undefined [0.02ms]
+(pass) formatCommandFailure > returns message only [0.04ms]
+(pass) formatCommandFailure > falls back to exit code for fix only [0.03ms]
+(pass) formatCommandFailure > returns message and fix joined [0.03ms]
+(pass) formatCommandFailure > falls back to exit code when status is absent or malformed [0.05ms]
+
+::endgroup::
+
+::group::tests/openspec/remediation.test.ts:
+(pass) formatRemediation > formats OPENSPEC_UNAVAILABLE with actionable details [0.08ms]
+(pass) formatRemediation > formats OPENSPEC_INCOMPATIBLE with actionable details [0.04ms]
+(pass) formatRemediation > formats OPENSPEC_MALFORMED_RESPONSE with actionable details [0.01ms]
+(pass) formatRemediation > formats OPENSPEC_OUTPUT_PATH_INVALID with actionable details
+(pass) formatRemediation > formats OPENSPEC_VALIDATION_FAILED with actionable details [0.01ms]
+(pass) formatRemediation > leads incompatible remediation with the failing capability and both fix paths [0.07ms]
+(pass) formatRemediation > reports malformed response shapes without an upgrade-first instruction [0.04ms]
+
+::endgroup::
+
+::group::tests/openspec/validation.test.ts:
+(pass) OpenSpec response validator > accepts complete and optional-absent records [0.09ms]
+(pass) OpenSpec response validator > rejects missing required fields and names the field [0.11ms]
+(pass) OpenSpec response validator > rejects wrong name kind [0.09ms]
+(pass) OpenSpec response validator > rejects wrong enabled kind [0.03ms]
+(pass) OpenSpec response validator > rejects wrong count kind [0.02ms]
+(pass) OpenSpec response validator > rejects wrong tags kind [0.03ms]
+(pass) OpenSpec response validator > recurses into nested records [0.08ms]
+(pass) OpenSpec response validator > validates artifact fields through the shared artifact guard [0.07ms]
+(pass) OpenSpec response validator > ignores unknown fields by default, including nested records [0.09ms]
+(pass) OpenSpec response validator > rejects unexpected fields when explicitly opted in [0.37ms]
+(pass) OpenSpec response validator > rejects non-record responses [0.06ms]
+
+::endgroup::
+
+::group::tests/openspec/create-change.test.ts:
+(pass) createOpenSpecChange > uses the canonical creation command and passes the requested name and goal [0.41ms]
+(pass) createOpenSpecChange > omits goal when it is not supplied [0.21ms]
+(pass) createOpenSpecChange > preserves native creation failures [0.14ms]
+(pass) createOpenSpecChange > reports unavailable and malformed command results [0.27ms]
+(pass) createOpenSpecChange > preserves native failure with message only [0.16ms]
+(pass) createOpenSpecChange > falls back to exit code for fix only [0.14ms]
+(pass) createOpenSpecChange > preserves native failure with message and fix [0.17ms]
+(pass) createOpenSpecChange > reports termination before an exit code is available [0.14ms]
+(pass) createOpenSpecChange > falls back to exit code when status is absent or malformed [0.22ms]
+(pass) createOpenSpecChange > accepts an unknown success field as forward-compatible [0.16ms]
+
+::endgroup::
+
+::group::tests/openspec/validate.test.ts:
+(pass) validateChange > uses positional scoped validation and reduces a passing response [0.51ms]
+(pass) validateChange > surfaces item violations and invalidates the change [0.19ms]
+(pass) validateChange > treats a non-zero exit as invalid [0.11ms]
+(pass) validateChange > rejects malformed JSON and wrong shapes [0.22ms]
+(pass) validateChange > accepts unknown summary fields as forward-compatible [0.16ms]
+(pass) validateChange > rejects incomplete summary totals [0.15ms]
+
+::endgroup::
+
+::group::tests/openspec/compatibility.test.ts:
+(pass) OpenSpec compatibility policy > passes when every capability is observable [0.85ms]
+(pass) OpenSpec compatibility policy > names each individually missing help capability [0.88ms]
+(pass) OpenSpec compatibility policy > reports a non-zero help command as missing [0.26ms]
+(pass) OpenSpec compatibility policy > probes the nested new change help surface for JSON support [0.33ms]
+(pass) OpenSpec compatibility policy > marks nested new change help missing when JSON is absent [0.32ms]
+(pass) OpenSpec compatibility policy > uses the version fallback for an unprobeable capability [0.37ms]
+(pass) OpenSpec compatibility policy > accepts a newer-than-target version when every probe succeeds [0.17ms]
+(pass) OpenSpec compatibility policy > accepts an older-than-target version when every probe succeeds [0.17ms]
+(pass) OpenSpec compatibility policy > warns but stays compatible when the version is unavailable [0.16ms]
+(pass) OpenSpec compatibility policy > does not execute a capability probe without --help [0.10ms]
+(pass) OpenSpec compatibility policy > compares versions after normalizing prefixes and suffixes [0.31ms]
+(pass) OpenSpec compatibility policy > is deterministic for an unchanged stubbed install [0.25ms]
+
+::endgroup::
+
+::group::tests/openspec/real-cli.integration.test.ts:
+(skip) real OpenSpec CLI compatibility > accepts the installed CLI and all supported wrapper response shapes (skipped when unavailable)
+
+::endgroup::
+
+::group::tests/openspec/cli.test.ts:
+(pass) getOpenSpecVersion > returns the version string when openspec responds successfully [0.17ms]
+(pass) getOpenSpecVersion > returns null when openspec exits non-zero [0.11ms]
+(pass) getOpenSpecVersion > returns null when openspec cannot be spawned [0.11ms]
+(pass) isOpenSpecAvailable > reflects version availability [0.12ms]
+
+::endgroup::
+
+::group::tests/openspec/instructions.test.ts:
+(pass) getOpenSpecInstructions > invokes OpenSpec with the artifact id, change, and cwd [0.60ms]
+(pass) getOpenSpecInstructions > normalizes optional fields when OpenSpec provides them [0.34ms]
+(pass) getOpenSpecInstructions > rejects relative and glob output paths as unusable [0.20ms]
+(pass) getOpenSpecInstructions > accepts a pending artifact whose parent exists but target file does not [0.61ms]
+(pass) getOpenSpecInstructions > accepts an existing file output path [0.17ms]
+(pass) getOpenSpecInstructions > rejects a relative output path [0.15ms]
+(pass) getOpenSpecInstructions > rejects an output path whose parent directory does not exist [0.21ms]
+(pass) getOpenSpecInstructions > reports capture failures [0.19ms]
+(pass) getOpenSpecInstructions > reports a terminated process [0.12ms]
+(pass) getOpenSpecInstructions > reports invalid JSON including stdout [0.14ms]
+(pass) getOpenSpecInstructions > reports an invalid top-level result for [] [0.17ms]
+(pass) getOpenSpecInstructions > reports an invalid top-level result for "unexpected" [0.03ms]
+(pass) getOpenSpecInstructions > reports an invalid top-level result for null [0.04ms]
+(pass) getOpenSpecInstructions > reports a missing required field without a partial result [0.20ms]
+(pass) getOpenSpecInstructions > surfaces the first status message and fix on command failure [0.13ms]
+(pass) getOpenSpecInstructions > does not return a partial result for a malformed dependency [0.16ms]
+
+::endgroup::
+
+::group::tests/openspec/doctor.test.ts:
+(pass) runOpenSpecDoctor > short-circuits doctor JSON for a present but incompatible install [0.59ms]
+(pass) runOpenSpecDoctor > surfaces a version shortfall warning without incompatible-install [0.53ms]
+(pass) runOpenSpecDoctor > reports a healthy initialized project [0.31ms]
+(pass) runOpenSpecDoctor > reports unhealthy when root is healthy but status has errors [0.29ms]
+(pass) runOpenSpecDoctor > reports unhealthy when root itself is not healthy [0.14ms]
+(pass) runOpenSpecDoctor > reports uninitialized when root object is missing [0.15ms]
+(pass) runOpenSpecDoctor > returns an error when openspec cannot be spawned [0.41ms]
+(pass) runOpenSpecDoctor > returns an error when the process is terminated [0.13ms]
+(pass) runOpenSpecDoctor > returns an error for invalid JSON [0.15ms]
+(pass) runOpenSpecDoctor > returns an error for an invalid result shape [0.16ms]
+(pass) runOpenSpecDoctor > accepts status entries with unexpected fields [0.20ms]
+(pass) runOpenSpecDoctor > rejects status entries missing consumed fields [0.18ms]
+(pass) runOpenSpecDoctor > accepts status entries without an optional fix [0.22ms]
+
+::endgroup::
+
+::group::tests/openspec/helpers-characterization.test.ts:
+(pass) formatCommandFailure characterization (create-change wrapper) > returns message only [0.56ms]
+(pass) formatCommandFailure characterization (create-change wrapper) > falls back to exit code for fix only [0.18ms]
+(pass) formatCommandFailure characterization (create-change wrapper) > returns message and fix joined [0.17ms]
+(pass) formatCommandFailure characterization (create-change wrapper) > falls back to exit code when status is absent or malformed [0.26ms]
+(pass) formatCommandFailure characterization (context wrapper) > returns message only [0.39ms]
+(pass) formatCommandFailure characterization (context wrapper) > falls back to exit code for fix only [0.12ms]
+(pass) formatCommandFailure characterization (context wrapper) > returns message and fix joined [0.16ms]
+(pass) formatCommandFailure characterization (context wrapper) > falls back to exit code when status is absent or malformed [0.22ms]
+(pass) formatArchiveFailure characterization (now canonical formatCommandFailure) > returns message only [0.04ms]
+(pass) formatArchiveFailure characterization (now canonical formatCommandFailure) > falls back to exit code for fix only [0.03ms]
+(pass) formatArchiveFailure characterization (now canonical formatCommandFailure) > returns message and fix joined [0.04ms]
+(pass) formatArchiveFailure characterization (now canonical formatCommandFailure) > falls back to exit code when status is absent or malformed [0.04ms]
+(pass) errorMessage characterization (doctor wrapper) > extracts Error.message from Error instances [1.03ms]
+(pass) errorMessage characterization (doctor wrapper) > leaves strings intact [0.16ms]
+(pass) errorMessage characterization (doctor wrapper) > stringifies objects [0.14ms]
+(pass) errorMessage characterization (doctor wrapper) > stringifies null [0.14ms]
+(pass) errorMessage characterization (doctor wrapper) > stringifies undefined [0.16ms]
+
+::endgroup::
+
+::group::tests/openspec/context.test.ts:
+(pass) getOpenSpecContext > uses the canonical list command and reports active changes [0.23ms]
+(pass) getOpenSpecContext > reports an initialized project with no active changes [0.17ms]
+(pass) getOpenSpecContext > treats the implicit root as uninitialized without assuming nearest is the only valid root [0.14ms]
+(pass) getOpenSpecContext > reports an unavailable CLI without an initialization error [0.21ms]
+(pass) getOpenSpecContext > preserves native command failures as context errors [0.21ms]
+(pass) getOpenSpecContext > does not turn malformed output into an uninitialized result [0.17ms]
+(pass) getOpenSpecContext > reports termination before an exit code is available [0.14ms]
+(pass) getOpenSpecContext > reports an invalid result shape [0.20ms]
+(pass) getOpenSpecContext > reports a missing or incomplete root/changes as invalid [0.22ms]
+(pass) getOpenSpecContext > reports a malformed active change entry as invalid [0.26ms]
+(pass) getOpenSpecContext > preserves native command failures with message only [0.18ms]
+(pass) getOpenSpecContext > falls back to exit code for fix only [0.15ms]
+(pass) getOpenSpecContext > falls back to exit code when status is absent or malformed [0.24ms]
+(pass) getOpenSpecContext > accepts an unknown response field as forward-compatible [0.17ms]
+
+::endgroup::
+
+::group::tests/openspec/archive.test.ts:
+(pass) archiveChange > reports a successful archive [0.76ms]
+(pass) archiveChange > reports spawn failure [0.17ms]
+(pass) archiveChange > reports termination before exit [0.14ms]
+(pass) archiveChange > reports invalid JSON [0.11ms]
+(pass) archiveChange > reports an invalid result shape [0.11ms]
+(pass) archiveChange > preserves native failure with message only [0.12ms]
+(pass) archiveChange > falls back to exit code for fix only [0.14ms]
+(pass) archiveChange > preserves native failure with message and fix [0.13ms]
+(pass) archiveChange > falls back to exit code when status is absent or malformed [0.18ms]
+(pass) archiveChange > accepts an unknown success field as forward-compatible [0.14ms]
+
+::endgroup::
+
+::group::tests/openspec/initialized.test.ts:
+(pass) isOpenSpecInitialized > returns false when no openspec directory exists [0.69ms]
+(pass) isOpenSpecInitialized > returns true when openspec/config.yaml exists in the directory [0.66ms]
+
+::endgroup::
+
+::group::tests/openspec/init.test.ts:
+(pass) isOpenSpecInitialized > returns false when no openspec directory exists [0.37ms]
+(pass) isOpenSpecInitialized > returns true when openspec/config.yaml exists in the directory [0.62ms]
+(pass) initializeOpenSpec > delegates to openspec init and returns success [0.29ms]
+(pass) initializeOpenSpec > returns the raw failure result when openspec init fails [0.11ms]
+(pass) initializeOpenSpec > accepts an unknown init response field as forward-compatible [0.13ms]
+
+::endgroup::
+
+::group::tests/models/validate-selections.test.ts:
+(pass) validateConfigSelections > reports no issues when every role is blank [0.10ms]
+(pass) validateConfigSelections > reports no issues for a model with a supported variant [0.11ms]
+(pass) validateConfigSelections > flags a variant without a model [0.08ms]
+(pass) validateConfigSelections > flags an unknown model [0.07ms]
+(pass) validateConfigSelections > flags a variant the model does not support [0.08ms]
+(pass) validateConfigSelections > reports no issues for a blank model with no variant [0.10ms]
+
+::endgroup::
+
+::group::tests/models/discovery.test.ts:
+(pass) configuredModels > flattens multiple providers into one model list [0.05ms]
+(pass) configuredModels > uses model.providerID when present [0.11ms]
+(pass) configuredModels > falls back to provider.id when model.providerID is empty [0.11ms]
+(pass) configuredModels > sorts variants alphabetically [0.09ms]
+(pass) configuredModels > returns an empty variants array when the model has none [0.08ms]
+(pass) configuredModels > sorts the result by providerName then model name [0.10ms]
+(pass) configuredModels > returns an empty list for no providers [0.03ms]
+
+::endgroup::
+
+::group::tests/models/selection.test.ts:
+(pass) selectConfiguredModel > sets the entry model to the selected model id [0.04ms]
+(pass) selectConfiguredModel > retains a variant the selected model supports [0.05ms]
+(pass) selectConfiguredModel > drops a variant the selected model does not support [0.04ms]
+(pass) selectConfiguredModel > adds no variant when the entry had none [0.03ms]
+(pass) clearConfiguredModel > clears the model override and variant [0.03ms]
+
+::endgroup::
+
+::group::tests/models/draft.test.ts:
+(pass) createConfigDraft > returns all seven roles [0.14ms]
+(pass) createConfigDraft > copies model and variant from the source [0.10ms]
+(pass) createConfigDraft > preserves the persisted concurrency limit [0.06ms]
+(pass) createConfigDraft > drops a blank model (trimmed) so the entry has no model key [0.08ms]
+(pass) createConfigDraft > flags a role whose saved model is not in the catalogue as unresolved [0.07ms]
+(pass) createConfigDraft > does not flag a blank model as unresolved [0.06ms]
+(pass) createConfigDraft > retains a variant even when the source model is blank [0.07ms]
+
+::endgroup::
+
+::group::tests/models/category.test.ts:
+(pass) agentDisplayName > returns friendly names in workflow order [0.04ms]
+(pass) ROLE_WORKFLOW_ORDER > matches the SpecOps workflow order [0.02ms]
+
+::endgroup::
+
+::group::tests/tui/plugin.test.ts:
+4 | import { fakeTuiApi } from "./helpers.js";
+5 | 
+6 | describe("SpecOpsTuiPlugin", () => {
+7 |     test("exposes the specops plugin identity and TUI factory", () => {
+8 |         expect(SpecOpsTuiPlugin.id).toBe("specops");
+9 |         expect(SpecOpsTuiPlugin.tui).toBeFunction();
+                                         ^
+error: expect(received).toBeFunction()
+
+Received: undefined
+
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/plugin.test.ts:9:38)
+
+::error file=tests/tui/plugin.test.ts,line=9,col=38,title=error: expect(received).toBeFunction()::Received: undefined%0A%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/plugin.test.ts:9:38)
+(fail) SpecOpsTuiPlugin > exposes the specops plugin identity and TUI factory [0.08ms]
+10 |     });
+11 | 
+12 |     test("registers the SpecOps Configure command when loaded by OpenCode", async () => {
+13 |         const fake = fakeTuiApi(allProviders);
+14 | 
+15 |         await SpecOpsTuiPlugin.tui(fake.api);
+                                    ^
+TypeError: SpecOpsTuiPlugin.tui is not a function. (In 'SpecOpsTuiPlugin.tui(fake.api)', 'SpecOpsTuiPlugin.tui' is undefined)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/plugin.test.ts:15:32)
+
+::error file=tests/tui/plugin.test.ts,line=15,col=32,title=TypeError: SpecOpsTuiPlugin.tui is not a function. (In 'SpecOpsTuiPlugin.tui(fake.api)', 'SpecOpsTuiPlugin.tui' is undefined)::%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/plugin.test.ts:15:32)
+(fail) SpecOpsTuiPlugin > registers the SpecOps Configure command when loaded by OpenCode [0.28ms]
+23 |         expect(fake.isCommandRegistered).toBe(true);
+24 |     });
+25 | 
+26 |     test("removes the palette command when the TUI plugin is disposed", async () => {
+27 |         const fake = fakeTuiApi(allProviders);
+28 |         await SpecOpsTuiPlugin.tui(fake.api);
+                                    ^
+TypeError: SpecOpsTuiPlugin.tui is not a function. (In 'SpecOpsTuiPlugin.tui(fake.api)', 'SpecOpsTuiPlugin.tui' is undefined)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/plugin.test.ts:28:32)
+
+::error file=tests/tui/plugin.test.ts,line=28,col=32,title=TypeError: SpecOpsTuiPlugin.tui is not a function. (In 'SpecOpsTuiPlugin.tui(fake.api)', 'SpecOpsTuiPlugin.tui' is undefined)::%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/plugin.test.ts:28:32)
+(fail) SpecOpsTuiPlugin > removes the palette command when the TUI plugin is disposed [0.16ms]
+
+::endgroup::
+
+::group::tests/tui/display.test.ts:
+(pass) effectiveConcurrency > returns the configured concurrency limit [0.10ms]
+(pass) effectiveConcurrency > defaults to two for older configurations without the field [0.08ms]
+(pass) changedAgentIds > returns no roles when the configurations match [0.15ms]
+(pass) changedAgentIds > detects model and variant changes [0.10ms]
+(pass) changedAgentIds > reports roles in fixed ALL_AGENT_IDS order [0.10ms]
+(pass) describeSelection > describes roles without a model as using the OpenCode default [0.14ms]
+(pass) describeSelection > formats a known model with its variant or the default label [0.09ms]
+(pass) describeSelection > keeps unknown saved models visible by id [0.05ms]
+(pass) describeSelection > truncates long display names to keep role rows readable [0.11ms]
+
+::endgroup::
+
+::group::tests/tui/registration.test.ts:
+ 5 | 
+ 6 | /** Register the OpenCode 2 command-palette entry for SpecOps configuration. */
+ 7 | export function registerModelSettings(ctx: Plugin.Context): void {
+ 8 |     let editorOpen = false;
+ 9 | 
+10 |     ctx.keymap.layer(() => ({
+                    ^
+TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({
+    commands: [
+      {
+        id: COMMAND_NAME,
+        title: "SpecOps Configure",
+        description: "Choose a configured OpenCode model and variant for each role",
+        group: "SpecOps",
+        palette: !0,
+        enabled: () => !editorOpen,
+        run: async () => {
+          if (editorOpen)
+            return;
+          editorOpen = !0;
+          try {
+            await showModelEditor(ctx);
+          } catch (error) {
+            ctx.ui.toast.show({
+              variant: "error",
+              title: "SpecOps model settings",
+              message: error instanceof Error ? error.message : String(error)
+            });
+          } finally {
+            editorOpen = !1;
+          }
+        }
+      }
+    ]
+  }))', 'ctx.keymap.layer' is undefined)
+      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:11:9)
+
+::error file=src/tui/registration.ts,line=10,col=16,title=TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({::      {%0A        id: COMMAND_NAME,%0A        title: "SpecOps Configure",%0A        description: "Choose a configured OpenCode model and variant for each role",%0A        group: "SpecOps",%0A        palette: !0,%0A        enabled: () => !editorOpen,%0A        run: async () => {%0A          if (editorOpen)%0A            return;%0A          editorOpen = !0;%0A          try {%0A            await showModelEditor(ctx);%0A          } catch (error) {%0A            ctx.ui.toast.show({%0A              variant: "error",%0A              title: "SpecOps model settings",%0A              message: error instanceof Error ? error.message : String(error)%0A            });%0A          } finally {%0A            editorOpen = !1;%0A          }%0A        }%0A      }%0A    ]%0A  }))', 'ctx.keymap.layer' is undefined)%0A      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:11:9)
+(fail) registerModelSettings > registers the SpecOps Configure palette command [0.12ms]
+ 5 | 
+ 6 | /** Register the OpenCode 2 command-palette entry for SpecOps configuration. */
+ 7 | export function registerModelSettings(ctx: Plugin.Context): void {
+ 8 |     let editorOpen = false;
+ 9 | 
+10 |     ctx.keymap.layer(() => ({
+                    ^
+TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({
+    commands: [
+      {
+        id: COMMAND_NAME,
+        title: "SpecOps Configure",
+        description: "Choose a configured OpenCode model and variant for each role",
+        group: "SpecOps",
+        palette: !0,
+        enabled: () => !editorOpen,
+        run: async () => {
+          if (editorOpen)
+            return;
+          editorOpen = !0;
+          try {
+            await showModelEditor(ctx);
+          } catch (error) {
+            ctx.ui.toast.show({
+              variant: "error",
+              title: "SpecOps model settings",
+              message: error instanceof Error ? error.message : String(error)
+            });
+          } finally {
+            editorOpen = !1;
+          }
+        }
+      }
+    ]
+  }))', 'ctx.keymap.layer' is undefined)
+      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:27:17)
+      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:25:13)
+      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)
+
+::error file=src/tui/registration.ts,line=10,col=16,title=TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({::      {%0A        id: COMMAND_NAME,%0A        title: "SpecOps Configure",%0A        description: "Choose a configured OpenCode model and variant for each role",%0A        group: "SpecOps",%0A        palette: !0,%0A        enabled: () => !editorOpen,%0A        run: async () => {%0A          if (editorOpen)%0A            return;%0A          editorOpen = !0;%0A          try {%0A            await showModelEditor(ctx);%0A          } catch (error) {%0A            ctx.ui.toast.show({%0A              variant: "error",%0A              title: "SpecOps model settings",%0A              message: error instanceof Error ? error.message : String(error)%0A            });%0A          } finally {%0A            editorOpen = !1;%0A          }%0A        }%0A      }%0A    ]%0A  }))', 'ctx.keymap.layer' is undefined)%0A      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:27:17)%0A      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:25:13)%0A      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)
+(fail) registerModelSettings > opens a role list with all seven roles and actions [0.98ms]
+ 5 | 
+ 6 | /** Register the OpenCode 2 command-palette entry for SpecOps configuration. */
+ 7 | export function registerModelSettings(ctx: Plugin.Context): void {
+ 8 |     let editorOpen = false;
+ 9 | 
+10 |     ctx.keymap.layer(() => ({
+                    ^
+TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({
+    commands: [
+      {
+        id: COMMAND_NAME,
+        title: "SpecOps Configure",
+        description: "Choose a configured OpenCode model and variant for each role",
+        group: "SpecOps",
+        palette: !0,
+        enabled: () => !editorOpen,
+        run: async () => {
+          if (editorOpen)
+            return;
+          editorOpen = !0;
+          try {
+            await showModelEditor(ctx);
+          } catch (error) {
+            ctx.ui.toast.show({
+              variant: "error",
+              title: "SpecOps model settings",
+              message: error instanceof Error ? error.message : String(error)
+            });
+          } finally {
+            editorOpen = !1;
+          }
+        }
+      }
+    ]
+  }))', 'ctx.keymap.layer' is undefined)
+      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:63:17)
+      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:61:13)
+      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)
+
+::error file=src/tui/registration.ts,line=10,col=16,title=TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({::      {%0A        id: COMMAND_NAME,%0A        title: "SpecOps Configure",%0A        description: "Choose a configured OpenCode model and variant for each role",%0A        group: "SpecOps",%0A        palette: !0,%0A        enabled: () => !editorOpen,%0A        run: async () => {%0A          if (editorOpen)%0A            return;%0A          editorOpen = !0;%0A          try {%0A            await showModelEditor(ctx);%0A          } catch (error) {%0A            ctx.ui.toast.show({%0A              variant: "error",%0A              title: "SpecOps model settings",%0A              message: error instanceof Error ? error.message : String(error)%0A            });%0A          } finally {%0A            editorOpen = !1;%0A          }%0A        }%0A      }%0A    ]%0A  }))', 'ctx.keymap.layer' is undefined)%0A      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:63:17)%0A      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:61:13)%0A      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)
+(fail) registerModelSettings > does not open a second editor while one is already open [0.48ms]
+ 5 | 
+ 6 | /** Register the OpenCode 2 command-palette entry for SpecOps configuration. */
+ 7 | export function registerModelSettings(ctx: Plugin.Context): void {
+ 8 |     let editorOpen = false;
+ 9 | 
+10 |     ctx.keymap.layer(() => ({
+                    ^
+TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({
+    commands: [
+      {
+        id: COMMAND_NAME,
+        title: "SpecOps Configure",
+        description: "Choose a configured OpenCode model and variant for each role",
+        group: "SpecOps",
+        palette: !0,
+        enabled: () => !editorOpen,
+        run: async () => {
+          if (editorOpen)
+            return;
+          editorOpen = !0;
+          try {
+            await showModelEditor(ctx);
+          } catch (error) {
+            ctx.ui.toast.show({
+              variant: "error",
+              title: "SpecOps model settings",
+              message: error instanceof Error ? error.message : String(error)
+            });
+          } finally {
+            editorOpen = !1;
+          }
+        }
+      }
+    ]
+  }))', 'ctx.keymap.layer' is undefined)
+      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:77:17)
+      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:75:13)
+      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)
+      at async <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:74:15)
+
+::error file=src/tui/registration.ts,line=10,col=16,title=TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({::      {%0A        id: COMMAND_NAME,%0A        title: "SpecOps Configure",%0A        description: "Choose a configured OpenCode model and variant for each role",%0A        group: "SpecOps",%0A        palette: !0,%0A        enabled: () => !editorOpen,%0A        run: async () => {%0A          if (editorOpen)%0A            return;%0A          editorOpen = !0;%0A          try {%0A            await showModelEditor(ctx);%0A          } catch (error) {%0A            ctx.ui.toast.show({%0A              variant: "error",%0A              title: "SpecOps model settings",%0A              message: error instanceof Error ? error.message : String(error)%0A            });%0A          } finally {%0A            editorOpen = !1;%0A          }%0A        }%0A      }%0A    ]%0A  }))', 'ctx.keymap.layer' is undefined)%0A      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:77:17)%0A      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:75:13)%0A      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)%0A      at async <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:74:15)
+(fail) registerModelSettings > reports an error when OpenCode has no configured models [0.52ms]
+ 5 | 
+ 6 | /** Register the OpenCode 2 command-palette entry for SpecOps configuration. */
+ 7 | export function registerModelSettings(ctx: Plugin.Context): void {
+ 8 |     let editorOpen = false;
+ 9 | 
+10 |     ctx.keymap.layer(() => ({
+                    ^
+TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({
+    commands: [
+      {
+        id: COMMAND_NAME,
+        title: "SpecOps Configure",
+        description: "Choose a configured OpenCode model and variant for each role",
+        group: "SpecOps",
+        palette: !0,
+        enabled: () => !editorOpen,
+        run: async () => {
+          if (editorOpen)
+            return;
+          editorOpen = !0;
+          try {
+            await showModelEditor(ctx);
+          } catch (error) {
+            ctx.ui.toast.show({
+              variant: "error",
+              title: "SpecOps model settings",
+              message: error instanceof Error ? error.message : String(error)
+            });
+          } finally {
+            editorOpen = !1;
+          }
+        }
+      }
+    ]
+  }))', 'ctx.keymap.layer' is undefined)
+      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:95:9)
+
+::error file=src/tui/registration.ts,line=10,col=16,title=TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({::      {%0A        id: COMMAND_NAME,%0A        title: "SpecOps Configure",%0A        description: "Choose a configured OpenCode model and variant for each role",%0A        group: "SpecOps",%0A        palette: !0,%0A        enabled: () => !editorOpen,%0A        run: async () => {%0A          if (editorOpen)%0A            return;%0A          editorOpen = !0;%0A          try {%0A            await showModelEditor(ctx);%0A          } catch (error) {%0A            ctx.ui.toast.show({%0A              variant: "error",%0A              title: "SpecOps model settings",%0A              message: error instanceof Error ? error.message : String(error)%0A            });%0A          } finally {%0A            editorOpen = !1;%0A          }%0A        }%0A      }%0A    ]%0A  }))', 'ctx.keymap.layer' is undefined)%0A      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:95:9)
+(fail) registerModelSettings > unregisters the palette command on dispose [0.11ms]
+ 5 | 
+ 6 | /** Register the OpenCode 2 command-palette entry for SpecOps configuration. */
+ 7 | export function registerModelSettings(ctx: Plugin.Context): void {
+ 8 |     let editorOpen = false;
+ 9 | 
+10 |     ctx.keymap.layer(() => ({
+                    ^
+TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({
+    commands: [
+      {
+        id: COMMAND_NAME,
+        title: "SpecOps Configure",
+        description: "Choose a configured OpenCode model and variant for each role",
+        group: "SpecOps",
+        palette: !0,
+        enabled: () => !editorOpen,
+        run: async () => {
+          if (editorOpen)
+            return;
+          editorOpen = !0;
+          try {
+            await showModelEditor(ctx);
+          } catch (error) {
+            ctx.ui.toast.show({
+              variant: "error",
+              title: "SpecOps model settings",
+              message: error instanceof Error ? error.message : String(error)
+            });
+          } finally {
+            editorOpen = !1;
+          }
+        }
+      }
+    ]
+  }))', 'ctx.keymap.layer' is undefined)
+      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:112:17)
+      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:105:13)
+      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)
+
+::error file=src/tui/registration.ts,line=10,col=16,title=TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({::      {%0A        id: COMMAND_NAME,%0A        title: "SpecOps Configure",%0A        description: "Choose a configured OpenCode model and variant for each role",%0A        group: "SpecOps",%0A        palette: !0,%0A        enabled: () => !editorOpen,%0A        run: async () => {%0A          if (editorOpen)%0A            return;%0A          editorOpen = !0;%0A          try {%0A            await showModelEditor(ctx);%0A          } catch (error) {%0A            ctx.ui.toast.show({%0A              variant: "error",%0A              title: "SpecOps model settings",%0A              message: error instanceof Error ? error.message : String(error)%0A            });%0A          } finally {%0A            editorOpen = !1;%0A          }%0A        }%0A      }%0A    ]%0A  }))', 'ctx.keymap.layer' is undefined)%0A      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:112:17)%0A      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/registration.test.ts:105:13)%0A      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)
+(fail) registerModelSettings > toasts an error and releases the open guard when the editor fails [0.49ms]
+
+::endgroup::
+
+::group::tests/tui/save-flow.test.ts:
+ 5 | 
+ 6 | /** Register the OpenCode 2 command-palette entry for SpecOps configuration. */
+ 7 | export function registerModelSettings(ctx: Plugin.Context): void {
+ 8 |     let editorOpen = false;
+ 9 | 
+10 |     ctx.keymap.layer(() => ({
+                    ^
+TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({
+    commands: [
+      {
+        id: COMMAND_NAME,
+        title: "SpecOps Configure",
+        description: "Choose a configured OpenCode model and variant for each role",
+        group: "SpecOps",
+        palette: !0,
+        enabled: () => !editorOpen,
+        run: async () => {
+          if (editorOpen)
+            return;
+          editorOpen = !0;
+          try {
+            await showModelEditor(ctx);
+          } catch (error) {
+            ctx.ui.toast.show({
+              variant: "error",
+              title: "SpecOps model settings",
+              message: error instanceof Error ? error.message : String(error)
+            });
+          } finally {
+            editorOpen = !1;
+          }
+        }
+      }
+    ]
+  }))', 'ctx.keymap.layer' is undefined)
+      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:22:17)
+      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:20:13)
+      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)
+      at async <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:19:15)
+
+::error file=src/tui/registration.ts,line=10,col=16,title=TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({::      {%0A        id: COMMAND_NAME,%0A        title: "SpecOps Configure",%0A        description: "Choose a configured OpenCode model and variant for each role",%0A        group: "SpecOps",%0A        palette: !0,%0A        enabled: () => !editorOpen,%0A        run: async () => {%0A          if (editorOpen)%0A            return;%0A          editorOpen = !0;%0A          try {%0A            await showModelEditor(ctx);%0A          } catch (error) {%0A            ctx.ui.toast.show({%0A              variant: "error",%0A              title: "SpecOps model settings",%0A              message: error instanceof Error ? error.message : String(error)%0A            });%0A          } finally {%0A            editorOpen = !1;%0A          }%0A        }%0A      }%0A    ]%0A  }))', 'ctx.keymap.layer' is undefined)%0A      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:22:17)%0A      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:20:13)%0A      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)%0A      at async <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:19:15)
+(fail) SpecOps Configure save flow > selects a role, model, and variant and persists after confirmation [0.59ms]
+ 5 | 
+ 6 | /** Register the OpenCode 2 command-palette entry for SpecOps configuration. */
+ 7 | export function registerModelSettings(ctx: Plugin.Context): void {
+ 8 |     let editorOpen = false;
+ 9 | 
+10 |     ctx.keymap.layer(() => ({
+                    ^
+TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({
+    commands: [
+      {
+        id: COMMAND_NAME,
+        title: "SpecOps Configure",
+        description: "Choose a configured OpenCode model and variant for each role",
+        group: "SpecOps",
+        palette: !0,
+        enabled: () => !editorOpen,
+        run: async () => {
+          if (editorOpen)
+            return;
+          editorOpen = !0;
+          try {
+            await showModelEditor(ctx);
+          } catch (error) {
+            ctx.ui.toast.show({
+              variant: "error",
+              title: "SpecOps model settings",
+              message: error instanceof Error ? error.message : String(error)
+            });
+          } finally {
+            editorOpen = !1;
+          }
+        }
+      }
+    ]
+  }))', 'ctx.keymap.layer' is undefined)
+      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:51:17)
+      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:49:13)
+      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)
+      at async <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:48:15)
+
+::error file=src/tui/registration.ts,line=10,col=16,title=TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({::      {%0A        id: COMMAND_NAME,%0A        title: "SpecOps Configure",%0A        description: "Choose a configured OpenCode model and variant for each role",%0A        group: "SpecOps",%0A        palette: !0,%0A        enabled: () => !editorOpen,%0A        run: async () => {%0A          if (editorOpen)%0A            return;%0A          editorOpen = !0;%0A          try {%0A            await showModelEditor(ctx);%0A          } catch (error) {%0A            ctx.ui.toast.show({%0A              variant: "error",%0A              title: "SpecOps model settings",%0A              message: error instanceof Error ? error.message : String(error)%0A            });%0A          } finally {%0A            editorOpen = !1;%0A          }%0A        }%0A      }%0A    ]%0A  }))', 'ctx.keymap.layer' is undefined)%0A      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:51:17)%0A      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:49:13)%0A      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)%0A      at async <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:48:15)
+(fail) SpecOps Configure save flow > toggles and persists frontier escalation independently of role mappings [0.58ms]
+ 5 | 
+ 6 | /** Register the OpenCode 2 command-palette entry for SpecOps configuration. */
+ 7 | export function registerModelSettings(ctx: Plugin.Context): void {
+ 8 |     let editorOpen = false;
+ 9 | 
+10 |     ctx.keymap.layer(() => ({
+                    ^
+TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({
+    commands: [
+      {
+        id: COMMAND_NAME,
+        title: "SpecOps Configure",
+        description: "Choose a configured OpenCode model and variant for each role",
+        group: "SpecOps",
+        palette: !0,
+        enabled: () => !editorOpen,
+        run: async () => {
+          if (editorOpen)
+            return;
+          editorOpen = !0;
+          try {
+            await showModelEditor(ctx);
+          } catch (error) {
+            ctx.ui.toast.show({
+              variant: "error",
+              title: "SpecOps model settings",
+              message: error instanceof Error ? error.message : String(error)
+            });
+          } finally {
+            editorOpen = !1;
+          }
+        }
+      }
+    ]
+  }))', 'ctx.keymap.layer' is undefined)
+      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:99:17)
+      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:97:13)
+      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)
+      at async <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:96:15)
+
+::error file=src/tui/registration.ts,line=10,col=16,title=TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({::      {%0A        id: COMMAND_NAME,%0A        title: "SpecOps Configure",%0A        description: "Choose a configured OpenCode model and variant for each role",%0A        group: "SpecOps",%0A        palette: !0,%0A        enabled: () => !editorOpen,%0A        run: async () => {%0A          if (editorOpen)%0A            return;%0A          editorOpen = !0;%0A          try {%0A            await showModelEditor(ctx);%0A          } catch (error) {%0A            ctx.ui.toast.show({%0A              variant: "error",%0A              title: "SpecOps model settings",%0A              message: error instanceof Error ? error.message : String(error)%0A            });%0A          } finally {%0A            editorOpen = !1;%0A          }%0A        }%0A      }%0A    ]%0A  }))', 'ctx.keymap.layer' is undefined)%0A      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:99:17)%0A      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:97:13)%0A      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)%0A      at async <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:96:15)
+(fail) SpecOps Configure save flow > persists the selected concurrent subagent limit as a number [0.59ms]
+ 5 | 
+ 6 | /** Register the OpenCode 2 command-palette entry for SpecOps configuration. */
+ 7 | export function registerModelSettings(ctx: Plugin.Context): void {
+ 8 |     let editorOpen = false;
+ 9 | 
+10 |     ctx.keymap.layer(() => ({
+                    ^
+TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({
+    commands: [
+      {
+        id: COMMAND_NAME,
+        title: "SpecOps Configure",
+        description: "Choose a configured OpenCode model and variant for each role",
+        group: "SpecOps",
+        palette: !0,
+        enabled: () => !editorOpen,
+        run: async () => {
+          if (editorOpen)
+            return;
+          editorOpen = !0;
+          try {
+            await showModelEditor(ctx);
+          } catch (error) {
+            ctx.ui.toast.show({
+              variant: "error",
+              title: "SpecOps model settings",
+              message: error instanceof Error ? error.message : String(error)
+            });
+          } finally {
+            editorOpen = !1;
+          }
+        }
+      }
+    ]
+  }))', 'ctx.keymap.layer' is undefined)
+      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:133:17)
+      at async withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)
+
+::error file=src/tui/registration.ts,line=10,col=16,title=TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({::      {%0A        id: COMMAND_NAME,%0A        title: "SpecOps Configure",%0A        description: "Choose a configured OpenCode model and variant for each role",%0A        group: "SpecOps",%0A        palette: !0,%0A        enabled: () => !editorOpen,%0A        run: async () => {%0A          if (editorOpen)%0A            return;%0A          editorOpen = !0;%0A          try {%0A            await showModelEditor(ctx);%0A          } catch (error) {%0A            ctx.ui.toast.show({%0A              variant: "error",%0A              title: "SpecOps model settings",%0A              message: error instanceof Error ? error.message : String(error)%0A            });%0A          } finally {%0A            editorOpen = !1;%0A          }%0A        }%0A      }%0A    ]%0A  }))', 'ctx.keymap.layer' is undefined)%0A      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:133:17)%0A      at async withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)
+(fail) SpecOps Configure save flow > indicates the persisted concurrent subagent limit in the selector [6.90ms]
+ 5 | 
+ 6 | /** Register the OpenCode 2 command-palette entry for SpecOps configuration. */
+ 7 | export function registerModelSettings(ctx: Plugin.Context): void {
+ 8 |     let editorOpen = false;
+ 9 | 
+10 |     ctx.keymap.layer(() => ({
+                    ^
+TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({
+    commands: [
+      {
+        id: COMMAND_NAME,
+        title: "SpecOps Configure",
+        description: "Choose a configured OpenCode model and variant for each role",
+        group: "SpecOps",
+        palette: !0,
+        enabled: () => !editorOpen,
+        run: async () => {
+          if (editorOpen)
+            return;
+          editorOpen = !0;
+          try {
+            await showModelEditor(ctx);
+          } catch (error) {
+            ctx.ui.toast.show({
+              variant: "error",
+              title: "SpecOps model settings",
+              message: error instanceof Error ? error.message : String(error)
+            });
+          } finally {
+            editorOpen = !1;
+          }
+        }
+      }
+    ]
+  }))', 'ctx.keymap.layer' is undefined)
+      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:157:17)
+      at async withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)
+
+::error file=src/tui/registration.ts,line=10,col=16,title=TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({::      {%0A        id: COMMAND_NAME,%0A        title: "SpecOps Configure",%0A        description: "Choose a configured OpenCode model and variant for each role",%0A        group: "SpecOps",%0A        palette: !0,%0A        enabled: () => !editorOpen,%0A        run: async () => {%0A          if (editorOpen)%0A            return;%0A          editorOpen = !0;%0A          try {%0A            await showModelEditor(ctx);%0A          } catch (error) {%0A            ctx.ui.toast.show({%0A              variant: "error",%0A              title: "SpecOps model settings",%0A              message: error instanceof Error ? error.message : String(error)%0A            });%0A          } finally {%0A            editorOpen = !1;%0A          }%0A        }%0A      }%0A    ]%0A  }))', 'ctx.keymap.layer' is undefined)%0A      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:157:17)%0A      at async withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)
+(fail) SpecOps Configure save flow > preserves the persisted concurrent limit when saving a model change [1.88ms]
+ 5 | 
+ 6 | /** Register the OpenCode 2 command-palette entry for SpecOps configuration. */
+ 7 | export function registerModelSettings(ctx: Plugin.Context): void {
+ 8 |     let editorOpen = false;
+ 9 | 
+10 |     ctx.keymap.layer(() => ({
+                    ^
+TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({
+    commands: [
+      {
+        id: COMMAND_NAME,
+        title: "SpecOps Configure",
+        description: "Choose a configured OpenCode model and variant for each role",
+        group: "SpecOps",
+        palette: !0,
+        enabled: () => !editorOpen,
+        run: async () => {
+          if (editorOpen)
+            return;
+          editorOpen = !0;
+          try {
+            await showModelEditor(ctx);
+          } catch (error) {
+            ctx.ui.toast.show({
+              variant: "error",
+              title: "SpecOps model settings",
+              message: error instanceof Error ? error.message : String(error)
+            });
+          } finally {
+            editorOpen = !1;
+          }
+        }
+      }
+    ]
+  }))', 'ctx.keymap.layer' is undefined)
+      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:171:17)
+      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:169:13)
+      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)
+      at async <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:168:15)
+
+::error file=src/tui/registration.ts,line=10,col=16,title=TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({::      {%0A        id: COMMAND_NAME,%0A        title: "SpecOps Configure",%0A        description: "Choose a configured OpenCode model and variant for each role",%0A        group: "SpecOps",%0A        palette: !0,%0A        enabled: () => !editorOpen,%0A        run: async () => {%0A          if (editorOpen)%0A            return;%0A          editorOpen = !0;%0A          try {%0A            await showModelEditor(ctx);%0A          } catch (error) {%0A            ctx.ui.toast.show({%0A              variant: "error",%0A              title: "SpecOps model settings",%0A              message: error instanceof Error ? error.message : String(error)%0A            });%0A          } finally {%0A            editorOpen = !1;%0A          }%0A        }%0A      }%0A    ]%0A  }))', 'ctx.keymap.layer' is undefined)%0A      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:171:17)%0A      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:169:13)%0A      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)%0A      at async <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:168:15)
+(fail) SpecOps Configure save flow > shows the model and variant navigation options [0.53ms]
+ 5 | 
+ 6 | /** Register the OpenCode 2 command-palette entry for SpecOps configuration. */
+ 7 | export function registerModelSettings(ctx: Plugin.Context): void {
+ 8 |     let editorOpen = false;
+ 9 | 
+10 |     ctx.keymap.layer(() => ({
+                    ^
+TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({
+    commands: [
+      {
+        id: COMMAND_NAME,
+        title: "SpecOps Configure",
+        description: "Choose a configured OpenCode model and variant for each role",
+        group: "SpecOps",
+        palette: !0,
+        enabled: () => !editorOpen,
+        run: async () => {
+          if (editorOpen)
+            return;
+          editorOpen = !0;
+          try {
+            await showModelEditor(ctx);
+          } catch (error) {
+            ctx.ui.toast.show({
+              variant: "error",
+              title: "SpecOps model settings",
+              message: error instanceof Error ? error.message : String(error)
+            });
+          } finally {
+            editorOpen = !1;
+          }
+        }
+      }
+    ]
+  }))', 'ctx.keymap.layer' is undefined)
+      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:188:17)
+      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:186:13)
+      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)
+      at async <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:185:15)
+
+::error file=src/tui/registration.ts,line=10,col=16,title=TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({::      {%0A        id: COMMAND_NAME,%0A        title: "SpecOps Configure",%0A        description: "Choose a configured OpenCode model and variant for each role",%0A        group: "SpecOps",%0A        palette: !0,%0A        enabled: () => !editorOpen,%0A        run: async () => {%0A          if (editorOpen)%0A            return;%0A          editorOpen = !0;%0A          try {%0A            await showModelEditor(ctx);%0A          } catch (error) {%0A            ctx.ui.toast.show({%0A              variant: "error",%0A              title: "SpecOps model settings",%0A              message: error instanceof Error ? error.message : String(error)%0A            });%0A          } finally {%0A            editorOpen = !1;%0A          }%0A        }%0A      }%0A    ]%0A  }))', 'ctx.keymap.layer' is undefined)%0A      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:188:17)%0A      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:186:13)%0A      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)%0A      at async <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:185:15)
+(fail) SpecOps Configure save flow > canceling review returns to the role list without saving [0.52ms]
+ 5 | 
+ 6 | /** Register the OpenCode 2 command-palette entry for SpecOps configuration. */
+ 7 | export function registerModelSettings(ctx: Plugin.Context): void {
+ 8 |     let editorOpen = false;
+ 9 | 
+10 |     ctx.keymap.layer(() => ({
+                    ^
+TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({
+    commands: [
+      {
+        id: COMMAND_NAME,
+        title: "SpecOps Configure",
+        description: "Choose a configured OpenCode model and variant for each role",
+        group: "SpecOps",
+        palette: !0,
+        enabled: () => !editorOpen,
+        run: async () => {
+          if (editorOpen)
+            return;
+          editorOpen = !0;
+          try {
+            await showModelEditor(ctx);
+          } catch (error) {
+            ctx.ui.toast.show({
+              variant: "error",
+              title: "SpecOps model settings",
+              message: error instanceof Error ? error.message : String(error)
+            });
+          } finally {
+            editorOpen = !1;
+          }
+        }
+      }
+    ]
+  }))', 'ctx.keymap.layer' is undefined)
+      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:205:17)
+      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:203:13)
+      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)
+      at async <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:202:15)
+
+::error file=src/tui/registration.ts,line=10,col=16,title=TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({::      {%0A        id: COMMAND_NAME,%0A        title: "SpecOps Configure",%0A        description: "Choose a configured OpenCode model and variant for each role",%0A        group: "SpecOps",%0A        palette: !0,%0A        enabled: () => !editorOpen,%0A        run: async () => {%0A          if (editorOpen)%0A            return;%0A          editorOpen = !0;%0A          try {%0A            await showModelEditor(ctx);%0A          } catch (error) {%0A            ctx.ui.toast.show({%0A              variant: "error",%0A              title: "SpecOps model settings",%0A              message: error instanceof Error ? error.message : String(error)%0A            });%0A          } finally {%0A            editorOpen = !1;%0A          }%0A        }%0A      }%0A    ]%0A  }))', 'ctx.keymap.layer' is undefined)%0A      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:205:17)%0A      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:203:13)%0A      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)%0A      at async <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:202:15)
+(fail) SpecOps Configure save flow > clears the model and variant so the default can be saved [0.51ms]
+ 5 | 
+ 6 | /** Register the OpenCode 2 command-palette entry for SpecOps configuration. */
+ 7 | export function registerModelSettings(ctx: Plugin.Context): void {
+ 8 |     let editorOpen = false;
+ 9 | 
+10 |     ctx.keymap.layer(() => ({
+                    ^
+TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({
+    commands: [
+      {
+        id: COMMAND_NAME,
+        title: "SpecOps Configure",
+        description: "Choose a configured OpenCode model and variant for each role",
+        group: "SpecOps",
+        palette: !0,
+        enabled: () => !editorOpen,
+        run: async () => {
+          if (editorOpen)
+            return;
+          editorOpen = !0;
+          try {
+            await showModelEditor(ctx);
+          } catch (error) {
+            ctx.ui.toast.show({
+              variant: "error",
+              title: "SpecOps model settings",
+              message: error instanceof Error ? error.message : String(error)
+            });
+          } finally {
+            editorOpen = !1;
+          }
+        }
+      }
+    ]
+  }))', 'ctx.keymap.layer' is undefined)
+      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:224:17)
+      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:222:13)
+      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)
+      at async <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:221:15)
+
+::error file=src/tui/registration.ts,line=10,col=16,title=TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({::      {%0A        id: COMMAND_NAME,%0A        title: "SpecOps Configure",%0A        description: "Choose a configured OpenCode model and variant for each role",%0A        group: "SpecOps",%0A        palette: !0,%0A        enabled: () => !editorOpen,%0A        run: async () => {%0A          if (editorOpen)%0A            return;%0A          editorOpen = !0;%0A          try {%0A            await showModelEditor(ctx);%0A          } catch (error) {%0A            ctx.ui.toast.show({%0A              variant: "error",%0A              title: "SpecOps model settings",%0A              message: error instanceof Error ? error.message : String(error)%0A            });%0A          } finally {%0A            editorOpen = !1;%0A          }%0A        }%0A      }%0A    ]%0A  }))', 'ctx.keymap.layer' is undefined)%0A      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:224:17)%0A      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:222:13)%0A      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)%0A      at async <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:221:15)
+(fail) SpecOps Configure save flow > toasts save failures and leaves the editor open for retry [1.11ms]
+ 5 | 
+ 6 | /** Register the OpenCode 2 command-palette entry for SpecOps configuration. */
+ 7 | export function registerModelSettings(ctx: Plugin.Context): void {
+ 8 |     let editorOpen = false;
+ 9 | 
+10 |     ctx.keymap.layer(() => ({
+                    ^
+TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({
+    commands: [
+      {
+        id: COMMAND_NAME,
+        title: "SpecOps Configure",
+        description: "Choose a configured OpenCode model and variant for each role",
+        group: "SpecOps",
+        palette: !0,
+        enabled: () => !editorOpen,
+        run: async () => {
+          if (editorOpen)
+            return;
+          editorOpen = !0;
+          try {
+            await showModelEditor(ctx);
+          } catch (error) {
+            ctx.ui.toast.show({
+              variant: "error",
+              title: "SpecOps model settings",
+              message: error instanceof Error ? error.message : String(error)
+            });
+          } finally {
+            editorOpen = !1;
+          }
+        }
+      }
+    ]
+  }))', 'ctx.keymap.layer' is undefined)
+      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:250:17)
+      at async withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)
+
+::error file=src/tui/registration.ts,line=10,col=16,title=TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({::      {%0A        id: COMMAND_NAME,%0A        title: "SpecOps Configure",%0A        description: "Choose a configured OpenCode model and variant for each role",%0A        group: "SpecOps",%0A        palette: !0,%0A        enabled: () => !editorOpen,%0A        run: async () => {%0A          if (editorOpen)%0A            return;%0A          editorOpen = !0;%0A          try {%0A            await showModelEditor(ctx);%0A          } catch (error) {%0A            ctx.ui.toast.show({%0A              variant: "error",%0A              title: "SpecOps model settings",%0A              message: error instanceof Error ? error.message : String(error)%0A            });%0A          } finally {%0A            editorOpen = !1;%0A          }%0A        }%0A      }%0A    ]%0A  }))', 'ctx.keymap.layer' is undefined)%0A      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:250:17)%0A      at async withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)
+(fail) SpecOps Configure save flow > routes stale saved models through the correction alert before saving [1.73ms]
+ 5 | 
+ 6 | /** Register the OpenCode 2 command-palette entry for SpecOps configuration. */
+ 7 | export function registerModelSettings(ctx: Plugin.Context): void {
+ 8 |     let editorOpen = false;
+ 9 | 
+10 |     ctx.keymap.layer(() => ({
+                    ^
+TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({
+    commands: [
+      {
+        id: COMMAND_NAME,
+        title: "SpecOps Configure",
+        description: "Choose a configured OpenCode model and variant for each role",
+        group: "SpecOps",
+        palette: !0,
+        enabled: () => !editorOpen,
+        run: async () => {
+          if (editorOpen)
+            return;
+          editorOpen = !0;
+          try {
+            await showModelEditor(ctx);
+          } catch (error) {
+            ctx.ui.toast.show({
+              variant: "error",
+              title: "SpecOps model settings",
+              message: error instanceof Error ? error.message : String(error)
+            });
+          } finally {
+            editorOpen = !1;
+          }
+        }
+      }
+    ]
+  }))', 'ctx.keymap.layer' is undefined)
+      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:275:17)
+      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:273:13)
+      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)
+      at async <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:272:15)
+
+::error file=src/tui/registration.ts,line=10,col=16,title=TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({::      {%0A        id: COMMAND_NAME,%0A        title: "SpecOps Configure",%0A        description: "Choose a configured OpenCode model and variant for each role",%0A        group: "SpecOps",%0A        palette: !0,%0A        enabled: () => !editorOpen,%0A        run: async () => {%0A          if (editorOpen)%0A            return;%0A          editorOpen = !0;%0A          try {%0A            await showModelEditor(ctx);%0A          } catch (error) {%0A            ctx.ui.toast.show({%0A              variant: "error",%0A              title: "SpecOps model settings",%0A              message: error instanceof Error ? error.message : String(error)%0A            });%0A          } finally {%0A            editorOpen = !1;%0A          }%0A        }%0A      }%0A    ]%0A  }))', 'ctx.keymap.layer' is undefined)%0A      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:275:17)%0A      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:273:13)%0A      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)%0A      at async <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:272:15)
+(fail) SpecOps Configure save flow > returns from the model picker to the role list via back navigation [0.54ms]
+ 5 | 
+ 6 | /** Register the OpenCode 2 command-palette entry for SpecOps configuration. */
+ 7 | export function registerModelSettings(ctx: Plugin.Context): void {
+ 8 |     let editorOpen = false;
+ 9 | 
+10 |     ctx.keymap.layer(() => ({
+                    ^
+TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({
+    commands: [
+      {
+        id: COMMAND_NAME,
+        title: "SpecOps Configure",
+        description: "Choose a configured OpenCode model and variant for each role",
+        group: "SpecOps",
+        palette: !0,
+        enabled: () => !editorOpen,
+        run: async () => {
+          if (editorOpen)
+            return;
+          editorOpen = !0;
+          try {
+            await showModelEditor(ctx);
+          } catch (error) {
+            ctx.ui.toast.show({
+              variant: "error",
+              title: "SpecOps model settings",
+              message: error instanceof Error ? error.message : String(error)
+            });
+          } finally {
+            editorOpen = !1;
+          }
+        }
+      }
+    ]
+  }))', 'ctx.keymap.layer' is undefined)
+      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:295:17)
+      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:293:13)
+      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)
+      at async <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:292:15)
+
+::error file=src/tui/registration.ts,line=10,col=16,title=TypeError: ctx.keymap.layer is not a function. (In 'ctx.keymap.layer(() => ({::      {%0A        id: COMMAND_NAME,%0A        title: "SpecOps Configure",%0A        description: "Choose a configured OpenCode model and variant for each role",%0A        group: "SpecOps",%0A        palette: !0,%0A        enabled: () => !editorOpen,%0A        run: async () => {%0A          if (editorOpen)%0A            return;%0A          editorOpen = !0;%0A          try {%0A            await showModelEditor(ctx);%0A          } catch (error) {%0A            ctx.ui.toast.show({%0A              variant: "error",%0A              title: "SpecOps model settings",%0A              message: error instanceof Error ? error.message : String(error)%0A            });%0A          } finally {%0A            editorOpen = !1;%0A          }%0A        }%0A      }%0A    ]%0A  }))', 'ctx.keymap.layer' is undefined)%0A      at registerModelSettings (/home/runner/work/specops-opencode/specops-opencode/src/tui/registration.ts:10:16)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:295:17)%0A      at withConfigHome (/home/runner/work/specops-opencode/specops-opencode/tests/tui/helpers.ts:54:22)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:293:13)%0A      at withTempDir (/home/runner/work/specops-opencode/specops-opencode/tests/helpers.ts:28:22)%0A      at async <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/tui/save-flow.test.ts:292:15)
+(fail) SpecOps Configure save flow > returns from the variant picker to the model picker via back navigation [0.52ms]
+
+::endgroup::
+
+::group::tests/tools/status.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+SyntaxError: Export named 'statusTool' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/tools/status.ts'.
+
+::error title=SyntaxError: Export named 'statusTool' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/tools/status.ts'.::
+-------------------------------
+
+
+::group::tests/tools/onboard.test.ts:
+(pass) onboard > reports OpenSpec is not installed when unavailable [0.33ms]
+(pass) onboard > reports already initialised when an OpenSpec root exists [0.16ms]
+(pass) onboard > initialises and reports success when the project is not initialized [0.15ms]
+(pass) onboard > reports failure when init fails [0.13ms]
+
+::endgroup::
+
+::group::tests/tools/create-change.test.ts:
+(pass) createChange > rejects an empty name without invoking OpenSpec [0.22ms]
+(pass) createChange > trims the name and passes a useful goal without renaming it [0.20ms]
+(pass) createChange > reports native failure without retrying [0.17ms]
+
+::endgroup::
+
+::group::tests/tools/validate-change.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+SyntaxError: Export named 'validateChangeTool' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/tools/validate-change.ts'.
+
+::error title=SyntaxError: Export named 'validateChangeTool' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/tools/validate-change.ts'.::
+-------------------------------
+
+
+::group::tests/tools/doctor.test.ts:
+(pass) doctor > renders an incompatible OpenSpec install with capability remediation [0.31ms]
+(pass) doctor > reports OpenSpec unavailable but still reports valid SpecOps configuration [0.37ms]
+(pass) doctor > reports an uninitialized project and still includes the role summary [0.32ms]
+(pass) doctor > reports a healthy installation [0.29ms]
+(pass) doctor > reports OpenSpec health issues [0.22ms]
+(pass) doctor > reports invalid SpecOps configuration and its Configure CTA [0.23ms]
+(pass) doctor > reports an OpenSpec doctor error without terminating the report [0.21ms]
+(pass) doctor > renders doctor unavailable remediation returned by the OpenSpec wrapper [0.20ms]
+(pass) doctor > normalizes a failed SpecOps version reader to unknown [0.20ms]
+(pass) doctor > normalizes a failed OpenSpec version reader to unavailable [0.22ms]
+
+::endgroup::
+
+::group::tests/tools/context.test.ts:
+(pass) context > returns only the deterministic OpenSpec context payload [0.73ms]
+(pass) context > preserves context errors for the Coordinator [0.14ms]
+
+::endgroup::
+
+::group::tests/tools/archive.test.ts:
+(pass) archive > rejects an empty change name without invoking OpenSpec [0.24ms]
+(pass) archive > trims the name and reports the native archive result [0.21ms]
+(pass) archive > reports native archive failures without retrying [0.15ms]
+
+::endgroup::
+
+::group::tests/host/agents.test.ts:
+40 | export function applyAgentDefinition(draft: AgentItem, definition: SpecOpsAgentDefinition): void {
+41 |     draft.description = definition.description;
+42 |     draft.system = definition.prompt;
+43 |     draft.mode = definition.mode;
+44 |     draft.hidden = definition.hidden ?? false;
+45 |     draft.permissions = [...draft.permissions, ...toV2PermissionRules(definition.permission)];
+                                 ^
+TypeError: Spread syntax requires ...iterable not be null or undefined
+      at applyAgentDefinition (/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts:45:29)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/host/agents.test.ts:40:9)
+
+::error file=src/host/agents.ts,line=45,col=29,title=TypeError: Spread syntax requires ...iterable not be null or undefined::%0A      at applyAgentDefinition (/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts:45:29)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/host/agents.test.ts:40:9)
+(fail) applyAgentDefinition translation > registers a definition under its id with mode and description passthrough [0.35ms]
+40 | export function applyAgentDefinition(draft: AgentItem, definition: SpecOpsAgentDefinition): void {
+41 |     draft.description = definition.description;
+42 |     draft.system = definition.prompt;
+43 |     draft.mode = definition.mode;
+44 |     draft.hidden = definition.hidden ?? false;
+45 |     draft.permissions = [...draft.permissions, ...toV2PermissionRules(definition.permission)];
+                                 ^
+TypeError: Spread syntax requires ...iterable not be null or undefined
+      at applyAgentDefinition (/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts:45:29)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/host/agents.test.ts:51:9)
+
+::error file=src/host/agents.ts,line=45,col=29,title=TypeError: Spread syntax requires ...iterable not be null or undefined::%0A      at applyAgentDefinition (/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts:45:29)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/host/agents.test.ts:51:9)
+(fail) applyAgentDefinition translation > translates configured model and variant [0.38ms]
+40 | export function applyAgentDefinition(draft: AgentItem, definition: SpecOpsAgentDefinition): void {
+41 |     draft.description = definition.description;
+42 |     draft.system = definition.prompt;
+43 |     draft.mode = definition.mode;
+44 |     draft.hidden = definition.hidden ?? false;
+45 |     draft.permissions = [...draft.permissions, ...toV2PermissionRules(definition.permission)];
+                                 ^
+TypeError: Spread syntax requires ...iterable not be null or undefined
+      at applyAgentDefinition (/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts:45:29)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/host/agents.test.ts:65:9)
+
+::error file=src/host/agents.ts,line=45,col=29,title=TypeError: Spread syntax requires ...iterable not be null or undefined::%0A      at applyAgentDefinition (/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts:45:29)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/host/agents.test.ts:65:9)
+(fail) applyAgentDefinition translation > omits model and variant when the persisted selection is blank [0.26ms]
+40 | export function applyAgentDefinition(draft: AgentItem, definition: SpecOpsAgentDefinition): void {
+41 |     draft.description = definition.description;
+42 |     draft.system = definition.prompt;
+43 |     draft.mode = definition.mode;
+44 |     draft.hidden = definition.hidden ?? false;
+45 |     draft.permissions = [...draft.permissions, ...toV2PermissionRules(definition.permission)];
+                                 ^
+TypeError: Spread syntax requires ...iterable not be null or undefined
+      at applyAgentDefinition (/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts:45:29)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/host/agents.test.ts:80:9)
+
+::error file=src/host/agents.ts,line=45,col=29,title=TypeError: Spread syntax requires ...iterable not be null or undefined::%0A      at applyAgentDefinition (/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts:45:29)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/host/agents.test.ts:80:9)
+(fail) applyAgentDefinition translation > carries the canonical permission record through unchanged [0.23ms]
+40 | export function applyAgentDefinition(draft: AgentItem, definition: SpecOpsAgentDefinition): void {
+41 |     draft.description = definition.description;
+42 |     draft.system = definition.prompt;
+43 |     draft.mode = definition.mode;
+44 |     draft.hidden = definition.hidden ?? false;
+45 |     draft.permissions = [...draft.permissions, ...toV2PermissionRules(definition.permission)];
+                                 ^
+TypeError: Spread syntax requires ...iterable not be null or undefined
+      at applyAgentDefinition (/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts:45:29)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/host/agents.test.ts:90:9)
+
+::error file=src/host/agents.ts,line=45,col=29,title=TypeError: Spread syntax requires ...iterable not be null or undefined::%0A      at applyAgentDefinition (/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts:45:29)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/host/agents.test.ts:90:9)
+(fail) applyAgentDefinition translation > maps every role to its registered id [0.42ms]
+40 | export function applyAgentDefinition(draft: AgentItem, definition: SpecOpsAgentDefinition): void {
+41 |     draft.description = definition.description;
+42 |     draft.system = definition.prompt;
+43 |     draft.mode = definition.mode;
+44 |     draft.hidden = definition.hidden ?? false;
+45 |     draft.permissions = [...draft.permissions, ...toV2PermissionRules(definition.permission)];
+                                 ^
+TypeError: Spread syntax requires ...iterable not be null or undefined
+      at applyAgentDefinition (/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts:45:29)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/host/agents.test.ts:117:9)
+
+::error file=src/host/agents.ts,line=45,col=29,title=TypeError: Spread syntax requires ...iterable not be null or undefined::%0A      at applyAgentDefinition (/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts:45:29)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/host/agents.test.ts:117:9)
+(fail) runtime loop-guard placement > interactive coordinator omits the guard so the host default governs [0.27ms]
+40 | export function applyAgentDefinition(draft: AgentItem, definition: SpecOpsAgentDefinition): void {
+41 |     draft.description = definition.description;
+42 |     draft.system = definition.prompt;
+43 |     draft.mode = definition.mode;
+44 |     draft.hidden = definition.hidden ?? false;
+45 |     draft.permissions = [...draft.permissions, ...toV2PermissionRules(definition.permission)];
+                                 ^
+TypeError: Spread syntax requires ...iterable not be null or undefined
+      at applyAgentDefinition (/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts:45:29)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/host/agents.test.ts:126:9)
+
+::error file=src/host/agents.ts,line=45,col=29,title=TypeError: Spread syntax requires ...iterable not be null or undefined::%0A      at applyAgentDefinition (/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts:45:29)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/host/agents.test.ts:126:9)
+(fail) runtime loop-guard placement > auto coordinator pins deny because headless asks cannot resolve [0.31ms]
+40 | export function applyAgentDefinition(draft: AgentItem, definition: SpecOpsAgentDefinition): void {
+41 |     draft.description = definition.description;
+42 |     draft.system = definition.prompt;
+43 |     draft.mode = definition.mode;
+44 |     draft.hidden = definition.hidden ?? false;
+45 |     draft.permissions = [...draft.permissions, ...toV2PermissionRules(definition.permission)];
+                                 ^
+TypeError: Spread syntax requires ...iterable not be null or undefined
+      at applyAgentDefinition (/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts:45:29)
+      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/host/agents.test.ts:147:13)
+
+::error file=src/host/agents.ts,line=45,col=29,title=TypeError: Spread syntax requires ...iterable not be null or undefined::%0A      at applyAgentDefinition (/home/runner/work/specops-opencode/specops-opencode/src/host/agents.ts:45:29)%0A      at <anonymous> (/home/runner/work/specops-opencode/specops-opencode/tests/host/agents.test.ts:147:13)
+(fail) runtime loop-guard placement > every specialist pins allow and no role registers ask [0.26ms]
+
+::endgroup::
+
+::group::tests/host/tools.registry.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+SyntaxError: Export named 'TOOLS' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/tools/index.ts'.
+
+::error title=SyntaxError: Export named 'TOOLS' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/tools/index.ts'.::
+-------------------------------
+
+
+::group::tests/host/tools.integration.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+SyntaxError: Export named 'createChangeTool' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/tools/create-change.ts'.
+
+::error title=SyntaxError: Export named 'createChangeTool' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/tools/create-change.ts'.::
+-------------------------------
+
+
+::group::tests/host/lifecycle-permission.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+SyntaxError: Export named 'requireLifecyclePermission' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/lifecycle-permission.ts'.
+
+::error title=SyntaxError: Export named 'requireLifecyclePermission' not found in module '/home/runner/work/specops-opencode/specops-opencode/src/host/lifecycle-permission.ts'.::
+-------------------------------
+
+
+::group::tests/config/load-save.test.ts:
+(pass) loadConfig > returns DEFAULT_CONFIG with all seven roles when the file is missing [0.55ms]
+(pass) loadConfig > throws on invalid JSON instead of falling back to defaults [0.52ms]
+(pass) loadConfig > throws on an invalid configuration shape [0.56ms]
+(pass) loadConfig > returns validated config from a valid file [1.75ms]
+(pass) loadConfig > loads an older config without frontier escalation as disabled [0.58ms]
+(pass) loadConfig > loads an older config without concurrency as 2 [0.64ms]
+(pass) saveConfig > writes pretty JSON with a trailing newline [1.65ms]
+(pass) saveConfig > creates nested parent directories [1.64ms]
+(pass) saveConfig > validates before writing: invalid input throws and no file is created [0.48ms]
+(pass) saveConfig > atomically overwrites an existing file [2.57ms]
+(pass) saveConfig > round-trips the fully-populated spec example [1.51ms]
+(pass) saveConfig > round-trips a partial model-only configuration [1.56ms]
+(pass) saveConfig > round-trips DEFAULT_CONFIG through save and load [2.03ms]
+(pass) saveConfig > persists an explicit disabled frontier escalation value [1.61ms]
+
+::endgroup::
+
+::group::tests/config/validate.test.ts:
+(pass) validateConfig - valid shapes > accepts the default config with all empty entries [0.07ms]
+(pass) validateConfig - valid shapes > accepts a model with no variant [0.14ms]
+(pass) validateConfig - valid shapes > accepts a model with a variant [0.10ms]
+(pass) validateConfig - valid shapes > accepts an absent model with no variant (blank default) [0.08ms]
+(pass) validateConfig - valid shapes > accepts an explicitly enabled frontier escalation switch [0.09ms]
+(pass) validateConfig - valid shapes > accepts an explicitly disabled frontier escalation switch [0.09ms]
+(pass) validateConfig - valid shapes > accepts concurrency limit 1 [0.08ms]
+(pass) validateConfig - valid shapes > accepts concurrency limit 2 [0.04ms]
+(pass) validateConfig - valid shapes > accepts concurrency limit 4 [0.02ms]
+(pass) validateConfig - valid shapes > accepts concurrency limit 8 [0.03ms]
+(pass) validateConfig - top-level structure > rejects a non-object (array) [0.09ms]
+(pass) validateConfig - top-level structure > rejects null [0.03ms]
+(pass) validateConfig - top-level structure > rejects a primitive [0.03ms]
+(pass) validateConfig - top-level structure > rejects a missing agents field [0.04ms]
+(pass) validateConfig - top-level structure > rejects an extra top-level key [0.04ms]
+(pass) validateConfig - top-level structure > rejects agents that is not an object [0.03ms]
+(pass) validateConfig - top-level structure > rejects a non-boolean frontier escalation value: string [0.07ms]
+(pass) validateConfig - top-level structure > rejects a non-boolean frontier escalation value: number [0.01ms]
+(pass) validateConfig - top-level structure > rejects a non-boolean frontier escalation value: null
+(pass) validateConfig - top-level structure > rejects a non-boolean frontier escalation value: object
+(pass) validateConfig - top-level structure > rejects a non-boolean frontier escalation value: array
+(pass) validateConfig - top-level structure > rejects an invalid concurrency limit: out-of-set number [0.07ms]
+(pass) validateConfig - top-level structure > rejects an invalid concurrency limit: string [0.01ms]
+(pass) validateConfig - top-level structure > rejects an invalid concurrency limit: boolean [0.01ms]
+(pass) validateConfig - top-level structure > rejects an invalid concurrency limit: object
+(pass) validateConfig - top-level structure > rejects an invalid concurrency limit: array
+(pass) validateConfig - top-level structure > rejects an invalid concurrency limit: null
+(pass) validateConfig - role catalogue > rejects empty agents [0.05ms]
+(pass) validateConfig - role catalogue > rejects a missing role [0.07ms]
+(pass) validateConfig - role catalogue > rejects an extra role [0.11ms]
+(pass) validateConfig - role catalogue > rejects a mistyped role id [0.08ms]
+(pass) validateConfig - entry shape > rejects an entry that is not an object [0.17ms]
+(pass) validateConfig - entry shape > rejects an entry with an extra key [0.08ms]
+(pass) validateConfig - entry shape > rejects a non-string model [0.08ms]
+(pass) validateConfig - entry shape > rejects a non-string variant [0.08ms]
+(pass) validateConfig - entry shape > rejects an empty variant string [0.07ms]
+(pass) validateConfig - entry shape > rejects a whitespace-only variant [0.07ms]
+(pass) validateConfig - isolation > returns a deep clone so mutating the result cannot affect the input [0.10ms]
+
+::endgroup::
+
+::group::tests/config/defaults.test.ts:
+(pass) DEFAULT_CONFIG > contains exactly the seven roles [0.04ms]
+(pass) DEFAULT_CONFIG > every role maps to an empty entry [0.09ms]
+(pass) DEFAULT_CONFIG > disables frontier escalation by default [0.03ms]
+(pass) DEFAULT_CONFIG > uses two concurrent subagents by default [0.02ms]
+(pass) DEFAULT_CONFIG > structuredClone is independent of the original [0.59ms]
+
+::endgroup::
+
+::group::tests/config/path.test.ts:
+(pass) resolveConfigPath > defaults to ~/.config/opencode/specops.json [0.09ms]
+(pass) resolveConfigPath > honours XDG_CONFIG_HOME when set [0.03ms]
+(pass) resolveConfigPath > uses the supplied home directory [0.03ms]
+(pass) resolveConfigPath > XDG_CONFIG_HOME wins over the default home-based path [0.05ms]
+
+::endgroup::
+
+::group::tests/coordinator/batching.test.ts:
+(pass) nextBatch > returns independent artifacts in deterministic order [0.94ms]
+(pass) nextBatch > limit one returns a singleton batch [0.09ms]
+(pass) nextBatch > limit two batches planner-owned and designer-owned artifacts [0.18ms]
+(pass) nextBatch > limit two batches two independent planner-owned artifacts [0.13ms]
+(pass) nextBatch > limit four caps a larger feasible set [0.16ms]
+(pass) nextBatch > never batches an artifact with its dependency [0.13ms]
+(pass) nextBatch > uses graph-only feasibility for custom schemas [0.14ms]
+(pass) nextBatch > batches independent reconciliation artifacts but orders dependent revisions [0.10ms]
+(pass) nextBatch limit-one dispatch > spec-driven-baseline routes proposal to the generic planner [0.16ms]
+(pass) nextBatch limit-one dispatch > spec-driven-mid-plan routes design to the designer [0.17ms]
+(pass) nextBatch limit-one dispatch > spec-driven-plan-complete is plan-ready [0.13ms]
+(pass) nextBatch limit-one dispatch > custom-ids use the generic planner fallback [0.08ms]
+(pass) nextBatch limit-one dispatch > omitted-design routes the tasks artifact directly [0.08ms]
+(pass) nextBatch limit-one dispatch > proposal-and-tasks-only routes both artifacts to the generic planner [0.09ms]
+(pass) nextBatch limit-one dispatch > research-then-proposal-then-tasks preserves chain order with the generic planner [0.16ms]
+(pass) nextBatch limit-one dispatch > default-plus-extra-review routes the conventional design to the designer [0.28ms]
+(pass) nextBatch limit-one dispatch > skipped-design satisfies the tasks dependency without targeting design [0.14ms]
+(pass) nextBatch limit-one dispatch > resumed-partial routes from current done state [0.11ms]
+(pass) nextBatch limit-one dispatch > unknown-required-id blocks without fabricating an artifact [0.05ms]
+(pass) nextBatch limit-one dispatch > flag-absent-closure-satisfied is plan-ready [0.05ms]
+(pass) nextBatch limit-one dispatch > false planning flag with a satisfied closure is blocked [0.04ms]
+(pass) nextBatch limit-one dispatch > unsatisfied closure with no feasible artifact is blocked [0.06ms]
+(pass) nextBatch limit-one dispatch > does not cache routing decisions between calls [0.12ms]
+
+::endgroup::
+
+::group::tests/coordinator/todo-projection.test.ts:
+(pass) buildTodoProjection > prepends in-progress repository evidence while planning is in progress [0.45ms]
+(pass) buildTodoProjection > keeps repository evidence pending after planning is complete [0.11ms]
+(pass) buildTodoProjection > emits default-schema planning artifacts in dependency order [0.33ms]
+(pass) buildTodoProjection > places a declared design artifact between specs and tasks [0.24ms]
+(pass) buildTodoProjection > honors custom artifact ids and omits undeclared planning artifacts [0.13ms]
+(pass) buildTodoProjection > maps durable done status to complete or current focus [0.06ms]
+(pass) buildTodoProjection > maps durable skipped status to complete or current focus [0.02ms]
+(pass) buildTodoProjection > maps durable ready status to pending or current focus [0.03ms]
+(pass) buildTodoProjection > maps durable blocked status to pending or current focus [0.01ms]
+(pass) buildTodoProjection > does not probe capabilities or raise when no native Todo capability exists [0.11ms]
+(pass) buildTodoProjection > rebuilds from each fresh status snapshot without accumulating prior entries [0.15ms]
+(pass) buildTodoProjection > omits the approval checkpoint in autonomous mode [0.11ms]
+
+::endgroup::
+
+::group::tests/coordinator/artifact-graph.test.ts:
+(pass) requiredClosure > includes roots and their transitive requires [0.12ms]
+(pass) requiredClosure > ignores missing artifact ids without failing [0.09ms]
+(pass) requiredClosure > terminates on dependency cycles [0.05ms]
+(pass) transitiveRequires > finds direct dependencies [0.04ms]
+(pass) transitiveRequires > finds transitive dependencies through the chain [0.03ms]
+(pass) transitiveRequires > returns false for unrelated artifacts [0.02ms]
+(pass) transitiveRequires > returns false when the traversed artifact is missing [0.03ms]
+(pass) transitiveRequires > terminates on dependency cycles [0.03ms]
+
+::endgroup::
+
+1 tests skipped:
+(skip) real OpenSpec CLI compatibility > accepts the installed CLI and all supported wrapper response shapes (skipped when unavailable)
+
+
+44 tests failed:
+(fail) SpecOpsTuiPlugin > exposes the specops plugin identity and TUI factory [0.08ms]
+(fail) SpecOpsTuiPlugin > registers the SpecOps Configure command when loaded by OpenCode [0.28ms]
+(fail) SpecOpsTuiPlugin > removes the palette command when the TUI plugin is disposed [0.16ms]
+(fail) registerModelSettings > registers the SpecOps Configure palette command [0.12ms]
+(fail) registerModelSettings > opens a role list with all seven roles and actions [0.98ms]
+(fail) registerModelSettings > does not open a second editor while one is already open [0.48ms]
+(fail) registerModelSettings > reports an error when OpenCode has no configured models [0.52ms]
+(fail) registerModelSettings > unregisters the palette command on dispose [0.11ms]
+(fail) registerModelSettings > toasts an error and releases the open guard when the editor fails [0.49ms]
+(fail) SpecOps Configure save flow > selects a role, model, and variant and persists after confirmation [0.59ms]
+(fail) SpecOps Configure save flow > toggles and persists frontier escalation independently of role mappings [0.58ms]
+(fail) SpecOps Configure save flow > persists the selected concurrent subagent limit as a number [0.59ms]
+(fail) SpecOps Configure save flow > indicates the persisted concurrent subagent limit in the selector [6.90ms]
+(fail) SpecOps Configure save flow > preserves the persisted concurrent limit when saving a model change [1.88ms]
+(fail) SpecOps Configure save flow > shows the model and variant navigation options [0.53ms]
+(fail) SpecOps Configure save flow > canceling review returns to the role list without saving [0.52ms]
+(fail) SpecOps Configure save flow > clears the model and variant so the default can be saved [0.51ms]
+(fail) SpecOps Configure save flow > toasts save failures and leaves the editor open for retry [1.11ms]
+(fail) SpecOps Configure save flow > routes stale saved models through the correction alert before saving [1.73ms]
+(fail) SpecOps Configure save flow > returns from the model picker to the role list via back navigation [0.54ms]
+(fail) SpecOps Configure save flow > returns from the variant picker to the model picker via back navigation [0.52ms]
+(fail) applyAgentDefinition translation > registers a definition under its id with mode and description passthrough [0.35ms]
+(fail) applyAgentDefinition translation > translates configured model and variant [0.38ms]
+(fail) applyAgentDefinition translation > omits model and variant when the persisted selection is blank [0.26ms]
+(fail) applyAgentDefinition translation > carries the canonical permission record through unchanged [0.23ms]
+(fail) applyAgentDefinition translation > maps every role to its registered id [0.42ms]
+(fail) runtime loop-guard placement > interactive coordinator omits the guard so the host default governs [0.27ms]
+(fail) runtime loop-guard placement > auto coordinator pins deny because headless asks cannot resolve [0.31ms]
+(fail) runtime loop-guard placement > every specialist pins allow and no role registers ask [0.26ms]
+
+ 376 pass
+ 1 skip
+ 44 fail
+ 15 errors
+ 842 expect() calls
+Ran 421 tests across 60 files. [447.00ms]
+
+===== bun run test:packed =====
+$ bun run build && bun scripts/test-packed.mjs
+$ rm -rf dist && bun build src/index.ts src/tui/index.ts --outdir dist --target node
+Bundled 179 modules in 55ms
+
+  index.js     0.74 MB   (entry point)
+  tui/index.js  18.49 KB  (entry point)
+
+249 |     };
+250 | }
+251 | 
+252 | /** Fail the smoke test when a condition does not hold. */
+253 | function assert(value, message) {
+254 |     if (!value) throw new Error(message);
+                                ^
+error: packed TUI entry is not loadable
+      at assert (/home/runner/work/specops-opencode/specops-opencode/scripts/test-packed.mjs:254:27)
+      at /home/runner/work/specops-opencode/specops-opencode/scripts/test-packed.mjs:39:5
+
+Bun v1.3.14 (Linux x64)
+error: script "test:packed" exited with code 1
