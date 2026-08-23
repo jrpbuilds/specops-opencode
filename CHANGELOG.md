@@ -2,6 +2,27 @@
 
 All notable changes to SpecOps are documented in this file.
 
+## [v2.0.0-beta.1] - 2026-08-23
+
+### Changed
+
+- Ported the server plugin to the native OpenCode 2 `Plugin.define` API and
+  replaced V1 config mutation with agent, command, tool, and session transforms.
+- Translated SpecOps role policy to OpenCode 2 ordered permission rules while
+  preserving the private `specops-*` subagent boundary.
+- Ported lifecycle tools to the OpenCode 2 tool contract and added a hard
+  execution-time authorization gate because model-tool visibility is not the
+  security boundary.
+- Resolved project directories from the active OpenCode 2 session rather than a
+  V1 tool context or process working directory.
+- Ported SpecOps Configure to the OpenCode 2 TUI plugin API while preserving
+  model, variant, Frontier, and concurrency settings.
+- Replaced V1 adapter tests and package smoke checks with native OpenCode 2
+  contract tests, packed-package verification, and a real `opencode2` runtime
+  smoke in CI.
+- The beta package now targets OpenCode 2 only and publishes under npm's `beta`
+  dist-tag. The OpenCode 1 release line remains on `main` and npm `latest`.
+
 ## [v1.4.0] - 2026-08-23
 
 ### Changed
