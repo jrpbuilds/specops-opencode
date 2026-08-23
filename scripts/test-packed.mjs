@@ -249,16 +249,19 @@ function pluginInput(directory) {
     };
 }
 
+/** Fail the smoke test when a condition does not hold. */
 function assert(value, message) {
     if (!value) throw new Error(message);
 }
 
+/** Compare string arrays order-sensitively with a labelled failure. */
 function assertEqual(actual, expected, label) {
     if (actual.join("|") !== expected.join("|")) {
         throw new Error(`${label} mismatch: ${actual.join(", ")}`);
     }
 }
 
+/** Fail when a spawned helper process exits nonzero. */
 function assertProcess(result, label) {
     if (result.status !== 0) {
         throw new Error(`${label} failed: ${result.stderr || result.stdout}`);

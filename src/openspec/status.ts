@@ -28,6 +28,7 @@ export type NormalizedStatus = {
 export type OpenSpecStatusResult =
     { ok: true; status: NormalizedStatus } | { ok: false; error: string };
 
+/** Validates the `openspec status --change <name> --json` response shape. */
 const statusSchema: Schema = {
     changeName: { kind: "string", required: true },
     schemaName: { kind: "string", required: true },
@@ -75,6 +76,7 @@ const statusSchema: Schema = {
     } as never,
 };
 
+/** Validates the artifactPaths block consumed by dispatch and sync flows. */
 const artifactPathSchema: Schema = {
     outputPath: { kind: "string", required: true },
     resolvedOutputPath: { kind: "string", required: true },

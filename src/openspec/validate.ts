@@ -2,17 +2,20 @@ import { runCaptureStdout } from "../helpers.js";
 import type { CaptureStdout } from "./helpers.js";
 import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
+/** Scoped strict-validation outcome for one named change. */
 export type ChangeValidation = {
     valid: boolean;
     issues: { level: string; path: string; message: string }[];
 };
 
+/** Validates one scoped issue entry from `openspec validate --strict --json`. */
 const issueSchema: Schema = {
     level: { kind: "string", required: true },
     path: { kind: "string", required: true },
     message: { kind: "string", required: true },
 };
 
+/** Validates one validated-item entry from `openspec validate --strict --json`. */
 const itemSchema: Schema = {
     id: { kind: "string", required: true },
     type: { kind: "string", required: true },
@@ -25,6 +28,7 @@ const itemSchema: Schema = {
     durationMs: { kind: "number", required: true },
 };
 
+/** Validates the totals summary of `openspec validate --strict --json`. */
 const summarySchema: Schema = {
     totals: {
         kind: "record",
@@ -39,6 +43,7 @@ const summarySchema: Schema = {
     byType: { kind: "record", required: true },
 };
 
+/** Validates the full `openspec validate --strict --json` envelope. */
 const responseSchema: Schema = {
     items: {
         kind: "record",
@@ -97,6 +102,7 @@ export async function validateChange(
     };
 }
 
+/** Extract a message from an unknown thrown value. */
 function errorMessage(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
 }

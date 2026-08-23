@@ -3,6 +3,7 @@ import path from "node:path";
 import { runCaptured } from "../helpers.js";
 import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
+/** Validates the `openspec init` JSON result shape. */
 const initResultSchema: Schema = {
     ok: { kind: "boolean", required: true },
     stderr: { kind: "string", required: true },

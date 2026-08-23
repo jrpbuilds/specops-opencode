@@ -2,6 +2,7 @@ import { runCaptureStdout } from "../helpers.js";
 import { errorMessage, formatCommandFailure, isRecord } from "./helpers.js";
 import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
+/** Validates the `openspec archive --json` response shape. */
 const archiveSchema: Schema = {
     archive: {
         kind: "record",

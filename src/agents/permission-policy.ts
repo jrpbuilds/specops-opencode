@@ -80,6 +80,7 @@ export const ROLE_CAPABILITY_POLICY = {
     },
 } as const satisfies Record<AgentId, RoleCapabilityShape>;
 
+/** Required capability keys and permitted value shapes for every role entry. */
 export type RoleCapabilityShape = {
     external_directory: "allow" | "deny";
     edit: "allow" | "deny" | Record<string, "allow" | "ask" | "deny">;

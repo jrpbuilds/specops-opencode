@@ -7,6 +7,7 @@ import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 export type OpenSpecCreateChangeResult =
     { ok: true; name: string; path: string } | { ok: false; error: string };
 
+/** Validates the `openspec new change --json` response shape. */
 const createChangeSchema: Schema = {
     change: {
         kind: "record",

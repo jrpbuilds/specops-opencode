@@ -2,7 +2,7 @@
 
 All notable changes to SpecOps are documented in this file.
 
-## [Unreleased]
+## [v1.4.0] - 2026-08-23
 
 ### Changed
 

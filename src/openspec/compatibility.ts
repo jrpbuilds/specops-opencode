@@ -2,17 +2,20 @@ import { getOpenSpecVersion } from "./cli.js";
 import { runCaptureStdout } from "../helpers.js";
 import type { CaptureStdout } from "./helpers.js";
 
+/** A read-only `--help` probe: arguments to run and tokens expected in output. */
 export type ProbeSpec = {
     helpArgs: string[];
     tokens: string[];
 };
 
+/** One OpenSpec capability SpecOps relies on, optionally verified by a probe. */
 export type Capability = {
     id: string;
     description: string;
     probe?: ProbeSpec;
 };
 
+/** Outcome of probing the installed OpenSpec CLI against the target surface. */
 export type CompatibilityReport = {
     compatible: boolean;
     missingCapabilities: Capability[];
@@ -21,11 +24,18 @@ export type CompatibilityReport = {
     warnings: string[];
 };
 
-// 1.10.0 is the OpenSpec version SpecOps is developed and tested against. It is a target, not a floor: installs older or newer than the target are compatible when every capability probe succeeds.
+/**
+ * 1.10.0 is the OpenSpec version SpecOps is developed and tested against. It
+ * is a target, not a floor: installs older or newer than the target are
+ * compatible when every capability probe succeeds.
+ */
 export const TARGET_OPENSPEC_VERSION = "1.10.0";
 
-// Probes intentionally run only `<command> --help`; they never execute target
-// commands, so mutating surfaces such as `new` and `archive` cannot touch a workspace.
+/**
+ * Probes intentionally run only `<command> --help`; they never execute target
+ * commands, so mutating surfaces such as `new` and `archive` cannot touch a
+ * workspace.
+ */
 export const OPENSPEC_CAPABILITIES: readonly Capability[] = [
     {
         id: "list-json",

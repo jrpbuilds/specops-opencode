@@ -6,6 +6,7 @@ import {
 import { formatRemediation } from "../openspec/remediation.js";
 import { requireLifecyclePermission } from "./lifecycle-permission.js";
 
+/** Tool-facing validation outcome with remediation guidance attached on failure. */
 export type ValidateChangeResult =
     | { valid: true; issues: [] }
     | {
@@ -14,6 +15,7 @@ export type ValidateChangeResult =
           remediation: string;
       };
 
+/** Dependency boundary keeping validation deterministic and host-free. */
 export type ValidateChangeDeps = {
     validateChange: (change: string) => Promise<ChangeValidation>;
 };
@@ -72,12 +74,14 @@ export const validateChangeTool: ToolDefinition = tool({
     },
 });
 
+/** Reject empty or non-string change names before any work happens. */
 function assertChangeName(change: string): void {
     if (typeof change !== "string" || !change.trim()) {
         throw new Error("An OpenSpec change name is required.");
     }
 }
 
+/** Enforce the tool's exact `{ change }` argument contract. */
 function assertValidateChangeArgs(args: unknown): asserts args is { change: string } {
     if (
         !args ||
@@ -92,6 +96,7 @@ function assertValidateChangeArgs(args: unknown): asserts args is { change: stri
     }
 }
 
+/** Render validation issues as one compact line for the tool response. */
 function formatIssues(issues: ChangeValidation["issues"]): string {
     return (
         issues.map(issue => `${issue.path}: ${issue.message}`).join("; ") ||

@@ -20,6 +20,7 @@ export type OpenSpecContextResult = {
     error?: string;
 };
 
+/** Validates one active change entry from `openspec list --json`. */
 const changeSchema: Schema = {
     name: { kind: "string", required: true },
     status: { kind: "string", required: true },
@@ -28,6 +29,7 @@ const changeSchema: Schema = {
     lastModified: { kind: "string", required: true },
 };
 
+/** Validates the aggregated context payload built from the active-change list. */
 const contextSchema: Schema = {
     changes: {
         kind: "record",
@@ -99,6 +101,7 @@ export async function getOpenSpecContext(
     }
 }
 
+/** Wrap an initialization or shape failure into an unavailable-context result. */
 function contextError(error: string): OpenSpecContextResult {
     return { available: true, initialized: false, activeChanges: [], error };
 }

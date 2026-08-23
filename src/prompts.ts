@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { AGENT_IDS, type AgentId } from "./agents/ids.js";
 
+/** Packaged prompt file backing each configurable role. */
 const PROMPT_FILES: Partial<Record<AgentId, string>> = {
     [AGENT_IDS.coordinator]: "coordinator.md",
     [AGENT_IDS.explorer]: "explorer.md",
@@ -13,7 +14,9 @@ const PROMPT_FILES: Partial<Record<AgentId, string>> = {
     [AGENT_IDS.frontier]: "frontier.md",
 };
 
+/** Packaged prompts directory, resolved relative to the compiled module. */
 const PROMPTS_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "prompts");
+/** Matches whole-line {{include:...}} fragment directives. */
 const INCLUDE_PATTERN = /^\{\{include:([^}]+)\}\}$/;
 
 /**

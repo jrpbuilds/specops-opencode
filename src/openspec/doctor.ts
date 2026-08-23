@@ -6,6 +6,7 @@ import { errorMessage, formatCommandFailure } from "./helpers.js";
 import type { CaptureStdout } from "./helpers.js";
 import { assertShape, type Schema, OpenSpecShapeError } from "./validation.js";
 
+/** Incompatibility details surfaced when capability probes fail. */
 export type OpenSpecIncompatible = {
     missingCapabilities: { id: string; description: string }[];
     installedVersion: string | null;
@@ -23,12 +24,14 @@ export type OpenSpecDoctorResult = {
     remediation?: string;
 };
 
+/** Signature shared by doctor's compatibility probes for test injection. */
 type DoctorProbe = (
     cwd: string,
     capture: CaptureStdout,
     readVersion: () => Promise<string | null>,
 ) => Promise<CompatibilityReport>;
 
+/** Validates one issue entry from `openspec doctor --json`. */
 const statusEntrySchema: Schema = {
     severity: { kind: "string", required: true },
     code: { kind: "string", required: true },
@@ -36,6 +39,7 @@ const statusEntrySchema: Schema = {
     fix: { kind: "string", required: false },
 };
 
+/** Validates the `openspec doctor --json` response shape. */
 const doctorSchema: Schema = {
     root: {
         kind: "record",
@@ -152,6 +156,7 @@ export async function runOpenSpecDoctor(
     }
 }
 
+/** Render one raw doctor issue entry as severity plus display text. */
 function formatStatus(value: Record<string, unknown>): { severity: string; text: string } {
     const code = typeof value.code === "string" ? value.code : undefined;
     const message = typeof value.message === "string" ? value.message : undefined;
@@ -164,6 +169,7 @@ function formatStatus(value: Record<string, unknown>): { severity: string; text:
     };
 }
 
+/** Build the result used when the OpenSpec CLI cannot be executed at all. */
 function unavailable(error: string): OpenSpecDoctorResult {
     return {
         initialized: false,
@@ -175,6 +181,7 @@ function unavailable(error: string): OpenSpecDoctorResult {
     };
 }
 
+/** Build the result used when doctor runs but reports a failure. */
 function failure(error: string): OpenSpecDoctorResult {
     return { initialized: false, healthy: false, incompatible: null, issues: [], error };
 }

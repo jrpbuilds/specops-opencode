@@ -22,6 +22,7 @@ export type SpecOpsAgentPermission = {
     question?: "allow" | "ask" | "deny";
 };
 
+/** Host-neutral registration contract for one SpecOps role. */
 export type SpecOpsAgentDefinition = {
     /** Registration key presented to the host for this role. */
     id: string;

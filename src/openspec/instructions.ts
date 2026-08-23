@@ -31,6 +31,7 @@ export type NormalizedInstructions = {
 export type OpenSpecInstructionsResult =
     { ok: true; instructions: NormalizedInstructions } | { ok: false; error: string };
 
+/** Validates one artifact dependency entry from `openspec instructions --json`. */
 const dependencySchema: Schema = {
     id: { kind: "string", required: true },
     path: { kind: "string", required: true },
@@ -38,6 +39,7 @@ const dependencySchema: Schema = {
     description: { kind: "string", required: false },
 };
 
+/** Validates the planning-home block reported by `openspec instructions --json`. */
 const planningHomeSchema: Schema = {
     kind: { kind: "string", required: true },
     root: { kind: "string", required: true },
@@ -45,11 +47,13 @@ const planningHomeSchema: Schema = {
     defaultSchema: { kind: "string", required: true },
 };
 
+/** Validates the OpenSpec root descriptor shared by wrapper responses. */
 const rootSchema: Schema = {
     path: { kind: "string", required: true },
     source: { kind: "string", required: true },
 };
 
+/** Validates the `openspec instructions <artifact> --change <name> --json` response shape. */
 const instructionsSchema: Schema = {
     changeName: { kind: "string", required: true },
     artifactId: { kind: "string", required: true },
@@ -144,6 +148,7 @@ export async function getOpenSpecInstructions(
     }
 }
 
+/** Whether an instructions-reported output path is absolute and file-backed. */
 function isUsableOutputPath(outputPath: string): boolean {
     if (!outputPath.trim() || !path.isAbsolute(outputPath)) return false;
     const parent = path.dirname(outputPath);
@@ -156,6 +161,7 @@ function isUsableOutputPath(outputPath: string): boolean {
     }
 }
 
+/** Project the validated raw response onto the normalized instructions shape. */
 function normalizeInstructions(
     value: Record<string, unknown>,
     dependencies: Array<Record<string, unknown>>,

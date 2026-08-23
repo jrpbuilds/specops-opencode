@@ -4,6 +4,7 @@ import { COORDINATOR_PERMISSION, SPECOPS_TASK_ALLOW } from "./permissions.js";
 import type { SpecOpsConfig } from "../config.js";
 import type { SpecOpsAgentDefinition } from "./definition.js";
 
+/** Runtime mode selecting which coordinator prompt and checkpoint policy apply. */
 export type CoordinatorMode = "interactive" | "auto";
 
 /** Visible primary-agent key presented in OpenCode's agent selector. */
@@ -34,6 +35,7 @@ export function buildCoordinatorPrompt(mode: CoordinatorMode, frontierEscalation
     return fragments.join("\n\n");
 }
 
+/** Model/variant fields from the shared coordinator role config, omitted when blank. */
 function coordinatorModelFields(specOpsConfig: SpecOpsConfig) {
     const coordinator = specOpsConfig.agents[AGENT_IDS.coordinator];
     const model = coordinator.model?.trim();

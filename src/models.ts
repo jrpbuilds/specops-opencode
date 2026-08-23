@@ -1,6 +1,7 @@
 import { AGENT_IDS, ALL_AGENT_IDS, type AgentId } from "./agents/ids.js";
 import type { AgentConfig, SpecOpsConfig } from "./config.js";
 
+/** Friendly per-role names shown in the configuration editor. */
 const AGENT_DISPLAY_NAMES: Record<AgentId, string> = {
     [AGENT_IDS.coordinator]: "Coordinator",
     [AGENT_IDS.explorer]: "Explorer",

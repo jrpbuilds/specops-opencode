@@ -62,6 +62,7 @@ async function main(): Promise<void> {
     );
 }
 
+/** Extract a message from an unknown thrown value. */
 function errorMessage(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
 }

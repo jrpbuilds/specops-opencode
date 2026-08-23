@@ -1,8 +1,10 @@
 import { formatRemediation } from "./remediation.js";
 import { isNormalizedArtifact, isRecord } from "./helpers.js";
 
+/** Primitive shapes recognized inside OpenSpec response contracts. */
 export type FieldKind = "string" | "boolean" | "number" | "stringArray" | "record" | "artifact";
 
+/** One field's expectations inside a response {@link Schema}. */
 export type FieldSpec = {
     kind: FieldKind;
     required: boolean;
@@ -10,6 +12,7 @@ export type FieldSpec = {
     nullable?: boolean;
 };
 
+/** A field-spec table describing one OpenSpec JSON response shape. */
 export type Schema = Record<string, FieldSpec>;
 
 /** Error thrown when an OpenSpec response violates a wrapper contract. */
@@ -81,6 +84,7 @@ export function assertNoExtraFields(
     }
 }
 
+/** Validate one field against its spec, throwing {@link OpenSpecShapeError} on violation. */
 function assertField(value: unknown, field: string, spec: FieldSpec, ctx: string): void {
     if (value === null && spec.nullable) return;
     const arrayItem = (spec as FieldSpec & { arrayItem?: FieldSpec }).arrayItem;
@@ -100,6 +104,7 @@ function assertField(value: unknown, field: string, spec: FieldSpec, ctx: string
     }
 }
 
+/** Whether a value satisfies a field kind without recursing into nested schemas. */
 function matchesKind(value: unknown, spec: FieldSpec): boolean {
     switch (spec.kind) {
         case "string":
@@ -117,6 +122,7 @@ function matchesKind(value: unknown, spec: FieldSpec): boolean {
     }
 }
 
+/** Human-readable description of an unexpected value for error messages. */
 function describeValue(value: unknown): string {
     if (value === undefined) return "undefined";
     if (value === null) return "null";

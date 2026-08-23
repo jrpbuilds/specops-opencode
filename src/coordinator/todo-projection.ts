@@ -23,6 +23,7 @@ export type TodoProjectionEntry = {
 /** Coordinator mode used when deciding whether to show the approval checkpoint. */
 export type TodoProjectionMode = "interactive" | "auto";
 
+/** Workflow stages appended once every planning artifact is complete. */
 const FIXED_STAGES = [
     { id: "plan-approval", content: "Plan approval checkpoint" },
     { id: "implementation", content: "Implementation" },
@@ -30,6 +31,7 @@ const FIXED_STAGES = [
     { id: "lifecycle-remediation", content: "Lifecycle/remediation" },
 ] as const;
 
+/** Leading evidence stage owned by the explorer; omitted on conditional skips. */
 const REPOSITORY_EVIDENCE_STAGE = {
     id: "repository-evidence",
     content: "Repository evidence",
@@ -93,6 +95,7 @@ export function buildTodoProjection(
     return entries;
 }
 
+/** Project one planning artifact onto its Todo entry. */
 function toPlanningEntry(artifact: NormalizedArtifact): TodoProjectionEntry {
     return {
         id: `planning:${artifact.id}`,
@@ -102,10 +105,15 @@ function toPlanningEntry(artifact: NormalizedArtifact): TodoProjectionEntry {
     };
 }
 
+/** An artifact counts as complete when OpenSpec marks it done or skipped. */
 function isComplete(artifact: NormalizedArtifact): boolean {
     return artifact.status === "done" || artifact.status === "skipped";
 }
 
+/**
+ * Order planning artifacts so dependents follow their dependencies: artifacts
+ * required by more of the closure sort first.
+ */
 function orderByReverseReachability(
     artifacts: readonly NormalizedArtifact[],
     closure: ReadonlySet<string>,
@@ -120,6 +128,7 @@ function orderByReverseReachability(
     });
 }
 
+/** Count how many closure members transitively require the candidate. */
 function reverseReachabilityScore(
     candidate: NormalizedArtifact,
     closure: ReadonlySet<string>,

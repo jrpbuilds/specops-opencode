@@ -40,6 +40,7 @@ export const DEFAULT_CONFIG: SpecOpsConfig = {
     maxSubagentConcurrency: 2,
 };
 
+/** Concurrency values accepted for parallel planning batches. */
 const ALLOWED_SUBAGENT_CONCURRENCY = new Set([1, 2, 4, 8]);
 
 /**

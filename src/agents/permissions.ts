@@ -102,6 +102,8 @@ export const SPECOPS_TASK_GLOB = "specops-*";
  * last-match-wins evaluation selects it.
  */
 export const SPECOPS_TASK_DENY = { [SPECOPS_TASK_GLOB]: "deny" } as const;
+
+/** Coordinators may dispatch only the private specops-* subagent namespace. */
 export const SPECOPS_TASK_ALLOW = {
     "*": "deny",
     [SPECOPS_TASK_GLOB]: "allow",
