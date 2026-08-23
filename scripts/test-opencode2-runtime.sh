@@ -15,7 +15,7 @@ jq -n --arg plugin "$root" '{plugins: [$plugin]}' > "$temporary/project/opencode
 cd "$temporary/project"
 
 api() {
-    timeout 60s opencode2 --standalone api get "$1"
+    timeout 60s opencode2 api get "$1"
 }
 
 plugin_json="$(api /api/plugin)"
