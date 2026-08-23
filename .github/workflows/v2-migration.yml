@@ -27,5 +27,5 @@ jobs:
                   bun-version: 1.3.14
             - name: Install pinned dependencies
               run: bun install --frozen-lockfile
-            - name: Check OpenCode 2 host integration
-              run: bun run check:v2-host
+            - name: Check OpenCode 2 migration contract
+              run: bun run check:v2
