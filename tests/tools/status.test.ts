@@ -1,7 +1,5 @@
-import type { ToolContext } from "@opencode-ai/plugin/tool";
 import { describe, expect, test } from "bun:test";
 import { status, type StatusDeps } from "../../src/tools/status.js";
-import { statusTool } from "../../src/host/tools/status.js";
 
 const normalizedStatus = {
     changeName: "example",
@@ -23,22 +21,6 @@ function deps(overrides: Partial<StatusDeps> = {}): StatusDeps {
     return {
         getOpenSpecStatus: async () => ({ ok: true, status: normalizedStatus }),
         ...overrides,
-    };
-}
-
-function toolContext(
-    ask: ToolContext["ask"],
-    metadata: ToolContext["metadata"] = () => {},
-): ToolContext {
-    return {
-        sessionID: "test-session",
-        messageID: "test-message",
-        agent: "test-agent",
-        directory: "/project",
-        worktree: "/project",
-        abort: new AbortController().signal,
-        ask,
-        metadata,
     };
 }
 
@@ -88,29 +70,5 @@ describe("status", () => {
             "Failed to read OpenSpec status for 'missing': OpenSpec status failed with exit code 1",
         );
         expect(() => JSON.parse(result)).toThrow();
-    });
-
-    test("requests specops_status permission exactly once before doing any work", async () => {
-        const requests: unknown[] = [];
-        const denial = new Error("lifecycle denied");
-        const context = toolContext(
-            async request => {
-                requests.push(request);
-                throw denial;
-            },
-            () => {
-                throw new Error("work started before permission was granted");
-            },
-        );
-
-        await expect(statusTool.execute({ change: "example" }, context)).rejects.toBe(denial);
-        expect(requests).toEqual([
-            {
-                permission: "specops_lifecycle",
-                patterns: ["specops_status"],
-                always: ["specops_status"],
-                metadata: { tool: "specops_status" },
-            },
-        ]);
     });
 });

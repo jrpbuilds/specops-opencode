@@ -29,7 +29,7 @@
         "typecheck:v2-tests": "tsc --noEmit -p tsconfig.v2-test.json",
         "test": "bun test",
         "test:v2": "bun test tests/v2",
-        "test:packed": "bun run build && bun scripts/test-packed.mjs",
+        "test:packed": "bun run test:packed:v2",
         "test:packed:v2": "bun run build && bun scripts/test-packed-v2.mjs",
         "test:coverage": "bun test --coverage --coverage-reporter=text --coverage-reporter=lcov && bun scripts/check-line-coverage.ts coverage/lcov.info 90",
         "lint": "eslint src scripts",

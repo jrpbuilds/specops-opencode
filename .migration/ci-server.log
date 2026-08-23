@@ -1,5 +1,0 @@
-$ bun run typecheck:v2-server && bun run build:v2-server
-$ tsc --noEmit -p tsconfig.v2-server.json
-src/host/agents.ts(48,23): error TS2352: Conversion of type '{ variant?: string | undefined; providerID: string; id: string; }' to type '{ id: { [x: number]: string; toString: () => string; charAt: (pos: number) => string; charCodeAt: (index: number) => number; concat: (...strings: string[]) => string; indexOf: (searchString: string, position?: number | undefined) => number; ... 45 more ...; "~effect/Brand": { ...; }; }; providerID: { ...; }; variant...' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
-  Types of property 'id' are incompatible.
-    Type 'string' is not comparable to type '{ [x: number]: string; toString: () => string; charAt: (pos: number) => string; charCodeAt: (index: number) => number; concat: (...strings: string[]) => string; indexOf: (searchString: string, position?: number | undefined) => number; ... 45 more ...; "~effect/Brand": { ...; }; }'.
