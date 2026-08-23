@@ -1,24 +1,26 @@
-import { tool } from "@opencode-ai/plugin/tool";
+import type { Plugin } from "@opencode-ai/plugin";
 import { archiveChange } from "../../openspec/archive.js";
 import { archive } from "../../tools/archive.js";
-import { requireLifecyclePermission } from "../lifecycle-permission.js";
+import { assertLifecycleAuthority } from "../authorization.js";
+import { resolveSessionDirectory } from "../session.js";
+import { CHANGE_INPUT, stringField, type ToolDraft } from "./shared.js";
 
-/**
- * Expose native OpenSpec archiving through the SpecOps tool surface.
- *
- * The session directory is supplied by OpenCode so archiving targets the
- * current project rather than the process working directory.
- */
-export const archiveTool = tool({
-    description: "Archive a named OpenSpec change using the native OpenSpec archive operation.",
-    args: {
-        change: tool.schema.string(),
-    },
-    async execute(args, context) {
-        await requireLifecyclePermission(context, "specops_archive");
-        context.metadata({ title: "Archiving OpenSpec change…" });
-        return archive(args.change, {
-            archiveChange: change => archiveChange(change, context.directory),
-        });
-    },
-});
+export function addArchiveTool(tools: ToolDraft, ctx: Plugin.Context): void {
+    tools.add(
+        "specops_archive",
+        {
+            description: "Archive a named OpenSpec change using the native OpenSpec archive operation.",
+            input: CHANGE_INPUT,
+            execute: async (input, context) => {
+                await assertLifecycleAuthority(ctx, "specops_archive", context);
+                await context.progress({ title: "Archiving OpenSpec change…" });
+                const directory = await resolveSessionDirectory(ctx, context.sessionID);
+                const content = await archive(stringField(input, "change"), {
+                    archiveChange: change => archiveChange(change, directory),
+                });
+                return { content };
+            },
+        },
+        { codemode: false },
+    );
+}

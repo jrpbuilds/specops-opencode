@@ -1,36 +1,26 @@
-import { tool } from "@opencode-ai/plugin/tool";
+import type { Plugin } from "@opencode-ai/plugin";
 import { validateChange as runOpenSpecValidation } from "../../openspec/validate.js";
 import { validateChange } from "../../tools/validate-change.js";
-import { requireLifecyclePermission } from "../lifecycle-permission.js";
+import { assertLifecycleAuthority } from "../authorization.js";
+import { resolveSessionDirectory } from "../session.js";
+import { CHANGE_INPUT, stringField, type ToolDraft } from "./shared.js";
 
-/** Enforce the tool's exact `{ change }` argument contract. */
-function assertValidateChangeArgs(args: unknown): asserts args is { change: string } {
-    if (
-        !args ||
-        typeof args !== "object" ||
-        Array.isArray(args) ||
-        Object.keys(args).length !== 1 ||
-        !("change" in args) ||
-        typeof args.change !== "string" ||
-        !args.change.trim()
-    ) {
-        throw new Error("specops_validate_change expects exactly {change: string}");
-    }
+export function addValidateChangeTool(tools: ToolDraft, ctx: Plugin.Context): void {
+    tools.add(
+        "specops_validate_change",
+        {
+            description: "Validate one active OpenSpec change with strict, change-scoped validation.",
+            input: CHANGE_INPUT,
+            execute: async (input, context) => {
+                await assertLifecycleAuthority(ctx, "specops_validate_change", context);
+                await context.progress({ title: "Validating OpenSpec change…" });
+                const directory = await resolveSessionDirectory(ctx, context.sessionID);
+                const result = await validateChange(stringField(input, "change"), {
+                    validateChange: change => runOpenSpecValidation(change, directory),
+                });
+                return { content: JSON.stringify(result) };
+            },
+        },
+        { codemode: false },
+    );
 }
-
-/** Expose the scoped validation gate to coordinator agents. */
-export const validateChangeTool = tool({
-    description: "Validate one active OpenSpec change with strict, change-scoped validation.",
-    args: {
-        change: tool.schema.string(),
-    },
-    async execute(args, context) {
-        assertValidateChangeArgs(args);
-        await requireLifecyclePermission(context, "specops_validate_change");
-        context.metadata({ title: "Validating OpenSpec change…" });
-        const result = await validateChange(args.change, {
-            validateChange: change => runOpenSpecValidation(change, context.directory),
-        });
-        return JSON.stringify(result);
-    },
-});

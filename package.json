@@ -15,52 +15,28 @@
             "import": "./dist/tui/index.js"
         }
     },
-    "files": [
-        "dist",
-        "prompts",
-        "README.md",
-        "CHANGELOG.md",
-        "LICENSE"
-    ],
-    "publishConfig": {
-        "access": "public",
-        "tag": "beta"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/jrpbuilds/specops-opencode.git"
-    },
-    "bugs": {
-        "url": "https://github.com/jrpbuilds/specops-opencode/issues"
-    },
+    "files": ["dist", "prompts", "README.md", "CHANGELOG.md", "LICENSE"],
+    "publishConfig": { "access": "public", "tag": "beta" },
+    "repository": { "type": "git", "url": "git+https://github.com/jrpbuilds/specops-opencode.git" },
+    "bugs": { "url": "https://github.com/jrpbuilds/specops-opencode/issues" },
     "homepage": "https://github.com/jrpbuilds/specops-opencode#readme",
-    "keywords": [
-        "opencode",
-        "openspec",
-        "specops",
-        "spec-driven-development",
-        "plugin",
-        "ai-agents",
-        "multi-agent",
-        "typescript"
-    ],
+    "keywords": ["opencode", "openspec", "specops", "spec-driven-development", "plugin", "ai-agents", "multi-agent", "typescript"],
     "scripts": {
         "build": "rm -rf dist && bun build src/index.ts src/tui/index.ts --outdir dist --target node",
+        "build:v2-server": "rm -rf dist-server && bun build src/index.ts --outdir dist-server --target node",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",
+        "typecheck:v2-server": "tsc --noEmit -p tsconfig.v2-server.json",
         "test": "bun test",
         "test:packed": "bun run build && bun scripts/test-packed.mjs",
         "test:coverage": "bun test --coverage --coverage-reporter=text --coverage-reporter=lcov && bun scripts/check-line-coverage.ts coverage/lcov.info 90",
         "lint": "eslint src scripts",
-        "check": "bun run format:check && bun run lint && bun run typecheck && bun run test:coverage && bun run test:packed"
+        "check": "bun run format:check && bun run lint && bun run typecheck && bun run test:coverage && bun run test:packed",
+        "check:v2-server": "bun run typecheck:v2-server && bun run build:v2-server"
     },
-    "engines": {
-        "bun": ">=1.3.0"
-    },
-    "dependencies": {
-        "@opencode-ai/plugin": "0.0.0-beta-17728"
-    },
+    "engines": { "bun": ">=1.3.0" },
+    "dependencies": { "@opencode-ai/plugin": "0.0.0-beta-17728" },
     "devDependencies": {
         "@types/bun": "^1.3.0",
         "@types/node": "^24.0.0",

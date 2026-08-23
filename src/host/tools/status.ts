@@ -1,24 +1,27 @@
-import { tool } from "@opencode-ai/plugin/tool";
+import type { Plugin } from "@opencode-ai/plugin";
 import { getOpenSpecStatus } from "../../openspec/status.js";
 import { status } from "../../tools/status.js";
-import { requireLifecyclePermission } from "../lifecycle-permission.js";
+import { assertLifecycleAuthority } from "../authorization.js";
+import { resolveSessionDirectory } from "../session.js";
+import { CHANGE_INPUT, stringField, type ToolDraft } from "./shared.js";
 
-/**
- * Expose authoritative OpenSpec status through the coordinator-only tool surface.
- *
- * The session directory is supplied by OpenCode so status targets the current
- * project rather than the process working directory.
- */
-export const statusTool = tool({
-    description: "Read normalized OpenSpec workflow status for a named change.",
-    args: {
-        change: tool.schema.string(),
-    },
-    async execute(args, context) {
-        await requireLifecyclePermission(context, "specops_status");
-        context.metadata({ title: "Reading OpenSpec status…" });
-        return status(args.change, {
-            getOpenSpecStatus: change => getOpenSpecStatus(change, context.directory),
-        });
-    },
-});
+export function addStatusTool(tools: ToolDraft, ctx: Plugin.Context): void {
+    tools.add(
+        "specops_status",
+        {
+            description: "Read normalized OpenSpec workflow status for a named change.",
+            input: CHANGE_INPUT,
+            execute: async (input, context) => {
+                await assertLifecycleAuthority(ctx, "specops_status", context);
+                await context.progress({ title: "Reading OpenSpec status…" });
+                const directory = await resolveSessionDirectory(ctx, context.sessionID);
+                return {
+                    content: await status(stringField(input, "change"), {
+                        getOpenSpecStatus: change => getOpenSpecStatus(change, directory),
+                    }),
+                };
+            },
+        },
+        { codemode: false },
+    );
+}

@@ -1,23 +1,21 @@
-import type { ToolDefinition } from "@opencode-ai/plugin/tool";
-import { archiveTool } from "./archive.js";
-import { contextTool } from "./context.js";
-import { createChangeTool } from "./create-change.js";
-import { doctorTool } from "./doctor.js";
-import { onboardTool } from "./onboard.js";
-import { statusTool } from "./status.js";
-import { validateChangeTool } from "./validate-change.js";
+import type { Plugin } from "@opencode-ai/plugin";
+import { addArchiveTool } from "./archive.js";
+import { addContextTool } from "./context.js";
+import { addCreateChangeTool } from "./create-change.js";
+import { addDoctorTool } from "./doctor.js";
+import { addOnboardTool } from "./onboard.js";
+import { addStatusTool } from "./status.js";
+import { addValidateChangeTool } from "./validate-change.js";
 
-/**
- * OpenCode 1 lifecycle tools exposed by the plugin, keyed by their registered
- * tool names. Each entry is a V1 wrapper around a deterministic function in
- * `src/tools/`.
- */
-export const TOOLS: Record<string, ToolDefinition> = {
-    specops_archive: archiveTool,
-    specops_context: contextTool,
-    specops_create_change: createChangeTool,
-    specops_doctor: doctorTool,
-    specops_onboard: onboardTool,
-    specops_status: statusTool,
-    specops_validate_change: validateChangeTool,
-};
+/** Register all SpecOps lifecycle tools as directly exposed OpenCode 2 tools. */
+export async function registerTools(ctx: Plugin.Context): Promise<void> {
+    await ctx.tool.transform(tools => {
+        addArchiveTool(tools, ctx);
+        addContextTool(tools, ctx);
+        addCreateChangeTool(tools, ctx);
+        addDoctorTool(tools, ctx);
+        addOnboardTool(tools, ctx);
+        addStatusTool(tools, ctx);
+        addValidateChangeTool(tools, ctx);
+    });
+}

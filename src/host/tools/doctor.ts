@@ -1,29 +1,34 @@
-import { tool } from "@opencode-ai/plugin/tool";
+import type { Plugin } from "@opencode-ai/plugin";
 import { loadConfig } from "../../config.js";
 import { getOpenSpecVersion } from "../../openspec/cli.js";
 import { runOpenSpecDoctor } from "../../openspec/doctor.js";
 import { getSpecOpsVersion } from "../../version.js";
 import { doctor } from "../../tools/doctor.js";
-import { requireLifecyclePermission } from "../lifecycle-permission.js";
+import { assertLifecycleAuthority } from "../authorization.js";
+import { resolveSessionDirectory } from "../session.js";
+import { EMPTY_INPUT, type ToolDraft } from "./shared.js";
 
-/**
- * Expose the diagnostics report through the SpecOps tool surface.
- *
- * The tool supplies the current configuration and project directory through
- * injected operations while leaving report formatting in `doctor`.
- */
-export const doctorTool = tool({
-    description:
-        "Run SpecOps diagnostics: report versions, OpenSpec health, configuration validity, and model-role mappings.",
-    args: {},
-    async execute(_args, context) {
-        await requireLifecyclePermission(context, "specops_doctor");
-        context.metadata({ title: "Running SpecOps doctor…" });
-        return doctor({
-            specopsVersion: getSpecOpsVersion,
-            openspecVersion: getOpenSpecVersion,
-            openspecDoctor: () => runOpenSpecDoctor(context.directory),
-            loadConfig: () => loadConfig(),
-        });
-    },
-});
+export function addDoctorTool(tools: ToolDraft, ctx: Plugin.Context): void {
+    tools.add(
+        "specops_doctor",
+        {
+            description:
+                "Run SpecOps diagnostics: report versions, OpenSpec health, configuration validity, and model-role mappings.",
+            input: EMPTY_INPUT,
+            execute: async (_input, context) => {
+                await assertLifecycleAuthority(ctx, "specops_doctor", context);
+                await context.progress({ title: "Running SpecOps doctor…" });
+                const directory = await resolveSessionDirectory(ctx, context.sessionID);
+                return {
+                    content: await doctor({
+                        specopsVersion: getSpecOpsVersion,
+                        openspecVersion: getOpenSpecVersion,
+                        openspecDoctor: () => runOpenSpecDoctor(directory),
+                        loadConfig: () => loadConfig(),
+                    }),
+                };
+            },
+        },
+        { codemode: false },
+    );
+}

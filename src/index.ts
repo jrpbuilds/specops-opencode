@@ -1,50 +1,18 @@
-import type { Config, Plugin } from "@opencode-ai/plugin";
+import { Plugin } from "@opencode-ai/plugin";
 import { loadConfig } from "./config.js";
-import { applyCommands } from "./host/commands.js";
-import {
-    registerAutoCoordinatorAgent,
-    registerCoordinatorAgent,
-    registerDesignerAgent,
-    registerExplorerAgent,
-    registerFrontierAgent,
-    registerImplementerAgent,
-    registerPlannerAgent,
-    registerReviewerAgent,
-} from "./host/agents.js";
-import { applyLifecycleBoundary, applyTaskBoundary } from "./host/permissions.js";
-import { TOOLS } from "./host/tools/index.js";
+import { registerAgents } from "./host/agents.js";
+import { registerCommands } from "./host/commands.js";
+import { registerLifecycleToolVisibility } from "./host/authorization.js";
+import { registerTools } from "./host/tools/index.js";
 
-export { COMMANDS } from "./host/commands.js";
-
-/**
- * Build the OpenCode plugin hooks for commands, agents, and deterministic tools.
- *
- * Commands and tools are always exposed. Agent registration depends on valid
- * persisted configuration; a configuration error is warned and isolated so it
- * does not prevent the host from loading the rest of the plugin surface.
- */
-export const SpecOpsPlugin: Plugin = async () => ({
-    config: async (config: Config) => {
-        applyCommands(config);
-
-        // Apply host-agent boundaries before registering SpecOps roles so those
-        // roles can provide their own explicit permission overrides.
-        applyTaskBoundary(config);
-        applyLifecycleBoundary(config);
-
+/** Native OpenCode 2 server plugin entrypoint. */
+export default Plugin.define({
+    id: "specops",
+    tui: true,
+    setup: async ctx => {
+        let specOpsConfig;
         try {
-            const specOpsConfig = await loadConfig();
-            registerCoordinatorAgent(config, specOpsConfig);
-            registerAutoCoordinatorAgent(config, specOpsConfig);
-            registerExplorerAgent(config, specOpsConfig);
-            registerPlannerAgent(config, specOpsConfig);
-            registerDesignerAgent(config, specOpsConfig);
-            registerImplementerAgent(config, specOpsConfig);
-            registerReviewerAgent(config, specOpsConfig);
-
-            if (specOpsConfig.frontierEscalation) {
-                registerFrontierAgent(config, specOpsConfig);
-            }
+            specOpsConfig = await loadConfig();
         } catch (error) {
             const reason = error instanceof Error ? error.message : String(error);
             console.warn(
@@ -52,17 +20,10 @@ export const SpecOpsPlugin: Plugin = async () => ({
                 reason,
             );
         }
-    },
-    tool: TOOLS,
-});
 
-/**
- * Package entry point consumed by OpenCode's plugin loader.
- *
- * The server factory is kept behind the module metadata so OpenCode can load
- * the plugin without importing the TUI entry point.
- */
-export default {
-    id: "specops",
-    server: SpecOpsPlugin,
-} satisfies import("@opencode-ai/plugin").PluginModule;
+        await registerAgents(ctx, specOpsConfig);
+        await registerCommands(ctx);
+        await registerTools(ctx);
+        await registerLifecycleToolVisibility(ctx);
+    },
+});

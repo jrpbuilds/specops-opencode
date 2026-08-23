@@ -1,21 +1,35 @@
-import { tool } from "@opencode-ai/plugin/tool";
+import type { Plugin } from "@opencode-ai/plugin";
 import { createOpenSpecChange } from "../../openspec/create-change.js";
 import { createChange } from "../../tools/create-change.js";
-import { requireLifecyclePermission } from "../lifecycle-permission.js";
+import { assertLifecycleAuthority } from "../authorization.js";
+import { resolveSessionDirectory } from "../session.js";
+import {
+    CREATE_CHANGE_INPUT,
+    optionalStringField,
+    stringField,
+    type ToolDraft,
+} from "./shared.js";
 
-/** Expose native OpenSpec change creation through the SpecOps tool surface. */
-export const createChangeTool = tool({
-    description: "Create a named OpenSpec change using the native OpenSpec creation operation.",
-    args: {
-        change: tool.schema.string(),
-        goal: tool.schema.string().optional(),
-    },
-    async execute(args, toolContext) {
-        await requireLifecyclePermission(toolContext, "specops_create_change");
-        toolContext.metadata({ title: "Creating OpenSpec change…" });
-        return createChange(args.change, args.goal, {
-            createChange: (change, goal) =>
-                createOpenSpecChange(change, toolContext.directory, goal),
-        });
-    },
-});
+export function addCreateChangeTool(tools: ToolDraft, ctx: Plugin.Context): void {
+    tools.add(
+        "specops_create_change",
+        {
+            description: "Create a named OpenSpec change using the native OpenSpec creation operation.",
+            input: CREATE_CHANGE_INPUT,
+            execute: async (input, context) => {
+                await assertLifecycleAuthority(ctx, "specops_create_change", context);
+                await context.progress({ title: "Creating OpenSpec change…" });
+                const directory = await resolveSessionDirectory(ctx, context.sessionID);
+                const change = stringField(input, "change");
+                const goal = optionalStringField(input, "goal");
+                return {
+                    content: await createChange(change, goal, {
+                        createChange: (name, requestedGoal) =>
+                            createOpenSpecChange(name, directory, requestedGoal),
+                    }),
+                };
+            },
+        },
+        { codemode: false },
+    );
+}

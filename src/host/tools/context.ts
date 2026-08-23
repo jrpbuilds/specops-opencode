@@ -1,16 +1,24 @@
-import { tool } from "@opencode-ai/plugin/tool";
+import type { Plugin } from "@opencode-ai/plugin";
 import { getOpenSpecContext } from "../../openspec/context.js";
-import { context } from "../../tools/context.js";
-import { requireLifecyclePermission } from "../lifecycle-permission.js";
+import { context as readContext } from "../../tools/context.js";
+import { assertLifecycleAuthority } from "../authorization.js";
+import { resolveSessionDirectory } from "../session.js";
+import { EMPTY_INPUT, type ToolDraft } from "./shared.js";
 
-/** Expose current OpenSpec facts without making workflow decisions. */
-export const contextTool = tool({
-    description:
-        "Return deterministic current OpenSpec facts: availability, initialization, and active changes.",
-    args: {},
-    async execute(_args, toolContext) {
-        await requireLifecyclePermission(toolContext, "specops_context");
-        toolContext.metadata({ title: "Reading OpenSpec context…" });
-        return context({ getContext: () => getOpenSpecContext(toolContext.directory) });
-    },
-});
+export function addContextTool(tools: ToolDraft, ctx: Plugin.Context): void {
+    tools.add(
+        "specops_context",
+        {
+            description:
+                "Return deterministic current OpenSpec facts: availability, initialization, and active changes.",
+            input: EMPTY_INPUT,
+            execute: async (_input, context) => {
+                await assertLifecycleAuthority(ctx, "specops_context", context);
+                await context.progress({ title: "Reading OpenSpec context…" });
+                const directory = await resolveSessionDirectory(ctx, context.sessionID);
+                return { content: await readContext({ getContext: () => getOpenSpecContext(directory) }) };
+            },
+        },
+        { codemode: false },
+    );
+}

@@ -1,9 +1,11 @@
-import type { Config } from "@opencode-ai/plugin";
+import type { Plugin } from "@opencode-ai/plugin";
 import type { SpecOpsAgentDefinition } from "../agents/definition.js";
 import type { SpecOpsConfig } from "../config.js";
 import {
     autoCoordinatorAgentDefinition,
     interactiveCoordinatorAgentDefinition,
+    SPECOPS_AGENT_ID,
+    SPECOPS_AUTO_AGENT_ID,
 } from "../agents/coordinator.js";
 import { explorerAgentDefinition } from "../agents/explorer.js";
 import { plannerAgentDefinition } from "../agents/planner.js";
@@ -11,106 +13,84 @@ import { designerAgentDefinition } from "../agents/designer.js";
 import { implementerAgentDefinition } from "../agents/implementer.js";
 import { reviewerAgentDefinition } from "../agents/reviewer.js";
 import { frontierAgentDefinition } from "../agents/frontier.js";
+import { denyPrivateSpecOpsSubagents, toV2PermissionRules } from "./permissions.js";
 
-/**
- * Translate one host-neutral agent definition into OpenCode 1's registration
- * shape.
- *
- * This is the single site where a definition becomes a `Config["agent"]`
- * entry: the SDK's narrower permission and entry types are narrower than the
- * neutral record, so one documented cast replaces the per-module casts this
- * boundary replaces. Blank model selections were already omitted at
- * definition-build time, preserving "use the invoking primary agent's model".
- *
- * @param config Host configuration object mutated in place.
- * @param definition Neutral SpecOps role definition to register.
- */
-export function applyAgentDefinition(config: Config, definition: SpecOpsAgentDefinition): void {
-    config.agent ??= {};
-    const { id, ...rest } = definition;
-    config.agent[id] = {
-        ...rest,
-    } as NonNullable<Config["agent"]>[string];
+/** Whether an agent belongs to the private SpecOps workflow namespace. */
+export function isSpecOpsAgentKey(key: string): boolean {
+    return key === SPECOPS_AGENT_ID || key === SPECOPS_AUTO_AGENT_ID || key.startsWith("specops-");
 }
 
-/**
- * Register the interactive SpecOps primary agent from its neutral definition.
- *
- * @param config OpenCode configuration object mutated with the primary agent.
- * @param specOpsConfig Validated persisted role-to-model configuration.
- */
-export function registerCoordinatorAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyAgentDefinition(config, interactiveCoordinatorAgentDefinition(specOpsConfig));
+/** Parse the persisted `provider/model` selection into OpenCode 2's Model.Ref. */
+export function toV2ModelRef(model: string, variant?: string) {
+    const slash = model.indexOf("/");
+    if (slash <= 0 || slash === model.length - 1) {
+        throw new Error(`invalid configured model '${model}': expected provider/model`);
+    }
+    return {
+        providerID: model.slice(0, slash),
+        id: model.slice(slash + 1),
+        ...(variant ? { variant } : {}),
+    };
 }
 
-/**
- * Register the autonomous SpecOps Auto primary agent from its neutral definition.
- *
- * @param config OpenCode configuration object mutated with the primary agent.
- * @param specOpsConfig Validated persisted role-to-model configuration.
- */
-export function registerAutoCoordinatorAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyAgentDefinition(config, autoCoordinatorAgentDefinition(specOpsConfig));
+/** Apply one host-neutral SpecOps role definition to an OpenCode 2 agent draft. */
+export function applyAgentDefinition(
+    draft: {
+        id: string;
+        name: string;
+        description?: string;
+        system?: string;
+        mode: "primary" | "subagent" | "all";
+        hidden: boolean;
+        model?: { providerID: string; id: string; variant?: string };
+        permissions: Array<{ action: string; resource: string; effect: "allow" | "ask" | "deny" }>;
+    },
+    definition: SpecOpsAgentDefinition,
+): void {
+    draft.id = definition.id;
+    draft.name = definition.id;
+    draft.description = definition.description;
+    draft.system = definition.prompt;
+    draft.mode = definition.mode;
+    draft.hidden = definition.hidden ?? false;
+    draft.permissions = [...draft.permissions, ...toV2PermissionRules(definition.permission)];
+
+    if (definition.model?.trim()) {
+        draft.model = toV2ModelRef(definition.model.trim(), definition.variant);
+    } else {
+        delete draft.model;
+    }
 }
 
-/**
- * Register the SpecOps explorer subagent from its neutral definition.
- *
- * @param config OpenCode configuration object mutated with the subagent.
- * @param specOpsConfig Validated persisted role-to-model configuration.
- */
-export function registerExplorerAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyAgentDefinition(config, explorerAgentDefinition(specOpsConfig));
-}
+/** Register the private boundary and all configured SpecOps agents in V2. */
+export async function registerAgents(
+    ctx: Plugin.Context,
+    specOpsConfig?: SpecOpsConfig,
+): Promise<void> {
+    await ctx.agent.transform(agents => {
+        // Protect every agent already known to OpenCode from reaching the private
+        // SpecOps subagent namespace. SpecOps roles added below provide their own
+        // explicit, ordered subagent rules.
+        for (const agent of agents.list()) {
+            if (isSpecOpsAgentKey(agent.id)) continue;
+            agent.permissions = denyPrivateSpecOpsSubagents(agent.permissions);
+        }
 
-/**
- * Register the SpecOps planner subagent from its neutral definition.
- *
- * @param config OpenCode configuration object mutated with the subagent.
- * @param specOpsConfig Validated persisted role-to-model configuration.
- */
-export function registerPlannerAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyAgentDefinition(config, plannerAgentDefinition(specOpsConfig));
-}
+        if (!specOpsConfig) return;
 
-/**
- * Register the SpecOps designer subagent from its neutral definition.
- *
- * @param config OpenCode configuration object mutated with the subagent.
- * @param specOpsConfig Validated persisted role-to-model configuration.
- */
-export function registerDesignerAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyAgentDefinition(config, designerAgentDefinition(specOpsConfig));
-}
+        const definitions: SpecOpsAgentDefinition[] = [
+            interactiveCoordinatorAgentDefinition(specOpsConfig),
+            autoCoordinatorAgentDefinition(specOpsConfig),
+            explorerAgentDefinition(specOpsConfig),
+            plannerAgentDefinition(specOpsConfig),
+            designerAgentDefinition(specOpsConfig),
+            implementerAgentDefinition(specOpsConfig),
+            reviewerAgentDefinition(specOpsConfig),
+        ];
+        if (specOpsConfig.frontierEscalation) definitions.push(frontierAgentDefinition(specOpsConfig));
 
-/**
- * Register the SpecOps implementer subagent from its neutral definition.
- *
- * @param config OpenCode configuration object mutated with the subagent.
- * @param specOpsConfig Validated persisted role-to-model configuration.
- */
-export function registerImplementerAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyAgentDefinition(config, implementerAgentDefinition(specOpsConfig));
-}
-
-/**
- * Register the SpecOps reviewer subagent from its neutral definition.
- *
- * @param config OpenCode configuration object mutated with the subagent.
- * @param specOpsConfig Validated persisted role-to-model configuration.
- */
-export function registerReviewerAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyAgentDefinition(config, reviewerAgentDefinition(specOpsConfig));
-}
-
-/**
- * Register the SpecOps frontier subagent from its neutral definition.
- *
- * Only called when the frontier escalation capability is enabled.
- *
- * @param config OpenCode configuration object mutated with the subagent.
- * @param specOpsConfig Validated persisted role-to-model configuration.
- */
-export function registerFrontierAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyAgentDefinition(config, frontierAgentDefinition(specOpsConfig));
+        for (const definition of definitions) {
+            agents.update(definition.id, draft => applyAgentDefinition(draft, definition));
+        }
+    });
 }
