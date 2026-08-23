@@ -34,7 +34,7 @@ try {
         `${pathToFileURL(path.join(packageDirectory, "dist", "index.js")).href}?packed-test`
     );
     const tuiModule = await import(
-        `${pathToFileURL(path.join(packageDirectory, "dist", "tui.js")).href}?packed-test-tui`
+        `${pathToFileURL(path.join(packageDirectory, "dist", "tui", "index.js")).href}?packed-test-tui`
     );
     assert(typeof tuiModule.default.tui === "function", "packed TUI entry is not loadable");
     const hooks = await module.default.server(pluginInput(packageDirectory));
@@ -106,7 +106,7 @@ try {
         "packed agent catalogue",
     );
     assert(
-        (await readFile(path.join(packageDirectory, "dist", "tui.js"), "utf8")).includes(
+        (await readFile(path.join(packageDirectory, "dist", "tui", "index.js"), "utf8")).includes(
             "SpecOps Configure",
         ),
         "packed TUI entry missing",

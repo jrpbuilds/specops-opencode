@@ -12,7 +12,7 @@
             "import": "./dist/index.js"
         },
         "./tui": {
-            "import": "./dist/tui.js"
+            "import": "./dist/tui/index.js"
         }
     },
     "files": [
@@ -44,7 +44,7 @@
         "typescript"
     ],
     "scripts": {
-        "build": "bun build src/index.ts src/tui.ts --outdir dist --target node",
+        "build": "rm -rf dist && bun build src/index.ts src/tui/index.ts --outdir dist --target node",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { ALL_AGENT_IDS } from "../../src/agents/ids.js";
-import { registerModelSettings } from "../../src/tui.js";
+import { registerModelSettings } from "../../src/tui/index.js";
 import { allProviders } from "../fixtures.js";
 import { fakeTuiApi, withConfigHome } from "./helpers.js";
 import { withTempDir } from "../helpers.js";
@@ -99,4 +99,28 @@ describe("registerModelSettings", () => {
 
         expect(fake.isCommandRegistered).toBe(false);
     });
+
+    test("toasts an error and releases the open guard when the editor fails", async () =>
+        withTempDir(async home =>
+            withConfigHome(home, async () => {
+                const fake = fakeTuiApi(allProviders);
+                Object.defineProperty(fake.api, "state", {
+                    get(): unknown {
+                        throw new Error("provider catalogue unavailable");
+                    },
+                });
+                registerModelSettings(fake.api);
+
+                await fake.runCommand();
+                await fake.runCommand();
+
+                const errors = fake.toasts.filter(toast => toast.variant === "error");
+                expect(errors).toHaveLength(2);
+                expect(errors[0]).toMatchObject({
+                    title: "SpecOps model settings",
+                    message: "provider catalogue unavailable",
+                });
+                expect(fake.currentDialog()).toBeUndefined();
+            }),
+        ));
 });

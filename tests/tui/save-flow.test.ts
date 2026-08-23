@@ -5,7 +5,7 @@ import { loadConfig, saveConfig } from "../../src/config.js";
 import { allProviders } from "../fixtures.js";
 import { withTempDir } from "../helpers.js";
 import { fakeTuiApi, withConfigHome } from "./helpers.js";
-import { registerModelSettings } from "../../src/tui.js";
+import { registerModelSettings } from "../../src/tui/index.js";
 
 async function openPlannerModelVariant(fake: ReturnType<typeof fakeTuiApi>): Promise<void> {
     await fake.runCommand();
@@ -234,6 +234,77 @@ describe("SpecOps Configure save flow", () => {
                     title: "SpecOps model settings",
                 });
                 expect(fake.currentDialog()?.title).toBe("SpecOps role model mappings");
+            }),
+        );
+    });
+
+    test("routes stale saved models through the correction alert before saving", async () => {
+        await withTempDir(async home =>
+            withConfigHome(home, async () => {
+                const destination = path.join(home, "opencode", "specops.json");
+                const persisted = await loadConfig(destination);
+                persisted.agents["specops-planner"] = { model: "gone/stale-model" };
+                await saveConfig(persisted, destination);
+
+                const fake = fakeTuiApi(allProviders);
+                registerModelSettings(fake.api);
+                await fake.runCommand();
+
+                expect(
+                    fake
+                        .currentDialog()
+                        ?.options?.find(option => option.value === "specops-planner")?.title,
+                ).toBe("! Planner");
+
+                fake.selectByValue("__save__");
+                expect(fake.currentDialog()?.title).toBe("Complete the model mapping");
+                expect(fake.currentDialog()?.message).toContain("gone/stale-model");
+
+                await fake.confirm();
+                expect(fake.currentDialog()?.title).toBe("SpecOps role model mappings");
+                const after = await loadConfig(destination);
+                expect(after.agents["specops-planner"]).toEqual({ model: "gone/stale-model" });
+            }),
+        );
+    });
+
+    test("returns from the model picker to the role list via back navigation", async () => {
+        await withTempDir(async home =>
+            withConfigHome(home, async () => {
+                const fake = fakeTuiApi(allProviders);
+                registerModelSettings(fake.api);
+                await fake.runCommand();
+
+                fake.selectByValue("specops-planner");
+                expect(fake.currentDialog()?.title).toBe("specops-planner: model");
+
+                const back = fake
+                    .currentDialog()
+                    ?.options?.find(option => typeof option.value === "symbol");
+                fake.selectByValue(back?.value);
+
+                expect(fake.currentDialog()?.title).toBe("SpecOps role model mappings");
+            }),
+        );
+    });
+
+    test("returns from the variant picker to the model picker via back navigation", async () => {
+        await withTempDir(async home =>
+            withConfigHome(home, async () => {
+                const fake = fakeTuiApi(allProviders);
+                registerModelSettings(fake.api);
+                await fake.runCommand();
+
+                fake.selectByValue("specops-planner");
+                fake.selectByValue("openference/GLM-5.2");
+                expect(fake.currentDialog()?.title).toBe("specops-planner: variant");
+
+                const back = fake
+                    .currentDialog()
+                    ?.options?.find(option => typeof option.value === "symbol");
+                fake.selectByValue(back?.value);
+
+                expect(fake.currentDialog()?.title).toBe("specops-planner: model");
             }),
         );
     });
