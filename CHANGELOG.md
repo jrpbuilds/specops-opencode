@@ -2,6 +2,22 @@
 
 All notable changes to SpecOps are documented in this file.
 
+## [v1.3.0] - 2026-08-23
+
+### Added
+
+- Added configurable concurrent planning batches, so independent OpenSpec
+  artifacts are authored in parallel (two at a time by default) while
+  dependent work stays ordered.
+- Added a Concurrent subagents option to SpecOps Configure, so the planning
+  concurrency limit can be raised or lowered between 1 and 8 without editing
+  config files by hand.
+
+### Changed
+
+- Clarified serial and concurrent planning routing, so batch dispatch stays
+  predictable as workflows grow.
+
 ## [v1.2.0] - 2026-08-22
 
 ### Changed

@@ -17,6 +17,10 @@ describe("DEFAULT_CONFIG", () => {
         expect(DEFAULT_CONFIG.frontierEscalation).toBe(false);
     });
 
+    test("uses two concurrent subagents by default", () => {
+        expect(DEFAULT_CONFIG.maxSubagentConcurrency).toBe(2);
+    });
+
     test("structuredClone is independent of the original", () => {
         const copy = structuredClone(DEFAULT_CONFIG);
         copy.agents["specops-coordinator"].model = "openference/GLM-5.2";

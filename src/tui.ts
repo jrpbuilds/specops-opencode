@@ -20,6 +20,8 @@ import {
 const COMMAND_NAME = "specops.models.configure";
 const BACK = Symbol("specops-back");
 const FRONTIER_ESCALATION = "__frontier_escalation__";
+const CONCURRENT_SUBAGENTS = "__concurrent_subagents__";
+const SUBAGENT_CONCURRENCY_OPTIONS = [1, 2, 4, 8] as const;
 
 /**
  * Register the command-palette entry that opens model configuration.
@@ -28,10 +30,16 @@ const FRONTIER_ESCALATION = "__frontier_escalation__";
  * lifecycle disposer removes the command when the TUI plugin is unloaded.
  *
  * @param api OpenCode TUI API used for command registration and notifications.
+ * @returns Nothing; registration is performed through the supplied API.
  */
 export function registerModelSettings(api: TuiPluginApi): void {
     let editorOpen = false;
 
+    /**
+     * Open the editor once and release the guard after it closes or fails.
+     *
+     * @returns A promise that settles after the editor closes or reports an error.
+     */
     const openEditor = async (): Promise<void> => {
         if (editorOpen) return;
         editorOpen = true;
@@ -74,6 +82,7 @@ export function registerModelSettings(api: TuiPluginApi): void {
  *
  * @param api OpenCode TUI API used to render dialogs and report errors.
  * @param onClose Callback used to release the top-level editor-open guard.
+ * @returns A promise that settles after the editor has initialized.
  */
 async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<void> {
     const source = await loadConfig();
@@ -93,16 +102,32 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
     let staged = structuredClone(draft.config);
 
     let closed = false;
+    /**
+     * Release the top-level editor guard exactly once.
+     *
+     * @returns Nothing; the close callback is invoked at most once.
+     */
     const finish = (): void => {
         if (closed) return;
         closed = true;
         onClose();
     };
+    /**
+     * Clear the active dialog and release the editor guard.
+     *
+     * @returns Nothing; the editor is marked closed.
+     */
     const close = (): void => {
         api.ui.dialog.clear();
         finish();
     };
 
+    /**
+     * Replace the current view with validation issues and a return action.
+     *
+     * @param issues Validation messages to display.
+     * @returns Nothing; the current dialog is replaced.
+     */
     const showIssues = (issues: readonly string[]): void => {
         api.ui.dialog.replace(() =>
             api.ui.DialogAlert({
@@ -113,6 +138,11 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
         );
     };
 
+    /**
+     * Validate and persist the staged configuration, or return to correction.
+     *
+     * @returns A promise that settles after persistence or error handling.
+     */
     const save = async (): Promise<void> => {
         const issues = validateConfigSelections(staged, models);
         if (issues.length) {
@@ -138,6 +168,11 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
         });
     };
 
+    /**
+     * Show the confirmation dialog after validating the staged choices.
+     *
+     * @returns Nothing; the review dialog replaces the current view.
+     */
     const showReview = (): void => {
         const issues = validateConfigSelections(staged, models);
         if (issues.length) {
@@ -152,7 +187,8 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
                     `The configuration contains all ${ALL_AGENT_IDS.length} roles.`,
                     `${changed} role selection${changed === 1 ? "" : "s"} changed.`,
                     `Frontier escalation: ${staged.frontierEscalation ? "Enabled" : "Disabled"}.`,
-                    "Only model mappings and this option are stored.",
+                    `Concurrent subagents: ${effectiveConcurrency(staged)}.`,
+                    "Only model mappings and these options are stored.",
                 ].join("\n"),
                 onConfirm: save,
                 onCancel: showAgents,
@@ -160,6 +196,13 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
         );
     };
 
+    /**
+     * Show variant choices for one selected model and update the staged role.
+     *
+     * @param id Role whose variant is being edited.
+     * @param model Selected model whose variants are offered.
+     * @returns Nothing; the variant dialog replaces the current view.
+     */
     const showVariant = (id: AgentId, model: ConfiguredModel): void => {
         const variants = ["", ...model.variants];
         api.ui.dialog.replace(() =>
@@ -196,6 +239,12 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
         );
     };
 
+    /**
+     * Show configured model choices for one role and update the staged role.
+     *
+     * @param id Role whose model is being edited.
+     * @returns Nothing; the model dialog replaces the current view.
+     */
     const showModels = (id: AgentId): void => {
         api.ui.dialog.replace(() =>
             api.ui.DialogSelect<string | typeof BACK>({
@@ -239,6 +288,35 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
         );
     };
 
+    /**
+     * Show the global planning concurrency choices and stage the selection.
+     *
+     * @returns Nothing; the concurrency dialog replaces the current view.
+     */
+    const showConcurrency = (): void => {
+        api.ui.dialog.replace(() =>
+            api.ui.DialogSelect<number>({
+                title: "Concurrent subagents",
+                placeholder: "Choose concurrency limit",
+                current: effectiveConcurrency(staged),
+                options: SUBAGENT_CONCURRENCY_OPTIONS.map(value => ({
+                    title: String(value),
+                    value,
+                    description: `Allow up to ${value} planning subagents at once`,
+                })),
+                onSelect: option => {
+                    staged.maxSubagentConcurrency = Number(option.value);
+                    showAgents();
+                },
+            }),
+        );
+    };
+
+    /**
+     * Render the role/options list that drives the editor state machine.
+     *
+     * @returns Nothing; the role dialog is replaced with current staged state.
+     */
     const showAgents = (): void => {
         api.ui.dialog.setSize("xlarge");
         const unresolved = new Set(
@@ -246,6 +324,7 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
         );
         const changed = new Set(changedAgentIds(initial, staged));
         const frontierEscalationChanged = staged.frontierEscalation !== initial.frontierEscalation;
+        const concurrencyChanged = effectiveConcurrency(staged) !== effectiveConcurrency(initial);
         const roleOptions = ROLE_WORKFLOW_ORDER.map(id => ({
             // "!" = saved model unavailable in the current catalogue; "*" = staged change.
             title: `${unresolved.has(id) ? "! " : ""}${changed.has(id) ? "* " : ""}${agentDisplayName(id)}`,
@@ -269,11 +348,18 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
                             footer: staged.frontierEscalation ? "Enabled" : "Disabled",
                         },
                         {
+                            value: CONCURRENT_SUBAGENTS,
+                            category: "Options",
+                            description: "Set the global planning subagent concurrency limit",
+                            title: `${concurrencyChanged ? "* " : ""}Concurrent subagents`,
+                            footer: String(effectiveConcurrency(staged)),
+                        },
+                        {
                             title: "Review and save",
                             value: "__save__",
                             category: "Actions",
                             description: "Validate all mappings and write the configuration",
-                            footer: `${changed.size + (frontierEscalationChanged ? 1 : 0)} changed`,
+                            footer: `${changed.size + (frontierEscalationChanged ? 1 : 0) + (concurrencyChanged ? 1 : 0)} changed`,
                         },
                         {
                             title: "Cancel",
@@ -286,6 +372,8 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
                         if (option.value === FRONTIER_ESCALATION) {
                             staged.frontierEscalation = !staged.frontierEscalation;
                             showAgents();
+                        } else if (option.value === CONCURRENT_SUBAGENTS) {
+                            showConcurrency();
                         } else if (option.value === "__save__") {
                             showReview();
                         } else if (option.value === "__cancel__") {
@@ -307,6 +395,11 @@ async function showModelEditor(api: TuiPluginApi, onClose: () => void): Promise<
  *
  * Unknown saved models remain visible by ID, while long display names are
  * shortened so the role list stays readable in a narrow terminal.
+ *
+ * @param config Staged configuration containing the role selection.
+ * @param id Role whose display value is needed.
+ * @param models Models currently available from OpenCode.
+ * @returns A compact model and variant description for the role footer.
  */
 function describeSelection(
     config: SpecOpsConfig,
@@ -321,10 +414,24 @@ function describeSelection(
 }
 
 /**
+ * Resolve the staged concurrency setting while supporting older config shapes.
+ *
+ * @param config Staged configuration being displayed.
+ * @returns The configured limit, defaulting to two planning subagents.
+ */
+function effectiveConcurrency(config: SpecOpsConfig): number {
+    return config.maxSubagentConcurrency ?? 2;
+}
+
+/**
  * Return roles whose staged model mapping differs from the opened snapshot.
  *
  * JSON comparison is sufficient because configuration entries contain only
  * stable scalar fields and the role order is fixed by `ALL_AGENT_IDS`.
+ *
+ * @param initial Configuration captured when the editor opened.
+ * @param staged Current in-memory configuration.
+ * @returns Role ids whose model or variant selection changed.
  */
 function changedAgentIds(initial: SpecOpsConfig, staged: SpecOpsConfig): readonly AgentId[] {
     return ALL_AGENT_IDS.filter(
@@ -345,4 +452,5 @@ const SpecOpsTuiPlugin = {
     },
 } satisfies TuiPluginModule;
 
+/** Export the native SpecOps TUI plugin module. */
 export default SpecOpsTuiPlugin;

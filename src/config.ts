@@ -19,11 +19,13 @@ export type AgentConfig = { model?: string; variant?: string };
  *
  * Validation requires one entry for every `AgentId`; individual entries may
  * omit `model` to inherit OpenCode's global default. `frontierEscalation` is
- * normalized to `false` when loading an older configuration without the field.
+ * normalized to `false`, and `maxSubagentConcurrency` to `2`, when loading an
+ * older configuration without those fields.
  */
 export type SpecOpsConfig = {
     agents: Record<AgentId, AgentConfig>;
     frontierEscalation: boolean;
+    maxSubagentConcurrency?: number;
 };
 
 /**
@@ -35,13 +37,20 @@ export type SpecOpsConfig = {
 export const DEFAULT_CONFIG: SpecOpsConfig = {
     agents: Object.fromEntries(ALL_AGENT_IDS.map(id => [id, {}])) as SpecOpsConfig["agents"],
     frontierEscalation: false,
+    maxSubagentConcurrency: 2,
 };
+
+const ALLOWED_SUBAGENT_CONCURRENCY = new Set([1, 2, 4, 8]);
 
 /**
  * Resolve the OpenCode configuration directory using the XDG convention.
  *
  * Explicit `XDG_CONFIG_HOME` values are honored; otherwise the supplied home
  * directory is used to make the path deterministic in tests.
+ *
+ * @param environment Environment variables used to resolve XDG configuration.
+ * @param homeDirectory Fallback home directory when XDG is not set.
+ * @returns The absolute path to OpenCode's configuration directory.
  */
 function resolveOpenCodeConfigDirectory(
     environment: NodeJS.ProcessEnv = process.env,
@@ -57,6 +66,10 @@ function resolveOpenCodeConfigDirectory(
  *
  * The file lives below OpenCode's configuration directory so the plugin uses
  * the same per-user configuration boundary as the host application.
+ *
+ * @param environment Environment variables used to resolve XDG configuration.
+ * @param homeDirectory Fallback home directory when XDG is not set.
+ * @returns The absolute path to the persisted SpecOps configuration file.
  */
 export function resolveConfigPath(
     environment: NodeJS.ProcessEnv = process.env,
@@ -71,6 +84,9 @@ export function resolveConfigPath(
  *
  * Malformed or incompatible existing files are allowed to fail loudly rather
  * than being silently replaced.
+ *
+ * @param destination Configuration file to read.
+ * @returns The validated configuration, including defaults for omitted fields.
  */
 export async function loadConfig(
     destination: string = resolveConfigPath(),
@@ -91,17 +107,28 @@ export async function loadConfig(
  * The validator rejects unknown top-level or role keys, missing roles, invalid
  * field types, and non-blank variants without a valid model context. The
  * optional top-level switch preserves compatibility with older config files.
+ *
+ * @param value Unknown parsed configuration value.
+ * @returns A cloned, validated SpecOps configuration.
+ * @throws Error when the value is malformed or contains unsupported settings.
  */
 export function validateConfig(value: unknown): SpecOpsConfig {
     if (
         !isRecord(value) ||
-        !hasOnlyKeys(value, ["agents", "frontierEscalation"]) ||
+        !hasOnlyKeys(value, ["agents", "frontierEscalation", "maxSubagentConcurrency"]) ||
         !isRecord(value.agents)
     ) {
         throw new Error("invalid SpecOps configuration");
     }
     if ("frontierEscalation" in value && typeof value.frontierEscalation !== "boolean") {
         throw new Error("invalid SpecOps configuration frontierEscalation");
+    }
+    if (
+        "maxSubagentConcurrency" in value &&
+        (typeof value.maxSubagentConcurrency !== "number" ||
+            !ALLOWED_SUBAGENT_CONCURRENCY.has(value.maxSubagentConcurrency))
+    ) {
+        throw new Error("maxSubagentConcurrency must be 1, 2, 4, or 8");
     }
 
     const expected = [...ALL_AGENT_IDS].sort();
@@ -125,6 +152,7 @@ export function validateConfig(value: unknown): SpecOpsConfig {
     return structuredClone({
         ...value,
         frontierEscalation: value.frontierEscalation ?? false,
+        maxSubagentConcurrency: value.maxSubagentConcurrency ?? 2,
     }) as SpecOpsConfig;
 }
 
@@ -133,6 +161,9 @@ export function validateConfig(value: unknown): SpecOpsConfig {
  *
  * Validation occurs before any write, while `writeFileAtomic` prevents a
  * partially written JSON file from becoming the active configuration.
+ *
+ * @param config Configuration to validate and persist.
+ * @param destination Configuration file to replace.
  */
 export async function saveConfig(
     config: SpecOpsConfig,
@@ -148,6 +179,9 @@ export async function saveConfig(
  * The temporary file is opened exclusively, flushed before replacement, and
  * cleaned up in both success and failure paths. Keeping it beside the target
  * preserves the filesystem's atomic rename guarantees.
+ *
+ * @param destination File to replace atomically.
+ * @param content UTF-8 content to write.
  */
 export async function writeFileAtomic(destination: string, content: string): Promise<void> {
     await mkdir(path.dirname(destination), { recursive: true });
@@ -166,7 +200,13 @@ export async function writeFileAtomic(destination: string, content: string): Pro
     }
 }
 
-/** Return whether a record contains no keys outside the supplied allow-list. */
+/**
+ * Check that a record contains no keys outside the supplied allow-list.
+ *
+ * @param value Record whose keys should be checked.
+ * @param allowed Keys accepted by the surrounding configuration shape.
+ * @returns Whether every key is present in the allow-list.
+ */
 function hasOnlyKeys(value: Record<string, unknown>, allowed: readonly string[]): boolean {
     return Object.keys(value).every(key => allowed.includes(key));
 }

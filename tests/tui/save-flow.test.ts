@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, test } from "bun:test";
-import { loadConfig } from "../../src/config.js";
+import { loadConfig, saveConfig } from "../../src/config.js";
 import { allProviders } from "../fixtures.js";
 import { withTempDir } from "../helpers.js";
 import { fakeTuiApi, withConfigHome } from "./helpers.js";
@@ -60,6 +60,7 @@ describe("SpecOps Configure save flow", () => {
                     "specops-reviewer",
                     "specops-frontier",
                     "__frontier_escalation__",
+                    "__concurrent_subagents__",
                     "__save__",
                     "__cancel__",
                 ]);
@@ -87,6 +88,78 @@ describe("SpecOps Configure save flow", () => {
 
                 const saved = await loadConfig(path.join(home, "opencode", "specops.json"));
                 expect(saved.frontierEscalation).toBe(true);
+            }),
+        );
+    });
+
+    test("persists the selected concurrent subagent limit as a number", async () => {
+        await withTempDir(async home =>
+            withConfigHome(home, async () => {
+                const fake = fakeTuiApi(allProviders);
+                registerModelSettings(fake.api);
+                await fake.runCommand();
+
+                fake.selectByValue("__concurrent_subagents__");
+                expect(fake.currentDialog()?.title).toBe("Concurrent subagents");
+                expect(fake.currentDialog()?.current).toBe(2);
+                expect(fake.currentDialog()?.options?.map(option => option.value)).toEqual([
+                    1, 2, 4, 8,
+                ]);
+                fake.selectByValue(4);
+                expect(
+                    fake
+                        .currentDialog()
+                        ?.options?.find(option => option.value === "__concurrent_subagents__"),
+                ).toMatchObject({ title: "* Concurrent subagents", footer: "4" });
+                fake.selectByValue("__save__");
+                await fake.confirm();
+
+                const saved = await loadConfig(path.join(home, "opencode", "specops.json"));
+                expect(saved.maxSubagentConcurrency).toBe(4);
+                expect(typeof saved.maxSubagentConcurrency).toBe("number");
+            }),
+        );
+    });
+
+    test("indicates the persisted concurrent subagent limit in the selector", async () => {
+        await withTempDir(async home =>
+            withConfigHome(home, async () => {
+                const destination = path.join(home, "opencode", "specops.json");
+                const persisted = await loadConfig(destination);
+                persisted.maxSubagentConcurrency = 8;
+                await saveConfig(persisted, destination);
+
+                const fake = fakeTuiApi(allProviders);
+                registerModelSettings(fake.api);
+                await fake.runCommand();
+
+                fake.selectByValue("__concurrent_subagents__");
+                expect(fake.currentDialog()).toMatchObject({
+                    title: "Concurrent subagents",
+                    current: 8,
+                });
+                expect(fake.currentDialog()?.options?.map(option => option.value)).toEqual([
+                    1, 2, 4, 8,
+                ]);
+            }),
+        );
+    });
+
+    test("preserves the persisted concurrent limit when saving a model change", async () => {
+        await withTempDir(async home =>
+            withConfigHome(home, async () => {
+                const destination = path.join(home, "opencode", "specops.json");
+                const persisted = await loadConfig(destination);
+                persisted.maxSubagentConcurrency = 8;
+                await saveConfig(persisted, destination);
+
+                const fake = fakeTuiApi(allProviders);
+                registerModelSettings(fake.api);
+                await openPlannerModelVariant(fake);
+                fake.selectByValue("__save__");
+                await fake.confirm();
+
+                expect((await loadConfig(destination)).maxSubagentConcurrency).toBe(8);
             }),
         );
     });

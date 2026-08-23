@@ -64,6 +64,9 @@ export type ConfigDraft = {
  *
  * Provider-local model IDs become `provider/model` IDs, variants are sorted,
  * and the final list is ordered by provider name and model name for the TUI.
+ *
+ * @param providers Provider catalogue returned by OpenCode.
+ * @returns Normalized models in stable display order.
  */
 export function configuredModels(
     providers: readonly ConfiguredProvider[],
@@ -91,6 +94,10 @@ export function configuredModels(
  * `unresolved` lists roles whose saved `model` is not present in the current
  * OpenCode provider catalogue, so the editor can flag them. A blank model is
  * valid (global default) and therefore never unresolved.
+ *
+ * @param source Validated persisted configuration to stage.
+ * @param models Models currently available from OpenCode.
+ * @returns A complete editable configuration and unresolved role ids.
  */
 export function createConfigDraft(
     source: SpecOpsConfig,
@@ -111,7 +118,11 @@ export function createConfigDraft(
     }
 
     return {
-        config: { agents, frontierEscalation: source.frontierEscalation },
+        config: {
+            agents,
+            frontierEscalation: source.frontierEscalation,
+            maxSubagentConcurrency: source.maxSubagentConcurrency,
+        },
         unresolved,
     };
 }
@@ -121,6 +132,10 @@ export function createConfigDraft(
  *
  * A model change can invalidate the previously selected variant, so invalid
  * variants are intentionally dropped instead of being persisted.
+ *
+ * @param entry Current role model and variant selection.
+ * @param model Newly selected normalized model.
+ * @returns The updated role selection with only a compatible variant retained.
  */
 export function selectConfiguredModel(entry: AgentConfig, model: ConfiguredModel): AgentConfig {
     return {
@@ -136,6 +151,8 @@ export function selectConfiguredModel(entry: AgentConfig, model: ConfiguredModel
  *
  * Returning a fresh empty object also removes any stale variant at the same
  * time.
+ *
+ * @returns An empty role configuration inheriting OpenCode's default model.
  */
 export function clearConfiguredModel(): AgentConfig {
     return {};
@@ -154,6 +171,10 @@ export function agentDisplayName(id: AgentId): string {
  * variant the selected model does not support are all reported as issues.
  * The function returns every issue so the editor can present one complete
  * correction list instead of failing on the first invalid role.
+ *
+ * @param config Staged configuration being checked.
+ * @param models Models currently available from OpenCode.
+ * @returns All detected model and variant selection issues.
  */
 export function validateConfigSelections(
     config: SpecOpsConfig,

@@ -51,6 +51,13 @@ describe("validateConfig - valid shapes", () => {
         const value = { agents: allRoles(), frontierEscalation: false };
         expect(validateConfig(value).frontierEscalation).toBe(false);
     });
+
+    for (const maxSubagentConcurrency of [1, 2, 4, 8]) {
+        test(`accepts concurrency limit ${maxSubagentConcurrency}`, () => {
+            const value = { agents: allRoles(), maxSubagentConcurrency };
+            expect(validateConfig(value).maxSubagentConcurrency).toBe(maxSubagentConcurrency);
+        });
+    }
 });
 
 describe("validateConfig - top-level structure", () => {
@@ -87,6 +94,21 @@ describe("validateConfig - top-level structure", () => {
     ] as const) {
         test(`rejects a non-boolean frontier escalation value: ${label}`, () => {
             expect(() => validateConfig({ agents: allRoles(), frontierEscalation })).toThrow();
+        });
+    }
+
+    for (const [label, maxSubagentConcurrency] of [
+        ["out-of-set number", 3],
+        ["string", "2"],
+        ["boolean", true],
+        ["object", {}],
+        ["array", []],
+        ["null", null],
+    ] as const) {
+        test(`rejects an invalid concurrency limit: ${label}`, () => {
+            expect(() => validateConfig({ agents: allRoles(), maxSubagentConcurrency })).toThrow(
+                "maxSubagentConcurrency must be 1, 2, 4, or 8",
+            );
         });
     }
 });

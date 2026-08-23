@@ -34,6 +34,7 @@ describe("registerModelSettings", () => {
                 expect(values).toEqual([
                     ...ALL_AGENT_IDS,
                     "__frontier_escalation__",
+                    "__concurrent_subagents__",
                     "__save__",
                     "__cancel__",
                 ]);

@@ -54,7 +54,7 @@ The workflow never skips planning or apply-readiness (and, after apply, independ
 ## Reconciling revised planning artifacts
 
 Triggers: coordinator-initiated revision; planner/designer/implementer material inconsistency handoff; checkpoint feedback revision. Forward progress never triggers.
-Both: downstream reverse-dependency reachability (`src/openspec/routing.ts:128-178`); upstream transitive `requires` (`src/openspec/routing.ts:102-119`); skip skipped/outside; existing affected only; never create missing.
+Both: downstream reverse-dependency reachability via `artifact-graph.ts`/`transitiveRequires()`; upstream transitive `requires` via `requiredClosure()`; skip skipped/outside; existing affected only; never create missing.
 Owners: design-role → `specops-designer`; other → `specops-planner`; coordinator never self-repairs (edit denied). considered-set: repeat only after content change OR new evidence; else terminate.
 Premise invalidation (goal/.openspec.yaml or proposal Why no longer describes work): no auto-split; mode fragments decide. Exit unchanged `## Handoff gate`; fresh status; normal routing.
 Cases: requirements-role→design-role→tasks-role (valid `- [x]`); design-role→tasks-role (consistent requirements); bidirectional conflict→considered-set, one changed-content re-dispatch; task-only→no upstream; no-op→no dispatch/status reread.

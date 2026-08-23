@@ -25,6 +25,13 @@ describe("createConfigDraft", () => {
         });
     });
 
+    test("preserves the persisted concurrency limit", () => {
+        const source = structuredClone(DEFAULT_CONFIG);
+        source.maxSubagentConcurrency = 8;
+
+        expect(createConfigDraft(source, models).config.maxSubagentConcurrency).toBe(8);
+    });
+
     test("drops a blank model (trimmed) so the entry has no model key", () => {
         const source = structuredClone(DEFAULT_CONFIG);
         source.agents[AGENT_IDS.explorer] = { model: "   " };

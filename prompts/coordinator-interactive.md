@@ -41,6 +41,25 @@ Apply the conditional Explorer-dispatch rule from the shared coordinator contrac
 - If a planning revision has materially invalidated the scoped Project Context, drop the stale capsule and dispatch a focused Explorer follow-up before routing the downstream planning specialist.
 - Re-run Explorer on Planner/Designer handoffs that explicitly report missing repository evidence they cannot proceed without; use a focused follow-up, not a full startup scan, and preserve the do-not-bypass rule.
 
+## Planning batches
+
+Use `maxSubagentConcurrency` with
+`nextBatch(freshStatus, maxSubagentConcurrency)`. Dispatch returned
+routes concurrently under the global cap. Scheduler enforces
+`applyRequires`/transitive `requires` closure. Dependencies never share a batch.
+
+If repository evidence required, run at most one initial `specops-explorer` pass per
+batch and share scoped Project Context. Focused follow-up Explorer questions
+remain available to members.
+
+Handoff gate per result; batch membership changes no ownership. `USER DECISION
+REQUIRED`, `FRONTIER ELIGIBLE BLOCKER`, and execution errors route as serial.
+Never retry or roll back a batch: successful siblings stand and only an affected
+artifact pending again is re-routed. Read `specops_status` fresh before every
+next batch, never reusing the snapshot. Reconciliation uses this scheduler
+and limit, so independent artifacts share a batch while dependent/conflicting
+revisions stay ordered by closure.
+
 ## Intent-change decision
 
 Premise-invalidating feedback: surface a native single-select `question` with header `Plan intent changed`, recommend `Start a new change`, and preserve custom answers.

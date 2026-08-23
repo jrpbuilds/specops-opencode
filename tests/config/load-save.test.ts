@@ -41,7 +41,7 @@ function fullyPopulated() {
         model: "openai/gpt-5.6-sol",
         variant: "high",
     };
-    return { agents, frontierEscalation: true };
+    return { agents, frontierEscalation: true, maxSubagentConcurrency: 2 };
 }
 
 describe("loadConfig", () => {
@@ -83,6 +83,18 @@ describe("loadConfig", () => {
             const destination = configPath(dir);
             await writeFile(destination, JSON.stringify({ agents: DEFAULT_CONFIG.agents }), "utf8");
             expect(await loadConfig(destination)).toEqual(DEFAULT_CONFIG);
+        });
+    });
+
+    test("loads an older config without concurrency as 2", async () => {
+        await withTempDir(async dir => {
+            const destination = configPath(dir);
+            await writeFile(
+                destination,
+                JSON.stringify({ agents: DEFAULT_CONFIG.agents, frontierEscalation: false }),
+                "utf8",
+            );
+            expect((await loadConfig(destination)).maxSubagentConcurrency).toBe(2);
         });
     });
 });

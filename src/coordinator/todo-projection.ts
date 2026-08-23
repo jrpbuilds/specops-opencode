@@ -1,4 +1,5 @@
 import type { NormalizedArtifact, NormalizedStatus } from "../openspec/status.js";
+import { requiredClosure, transitiveRequires } from "./artifact-graph.js";
 
 /** Native Todo state projected from durable OpenSpec workflow state. */
 export type TodoProjectionStatus = "complete" | "in_progress" | "pending";
@@ -105,27 +106,6 @@ function isComplete(artifact: NormalizedArtifact): boolean {
     return artifact.status === "done" || artifact.status === "skipped";
 }
 
-function requiredClosure(
-    applyRequires: readonly string[],
-    artifactsById: ReadonlyMap<string, NormalizedArtifact>,
-): Set<string> {
-    const closure = new Set(applyRequires);
-    const pending = [...applyRequires];
-
-    while (pending.length > 0) {
-        const artifact = artifactsById.get(pending.pop()!);
-        if (!artifact) continue;
-        for (const requiredId of artifact.requires) {
-            if (!closure.has(requiredId)) {
-                closure.add(requiredId);
-                pending.push(requiredId);
-            }
-        }
-    }
-
-    return closure;
-}
-
 function orderByReverseReachability(
     artifacts: readonly NormalizedArtifact[],
     closure: ReadonlySet<string>,
@@ -150,23 +130,4 @@ function reverseReachabilityScore(
             artifactId !== candidate.id &&
             transitiveRequires(artifactId, candidate.id, artifactsById),
     ).length;
-}
-
-function transitiveRequires(
-    artifactId: string,
-    targetId: string,
-    artifactsById: ReadonlyMap<string, NormalizedArtifact>,
-    visited = new Set<string>(),
-): boolean {
-    if (visited.has(artifactId)) return false;
-    visited.add(artifactId);
-
-    const artifact = artifactsById.get(artifactId);
-    if (!artifact) return false;
-
-    return artifact.requires.some(
-        requiredId =>
-            requiredId === targetId ||
-            transitiveRequires(requiredId, targetId, artifactsById, visited),
-    );
 }

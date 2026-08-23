@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { nextPlanningRoute, type PlanningRoute } from "../../src/openspec/routing.js";
+import { nextBatch, type PlanningRoute } from "../../src/coordinator/batching.js";
 import type { NormalizedArtifact, NormalizedStatus } from "../../src/openspec/status.js";
 
 const output = (id: string): string => `openspec/changes/example/${id}.md`;
@@ -27,8 +27,17 @@ function fixture(
     };
 }
 
+function authorIds(routes: readonly PlanningRoute[]): (string | false)[] {
+    return routes.map(route => route.kind === "author" && route.artifactId);
+}
+
+/** Dispatch a single-artifact batch, mirroring serial coordinator operation. */
+function firstRoute(status: NormalizedStatus): PlanningRoute | null {
+    return nextBatch(status, 1)[0] ?? null;
+}
+
 function expectAuthor(
-    route: PlanningRoute,
+    route: PlanningRoute | null,
     expected: Pick<
         Extract<PlanningRoute, { kind: "author" }>,
         "artifactId" | "outputPath" | "specialist"
@@ -37,7 +46,123 @@ function expectAuthor(
     expect(route).toEqual({ kind: "author", ...expected });
 }
 
-describe("nextPlanningRoute", () => {
+describe("nextBatch", () => {
+    test("returns independent artifacts in deterministic order", () => {
+        const status = fixture(
+            [artifact("A", "ready"), artifact("B", "ready"), artifact("C", "blocked", ["A", "B"])],
+            ["A", "B", "C"],
+            false,
+        );
+        expect(nextBatch(status, 2)).toEqual([
+            {
+                kind: "author",
+                artifactId: "A",
+                outputPath: output("A"),
+                specialist: "planner-generic",
+            },
+            {
+                kind: "author",
+                artifactId: "B",
+                outputPath: output("B"),
+                specialist: "planner-generic",
+            },
+        ]);
+    });
+
+    test("limit one returns a singleton batch", () => {
+        const status = fixture([artifact("A", "ready"), artifact("B", "ready")], ["A", "B"], false);
+        expect(nextBatch(status, 1)).toHaveLength(1);
+    });
+
+    test("limit two batches planner-owned and designer-owned artifacts", () => {
+        const status = fixture(
+            [
+                artifact("proposal", "done"),
+                artifact("specs/example", "done", ["proposal"]),
+                artifact("design", "ready", ["specs/example"]),
+                artifact("tasks", "ready", ["proposal"]),
+                artifact("release", "blocked", ["design"]),
+            ],
+            ["proposal", "specs/example", "design", "tasks", "release"],
+            false,
+        );
+        expect(authorIds(nextBatch(status, 2))).toEqual(["design", "tasks"]);
+    });
+
+    test("limit two batches two independent planner-owned artifacts", () => {
+        const status = fixture(
+            [artifact("alpha", "ready"), artifact("beta", "ready"), artifact("gamma", "ready")],
+            ["alpha", "beta", "gamma"],
+            false,
+        );
+        expect(authorIds(nextBatch(status, 2))).toEqual(["alpha", "beta"]);
+    });
+
+    test("limit four caps a larger feasible set", () => {
+        const status = fixture(
+            [
+                artifact("alpha", "ready"),
+                artifact("bravo", "ready"),
+                artifact("charlie", "ready"),
+                artifact("delta", "ready"),
+                artifact("echo", "ready"),
+            ],
+            ["alpha", "bravo", "charlie", "delta", "echo"],
+            false,
+        );
+        expect(authorIds(nextBatch(status, 4))).toEqual(["alpha", "bravo", "charlie", "delta"]);
+    });
+
+    test("never batches an artifact with its dependency", () => {
+        const before = fixture(
+            [artifact("A", "ready"), artifact("B", "ready", ["A"])],
+            ["A", "B"],
+            false,
+        );
+        expect(authorIds(nextBatch(before, 2))).toEqual(["A"]);
+
+        const after = fixture(
+            [artifact("A", "done"), artifact("B", "ready", ["A"])],
+            ["A", "B"],
+            false,
+        );
+        expect(authorIds(nextBatch(after, 2))).toEqual(["B"]);
+    });
+
+    test("uses graph-only feasibility for custom schemas", () => {
+        const status = {
+            ...fixture(
+                [
+                    artifact("research", "ready", [], output("research")),
+                    artifact("review", "ready", [], output("review")),
+                    artifact("publication", "blocked", ["research", "review"]),
+                ],
+                ["research", "review", "publication"],
+                false,
+            ),
+            schemaName: "custom-schema",
+        };
+        expect(authorIds(nextBatch(status, 2))).toEqual(["research", "review"]);
+    });
+
+    test("batches independent reconciliation artifacts but orders dependent revisions", () => {
+        const status = {
+            ...fixture(
+                [
+                    artifact("changed-a", "ready"),
+                    artifact("changed-b", "ready"),
+                    artifact("changed-c", "ready", ["changed-a"]),
+                ],
+                ["changed-a", "changed-b", "changed-c"],
+                false,
+            ),
+            schemaName: "reconciliation",
+        };
+        expect(authorIds(nextBatch(status, 3))).toEqual(["changed-a", "changed-b"]);
+    });
+});
+
+describe("nextBatch limit-one dispatch", () => {
     test("spec-driven-baseline routes proposal to the generic planner", () => {
         const status = fixture(
             [
@@ -54,7 +179,7 @@ describe("nextPlanningRoute", () => {
             ["proposal", "specs/example", "design", "tasks"],
             false,
         );
-        expectAuthor(nextPlanningRoute(status), {
+        expectAuthor(firstRoute(status), {
             artifactId: "proposal",
             outputPath: output("proposal"),
             specialist: "planner-generic",
@@ -77,7 +202,7 @@ describe("nextPlanningRoute", () => {
             ["proposal", "specs/example", "design", "tasks"],
             false,
         );
-        expectAuthor(nextPlanningRoute(status), {
+        expectAuthor(firstRoute(status), {
             artifactId: "design",
             outputPath: output("design"),
             specialist: "designer",
@@ -94,7 +219,7 @@ describe("nextPlanningRoute", () => {
             ["proposal", "design", "tasks"],
             true,
         );
-        expect(nextPlanningRoute(status)).toEqual({ kind: "plan-ready" });
+        expect(firstRoute(status)).toEqual({ kind: "plan-ready" });
     });
 
     test("custom-ids use the generic planner fallback", () => {
@@ -120,7 +245,7 @@ describe("nextPlanningRoute", () => {
             ),
             schemaName: "minimal",
         };
-        expectAuthor(nextPlanningRoute(status), {
+        expectAuthor(firstRoute(status), {
             artifactId: "brief",
             outputPath: "openspec/changes/example/brief.md",
             specialist: "planner-generic",
@@ -142,7 +267,7 @@ describe("nextPlanningRoute", () => {
             ["proposal", "specs/example", "tasks"],
             false,
         );
-        expectAuthor(nextPlanningRoute(status), {
+        expectAuthor(firstRoute(status), {
             artifactId: "tasks",
             outputPath: output("tasks"),
             specialist: "planner-generic",
@@ -155,7 +280,7 @@ describe("nextPlanningRoute", () => {
             ["proposal", "tasks"],
             false,
         );
-        expectAuthor(nextPlanningRoute(initial), {
+        expectAuthor(firstRoute(initial), {
             artifactId: "proposal",
             outputPath: output("proposal"),
             specialist: "planner-generic",
@@ -166,7 +291,7 @@ describe("nextPlanningRoute", () => {
             ["proposal", "tasks"],
             false,
         );
-        expectAuthor(nextPlanningRoute(afterProposal), {
+        expectAuthor(firstRoute(afterProposal), {
             artifactId: "tasks",
             outputPath: output("tasks"),
             specialist: "planner-generic",
@@ -183,7 +308,7 @@ describe("nextPlanningRoute", () => {
             ["research", "proposal", "tasks"],
             false,
         );
-        expectAuthor(nextPlanningRoute(research), {
+        expectAuthor(firstRoute(research), {
             artifactId: "research",
             outputPath: output("research"),
             specialist: "planner-generic",
@@ -198,7 +323,7 @@ describe("nextPlanningRoute", () => {
             ["research", "proposal", "tasks"],
             false,
         );
-        expectAuthor(nextPlanningRoute(proposal), {
+        expectAuthor(firstRoute(proposal), {
             artifactId: "proposal",
             outputPath: output("proposal"),
             specialist: "planner-generic",
@@ -213,7 +338,7 @@ describe("nextPlanningRoute", () => {
             ["research", "proposal", "tasks"],
             false,
         );
-        expectAuthor(nextPlanningRoute(tasks), {
+        expectAuthor(firstRoute(tasks), {
             artifactId: "tasks",
             outputPath: output("tasks"),
             specialist: "planner-generic",
@@ -232,7 +357,7 @@ describe("nextPlanningRoute", () => {
             ["proposal", "specs/example", "design", "tasks", "review"],
             false,
         );
-        expectAuthor(nextPlanningRoute(proposal), {
+        expectAuthor(firstRoute(proposal), {
             artifactId: "proposal",
             outputPath: output("proposal"),
             specialist: "planner-generic",
@@ -249,7 +374,7 @@ describe("nextPlanningRoute", () => {
             ["proposal", "specs/example", "design", "tasks", "review"],
             false,
         );
-        expectAuthor(nextPlanningRoute(design), {
+        expectAuthor(firstRoute(design), {
             artifactId: "design",
             outputPath: output("design"),
             specialist: "designer",
@@ -266,7 +391,7 @@ describe("nextPlanningRoute", () => {
             ["proposal", "specs/example", "design", "tasks", "review"],
             false,
         );
-        expectAuthor(nextPlanningRoute(tasks), {
+        expectAuthor(firstRoute(tasks), {
             artifactId: "tasks",
             outputPath: output("tasks"),
             specialist: "planner-generic",
@@ -283,32 +408,9 @@ describe("nextPlanningRoute", () => {
             ["proposal", "specs/example", "design", "tasks", "review"],
             false,
         );
-        expectAuthor(nextPlanningRoute(review), {
+        expectAuthor(firstRoute(review), {
             artifactId: "review",
             outputPath: output("review"),
-            specialist: "planner-generic",
-        });
-    });
-
-    test("parallel-ready uses schema order for equal unblock scores", () => {
-        const status = fixture(
-            [artifact("A", "ready"), artifact("B", "ready"), artifact("C", "blocked", ["A", "B"])],
-            ["A", "B", "C"],
-            false,
-        );
-        expectAuthor(nextPlanningRoute(status), {
-            artifactId: "A",
-            outputPath: output("A"),
-            specialist: "planner-generic",
-        });
-        const afterA = fixture(
-            [artifact("A", "done"), artifact("B", "ready"), artifact("C", "blocked", ["A", "B"])],
-            ["A", "B", "C"],
-            false,
-        );
-        expectAuthor(nextPlanningRoute(afterA), {
-            artifactId: "B",
-            outputPath: output("B"),
             specialist: "planner-generic",
         });
     });
@@ -323,7 +425,7 @@ describe("nextPlanningRoute", () => {
             ["proposal", "design", "tasks"],
             false,
         );
-        const route = nextPlanningRoute(status);
+        const route = firstRoute(status);
         expectAuthor(route, {
             artifactId: "tasks",
             outputPath: output("tasks"),
@@ -348,7 +450,7 @@ describe("nextPlanningRoute", () => {
             ["proposal", "specs/example", "design", "tasks"],
             false,
         );
-        expectAuthor(nextPlanningRoute(status), {
+        expectAuthor(firstRoute(status), {
             artifactId: "design",
             outputPath: output("design"),
             specialist: "designer",
@@ -361,7 +463,7 @@ describe("nextPlanningRoute", () => {
             ["proposal", "missing-artifact"],
             false,
         );
-        expect(nextPlanningRoute(status)).toEqual({
+        expect(firstRoute(status)).toEqual({
             kind: "blocked",
             reason: "Unknown required artifact id(s): missing-artifact",
             unknownRequired: ["missing-artifact"],
@@ -370,12 +472,12 @@ describe("nextPlanningRoute", () => {
 
     test("flag-absent-closure-satisfied is plan-ready", () => {
         const status = fixture([artifact("proposal", "done")], ["proposal"]);
-        expect(nextPlanningRoute(status)).toEqual({ kind: "plan-ready" });
+        expect(firstRoute(status)).toEqual({ kind: "plan-ready" });
     });
 
     test("false planning flag with a satisfied closure is blocked", () => {
         const status = fixture([artifact("proposal", "done")], ["proposal"], false);
-        expect(nextPlanningRoute(status)).toEqual({
+        expect(firstRoute(status)).toEqual({
             kind: "blocked",
             reason: "isPlanningComplete false with closure satisfied",
         });
@@ -387,7 +489,7 @@ describe("nextPlanningRoute", () => {
             ["first"],
             false,
         );
-        expect(nextPlanningRoute(status)).toEqual({
+        expect(firstRoute(status)).toEqual({
             kind: "blocked",
             reason: "No feasible artifact in the applyRequires dependency closure",
         });
@@ -396,7 +498,7 @@ describe("nextPlanningRoute", () => {
     test("does not cache routing decisions between calls", () => {
         const first = fixture([artifact("proposal", "ready")], ["proposal"], false);
         const second = fixture([artifact("proposal", "done")], ["proposal"], true);
-        expect(nextPlanningRoute(first)).not.toEqual(nextPlanningRoute(second));
-        expect(nextPlanningRoute(first)).toEqual(nextPlanningRoute(first));
+        expect(firstRoute(first)).not.toEqual(firstRoute(second));
+        expect(firstRoute(first)).toEqual(firstRoute(first));
     });
 });
