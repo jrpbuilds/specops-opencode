@@ -4,15 +4,18 @@
 
 **Spec-driven development for OpenCode, with the right model for each job.**
 
-[![npm version](https://img.shields.io/npm/v/@jrpbuilds/specops-opencode?logo=npm&logoColor=white)](https://www.npmjs.com/package/@jrpbuilds/specops-opencode)
+[![npm beta](https://img.shields.io/npm/v/@jrpbuilds/specops-opencode/beta?logo=npm&logoColor=white&label=beta)](https://www.npmjs.com/package/@jrpbuilds/specops-opencode)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![coverage](https://img.shields.io/github/actions/workflow/status/jrpbuilds/specops-opencode/ci.yml?branch=main&label=coverage)](https://github.com/jrpbuilds/specops-opencode/actions/workflows/ci.yml)
-[![OpenCode](https://img.shields.io/badge/OpenCode-plugin-5c6ac4)](https://opencode.ai)
+[![OpenCode 2 CI](https://img.shields.io/github/actions/workflow/status/jrpbuilds/specops-opencode/v2-migration.yml?branch=beta&label=OpenCode%202)](https://github.com/jrpbuilds/specops-opencode/actions/workflows/v2-migration.yml)
+[![OpenCode 2](https://img.shields.io/badge/OpenCode-2%20beta-5c6ac4)](https://opencode.ai/v2/docs)
 [![OpenSpec](https://img.shields.io/badge/powered%20by-OpenSpec-444)](https://github.com/Fission-AI/OpenSpec)
 
 </div>
 
-SpecOps is a lightweight [OpenCode](https://opencode.ai) plugin for running software changes through a structured [OpenSpec](https://github.com/Fission-AI/OpenSpec) workflow.
+> [!IMPORTANT]
+> This branch and the npm `beta` release are for **OpenCode 2 only**. OpenCode 2 is itself still in beta. The `main` branch and npm `latest` remain the OpenCode 1 release line.
+
+SpecOps is a lightweight [OpenCode 2](https://opencode.ai/v2/docs) plugin for running software changes through a structured [OpenSpec](https://github.com/Fission-AI/OpenSpec) workflow.
 
 Give it a goal:
 
@@ -26,10 +29,16 @@ Each role can use a different model, while OpenSpec remains the durable source o
 
 ## Install
 
-Install SpecOps through OpenCode:
+Install the OpenCode 2 beta. It installs alongside OpenCode 1 as the separate `opencode2` binary:
 
 ```bash
-opencode plugin @jrpbuilds/specops-opencode -g
+npm install -g @opencode-ai/cli@beta
+```
+
+Install the SpecOps OpenCode 2 beta:
+
+```bash
+opencode2 plugin add @jrpbuilds/specops-opencode@beta
 ```
 
 Install the OpenSpec CLI:
@@ -38,7 +47,7 @@ Install the OpenSpec CLI:
 npm install -g @fission-ai/openspec
 ```
 
-Then restart OpenCode.
+If OpenCode 2 was already open, restart the client after installing or upgrading the package.
 
 Check the installation:
 
@@ -60,7 +69,7 @@ unrelated changes do not block the workflow.
 
 ## Getting started
 
-Open a project and give SpecOps a goal:
+Open a project in OpenCode 2 and give SpecOps a goal:
 
 ```text
 /specops improve the API error responses and add coverage for the new behaviour
@@ -117,17 +126,20 @@ The `specops-*` specialist agents (`specops-explorer`, `specops-planner`,
 `specops-designer`, `specops-implementer`, `specops-reviewer`, and, when
 enabled, `specops-frontier`) are internal to the SpecOps workflow. Only the
 `SpecOps` and `SpecOps Auto` coordinators may dispatch them; other OpenCode
-agents cannot invoke them, and they are hidden from the `@` autocomplete menu.
+agents cannot invoke them, and they are hidden from normal subagent discovery.
 They cannot themselves delegate to further subagents.
 
 Coordinator agents have native edit tools disabled and may use the shell only
-for `openspec --help` lookups. Ordinary OpenCode primary agents can use the
-user-facing `specops_doctor` and `specops_onboard` tools, while OpenSpec context,
-change creation, and archive operations remain Coordinator-owned.
+for the narrow OpenSpec inspection commands allowed by the role policy. Ordinary
+OpenCode primary agents can use the user-facing `specops_doctor` and
+`specops_onboard` tools, while OpenSpec context, change creation, status,
+validation, and archive operations remain Coordinator-owned. OpenCode 2 tool
+visibility is backed by an independent runtime authorization check so the hidden
+model surface is not treated as the security boundary.
 
 ## Model configuration
 
-Open the OpenCode command palette with `Ctrl+P` and select:
+Open the OpenCode 2 command palette with `Ctrl+P` and select:
 
 ```text
 SpecOps Configure
@@ -156,6 +168,7 @@ Example:
 ```json
 {
     "frontierEscalation": false,
+    "maxSubagentConcurrency": 2,
     "agents": {
         "specops-coordinator": {
             "model": "opencode-go/deepseek-v4-flash",
@@ -191,7 +204,9 @@ Example:
 
 Leave a role unset to inherit OpenCode's default model.
 
-`frontierEscalation` controls whether the Frontier agent is registered. Changing it requires restarting OpenCode.
+`frontierEscalation` controls whether the Frontier agent is registered. Changing it requires reloading the plugin or restarting OpenCode 2.
+
+`maxSubagentConcurrency` controls how many independently feasible planning specialists may run concurrently. Supported values are `1`, `2`, `4`, and `8`; the default is `2`.
 
 ## Commands
 
@@ -210,7 +225,7 @@ Runs the workflow autonomously without human checkpoints and finishes with a ter
 Useful for headless runs:
 
 ```bash
-opencode run --auto --command specops-auto "<goal>"
+opencode2 run --auto --command specops-auto "<goal>"
 ```
 
 ### `/specops-update <revision>`
@@ -256,23 +271,31 @@ Install Engram using its [installation guide](https://github.com/Gentleman-Progr
 
 ```bash
 bun install
-bun run check
+bun run check:v2
 ```
 
-Build the plugin with:
+Build the OpenCode 2 plugin package with:
 
 ```bash
 bun run build
 ```
 
-SpecOps uses Bun and TypeScript throughout.
+To run the real OpenCode 2 runtime smoke locally, install `@opencode-ai/cli@beta` and run:
+
+```bash
+bun run test:runtime:v2
+```
+
+SpecOps uses Bun and TypeScript throughout. CI also loads the built package into a real isolated `opencode2` server and verifies the plugin, agent, and command catalogues.
 
 ## Status
 
-SpecOps v1.0.0 is released and being dogfooded against real software changes.
-The v1.0.0 milestone delivers schema-aware planning specialists, status-routed
-coordinator orchestration, and the `specops_status` lifecycle tool. Post-1.0
-work is tracked in the [issue tracker](https://github.com/jrpbuilds/specops-opencode/issues).
+The `beta` branch is the OpenCode 2 compatibility line and publishes as
+`2.0.0-beta.N` under npm's `beta` dist-tag. OpenCode 2 is still a moving beta,
+so compatibility may require new SpecOps beta releases as its plugin API changes.
+
+The `main` branch and npm `latest` remain the stable OpenCode 1 line until
+OpenCode 2 is officially released.
 
 > Make structured multi-model software development useful without building another workflow engine.
 
