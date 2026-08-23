@@ -30,13 +30,14 @@ describe("validateChange", () => {
 
     test("rejects an empty change before invoking OpenSpec", async () => {
         let called = false;
-        const result = await validateChange("   ", {
+        const operation = validateChange("   ", {
             validateChange: async () => {
                 called = true;
                 return { valid: true, issues: [] };
             },
         });
-        expect(result).toMatchObject({ valid: false });
+
+        await expect(operation).rejects.toThrow("An OpenSpec change name is required.");
         expect(called).toBe(false);
     });
 });
