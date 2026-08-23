@@ -1,0 +1,29 @@
+$ bun run typecheck:v2-server && bun run build:v2-server
+$ tsc --noEmit -p tsconfig.v2-server.json
+src/host/agents.ts(75,35): error TS2345: Argument of type '{ [x: number]: string; toString: () => string; charAt: (pos: number) => string; charCodeAt: (index: number) => number; concat: (...strings: string[]) => string; indexOf: (searchString: string, position?: number | undefined) => number; ... 45 more ...; "~effect/Brand": { ...; }; }' is not assignable to parameter of type 'string'.
+src/host/agents.ts(93,72): error TS2345: Argument of type '{ id: { [x: number]: string; toString: () => string; charAt: (pos: number) => string; charCodeAt: (index: number) => number; concat: (...strings: string[]) => string; indexOf: (searchString: string, position?: number | undefined) => number; ... 45 more ...; "~effect/Brand": { ...; }; }; ... 9 more ...; steps?: numbe...' is not assignable to parameter of type '{ id: string; name: string; description?: string | undefined; system?: string | undefined; mode: "primary" | "subagent" | "all"; hidden: boolean; model?: { providerID: string; id: string; variant?: string | undefined; } | undefined; permissions: { ...; }[]; }'.
+  Types of property 'id' are incompatible.
+    Type '{ [x: number]: string; toString: () => string; charAt: (pos: number) => string; charCodeAt: (index: number) => number; concat: (...strings: string[]) => string; indexOf: (searchString: string, position?: number | undefined) => number; ... 45 more ...; "~effect/Brand": { ...; }; }' is not assignable to type 'string'.
+src/host/authorization.ts(47,15): error TS2339: Property 'mode' does not exist on type 'AgentGetOutput'.
+src/host/authorization.ts(47,43): error TS2339: Property 'mode' does not exist on type 'AgentGetOutput'.
+src/host/tools/archive.ts(11,9): error TS2554: Expected 1 arguments, but got 3.
+src/host/tools/archive.ts(14,29): error TS7006: Parameter 'input' implicitly has an 'any' type.
+src/host/tools/archive.ts(14,36): error TS7006: Parameter 'context' implicitly has an 'any' type.
+src/host/tools/context.ts(11,9): error TS2554: Expected 1 arguments, but got 3.
+src/host/tools/context.ts(15,29): error TS7006: Parameter '_input' implicitly has an 'any' type.
+src/host/tools/context.ts(15,37): error TS7006: Parameter 'context' implicitly has an 'any' type.
+src/host/tools/create-change.ts(16,9): error TS2554: Expected 1 arguments, but got 3.
+src/host/tools/create-change.ts(19,29): error TS7006: Parameter 'input' implicitly has an 'any' type.
+src/host/tools/create-change.ts(19,36): error TS7006: Parameter 'context' implicitly has an 'any' type.
+src/host/tools/doctor.ts(14,9): error TS2554: Expected 1 arguments, but got 3.
+src/host/tools/doctor.ts(18,29): error TS7006: Parameter '_input' implicitly has an 'any' type.
+src/host/tools/doctor.ts(18,37): error TS7006: Parameter 'context' implicitly has an 'any' type.
+src/host/tools/onboard.ts(12,9): error TS2554: Expected 1 arguments, but got 3.
+src/host/tools/onboard.ts(16,29): error TS7006: Parameter '_input' implicitly has an 'any' type.
+src/host/tools/onboard.ts(16,37): error TS7006: Parameter 'context' implicitly has an 'any' type.
+src/host/tools/status.ts(11,9): error TS2554: Expected 1 arguments, but got 3.
+src/host/tools/status.ts(14,29): error TS7006: Parameter 'input' implicitly has an 'any' type.
+src/host/tools/status.ts(14,36): error TS7006: Parameter 'context' implicitly has an 'any' type.
+src/host/tools/validate-change.ts(11,9): error TS2554: Expected 1 arguments, but got 3.
+src/host/tools/validate-change.ts(14,29): error TS7006: Parameter 'input' implicitly has an 'any' type.
+src/host/tools/validate-change.ts(14,36): error TS7006: Parameter 'context' implicitly has an 'any' type.
