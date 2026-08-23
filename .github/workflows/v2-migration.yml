@@ -27,6 +27,19 @@ jobs:
                   bun-version: 1.3.14
             - name: Install pinned dependencies
               run: bun install --frozen-lockfile
+            - name: Format migration diagnostics
+              run: |
+                  bun run format
+                  git diff --no-ext-diff -- \
+                    package.json \
+                    scripts/test-packed-v2.mjs \
+                    src/host/agents.ts \
+                    src/host/permissions.ts \
+                    src/host/tools/context.ts \
+                    src/host/tools/create-change.ts \
+                    src/tui/model-editor.ts \
+                    tests/v2/host.test.ts \
+                    tests/v2/model-editor.test.ts
             - name: Check OpenCode 2 migration contract
               run: bun run check:v2
             - name: Install current OpenCode 2 beta CLI
