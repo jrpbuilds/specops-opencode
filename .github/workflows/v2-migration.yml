@@ -27,7 +27,7 @@ jobs:
                   rm -rf .migration/opencode-plugin-contract
                   mkdir -p .migration/opencode-plugin-contract
                   cp node_modules/@opencode-ai/plugin/package.json .migration/opencode-plugin-contract/package.json
-                  find node_modules/@opencode-ai/plugin/dist -type f -name '*.d.ts' -print0 | while IFS= read -r -d '' file; do
+                  find -L node_modules/@opencode-ai/plugin/dist -type f -name '*.d.ts' -print0 | while IFS= read -r -d '' file; do
                       rel="${file#node_modules/@opencode-ai/plugin/}"
                       mkdir -p ".migration/opencode-plugin-contract/$(dirname "$rel")"
                       cp "$file" ".migration/opencode-plugin-contract/$rel"
