@@ -14,15 +14,19 @@ jq -n --arg plugin "$root" '{plugins: [$plugin]}' > "$temporary/project/opencode
 
 cd "$temporary/project"
 
-plugin_json="$(timeout 60s opencode2 api get /api/plugin)"
+api() {
+    timeout 60s opencode2 --standalone api get "$1"
+}
+
+plugin_json="$(api /api/plugin)"
 printf '%s\n' "$plugin_json" | jq -e '.. | objects | select(.id? == "specops" and .status? == "active")' >/dev/null
 
-agent_json="$(timeout 60s opencode2 api get /api/agent)"
+agent_json="$(api /api/agent)"
 printf '%s\n' "$agent_json" | jq -e '.. | objects | select(.id? == "SpecOps" and .mode? == "primary")' >/dev/null
 printf '%s\n' "$agent_json" | jq -e '.. | objects | select(.id? == "SpecOps Auto" and .mode? == "primary")' >/dev/null
 printf '%s\n' "$agent_json" | jq -e '.. | objects | select(.id? == "specops-planner" and .mode? == "subagent" and .hidden? == true)' >/dev/null
 
-command_json="$(timeout 60s opencode2 api get /api/command)"
+command_json="$(api /api/command)"
 for command in specops specops-auto specops-update specops-sync specops-doctor specops-onboard; do
     printf '%s\n' "$command_json" | jq -e --arg command "$command" '.. | objects | select(.name? == $command)' >/dev/null
 done
