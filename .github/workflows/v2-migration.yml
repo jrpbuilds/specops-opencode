@@ -21,24 +21,25 @@ jobs:
               with:
                   bun-version: 1.3.14
             - name: Resolve pinned OpenCode 2 dependencies
-              run: bun install
+              run: bun install --frozen-lockfile
             - name: Snapshot pinned plugin type contract
               run: |
                   rm -rf .migration/opencode-plugin-contract
                   mkdir -p .migration/opencode-plugin-contract
-                  cp node_modules/@opencode-ai/plugin/package.json .migration/opencode-plugin-contract/package.json
-                  find -L node_modules/@opencode-ai/plugin/dist -type f -name '*.d.ts' -print0 | while IFS= read -r -d '' file; do
-                      rel="${file#node_modules/@opencode-ai/plugin/}"
+                  plugin_root="$(dirname "$(realpath node_modules/@opencode-ai/plugin/package.json)")"
+                  cp "$plugin_root/package.json" .migration/opencode-plugin-contract/package.json
+                  find "$plugin_root/dist" -type f -name '*.d.ts' -print0 | while IFS= read -r -d '' file; do
+                      rel="${file#$plugin_root/}"
                       mkdir -p ".migration/opencode-plugin-contract/$(dirname "$rel")"
                       cp "$file" ".migration/opencode-plugin-contract/$rel"
                   done
-            - name: Commit resolved lock and contract when changed
+            - name: Commit contract snapshot when changed
               run: |
                   git config user.name github-actions[bot]
                   git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-                  git add bun.lock .migration/opencode-plugin-contract
+                  git add .migration/opencode-plugin-contract
                   if git diff --cached --quiet; then
                       exit 0
                   fi
-                  git commit -m "chore(beta): resolve pinned OpenCode 2 contract"
+                  git commit -m "chore(beta): refresh pinned OpenCode 2 contract"
                   git push origin HEAD:beta
