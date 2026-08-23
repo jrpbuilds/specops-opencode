@@ -1,0 +1,30 @@
+name: OpenCode 2 migration
+
+on:
+    push:
+        branches:
+            - beta
+
+permissions:
+    contents: read
+
+jobs:
+    resolve:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Check out beta
+              uses: actions/checkout@v4
+            - name: Set up Bun
+              uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.3.14
+            - name: Resolve OpenCode 2 dependencies
+              run: bun install
+            - name: Show resolved OpenCode plugin version
+              run: bun pm ls @opencode-ai/plugin
+            - name: Upload resolved lockfile
+              uses: actions/upload-artifact@v4
+              with:
+                  name: opencode2-lockfile
+                  path: bun.lock
+                  if-no-files-found: error
