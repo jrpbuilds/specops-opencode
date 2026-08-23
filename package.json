@@ -31,6 +31,7 @@
         "test:v2": "bun test tests/v2",
         "test:packed": "bun run test:packed:v2",
         "test:packed:v2": "bun run build && bun scripts/test-packed-v2.mjs",
+        "test:runtime:v2": "bash scripts/test-opencode2-runtime.sh",
         "test:coverage": "bun test --coverage --coverage-reporter=text --coverage-reporter=lcov && bun scripts/check-line-coverage.ts coverage/lcov.info 90",
         "lint": "eslint src scripts",
         "check": "bun run format:check && bun run lint && bun run typecheck && bun run test:coverage && bun run test:packed",

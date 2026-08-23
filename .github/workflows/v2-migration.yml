@@ -29,3 +29,9 @@ jobs:
               run: bun install --frozen-lockfile
             - name: Check OpenCode 2 migration contract
               run: bun run check:v2
+            - name: Install current OpenCode 2 beta CLI
+              run: npm install --global @opencode-ai/cli@beta
+            - name: Show OpenCode 2 version
+              run: opencode2 --version
+            - name: Run real OpenCode 2 plugin smoke
+              run: bun run test:runtime:v2
