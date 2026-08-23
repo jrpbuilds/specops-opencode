@@ -2,7 +2,11 @@ name: CI
 
 on:
     push:
+        branches-ignore:
+            - beta
     pull_request:
+        branches-ignore:
+            - beta
 
 permissions:
     contents: read
