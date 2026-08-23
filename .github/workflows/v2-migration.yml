@@ -1,4 +1,4 @@
-name: OpenCode 2 beta CI
+name: OpenCode 2 migration
 
 on:
     push:
@@ -8,15 +8,15 @@ on:
         branches:
             - beta
 
+concurrency:
+    group: opencode2-migration-${{ github.ref }}
+    cancel-in-progress: true
+
 permissions:
     contents: read
 
-concurrency:
-    group: opencode2-beta-${{ github.ref }}
-    cancel-in-progress: true
-
 jobs:
-    host:
+    check:
         runs-on: ubuntu-latest
         steps:
             - name: Check out repository
