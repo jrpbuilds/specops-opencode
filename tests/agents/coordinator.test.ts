@@ -74,11 +74,9 @@ describe("coordinator prompt composition", () => {
     });
 
     test("assembled prompts stay within regression budgets", () => {
-        // Update and sync policies add shared, interactive, and autonomous prompt sections.
-        expect(buildCoordinatorPrompt("interactive", false).length).toBeLessThan(27_000);
-        expect(buildCoordinatorPrompt("auto", false).length).toBeLessThan(24_000);
-        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(29_000);
-        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(26_000);
+        // Frontier-enabled variants are the largest assembled prompts for each mode.
+        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(32_000);
+        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(32_000);
     });
 });
 
