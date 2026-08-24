@@ -1,7 +1,11 @@
+import { MAX_SUBAGENT_CONCURRENCY, MIN_SUBAGENT_CONCURRENCY } from "../../config.js";
 import { effectiveConcurrency } from "../display.js";
 import type { EditorNavigator, EditorSession } from "../editor-session.js";
 
-const SUBAGENT_CONCURRENCY_OPTIONS = [1, 2, 4, 8] as const;
+const SUBAGENT_CONCURRENCY_OPTIONS: readonly number[] = Array.from(
+    { length: MAX_SUBAGENT_CONCURRENCY - MIN_SUBAGENT_CONCURRENCY + 1 },
+    (_, i) => MIN_SUBAGENT_CONCURRENCY + i,
+);
 
 /**
  * Show the global planning concurrency choices and stage the selection.
@@ -20,7 +24,7 @@ export function openConcurrencyPicker(session: EditorSession, nav: EditorNavigat
             options: SUBAGENT_CONCURRENCY_OPTIONS.map(value => ({
                 title: String(value),
                 value,
-                description: `Up to ${value} concurrently active SpecOps specialist subagents`,
+                description: `Up to ${value} parallel subagent${value === 1 ? "" : "s"}`,
             })),
             onSelect: option => {
                 staged.maxSubagentConcurrency = Number(option.value);

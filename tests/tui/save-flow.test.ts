@@ -118,11 +118,46 @@ describe("SpecOps Configure save flow", () => {
                     "__save__",
                     "__cancel__",
                 ]);
+                const initialOptions = fake.currentDialog()?.options;
                 expect(
-                    fake
-                        .currentDialog()
-                        ?.options?.find(option => option.value === "__frontier_escalation__"),
-                ).toMatchObject({ title: "Frontier escalation", footer: "Disabled" });
+                    initialOptions?.find(option => option.value === "__frontier_escalation__"),
+                ).toMatchObject({
+                    title: "Frontier escalation",
+                    category: "Options",
+                    footer: "Disabled",
+                });
+                expect(
+                    initialOptions?.find(option => option.value === "__frontier_escalation__")
+                        ?.description,
+                ).toBeUndefined();
+                expect(
+                    initialOptions?.find(option => option.value === "__concurrent_subagents__"),
+                ).toMatchObject({
+                    title: "Concurrent subagents",
+                    category: "Options",
+                    footer: "2",
+                });
+                expect(
+                    initialOptions?.find(option => option.value === "__concurrent_subagents__")
+                        ?.description,
+                ).toBeUndefined();
+                expect(initialOptions?.find(option => option.value === "__save__")).toMatchObject({
+                    title: "Review and save",
+                    category: "Actions",
+                    footer: "0 changed",
+                });
+                expect(
+                    initialOptions?.find(option => option.value === "__save__")?.description,
+                ).toBe(undefined);
+                expect(initialOptions?.find(option => option.value === "__cancel__")).toMatchObject(
+                    {
+                        title: "Cancel",
+                        category: "Actions",
+                    },
+                );
+                expect(
+                    initialOptions?.find(option => option.value === "__cancel__")?.description,
+                ).toBe(undefined);
                 expect(
                     fake.currentDialog()?.options?.find(option => option.value === "__save__")
                         ?.footer,
@@ -132,7 +167,17 @@ describe("SpecOps Configure save flow", () => {
                     fake
                         .currentDialog()
                         ?.options?.find(option => option.value === "__frontier_escalation__"),
-                ).toMatchObject({ title: "* Frontier escalation", footer: "Enabled" });
+                ).toMatchObject({
+                    title: "* Frontier escalation",
+                    category: "Options",
+                    footer: "Enabled",
+                });
+                expect(
+                    fake
+                        .currentDialog()
+                        ?.options?.find(option => option.value === "__frontier_escalation__")
+                        ?.description,
+                ).toBeUndefined();
                 expect(
                     fake.currentDialog()?.options?.find(option => option.value === "__save__")
                         ?.footer,
@@ -157,19 +202,39 @@ describe("SpecOps Configure save flow", () => {
                 expect(fake.currentDialog()?.title).toBe("Concurrent subagents");
                 expect(fake.currentDialog()?.current).toBe(2);
                 expect(fake.currentDialog()?.options?.map(option => option.value)).toEqual([
-                    1, 2, 4, 8,
+                    1, 2, 3, 4, 5, 6, 7, 8,
                 ]);
-                fake.selectByValue(4);
+                expect(fake.currentDialog()?.options?.map(option => option.description)).toEqual([
+                    "Up to 1 parallel subagent",
+                    "Up to 2 parallel subagents",
+                    "Up to 3 parallel subagents",
+                    "Up to 4 parallel subagents",
+                    "Up to 5 parallel subagents",
+                    "Up to 6 parallel subagents",
+                    "Up to 7 parallel subagents",
+                    "Up to 8 parallel subagents",
+                ]);
+                fake.selectByValue(5);
                 expect(
                     fake
                         .currentDialog()
                         ?.options?.find(option => option.value === "__concurrent_subagents__"),
-                ).toMatchObject({ title: "* Concurrent subagents", footer: "4" });
+                ).toMatchObject({
+                    title: "* Concurrent subagents",
+                    category: "Options",
+                    footer: "5",
+                });
+                expect(
+                    fake
+                        .currentDialog()
+                        ?.options?.find(option => option.value === "__concurrent_subagents__")
+                        ?.description,
+                ).toBeUndefined();
                 fake.selectByValue("__save__");
                 await fake.confirm();
 
                 const saved = await loadConfig(path.join(home, "opencode", "specops.json"));
-                expect(saved.maxSubagentConcurrency).toBe(4);
+                expect(saved.maxSubagentConcurrency).toBe(5);
                 expect(typeof saved.maxSubagentConcurrency).toBe("number");
             }),
         );
@@ -193,7 +258,7 @@ describe("SpecOps Configure save flow", () => {
                     current: 8,
                 });
                 expect(fake.currentDialog()?.options?.map(option => option.value)).toEqual([
-                    1, 2, 4, 8,
+                    1, 2, 3, 4, 5, 6, 7, 8,
                 ]);
             }),
         );

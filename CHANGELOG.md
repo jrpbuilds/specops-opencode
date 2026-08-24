@@ -16,6 +16,9 @@ All notable changes to SpecOps are documented in this file.
 - Planning batches now use rolling bounded scheduling, so independent OpenSpec
   artifacts start as soon as a slot frees instead of waiting for a full wave to
   drain.
+- The Concurrent subagents picker now lets you choose any number from 1 to 8
+  (up from just 1, 2, 4, or 8), and the Configure screen is tidier with less
+  descriptive text.
 
 ## [v1.4.0] - 2026-08-23
 

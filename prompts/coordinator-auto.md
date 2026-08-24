@@ -18,7 +18,7 @@ Apply the same conditional Explorer-dispatch rule as the shared coordinator cont
 
 ## Autonomous planning batches
 
-`maxSubagentConcurrency` is maximum number of concurrently active SpecOps specialist subagents.
+`maxSubagentConcurrency` is maximum number of parallel SpecOps subagents.
 `createRollingScheduler` dispatches concurrently under cap; dependencies never share dispatch.
 
 Rolling refill starts a newly eligible route after any single completion; never

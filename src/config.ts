@@ -20,8 +20,8 @@ export type AgentConfig = { model?: string; variant?: string };
  * Validation fills role entries missing from older configuration files with
  * empty mappings; individual entries may omit `model` to inherit OpenCode's
  * global default. `frontierEscalation` is
- * normalized to `false`, and `maxSubagentConcurrency` (the maximum concurrently
- * active SpecOps specialist subagents) to `2`, when loading an older
+ * normalized to `false`, and `maxSubagentConcurrency` (the maximum concurrent
+ * subagents) to `2`, when loading an older
  * configuration without those fields.
  */
 export type SpecOpsConfig = {
@@ -87,8 +87,9 @@ export function resolveAgentMapping(config: SpecOpsConfig, roleId: AgentId): Age
     };
 }
 
-/** Concurrency values accepted for concurrently active SpecOps specialist subagents. */
-const ALLOWED_SUBAGENT_CONCURRENCY = new Set([1, 2, 4, 8]);
+/** Inclusive bounds for the global concurrent subagent limit. */
+export const MIN_SUBAGENT_CONCURRENCY = 1;
+export const MAX_SUBAGENT_CONCURRENCY = 8;
 
 /**
  * Resolve the OpenCode configuration directory using the XDG convention.
@@ -172,12 +173,16 @@ export function validateConfig(value: unknown): SpecOpsConfig {
     if ("frontierEscalation" in value && typeof value.frontierEscalation !== "boolean") {
         throw new Error("invalid SpecOps configuration frontierEscalation");
     }
+    const maxSubagentConcurrency = value.maxSubagentConcurrency as number;
     if (
         "maxSubagentConcurrency" in value &&
-        (typeof value.maxSubagentConcurrency !== "number" ||
-            !ALLOWED_SUBAGENT_CONCURRENCY.has(value.maxSubagentConcurrency))
+        (!Number.isInteger(maxSubagentConcurrency) ||
+            maxSubagentConcurrency < MIN_SUBAGENT_CONCURRENCY ||
+            maxSubagentConcurrency > MAX_SUBAGENT_CONCURRENCY)
     ) {
-        throw new Error("maxSubagentConcurrency must be 1, 2, 4, or 8");
+        throw new Error(
+            `maxSubagentConcurrency must be an integer from ${MIN_SUBAGENT_CONCURRENCY} to ${MAX_SUBAGENT_CONCURRENCY}`,
+        );
     }
 
     // Unknown role ids stay a hard error because they almost certainly name a

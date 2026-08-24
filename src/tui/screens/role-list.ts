@@ -44,14 +44,12 @@ export function openRoleList(session: EditorSession, nav: EditorNavigator): void
                     {
                         value: FRONTIER_ESCALATION,
                         category: "Options",
-                        description: "Allow future Frontier escalation behavior",
                         title: `${frontierEscalationChanged ? "* " : ""}Frontier escalation`,
                         footer: staged.frontierEscalation ? "Enabled" : "Disabled",
                     },
                     {
                         value: CONCURRENT_SUBAGENTS,
                         category: "Options",
-                        description: "Set the global planning subagent concurrency limit",
                         title: `${concurrencyChanged ? "* " : ""}Concurrent subagents`,
                         footer: String(effectiveConcurrency(staged)),
                     },
@@ -59,14 +57,12 @@ export function openRoleList(session: EditorSession, nav: EditorNavigator): void
                         title: "Review and save",
                         value: "__save__",
                         category: "Actions",
-                        description: "Validate all mappings and write the configuration",
                         footer: `${changed.size + (frontierEscalationChanged ? 1 : 0) + (concurrencyChanged ? 1 : 0)} changed`,
                     },
                     {
                         title: "Cancel",
                         value: "__cancel__",
                         category: "Actions",
-                        description: "Discard staged changes",
                     },
                 ],
                 onSelect: option => {

@@ -39,6 +39,26 @@ describe("createRollingScheduler", () => {
         expect(scheduler.available).toBe(2);
         expect(scheduler.suspended).toBe(false);
     });
+
+    test("uses a newly valid numeric limit as the capacity bound", () => {
+        const scheduler = createRollingScheduler(5);
+        const status = fixture(
+            [
+                artifact("alpha", "ready"),
+                artifact("bravo", "ready"),
+                artifact("charlie", "ready"),
+                artifact("delta", "ready"),
+                artifact("echo", "ready"),
+                artifact("foxtrot", "ready"),
+            ],
+            ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot"],
+            false,
+        );
+
+        expect(authorIds(scheduler.dispatch(status))).toHaveLength(5);
+        expect(scheduler.active).toBe(5);
+        expect(scheduler.available).toBe(0);
+    });
 });
 
 describe("rolling refill", () => {
