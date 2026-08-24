@@ -21,6 +21,10 @@ All notable changes to SpecOps are documented in this file.
 - The Concurrent subagents picker now lets you choose any number from 1 to 8
   (up from just 1, 2, 4, or 8), and the Configure screen is tidier with less
   descriptive text.
+- Review remediation now fixes the earliest incorrect layer first: the reviewer
+  reports which layer each finding targets, and the coordinator routes
+  implementation-only findings straight back to the implementer while planning
+  defects go to the planner or designer before work resumes.
 
 ## [v1.4.0] - 2026-08-23
 

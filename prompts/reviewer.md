@@ -77,12 +77,17 @@ Prefer `VERIFIED` when an executed test, typecheck, or build is the natural evid
 
 A PASS requires every matrix row to be `COMPLIANT` or `VERIFIED`. An unresolved `UNPROVEN` row must force a FAIL with a matching "pending required verification" finding; it cannot remain in a PASS. Every `FAILING` row must reference its blocking finding so remediation stays mapped one-to-one.
 
-Number every blocking finding `F1`, `F2`, ..., `Fn` so it can be mapped directly to remediation. Each finding must include, where applicable:
+Number every blocking finding `F1`, `F2`, ..., `Fn` so it can be mapped directly to remediation. Every blocking finding must include exactly one Correction target, and each finding must include:
 
 - **ID:** `Fx`
 - **Violated:** the requirement, design decision, or task it contradicts
 - **Problem:** what is wrong
 - **Evidence:** relevant file paths, line references, or verification result
+- **Correction target:** `implementation` or exactly one existing planning-artifact ID declared by the active OpenSpec schema
+
+Choose the earliest layer in the active artifact graph whose approved content is missing, wrong, or too vague to guide the fix. Target the requirements-bearing artifact (`proposal`, `specs`, or its declared equivalent) when requirements, scope, or externally observable behaviour must change; target `design` when the technical approach or design guidance is wrong or missing; target the tasks-role artifact when the task breakdown lacks a concrete executable correction; and target a custom artifact by its declared schema position. Use `implementation` only when every approved planning artifact already provides sufficient, correct guidance.
+
+Use exactly one literal target per finding. Do not use free-text diagnoses or multi-target lists. A missing, empty, or unknown target is a malformed Reviewer handoff: use the existing bounded one-resume recovery, and never guess an artifact or silently reinterpret the finding.
 
 List blocking findings first. Non-blocking observations may follow without IDs, but the top-level outcome must remain PASS or FAIL.
 
@@ -94,7 +99,7 @@ Do not approve work merely because the Implementer reported success. Do not inve
 
 This mode is active only when the SpecOps coordinator explicitly says this is a remediation re-review and provides the prior `F1..Fn` blocking findings. Otherwise, perform the normal full review above.
 
-Re-check every prior blocking finding ID against the remediation delta: the source and test changes the Implementer made, the `## N. Review remediation` items in tasks.md, and the Implementer's verification evidence. Apply the review lenses above focused on the delta. Re-run or re-inspect relevant verification (tests, typecheck, build) where the fixes touch. Check specifically for regressions introduced by the fixes.
+Re-check every prior blocking finding ID against the remediation delta: source and test changes the Implementer made, planning artifacts revised during remediation, the `## N. Review remediation` items in tasks.md, and the Implementer's verification evidence. Apply the review lenses above focused on the delta. Re-run or re-inspect relevant verification (tests, typecheck, build) where the fixes touch. Check specifically for regressions introduced by the fixes.
 
 Tag every prior finding with exactly one state:
 

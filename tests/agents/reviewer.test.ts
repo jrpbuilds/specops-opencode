@@ -98,8 +98,38 @@ describe("registerReviewerAgent", () => {
         expect(prompt).toContain("**Violated:**");
         expect(prompt).toContain("**Problem:**");
         expect(prompt).toContain("**Evidence:**");
+        expect(prompt).toContain("**Correction target:**");
+        expect(prompt).toContain(
+            "Every blocking finding must include exactly one Correction target",
+        );
         expect(prompt).toContain("relevant file paths, line references, or verification result");
         expect(prompt).toContain("Non-blocking observations may follow without IDs");
+    });
+
+    test("reviewer prompt routes correction targets by schema and earliest layer", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain(
+            "`implementation` or exactly one existing planning-artifact ID declared by the active OpenSpec schema",
+        );
+        expect(prompt).toContain("earliest layer in the active artifact graph");
+        expect(prompt).toContain("requirements-bearing artifact");
+        expect(prompt).toContain("target `design`");
+        expect(prompt).toContain("tasks-role artifact");
+        expect(prompt).toContain("custom artifact by its declared schema position");
+        expect(prompt).toContain("Use `implementation` only when every approved planning artifact");
+        expect(prompt).toContain("exactly one literal target per finding");
+        expect(prompt).toContain("Do not use free-text diagnoses or multi-target lists");
+    });
+
+    test("reviewer prompt recovers malformed correction targets without guessing", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain(
+            "A missing, empty, or unknown target is a malformed Reviewer handoff",
+        );
+        expect(prompt).toContain("existing bounded one-resume recovery");
+        expect(prompt).toContain("never guess an artifact or silently reinterpret the finding");
     });
 
     test("reviewer prompt requires a per-behaviour compliance matrix with four evidence states", () => {
@@ -299,6 +329,7 @@ describe("registerReviewerAgent", () => {
         );
         expect(prompt).toContain("provides the prior `F1..Fn` blocking findings");
         expect(prompt).toContain("perform the normal full review above");
+        expect(prompt).toContain("planning artifacts revised during remediation");
         expect(prompt).toContain("RESOLVED");
         expect(prompt).toContain("UNRESOLVED");
         expect(prompt).toContain("REGRESSED");

@@ -38,7 +38,9 @@ When the SpecOps coordinator explicitly instructs you to perform review remediat
 
 - Append a `## N. Review remediation` section to the existing tasks artifact, continuing the top-level numbering so it follows the last existing section. If a `## N. Review remediation` section already exists, continue its numbering and reuse still-unchecked items rather than appending a new one.
 - Add one unchecked `- [ ]` item per numbered blocking finding `F1..Fn`, written as `- [ ] N.x Resolve reviewer finding Fx: <one-line summary of the problem>`.
+- Use only concrete approved remediation tasks supplied after schema-aware routing. Planning-artifact findings must already be reconciled into the tasks-role artifact before implementation resumes; do not invent planning or technical solutions.
 - Do not uncheck any completed task. Preserve all existing `- [x]` items exactly as they are.
+- Preserve unaffected completed work and leave its valid `- [x]` state unchanged.
 - Append the remediation items before you modify source or tests.
 - Make only the smallest coherent source and test changes necessary to resolve each finding. Do not expand scope beyond the approved proposal, capability specifications, and `design.md`.
 - For each resolved finding, change its item to `- [x]` only after you have verified the fix against the relevant requirement/design/task and the test/verification evidence.

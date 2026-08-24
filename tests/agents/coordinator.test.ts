@@ -187,6 +187,40 @@ describe("shared coordinator contract", () => {
         );
     });
 
+    test("routes schema-aware review remediation in both assembled modes", () => {
+        const interactive = buildCoordinatorPrompt("interactive", false);
+        const auto = buildCoordinatorPrompt("auto", false);
+
+        for (const assembled of [interactive, auto]) {
+            expect(assembled).toContain("## Schema-aware remediation routing");
+            expect(assembled).toContain(
+                "A Reviewer FAIL no longer implies that the Implementer is next",
+            );
+            expect(assembled).toContain("active schema");
+            expect(assembled).toContain("`specops_status`");
+            expect(assembled).toContain("openspec instructions");
+            expect(assembled).toContain("### Malformed or missing handoff return");
+            expect(assembled).toContain("never guessing or reinterpreting them");
+            expect(assembled).toContain("Implementation-only");
+            expect(assembled).toContain("approved planning guidance is sufficient");
+            expect(assembled).toContain("specops-implementer");
+            expect(assembled).toContain("findings verbatim");
+            expect(assembled).toContain("every `F1..Fn`");
+            expect(assembled).toContain("Planning-artifact target");
+            expect(assembled).toContain("design` → `specops-designer");
+            expect(assembled).toContain("other declared ids (requirements, tasks, custom)");
+            expect(assembled).toContain("specops-planner");
+            expect(assembled).toContain("`revisionTarget`");
+            expect(assembled).toContain("`upstreamFeedback`");
+            expect(assembled).toContain("concrete unchecked downstream tasks");
+            expect(assembled).toContain("Mixed targets");
+            expect(assembled).toContain("one coherent pass");
+            expect(assembled).toContain("earliest planning root(s) first");
+            expect(assembled).toContain("conflicting concurrent edits");
+            expect(assembled).toContain("preserve completed work");
+        }
+    });
+
     test("keeps specialist ownership explicit without duplicating specialist procedures", () => {
         expect(prompt).toContain("`specops-explorer` — repository evidence");
         expect(prompt).toContain(
@@ -433,9 +467,10 @@ describe("interactive coordinator contract", () => {
 
     test("keeps interactive remediation user-controlled and lossless", () => {
         const section = prompt.slice(prompt.indexOf("## Interactive review remediation"));
+        expect(section).toContain("shared `## Schema-aware remediation routing`");
         expect(section).toContain("complete Reviewer FAIL findings verbatim");
         expect(section).toContain("every `F1..Fn`");
-        expect(section).toContain("Do not summarize, paraphrase, renumber, or drop findings");
+        expect(section).toContain("do not summarize, paraphrase, renumber, or drop findings");
         expect(section).toContain("re-dispatch `specops-reviewer`");
         expect(section).toContain("prior FAIL findings verbatim");
         expect(section).toContain("same review lifecycle checkpoint");
@@ -627,9 +662,14 @@ describe("Auto coordinator contract", () => {
     test("automatically remediates review FAIL with a hard two-round limit", () => {
         const section = prompt.slice(prompt.indexOf("## Autonomous review remediation"));
         expect(section).toContain("PASS → call `specops_archive` once");
-        expect(section).toContain("FAIL → automatically begin review remediation");
-        expect(section).toContain("complete FAIL findings verbatim");
+        expect(section).toContain("FAIL → automatically begin remediation");
+        expect(section).toContain("shared `## Schema-aware remediation routing`");
+        expect(section).toContain("every `F1..Fn` verbatim");
         expect(section).toContain("every `F1..Fn`");
+        expect(section).toContain(
+            "Planner/Designer returns follow `## Autonomous specialist decisions`",
+        );
+        expect(section).toContain("complete critic fan-out again");
         expect(section).toContain("at most **2 remediation rounds total**");
         expect(section).toContain("re-review after round 2 still FAIL → `BLOCKED`");
         expect(section).toContain("Never run a third remediation round and never loop");

@@ -66,7 +66,7 @@ For `FRONTIER ELIGIBLE BLOCKER`, use the Frontier policy when it is loaded. With
 Reviewer PASS/FAIL remains authoritative.
 
 - PASS → call `specops_archive` once with the current change name, then read `specops_status` again to confirm and report the terminal state. Do not ask for confirmation or retry the archive.
-- FAIL → automatically begin review remediation. Re-dispatch `specops-implementer` with the complete FAIL findings verbatim (including every `F1..Fn`) and an explicit review-remediation instruction. After the handoff gate confirms remediation, run the complete critic fan-out again under the shared `## Review phase` contract, then re-dispatch `specops-reviewer` with the new specialist reports verbatim, the remediation summary, prior findings verbatim, and an explicit remediation re-review instruction.
+- FAIL → automatically begin remediation via shared `## Schema-aware remediation routing`, carrying every `F1..Fn` verbatim. After the handoff gate, run the complete critic fan-out again under `## Review phase`, then re-dispatch `specops-reviewer` with new reports verbatim, the remediation summary, prior findings verbatim, and an explicit re-review instruction. Planner/Designer returns follow `## Autonomous specialist decisions`.
 
 Allow at most **2 remediation rounds total**:
 
