@@ -4,9 +4,18 @@ All notable changes to SpecOps are documented in this file.
 
 ## [v1.5.0] - unreleased
 
+### Added
+
+- Added read-only correctness, risk, and quality review specialists that
+  critique changes alongside the final reviewer. They reuse the Reviewer's model
+  unless configured with their own, and existing configuration files adopt them
+  automatically on next save.
+
 ### Changed
 
-- Planning batches now use rolling bounded scheduling, so independent OpenSpec artifacts start as soon as a slot frees instead of waiting for a full wave to drain.
+- Planning batches now use rolling bounded scheduling, so independent OpenSpec
+  artifacts start as soon as a slot frees instead of waiting for a full wave to
+  drain.
 
 ## [v1.4.0] - 2026-08-23
 

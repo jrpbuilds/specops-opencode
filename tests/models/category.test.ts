@@ -9,6 +9,9 @@ const DISPLAY_NAMES = [
     "Designer",
     "Implementer",
     "Reviewer",
+    "Review - Correctness",
+    "Review - Risk",
+    "Review - Quality",
     "Frontier",
 ] as const;
 
@@ -27,6 +30,9 @@ describe("ROLE_WORKFLOW_ORDER", () => {
             "specops-designer",
             "specops-implementer",
             "specops-reviewer",
+            "specops-review-correctness",
+            "specops-review-risk",
+            "specops-review-quality",
             "specops-frontier",
         ]);
     });

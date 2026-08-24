@@ -11,6 +11,15 @@ import { PLANNER_AGENT_ID, plannerAgentDefinition } from "../../src/agents/plann
 import { DESIGNER_AGENT_ID, designerAgentDefinition } from "../../src/agents/designer.js";
 import { IMPLEMENTER_AGENT_ID, implementerAgentDefinition } from "../../src/agents/implementer.js";
 import { REVIEWER_AGENT_ID, reviewerAgentDefinition } from "../../src/agents/reviewer.js";
+import {
+    REVIEW_CORRECTNESS_AGENT_ID,
+    reviewCorrectnessAgentDefinition,
+} from "../../src/agents/review-correctness.js";
+import { REVIEW_RISK_AGENT_ID, reviewRiskAgentDefinition } from "../../src/agents/review-risk.js";
+import {
+    REVIEW_QUALITY_AGENT_ID,
+    reviewQualityAgentDefinition,
+} from "../../src/agents/review-quality.js";
 import { FRONTIER_AGENT_ID, frontierAgentDefinition } from "../../src/agents/frontier.js";
 import {
     DESIGNER_PERMISSION,
@@ -21,7 +30,12 @@ import {
     REVIEWER_PERMISSION,
 } from "../../src/agents/permissions.js";
 import { DEFAULT_CONFIG, type SpecOpsConfig } from "../../src/config.js";
-import { applyAgentDefinition } from "../../src/host/agents.js";
+import {
+    applyAgentDefinition,
+    registerReviewCorrectnessAgent,
+    registerReviewQualityAgent,
+    registerReviewRiskAgent,
+} from "../../src/host/agents.js";
 import { loadPrompt } from "../../src/prompts.js";
 
 function configWithRoleOverrides(
@@ -93,6 +107,9 @@ describe("applyAgentDefinition translation", () => {
         applyAgentDefinition(config, plannerAgentDefinition(DEFAULT_CONFIG));
         applyAgentDefinition(config, designerAgentDefinition(DEFAULT_CONFIG));
         applyAgentDefinition(config, implementerAgentDefinition(DEFAULT_CONFIG));
+        applyAgentDefinition(config, reviewCorrectnessAgentDefinition(DEFAULT_CONFIG));
+        applyAgentDefinition(config, reviewRiskAgentDefinition(DEFAULT_CONFIG));
+        applyAgentDefinition(config, reviewQualityAgentDefinition(DEFAULT_CONFIG));
         applyAgentDefinition(config, reviewerAgentDefinition(DEFAULT_CONFIG));
         applyAgentDefinition(config, frontierAgentDefinition(DEFAULT_CONFIG));
 
@@ -104,10 +121,40 @@ describe("applyAgentDefinition translation", () => {
                 PLANNER_AGENT_ID,
                 DESIGNER_AGENT_ID,
                 IMPLEMENTER_AGENT_ID,
+                REVIEW_CORRECTNESS_AGENT_ID,
+                REVIEW_RISK_AGENT_ID,
+                REVIEW_QUALITY_AGENT_ID,
                 REVIEWER_AGENT_ID,
                 FRONTIER_AGENT_ID,
             ].sort(),
         );
+    });
+
+    test("registers review specialists hidden, read-only, and without final-verdict authority", () => {
+        const config: Config = {};
+        const specOpsConfig = configWithRoleOverrides({
+            ["specops-reviewer"]: { model: "reviewer/model", variant: "high" },
+        });
+
+        registerReviewCorrectnessAgent(config, specOpsConfig);
+        registerReviewRiskAgent(config, specOpsConfig);
+        registerReviewQualityAgent(config, specOpsConfig);
+
+        for (const [id, dimension] of [
+            [REVIEW_CORRECTNESS_AGENT_ID, "correctness"],
+            [REVIEW_RISK_AGENT_ID, "risk"],
+            [REVIEW_QUALITY_AGENT_ID, "quality"],
+        ] as const) {
+            const agent = config.agent?.[id] as Record<string, unknown>;
+            const permission = agent.permission as Record<string, unknown>;
+            expect(agent).toMatchObject({ mode: "subagent", hidden: true });
+            expect(permission.edit).toEqual({ "*": "deny" });
+            expect(agent.model).toBe("reviewer/model");
+            expect(agent.variant).toBe("high");
+            expect(agent.prompt).toContain(`SpecOps ${dimension} review specialist`);
+            expect(agent.prompt).toContain("non-final critique only");
+            expect(agent.prompt).toContain("specops-reviewer");
+        }
     });
 });
 

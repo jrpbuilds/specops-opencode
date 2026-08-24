@@ -1,6 +1,7 @@
 import type { Config } from "@opencode-ai/plugin";
 import type { SpecOpsAgentDefinition } from "../agents/definition.js";
-import type { SpecOpsConfig } from "../config.js";
+import { resolveAgentMapping, type SpecOpsConfig } from "../config.js";
+import { AGENT_IDS, type AgentId } from "../agents/ids.js";
 import {
     autoCoordinatorAgentDefinition,
     interactiveCoordinatorAgentDefinition,
@@ -11,6 +12,38 @@ import { designerAgentDefinition } from "../agents/designer.js";
 import { implementerAgentDefinition } from "../agents/implementer.js";
 import { reviewerAgentDefinition } from "../agents/reviewer.js";
 import { frontierAgentDefinition } from "../agents/frontier.js";
+import {
+    reviewCorrectnessAgentDefinition,
+    REVIEW_CORRECTNESS_AGENT_ID,
+} from "../agents/review-correctness.js";
+import { reviewRiskAgentDefinition, REVIEW_RISK_AGENT_ID } from "../agents/review-risk.js";
+import { reviewQualityAgentDefinition, REVIEW_QUALITY_AGENT_ID } from "../agents/review-quality.js";
+
+/**
+ * Apply one role definition with its shared effective model mapping.
+ *
+ * Definitions still describe their role independently, but the host owns the
+ * final mapping application so every registered role uses the same resolver.
+ */
+function applyConfiguredAgent(
+    config: Config,
+    specOpsConfig: SpecOpsConfig,
+    roleId: AgentId,
+    definition: SpecOpsAgentDefinition,
+): void {
+    const resolvedDefinition = { ...definition };
+    delete resolvedDefinition.model;
+    delete resolvedDefinition.variant;
+
+    const mapping = resolveAgentMapping(specOpsConfig, roleId);
+    const model = mapping.model?.trim();
+    if (model) {
+        resolvedDefinition.model = model;
+        if (mapping.variant) resolvedDefinition.variant = mapping.variant;
+    }
+
+    applyAgentDefinition(config, resolvedDefinition);
+}
 
 /**
  * Translate one host-neutral agent definition into OpenCode 1's registration
@@ -60,7 +93,12 @@ export function registerAutoCoordinatorAgent(config: Config, specOpsConfig: Spec
  * @param specOpsConfig Validated persisted role-to-model configuration.
  */
 export function registerExplorerAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyAgentDefinition(config, explorerAgentDefinition(specOpsConfig));
+    applyConfiguredAgent(
+        config,
+        specOpsConfig,
+        AGENT_IDS.explorer,
+        explorerAgentDefinition(specOpsConfig),
+    );
 }
 
 /**
@@ -70,7 +108,12 @@ export function registerExplorerAgent(config: Config, specOpsConfig: SpecOpsConf
  * @param specOpsConfig Validated persisted role-to-model configuration.
  */
 export function registerPlannerAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyAgentDefinition(config, plannerAgentDefinition(specOpsConfig));
+    applyConfiguredAgent(
+        config,
+        specOpsConfig,
+        AGENT_IDS.planner,
+        plannerAgentDefinition(specOpsConfig),
+    );
 }
 
 /**
@@ -80,7 +123,12 @@ export function registerPlannerAgent(config: Config, specOpsConfig: SpecOpsConfi
  * @param specOpsConfig Validated persisted role-to-model configuration.
  */
 export function registerDesignerAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyAgentDefinition(config, designerAgentDefinition(specOpsConfig));
+    applyConfiguredAgent(
+        config,
+        specOpsConfig,
+        AGENT_IDS.designer,
+        designerAgentDefinition(specOpsConfig),
+    );
 }
 
 /**
@@ -90,7 +138,12 @@ export function registerDesignerAgent(config: Config, specOpsConfig: SpecOpsConf
  * @param specOpsConfig Validated persisted role-to-model configuration.
  */
 export function registerImplementerAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyAgentDefinition(config, implementerAgentDefinition(specOpsConfig));
+    applyConfiguredAgent(
+        config,
+        specOpsConfig,
+        AGENT_IDS.implementer,
+        implementerAgentDefinition(specOpsConfig),
+    );
 }
 
 /**
@@ -100,7 +153,42 @@ export function registerImplementerAgent(config: Config, specOpsConfig: SpecOpsC
  * @param specOpsConfig Validated persisted role-to-model configuration.
  */
 export function registerReviewerAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyAgentDefinition(config, reviewerAgentDefinition(specOpsConfig));
+    applyConfiguredAgent(
+        config,
+        specOpsConfig,
+        AGENT_IDS.reviewer,
+        reviewerAgentDefinition(specOpsConfig),
+    );
+}
+
+/** Register the hidden correctness review specialist. */
+export function registerReviewCorrectnessAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
+    applyConfiguredAgent(
+        config,
+        specOpsConfig,
+        REVIEW_CORRECTNESS_AGENT_ID,
+        reviewCorrectnessAgentDefinition(specOpsConfig),
+    );
+}
+
+/** Register the hidden risk review specialist. */
+export function registerReviewRiskAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
+    applyConfiguredAgent(
+        config,
+        specOpsConfig,
+        REVIEW_RISK_AGENT_ID,
+        reviewRiskAgentDefinition(specOpsConfig),
+    );
+}
+
+/** Register the hidden quality review specialist. */
+export function registerReviewQualityAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
+    applyConfiguredAgent(
+        config,
+        specOpsConfig,
+        REVIEW_QUALITY_AGENT_ID,
+        reviewQualityAgentDefinition(specOpsConfig),
+    );
 }
 
 /**
@@ -112,5 +200,10 @@ export function registerReviewerAgent(config: Config, specOpsConfig: SpecOpsConf
  * @param specOpsConfig Validated persisted role-to-model configuration.
  */
 export function registerFrontierAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyAgentDefinition(config, frontierAgentDefinition(specOpsConfig));
+    applyConfiguredAgent(
+        config,
+        specOpsConfig,
+        AGENT_IDS.frontier,
+        frontierAgentDefinition(specOpsConfig),
+    );
 }

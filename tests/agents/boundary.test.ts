@@ -8,6 +8,9 @@ import { PLANNER_AGENT_ID } from "../../src/agents/planner.js";
 import { DESIGNER_AGENT_ID } from "../../src/agents/designer.js";
 import { IMPLEMENTER_AGENT_ID } from "../../src/agents/implementer.js";
 import { REVIEWER_AGENT_ID } from "../../src/agents/reviewer.js";
+import { REVIEW_CORRECTNESS_AGENT_ID } from "../../src/agents/review-correctness.js";
+import { REVIEW_RISK_AGENT_ID } from "../../src/agents/review-risk.js";
+import { REVIEW_QUALITY_AGENT_ID } from "../../src/agents/review-quality.js";
 import { FRONTIER_AGENT_ID } from "../../src/agents/frontier.js";
 import {
     applyLifecycleBoundary,
@@ -28,6 +31,9 @@ const INTERNAL_SUBAGENT_IDS = [
     PLANNER_AGENT_ID,
     DESIGNER_AGENT_ID,
     IMPLEMENTER_AGENT_ID,
+    REVIEW_CORRECTNESS_AGENT_ID,
+    REVIEW_RISK_AGENT_ID,
+    REVIEW_QUALITY_AGENT_ID,
     REVIEWER_AGENT_ID,
     FRONTIER_AGENT_ID,
 ];

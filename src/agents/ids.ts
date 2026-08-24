@@ -10,6 +10,9 @@ export const AGENT_IDS = {
     planner: "specops-planner",
     designer: "specops-designer",
     implementer: "specops-implementer",
+    reviewCorrectness: "specops-review-correctness",
+    reviewRisk: "specops-review-risk",
+    reviewQuality: "specops-review-quality",
     reviewer: "specops-reviewer",
     frontier: "specops-frontier",
 } as const;
@@ -32,6 +35,9 @@ export const ROLE_WORKFLOW_ORDER = [
     AGENT_IDS.designer,
     AGENT_IDS.implementer,
     AGENT_IDS.reviewer,
+    AGENT_IDS.reviewCorrectness,
+    AGENT_IDS.reviewRisk,
+    AGENT_IDS.reviewQuality,
     AGENT_IDS.frontier,
 ] as const satisfies readonly AgentId[];
 

@@ -8,8 +8,15 @@ import { fakeTuiApi, withConfigHome } from "./helpers.js";
 import { registerModelSettings } from "../../src/tui/index.js";
 
 async function openPlannerModelVariant(fake: ReturnType<typeof fakeTuiApi>): Promise<void> {
+    await openRoleModelVariant(fake, "specops-planner");
+}
+
+async function openRoleModelVariant(
+    fake: ReturnType<typeof fakeTuiApi>,
+    id: string,
+): Promise<void> {
     await fake.runCommand();
-    fake.selectByValue("specops-planner");
+    fake.selectByValue(id);
     fake.selectByValue("openference/GLM-5.2");
     fake.selectByValue("high");
 }
@@ -44,6 +51,50 @@ describe("SpecOps Configure save flow", () => {
         );
     });
 
+    test("specialist editor accepts explicit mappings and round-trips them", async () => {
+        await withTempDir(async home =>
+            withConfigHome(home, async () => {
+                const fake = fakeTuiApi(allProviders);
+                registerModelSettings(fake.api);
+
+                await openRoleModelVariant(fake, "specops-review-correctness");
+                expect(
+                    fake
+                        .currentDialog()
+                        ?.options?.find(option => option.value === "specops-review-correctness")
+                        ?.title,
+                ).toContain("Review - Correctness");
+                fake.selectByValue("__save__");
+                await fake.confirm();
+
+                const saved = await loadConfig(path.join(home, "opencode", "specops.json"));
+                expect(saved.agents["specops-review-correctness"]).toEqual({
+                    model: "openference/GLM-5.2",
+                    variant: "high",
+                });
+            }),
+        );
+    });
+
+    test("persists an unset specialist as an empty Reviewer-inheriting entry", async () => {
+        await withTempDir(async home =>
+            withConfigHome(home, async () => {
+                const fake = fakeTuiApi(allProviders);
+                registerModelSettings(fake.api);
+
+                await fake.runCommand();
+                fake.selectByValue("specops-review-risk");
+                expect(fake.currentDialog()?.title).toBe("specops-review-risk: model");
+                fake.selectByValue("");
+                fake.selectByValue("__save__");
+                await fake.confirm();
+
+                const saved = await loadConfig(path.join(home, "opencode", "specops.json"));
+                expect(saved.agents["specops-review-risk"]).toEqual({});
+            }),
+        );
+    });
+
     test("toggles and persists frontier escalation independently of role mappings", async () => {
         await withTempDir(async home =>
             withConfigHome(home, async () => {
@@ -58,6 +109,9 @@ describe("SpecOps Configure save flow", () => {
                     "specops-designer",
                     "specops-implementer",
                     "specops-reviewer",
+                    "specops-review-correctness",
+                    "specops-review-risk",
+                    "specops-review-quality",
                     "specops-frontier",
                     "__frontier_escalation__",
                     "__concurrent_subagents__",

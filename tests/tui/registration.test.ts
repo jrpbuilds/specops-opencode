@@ -1,11 +1,48 @@
 import { describe, expect, test } from "bun:test";
-import { ALL_AGENT_IDS } from "../../src/agents/ids.js";
+import { AGENT_IDS, ALL_AGENT_IDS } from "../../src/agents/ids.js";
+import { DEFAULT_CONFIG } from "../../src/config.js";
+import {
+    REVIEW_CORRECTNESS_AGENT_ID,
+    reviewCorrectnessAgentDefinition,
+} from "../../src/agents/review-correctness.js";
+import { REVIEW_RISK_AGENT_ID, reviewRiskAgentDefinition } from "../../src/agents/review-risk.js";
+import {
+    REVIEW_QUALITY_AGENT_ID,
+    reviewQualityAgentDefinition,
+} from "../../src/agents/review-quality.js";
 import { registerModelSettings } from "../../src/tui/index.js";
 import { allProviders } from "../fixtures.js";
 import { fakeTuiApi, withConfigHome } from "./helpers.js";
 import { withTempDir } from "../helpers.js";
 
 describe("registerModelSettings", () => {
+    test("keeps review specialists hidden, read-only, and critique-only", () => {
+        const definitions = [
+            reviewCorrectnessAgentDefinition(DEFAULT_CONFIG),
+            reviewRiskAgentDefinition(DEFAULT_CONFIG),
+            reviewQualityAgentDefinition(DEFAULT_CONFIG),
+        ];
+
+        expect(definitions.map(definition => definition.id)).toEqual([
+            AGENT_IDS.reviewCorrectness,
+            AGENT_IDS.reviewRisk,
+            AGENT_IDS.reviewQuality,
+        ]);
+        expect(new Set(ALL_AGENT_IDS).size).toBe(ALL_AGENT_IDS.length);
+        for (const definition of definitions) {
+            expect(definition.hidden).toBe(true);
+            expect(definition.mode).toBe("subagent");
+            expect(definition.permission.edit).toEqual({ "*": "deny" });
+            expect(definition.prompt).toContain("non-final critique only");
+            expect(definition.prompt).toContain("specops-reviewer");
+        }
+        expect(definitions.map(definition => definition.id)).toEqual([
+            REVIEW_CORRECTNESS_AGENT_ID,
+            REVIEW_RISK_AGENT_ID,
+            REVIEW_QUALITY_AGENT_ID,
+        ]);
+    });
+
     test("registers the SpecOps Configure palette command", () => {
         const fake = fakeTuiApi(allProviders);
         registerModelSettings(fake.api);
@@ -20,7 +57,7 @@ describe("registerModelSettings", () => {
         expect(fake.commands[0].run).toBeFunction();
     });
 
-    test("opens a role list with all seven roles and actions", async () =>
+    test("opens a role list with every catalogue role and actions", async () =>
         withTempDir(async home =>
             withConfigHome(home, async () => {
                 const fake = fakeTuiApi(allProviders);
@@ -39,7 +76,7 @@ describe("registerModelSettings", () => {
                     "__cancel__",
                 ]);
                 expect(
-                    options.slice(0, 7).map(option => option.title.replace(/^[!*] /, "")),
+                    options.slice(0, 10).map(option => option.title.replace(/^[!*] /, "")),
                 ).toEqual([
                     "Coordinator",
                     "Explorer",
@@ -47,10 +84,13 @@ describe("registerModelSettings", () => {
                     "Designer",
                     "Implementer",
                     "Reviewer",
+                    "Review - Correctness",
+                    "Review - Risk",
+                    "Review - Quality",
                     "Frontier",
                 ]);
                 expect(
-                    options.slice(0, 7).every(option => option.category === "Model Routing"),
+                    options.slice(0, 10).every(option => option.category === "Model Routing"),
                 ).toBe(true);
                 expect(props?.title).toBe("SpecOps role model mappings");
             }),

@@ -68,6 +68,21 @@ export const ROLE_CAPABILITY_POLICY = {
         external_directory: "deny",
         bash: "allow",
     },
+    "specops-review-correctness": {
+        external_directory: "deny",
+        edit: { "*": "deny" },
+        bash: "allow",
+    },
+    "specops-review-risk": {
+        external_directory: "deny",
+        edit: { "*": "deny" },
+        bash: "allow",
+    },
+    "specops-review-quality": {
+        external_directory: "deny",
+        edit: { "*": "deny" },
+        bash: "allow",
+    },
     "specops-reviewer": {
         external_directory: "deny",
         edit: { "*": "deny" },

@@ -33,6 +33,14 @@ function fullyPopulated() {
         model: "openference/Kimi K2.7 Code",
         variant: "thinking",
     };
+    agents["specops-review-correctness"] = {
+        model: "openai/gpt-5.6-terra",
+    };
+    agents["specops-review-risk"] = {};
+    agents["specops-review-quality"] = {
+        model: "openai/gpt-5.6-sol",
+        variant: "high",
+    };
     agents["specops-reviewer"] = {
         model: "openai/gpt-5.6-terra",
         variant: "high",
@@ -45,7 +53,7 @@ function fullyPopulated() {
 }
 
 describe("loadConfig", () => {
-    test("returns DEFAULT_CONFIG with all seven roles when the file is missing", async () => {
+    test("returns DEFAULT_CONFIG with every catalogue role when the file is missing", async () => {
         await withTempDir(async dir => {
             const config = await loadConfig(configPath(dir));
             expect(config).toEqual(DEFAULT_CONFIG);
@@ -61,10 +69,14 @@ describe("loadConfig", () => {
         });
     });
 
-    test("throws on an invalid configuration shape", async () => {
+    test("throws on an unknown role id", async () => {
         await withTempDir(async dir => {
             const destination = configPath(dir);
-            await writeFile(destination, JSON.stringify({ agents: {} }), "utf8");
+            await writeFile(
+                destination,
+                JSON.stringify({ agents: { "specops-architect": {} } }),
+                "utf8",
+            );
             await expect(loadConfig(destination)).rejects.toThrow();
         });
     });
@@ -75,6 +87,29 @@ describe("loadConfig", () => {
             const expected = fullyPopulated();
             await saveConfig(expected, destination);
             expect(await loadConfig(destination)).toEqual(expected);
+        });
+    });
+
+    test("loads an older config without review specialists as inheriting entries", async () => {
+        await withTempDir(async dir => {
+            const destination = configPath(dir);
+            const agents: Record<string, unknown> = structuredClone(DEFAULT_CONFIG.agents);
+            delete agents["specops-review-correctness"];
+            delete agents["specops-review-risk"];
+            delete agents["specops-review-quality"];
+            await writeFile(
+                destination,
+                JSON.stringify({ agents, frontierEscalation: false }),
+                "utf8",
+            );
+
+            const loaded = await loadConfig(destination);
+            expect(loaded.agents["specops-review-correctness"]).toEqual({});
+            expect(loaded.agents["specops-review-risk"]).toEqual({});
+            expect(loaded.agents["specops-review-quality"]).toEqual({});
+
+            await saveConfig(loaded, destination);
+            expect(await loadConfig(destination)).toEqual(DEFAULT_CONFIG);
         });
     });
 
@@ -127,7 +162,7 @@ describe("saveConfig", () => {
     test("validates before writing: invalid input throws and no file is created", async () => {
         await withTempDir(async dir => {
             const destination = configPath(dir);
-            const broken = { agents: {} } as never;
+            const broken = { agents: { "specops-architect": {} } } as never;
             await expect(saveConfig(broken, destination)).rejects.toThrow();
             await expect(readFile(destination, "utf8")).rejects.toThrow();
         });
@@ -169,6 +204,27 @@ describe("saveConfig", () => {
             };
             await saveConfig(config, destination);
             expect(await loadConfig(destination)).toEqual(config);
+        });
+    });
+
+    test("round-trips explicit and unset review specialist mappings", async () => {
+        await withTempDir(async dir => {
+            const destination = configPath(dir);
+            const config = structuredClone(DEFAULT_CONFIG);
+            config.agents["specops-review-correctness"] = {
+                model: "openference/GLM-5.2",
+                variant: "high",
+            };
+            config.agents["specops-review-risk"] = {};
+
+            await saveConfig(config, destination);
+            const loaded = await loadConfig(destination);
+
+            expect(loaded.agents["specops-review-correctness"]).toEqual({
+                model: "openference/GLM-5.2",
+                variant: "high",
+            });
+            expect(loaded.agents["specops-review-risk"]).toEqual({});
         });
     });
 

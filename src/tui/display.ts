@@ -1,12 +1,13 @@
 import { ALL_AGENT_IDS, type AgentId } from "../agents/ids.js";
-import type { SpecOpsConfig } from "../config.js";
+import { resolveAgentMapping, type SpecOpsConfig } from "../config.js";
 import type { ConfiguredModel } from "../models.js";
 
 /**
  * Format one role's staged selection for the role list footer.
  *
  * Unknown saved models remain visible by ID, while long display names are
- * shortened so the role list stays readable in a narrow terminal.
+ * shortened so the role list stays readable in a narrow terminal. Inherited
+ * mappings display only their effective selection to keep rows compact.
  *
  * @param config Staged configuration containing the role selection.
  * @param id Role whose display value is needed.
@@ -18,11 +19,18 @@ export function describeSelection(
     id: AgentId,
     models: readonly ConfiguredModel[],
 ): string {
-    const entry = config.agents[id];
-    if (!entry.model?.trim()) return "OpenCode default";
-    const name = models.find(model => model.id === entry.model)?.name ?? entry.model;
+    return formatSelection(resolveAgentMapping(config, id), models);
+}
+
+/** Format one effective mapping without applying role-specific inheritance copy. */
+function formatSelection(
+    mapping: { model?: string; variant?: string },
+    models: readonly ConfiguredModel[],
+): string {
+    if (!mapping.model?.trim()) return "OpenCode default";
+    const name = models.find(model => model.id === mapping.model)?.name ?? mapping.model;
     const compactName = name.length > 28 ? `${name.slice(0, 28)}...` : name;
-    return `${compactName} · ${entry.variant ?? "Default"}`;
+    return `${compactName} · ${mapping.variant ?? "Default"}`;
 }
 
 /**

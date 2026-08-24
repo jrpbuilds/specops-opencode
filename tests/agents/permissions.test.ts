@@ -87,6 +87,15 @@ describe("role permission profiles", () => {
         expect(REVIEWER_PERMISSION.bash).toBe("allow");
         expect(REVIEWER_PERMISSION.external_directory).toBe("deny");
         expect(REVIEWER_PERMISSION.doom_loop).toBe("allow");
+
+        for (const id of [
+            "specops-review-correctness",
+            "specops-review-risk",
+            "specops-review-quality",
+        ] as const) {
+            expect(ROLE_CAPABILITY_POLICY[id].edit).toEqual({ "*": "deny" });
+            expect(ROLE_CAPABILITY_POLICY[id].bash).toBe("allow");
+        }
     });
 
     test("restricts ordinary lifecycle access to doctor and onboarding", () => {

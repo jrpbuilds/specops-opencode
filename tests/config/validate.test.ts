@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { AGENT_IDS, ALL_AGENT_IDS } from "../../src/agents/ids.js";
 import { DEFAULT_CONFIG, validateConfig } from "../../src/config.js";
 
 /**
@@ -114,14 +115,32 @@ describe("validateConfig - top-level structure", () => {
 });
 
 describe("validateConfig - role catalogue", () => {
-    test("rejects empty agents", () => {
-        expect(() => validateConfig({ agents: {} })).toThrow();
+    test("fills an empty agent map with an all-empty catalogue", () => {
+        const config = validateConfig({ agents: {} });
+        expect(Object.keys(config.agents)).toHaveLength(ALL_AGENT_IDS.length);
+        for (const id of ALL_AGENT_IDS) expect(config.agents[id]).toEqual({});
     });
 
-    test("rejects a missing role", () => {
+    test("fills a missing role with an empty inheriting entry", () => {
         const agents = allRoles();
         delete agents["specops-reviewer"];
-        expect(() => validateConfig({ agents })).toThrow();
+        const config = validateConfig({ agents });
+
+        expect(Object.keys(config.agents).sort()).toEqual([...ALL_AGENT_IDS].sort());
+        expect(config.agents["specops-reviewer"]).toEqual({});
+        expect(config.agents["specops-planner"]).toEqual({});
+    });
+
+    test("fills missing review specialists with empty inheriting entries", () => {
+        const agents = allRoles();
+        delete agents[AGENT_IDS.reviewCorrectness];
+        delete agents[AGENT_IDS.reviewRisk];
+        delete agents[AGENT_IDS.reviewQuality];
+        const config = validateConfig({ agents });
+
+        expect(config.agents[AGENT_IDS.reviewCorrectness]).toEqual({});
+        expect(config.agents[AGENT_IDS.reviewRisk]).toEqual({});
+        expect(config.agents[AGENT_IDS.reviewQuality]).toEqual({});
     });
 
     test("rejects an extra role", () => {
@@ -172,6 +191,28 @@ describe("validateConfig - entry shape", () => {
     test("rejects a whitespace-only variant", () => {
         const agents = allRoles();
         agents["specops-explorer"] = { model: "x", variant: "   " };
+        expect(() => validateConfig({ agents })).toThrow();
+    });
+
+    test("rejects a non-blank variant without a model context", () => {
+        const agents = allRoles();
+        agents[AGENT_IDS.reviewRisk] = { variant: "high" };
+        expect(() => validateConfig({ agents })).toThrow();
+    });
+
+    test("allows a critic variant when Reviewer supplies the effective model", () => {
+        const agents = allRoles();
+        agents[AGENT_IDS.reviewer] = { model: "openai/gpt-5.6-terra" };
+        agents[AGENT_IDS.reviewQuality] = { variant: "high" };
+        expect(validateConfig({ agents }).agents[AGENT_IDS.reviewQuality]).toEqual({
+            variant: "high",
+        });
+    });
+
+    test("keeps non-critic variant validation independent of Reviewer", () => {
+        const agents = allRoles();
+        agents[AGENT_IDS.planner] = { variant: "high" };
+        agents[AGENT_IDS.reviewer] = { model: "openai/gpt-5.6-terra" };
         expect(() => validateConfig({ agents })).toThrow();
     });
 });

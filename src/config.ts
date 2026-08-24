@@ -2,7 +2,7 @@ import { mkdir, open, readFile, rename, unlink } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { ALL_AGENT_IDS, type AgentId } from "./agents/ids.js";
+import { AGENT_IDS, ALL_AGENT_IDS, type AgentId } from "./agents/ids.js";
 import { isRecord } from "./openspec/helpers.js";
 
 /**
@@ -17,8 +17,9 @@ export type AgentConfig = { model?: string; variant?: string };
 /**
  * The complete persisted SpecOps configuration.
  *
- * Validation requires one entry for every `AgentId`; individual entries may
- * omit `model` to inherit OpenCode's global default. `frontierEscalation` is
+ * Validation fills role entries missing from older configuration files with
+ * empty mappings; individual entries may omit `model` to inherit OpenCode's
+ * global default. `frontierEscalation` is
  * normalized to `false`, and `maxSubagentConcurrency` (the maximum concurrently
  * active SpecOps specialist subagents) to `2`, when loading an older
  * configuration without those fields.
@@ -40,6 +41,51 @@ export const DEFAULT_CONFIG: SpecOpsConfig = {
     frontierEscalation: false,
     maxSubagentConcurrency: 2,
 };
+
+const REVIEW_SPECIALIST_IDS = new Set<AgentId>([
+    AGENT_IDS.reviewCorrectness,
+    AGENT_IDS.reviewRisk,
+    AGENT_IDS.reviewQuality,
+]);
+
+/** Return a non-blank configuration field, preserving its stored value. */
+function nonBlank(value: string | undefined): string | undefined {
+    return value?.trim() ? value : undefined;
+}
+
+/**
+ * Resolve the effective model mapping for one role without changing persisted
+ * configuration. A review specialist with its own model uses only its own
+ * entry; one without a model inherits the reviewer's model and variant
+ * together, keeping variants from leaking onto a different model. Every other
+ * role uses its own stored entry unchanged.
+ *
+ * @param config Validated or draft SpecOps configuration.
+ * @param roleId Role whose effective mapping is needed.
+ * @returns A model/variant mapping suitable for host or editor display.
+ */
+export function resolveAgentMapping(config: SpecOpsConfig, roleId: AgentId): AgentConfig {
+    const own = config.agents[roleId];
+    if (!REVIEW_SPECIALIST_IDS.has(roleId)) return { ...own };
+
+    const ownModel = nonBlank(own.model);
+    if (ownModel) {
+        const ownVariant = nonBlank(own.variant);
+        return { model: ownModel, ...(ownVariant ? { variant: ownVariant } : {}) };
+    }
+
+    // No own model: inherit the reviewer's model and variant as one mapping so
+    // model-specific variants are never applied to the specialist's own model.
+    const reviewer = config.agents[AGENT_IDS.reviewer];
+    const reviewerModel = nonBlank(reviewer.model);
+    if (!reviewerModel) return {};
+
+    const variant = nonBlank(own.variant) ?? nonBlank(reviewer.variant);
+    return {
+        model: reviewerModel,
+        ...(variant ? { variant } : {}),
+    };
+}
 
 /** Concurrency values accepted for concurrently active SpecOps specialist subagents. */
 const ALLOWED_SUBAGENT_CONCURRENCY = new Set([1, 2, 4, 8]);
@@ -106,12 +152,13 @@ export async function loadConfig(
 /**
  * Validate and clone the exact current SpecOps configuration shape.
  *
- * The validator rejects unknown top-level or role keys, missing roles, invalid
- * field types, and non-blank variants without a valid model context. The
- * optional top-level switch preserves compatibility with older config files.
+ * The validator rejects unknown top-level or role keys, invalid field types,
+ * and non-blank variants without a valid model context. Role entries missing
+ * from older configuration files are backfilled as empty inheriting mappings
+ * so the file still loads and the editor can persist the full catalogue later.
  *
  * @param value Unknown parsed configuration value.
- * @returns A cloned, validated SpecOps configuration.
+ * @returns A cloned, validated configuration with every role entry present.
  * @throws Error when the value is malformed or contains unsupported settings.
  */
 export function validateConfig(value: unknown): SpecOpsConfig {
@@ -133,13 +180,21 @@ export function validateConfig(value: unknown): SpecOpsConfig {
         throw new Error("maxSubagentConcurrency must be 1, 2, 4, or 8");
     }
 
-    const expected = [...ALL_AGENT_IDS].sort();
-    if (Object.keys(value.agents).sort().join("|") !== expected.join("|")) {
-        throw new Error("configuration agent catalogue does not match this SpecOps installation");
+    // Unknown role ids stay a hard error because they almost certainly name a
+    // role this installation does not have; absent ids belong to older files.
+    const entries = value.agents as Record<string, unknown>;
+    const known = new Set<string>(ALL_AGENT_IDS);
+    for (const id of Object.keys(entries)) {
+        if (!known.has(id)) {
+            throw new Error(
+                "configuration agent catalogue does not match this SpecOps installation",
+            );
+        }
     }
 
-    for (const id of expected) {
-        const entry = value.agents[id];
+    for (const id of ALL_AGENT_IDS) {
+        const entry = entries[id];
+        if (entry === undefined) continue;
         if (!isRecord(entry) || !hasOnlyKeys(entry, ["model", "variant"])) {
             throw new Error(`invalid SpecOps configuration entry: ${id}`);
         }
@@ -151,11 +206,22 @@ export function validateConfig(value: unknown): SpecOpsConfig {
         }
     }
 
-    return structuredClone({
-        ...value,
+    const config = {
+        agents: Object.fromEntries(
+            ALL_AGENT_IDS.map(id => [id, (entries[id] ?? {}) as AgentConfig]),
+        ),
         frontierEscalation: value.frontierEscalation ?? false,
         maxSubagentConcurrency: value.maxSubagentConcurrency ?? 2,
-    }) as SpecOpsConfig;
+    } as SpecOpsConfig;
+
+    for (const id of ALL_AGENT_IDS) {
+        const entry = config.agents[id];
+        if (entry.variant?.trim() && !resolveAgentMapping(config, id).model) {
+            throw new Error(`invalid SpecOps configuration entry: ${id}`);
+        }
+    }
+
+    return structuredClone(config);
 }
 
 /**

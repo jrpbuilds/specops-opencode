@@ -8,6 +8,9 @@ const AGENT_DISPLAY_NAMES: Record<AgentId, string> = {
     [AGENT_IDS.planner]: "Planner",
     [AGENT_IDS.designer]: "Designer",
     [AGENT_IDS.implementer]: "Implementer",
+    [AGENT_IDS.reviewCorrectness]: "Review - Correctness",
+    [AGENT_IDS.reviewRisk]: "Review - Risk",
+    [AGENT_IDS.reviewQuality]: "Review - Quality",
     [AGENT_IDS.reviewer]: "Reviewer",
     [AGENT_IDS.frontier]: "Frontier",
 };

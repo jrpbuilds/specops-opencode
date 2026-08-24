@@ -1,5 +1,5 @@
 import { ALL_AGENT_IDS } from "../agents/ids.js";
-import type { SpecOpsConfig } from "../config.js";
+import { resolveAgentMapping, type SpecOpsConfig } from "../config.js";
 import type { OpenSpecDoctorResult } from "../openspec/doctor.js";
 import { errorMessage } from "../openspec/helpers.js";
 import { formatRemediation } from "../openspec/remediation.js";
@@ -92,8 +92,10 @@ export async function doctor(deps: DoctorDeps): Promise<string> {
     }
 
     if (config) {
+        // Count effective mappings so roles inheriting the Reviewer's model
+        // are reported as configured rather than falling back to OpenCode.
         const explicit = ALL_AGENT_IDS.filter(id =>
-            Boolean(config?.agents[id].model?.trim()),
+            Boolean(resolveAgentMapping(config, id).model?.trim()),
         ).length;
         lines.push(`✓ ${ALL_AGENT_IDS.length} model roles configured`);
         lines.push(`  - ${explicit} explicit models`);

@@ -9,6 +9,9 @@ import {
     registerFrontierAgent,
     registerImplementerAgent,
     registerPlannerAgent,
+    registerReviewCorrectnessAgent,
+    registerReviewQualityAgent,
+    registerReviewRiskAgent,
     registerReviewerAgent,
 } from "./host/agents.js";
 import { applyLifecycleBoundary, applyTaskBoundary } from "./host/permissions.js";
@@ -41,6 +44,9 @@ export const SpecOpsPlugin: Plugin = async () => ({
             registerDesignerAgent(config, specOpsConfig);
             registerImplementerAgent(config, specOpsConfig);
             registerReviewerAgent(config, specOpsConfig);
+            registerReviewCorrectnessAgent(config, specOpsConfig);
+            registerReviewRiskAgent(config, specOpsConfig);
+            registerReviewQualityAgent(config, specOpsConfig);
 
             if (specOpsConfig.frontierEscalation) {
                 registerFrontierAgent(config, specOpsConfig);

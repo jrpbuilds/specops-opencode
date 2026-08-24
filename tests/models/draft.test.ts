@@ -7,7 +7,7 @@ import { allProviders } from "../fixtures.js";
 const models = configuredModels(allProviders);
 
 describe("createConfigDraft", () => {
-    test("returns all seven roles", () => {
+    test("returns every catalogue role", () => {
         const draft = createConfigDraft(DEFAULT_CONFIG, models);
         expect(Object.keys(draft.config.agents).sort()).toEqual([...ALL_AGENT_IDS].sort());
     });

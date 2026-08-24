@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { AGENT_IDS } from "../../src/agents/ids.js";
 import { DEFAULT_CONFIG } from "../../src/config.js";
 import { doctor, type DoctorDeps } from "../../src/tools/doctor.js";
 
@@ -78,7 +79,7 @@ describe("doctor", () => {
         expect(result).toContain("Fix:");
         expect(result).toContain("✓ SpecOps configuration valid");
         expect(result).toContain("- 2 explicit models");
-        expect(result).toContain("- 5 OpenCode default");
+        expect(result).toContain("- 8 OpenCode default");
         expect(doctorCalled).toBe(false);
     });
 
@@ -97,9 +98,9 @@ describe("doctor", () => {
 
         expect(result).toContain("✗ OpenSpec project not initialized");
         expect(result).not.toContain("OpenSpec doctor healthy");
-        expect(result).toContain("✓ 7 model roles configured");
+        expect(result).toContain("✓ 10 model roles configured");
         expect(result).toContain("- 3 explicit models");
-        expect(result).toContain("- 4 OpenCode default");
+        expect(result).toContain("- 7 OpenCode default");
         expect(result).toContain("Run /specops-onboard");
     });
 
@@ -110,10 +111,19 @@ describe("doctor", () => {
         expect(result).toContain("OpenSpec: 1.10.0");
         expect(result).toContain("✓ OpenSpec project initialized");
         expect(result).toContain("✓ OpenSpec doctor healthy");
-        expect(result).toContain("✓ 7 model roles configured");
+        expect(result).toContain("✓ 10 model roles configured");
         expect(result).toContain("- 5 explicit models");
-        expect(result).toContain("- 2 OpenCode default");
+        expect(result).toContain("- 5 OpenCode default");
         expect(result).toContain("SpecOps is ready.");
+    });
+
+    test("counts review specialists inheriting the Reviewer's model as explicit", async () => {
+        const config = structuredClone(DEFAULT_CONFIG);
+        config.agents[AGENT_IDS.reviewer] = { model: "provider/model" };
+        const result = await doctor(deps({ loadConfig: async () => config }));
+
+        expect(result).toContain("- 4 explicit models");
+        expect(result).toContain("- 6 OpenCode default");
     });
 
     test("reports OpenSpec health issues", async () => {

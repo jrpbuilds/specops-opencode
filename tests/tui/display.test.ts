@@ -1,7 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { ALL_AGENT_IDS, AGENT_IDS, type AgentId } from "../../src/agents/ids.js";
+import {
+    ALL_AGENT_IDS,
+    AGENT_IDS,
+    ROLE_WORKFLOW_ORDER,
+    type AgentId,
+} from "../../src/agents/ids.js";
 import type { AgentConfig, SpecOpsConfig } from "../../src/config.js";
-import { configuredModels, type ConfiguredModel } from "../../src/models.js";
+import { agentDisplayName, configuredModels, type ConfiguredModel } from "../../src/models.js";
 import { changedAgentIds, describeSelection, effectiveConcurrency } from "../../src/tui/display.js";
 import { allProviders } from "../fixtures.js";
 
@@ -74,6 +79,18 @@ describe("changedAgentIds", () => {
 });
 
 describe("describeSelection", () => {
+    test("keeps Reviewer before its specialist display names", () => {
+        const names = ROLE_WORKFLOW_ORDER.map(agentDisplayName);
+        const reviewerIndex = names.indexOf("Reviewer");
+
+        expect(names.slice(reviewerIndex, reviewerIndex + 4)).toEqual([
+            "Reviewer",
+            "Review - Correctness",
+            "Review - Risk",
+            "Review - Quality",
+        ]);
+    });
+
     test("describes roles without a model as using the OpenCode default", () => {
         expect(describeSelection(configWith(), AGENT_IDS.planner, models)).toBe("OpenCode default");
         expect(
@@ -92,6 +109,38 @@ describe("describeSelection", () => {
         ]);
         expect(describeSelection(config, AGENT_IDS.planner, models)).toBe("GLM-5.2 · high");
         expect(describeSelection(config, AGENT_IDS.reviewer, models)).toBe("GPT-4o · Default");
+    });
+
+    test("shows unset critics with Reviewer's effective model and variant", () => {
+        const config = configWith([[AGENT_IDS.reviewer, { model: gpt4o.id, variant: "high" }]]);
+
+        expect(describeSelection(config, AGENT_IDS.reviewCorrectness, models)).toBe(
+            "GPT-4o · high",
+        );
+    });
+
+    test("shows an unset critic using the host default when Reviewer is unset", () => {
+        expect(describeSelection(configWith(), AGENT_IDS.reviewRisk, models)).toBe(
+            "OpenCode default",
+        );
+    });
+
+    test("shows explicit critic model and variant directly", () => {
+        const config = configWith([
+            [AGENT_IDS.reviewer, { model: gpt4o.id, variant: "high" }],
+            [AGENT_IDS.reviewQuality, { model: glm.id, variant: "low" }],
+        ]);
+
+        expect(describeSelection(config, AGENT_IDS.reviewQuality, models)).toBe("GLM-5.2 · low");
+    });
+
+    test("does not apply Reviewer's variant to a critic's own model", () => {
+        const config = configWith([
+            [AGENT_IDS.reviewer, { model: gpt4o.id, variant: "high" }],
+            [AGENT_IDS.reviewRisk, { model: glm.id }],
+        ]);
+
+        expect(describeSelection(config, AGENT_IDS.reviewRisk, models)).toBe("GLM-5.2 · Default");
     });
 
     test("keeps unknown saved models visible by id", () => {
