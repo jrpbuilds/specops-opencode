@@ -42,14 +42,41 @@ Startup: read `specops_status`; run `specops-explorer` only when the next action
 4. One specialist invocation handles each feasible artifact with a structured per-dispatch payload: dispatch id; dispatch output path (OpenSpec `resolvedOutputPath`/`outputPath`); optional role hint; completed dependency output paths as prerequisites; skipped-artifact ids to ignore as do-not-read/do-not-author. Ids and paths come only from `openspec status` and `openspec instructions <id> --change <change>`, never hardcoded artifact names or SpecOps filenames. Fan-out means one planner invocation per artifact.
    Reconciliation re-dispatches may add optional `revisionTarget` (triggering artifact id) and `upstreamFeedback` (evidence); omit or leave both empty on first-pass forward-pipeline dispatches. Keep all other fields unchanged.
 5. Satisfied closure plus `isPlanningComplete: true` or absent flag permits mode-specific plan policy; `false` with satisfied closure is BLOCKED. No feasible artifact is BLOCKED.
-6. Approval → `specops-implementer`; re-read before `specops-reviewer`; PASS/FAIL follows mode-specific lifecycle policy.
+6. Approval → `specops-implementer`; after implementation and the review validation gate, enter the `## Review phase`; the final `specops-reviewer` PASS/FAIL follows mode-specific lifecycle policy.
 
 The workflow never skips planning or apply-readiness (and, after apply, independent review). Planning artifacts are exactly those declared by the schema; no fixed four-file set.
 
 ## Validation gates
 
 - Before dispatching planner or designer to author or revise any planning artifact, call `specops_validate_change` for the active change. If it returns `{valid: false, …}`, do not dispatch; surface the blocking error and remediation.
-- Before dispatching reviewer for PASS verdict, call `specops_validate_change` for the active change. If it returns `{valid: false, …}`, block the review and route the violations back to the implementer as findings.
+- Before dispatching the review fan-out, call `specops_validate_change` for the active change. If it returns `{valid: false, …}`, block the review and route the violations back to the implementer as findings. The fan-out and final Reviewer use this already-validated change; do not add a second validation call between them.
+
+## Review phase
+
+After implementation completes and the validation gate passes, run the three independent review critics before dispatching the final Reviewer. Track this phase in current working context using the tested `createReviewFanout(maxSubagentConcurrency)` contract, as with the rolling planning scheduler; do not persist fan-out state.
+
+- `specops-review-correctness`, `specops-review-risk`, and `specops-review-quality` are immediately eligible and independent. Dispatch the critics returned by the fan-out contract through `task`, respecting `maxSubagentConcurrency`; when one critic completes, apply its handoff gate and fill the freed slot without waiting for a fixed wave.
+- Give each critic only the current change name, original goal, relevant prior findings, relevant scoped Project Context, and its focused review instruction. Do not hardcode a fixed proposal/specs/design/tasks read set; OpenSpec-declared context remains the source for approved intent. Never pass one critic's report to another.
+- A normal critic return must contain its complete critique; record the final message verbatim. For this critic-specific contract, the complete critique is the required handoff: do not require the generic specialist handoff envelope or a PASS/FAIL verdict, because critics are deliberately non-final. A malformed return with no complete critique uses the existing bounded recovery rule: resume the same completed Task once with the prior session id, then record `fail` if the return is still malformed. A genuine Task execution error (`state=error` with no completed work) also records `fail` and is never resumed as if it had completed.
+- A failed critic permanently closes the final-review fan-in gate, but does not cancel active siblings or prevent remaining pending critics from being dispatched and completing safely. Continue handling those critics, then stop the review phase as `BLOCKED` with the failed critic id, session id, and concrete failure. Never dispatch `specops-reviewer` with a partial report set.
+- Dispatch `specops-reviewer` only after all three critics complete successfully. Pass their reports verbatim in canonical order under this envelope:
+
+    ```text
+    ## Specialist evidence
+
+    ### specops-review-correctness
+    <verbatim report>
+
+    ### specops-review-risk
+    <verbatim report>
+
+    ### specops-review-quality
+    <verbatim report>
+    ```
+
+    The Reviewer treats these reports as evidence, not votes or authority; it remains the sole owner of the compliance matrix and PASS/FAIL verdict.
+
+- On remediation re-review, reset the fan-out state in current working context and run the complete critic fan-out again. Then pass the new reports verbatim to the Reviewer together with the prior `F1..Fn` findings verbatim and the explicit remediation re-review instruction. Never run only a subset of critics on re-review.
 
 ## Reconciling revised planning artifacts
 

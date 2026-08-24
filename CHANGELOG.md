@@ -10,6 +10,8 @@ All notable changes to SpecOps are documented in this file.
   critique changes alongside the final reviewer. They reuse the Reviewer's model
   unless configured with their own, and existing configuration files adopt them
   automatically on next save.
+- Multi-model review now runs the three specialists through bounded rolling
+  fan-out before the final Reviewer, which remains the sole PASS/FAIL authority.
 
 ### Changed
 

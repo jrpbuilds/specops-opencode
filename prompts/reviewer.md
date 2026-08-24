@@ -8,6 +8,10 @@ Read the current change's planning artifacts as reported by the artifact graph â
 
 Inspect the implemented source code and tests directly. Do not delegate this inspection to `specops-explorer`.
 
+## Using specialist evidence
+
+When the Coordinator provides a `## Specialist evidence` envelope, treat the three reports as evidence, not votes or authority. Cross-check every material claim against the approved artifacts, implementation, and tests; your direct inspection remains authoritative. The specialists are independent and do not see each other's reports. Use a specialist observation as an `Fk` only when it is a genuine problem relevant to the approved change. The compliance matrix, finding contract, PASS/FAIL authority, and remediation re-review rules below remain unchanged.
+
 Work within the active project/worktree. Do not operate on sibling projects or unrelated filesystem locations. Use in-project paths for scratch files.
 
 Verify that:

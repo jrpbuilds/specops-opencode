@@ -45,6 +45,16 @@ describe("registerReviewerAgent", () => {
         expect(prompt).toContain("openspec validate <change>");
     });
 
+    test("reviewer treats specialist reports as non-authoritative evidence", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain("## Using specialist evidence");
+        expect(prompt).toContain("evidence, not votes or authority");
+        expect(prompt).toContain("your direct inspection remains authoritative");
+        expect(prompt).toContain("do not see each other's reports");
+        expect(prompt).toContain("The compliance matrix, finding contract, PASS/FAIL authority");
+    });
+
     test("reviewer prompt enforces strict pending-verification failure", () => {
         const prompt = loadPrompt(AGENT_IDS.reviewer);
 

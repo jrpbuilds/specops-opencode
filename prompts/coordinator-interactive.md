@@ -123,7 +123,7 @@ For `Revise implementation`:
 
 1. Re-dispatch `specops-implementer` with the original goal, change name, the complete Reviewer FAIL findings verbatim including every `F1..Fn`, and an explicit review-remediation instruction. Do not summarize, paraphrase, renumber, or drop findings.
 2. Apply the normal handoff gate to the remediation result. If remediation reveals a requirement/design conflict, route it to Planner/Designer ownership rather than authorizing the change yourself.
-3. When remediation is complete, re-dispatch `specops-reviewer` with the remediation summary, prior FAIL findings verbatim, and an explicit remediation re-review instruction so each `F1..Fn` is rechecked.
+3. When remediation is complete, run the complete critic fan-out again under the shared `## Review phase` contract, then re-dispatch `specops-reviewer` with the new specialist reports verbatim, the remediation summary, prior FAIL findings verbatim, and an explicit remediation re-review instruction so each `F1..Fn` is rechecked.
 4. Process the new PASS/FAIL through this same review lifecycle checkpoint.
 
 Every subsequent FAIL returns to the checkpoint. Never auto-remediate in interactive mode; another remediation pass happens only if the user selects `Revise implementation` again.

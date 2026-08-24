@@ -200,6 +200,40 @@ describe("shared coordinator contract", () => {
         expect(prompt).toContain("Coordinate; do not perform specialist work yourself");
     });
 
+    test("defines rolling critic fan-out and guarded final fan-in", () => {
+        const start = prompt.indexOf("## Review phase");
+        const end = prompt.indexOf("## Reconciling revised planning artifacts", start);
+        const section = prompt.slice(start, end);
+
+        expect(section).toContain("createReviewFanout(maxSubagentConcurrency)");
+        expect(section).toContain("specops-review-correctness");
+        expect(section).toContain("specops-review-risk");
+        expect(section).toContain("specops-review-quality");
+        expect(section).toContain("without waiting for a fixed wave");
+        expect(section).toContain("complete critique is the required handoff");
+        expect(section).toContain("do not require the generic specialist handoff envelope");
+        expect(section).toContain("resume the same completed Task once");
+        expect(section).toContain("state=error");
+        expect(section).toContain("pending critics from being dispatched");
+        expect(section).toContain("Never dispatch `specops-reviewer` with a partial report set");
+        expect(section).toContain("## Specialist evidence");
+        expect(section).toContain("reports verbatim");
+        expect(section).toContain("prior `F1..Fn` findings verbatim");
+    });
+
+    test("keeps review critics terminal and non-final", () => {
+        for (const id of [
+            AGENT_IDS.reviewCorrectness,
+            AGENT_IDS.reviewRisk,
+            AGENT_IDS.reviewQuality,
+        ]) {
+            const specialistPrompt = loadPrompt(id);
+            expect(specialistPrompt).toContain("## Terminal return");
+            expect(specialistPrompt).toContain("complete critique is your final assistant message");
+            expect(specialistPrompt).toContain("forwards this message verbatim");
+        }
+    });
+
     test("defines one delegation contract and scoped Project Context", () => {
         expect(prompt).toContain("## Delegation contract");
         expect(prompt).toContain("user's original goal");
