@@ -29,7 +29,7 @@ export function describeSelection(
  * Resolve the staged concurrency setting while supporting older config shapes.
  *
  * @param config Staged configuration being displayed.
- * @returns The configured limit, defaulting to two planning subagents.
+ * @returns The configured limit, defaulting to two concurrent SpecOps specialist subagents.
  */
 export function effectiveConcurrency(config: SpecOpsConfig): number {
     return config.maxSubagentConcurrency ?? 2;

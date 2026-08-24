@@ -18,22 +18,22 @@ Apply the same conditional Explorer-dispatch rule as the shared coordinator cont
 
 ## Autonomous planning batches
 
-Use `maxSubagentConcurrency` with
-`nextBatch(freshStatus, maxSubagentConcurrency)`. Dispatch returned
-routes concurrently under the global cap. Scheduler enforces
-`applyRequires`/transitive `requires` closure. Dependencies never share a batch.
+`maxSubagentConcurrency` is maximum number of concurrently active SpecOps specialist subagents.
+`createRollingScheduler` dispatches concurrently under cap; dependencies never share dispatch.
 
-If repository evidence required, run at most one initial `specops-explorer` pass per
-batch and share scoped Project Context. Focused follow-up Explorer questions
-remain available to members.
+Rolling refill starts a newly eligible route after any single completion; never
+wait for an entire wave to drain. Completion: handoff gate, `complete`, fresh
+`specops_status` (never reuse a snapshot), then `dispatch` free slots.
 
-Handoff gate per result; batch membership changes no ownership. `USER DECISION
-REQUIRED`, `FRONTIER ELIGIBLE BLOCKER`, and execution errors route as serial.
-Never retry or roll back a batch: successful siblings stand and only an affected
-artifact pending again is re-routed. Read `specops_status` fresh before every
-next batch, never reusing the snapshot. Reconciliation uses this scheduler
-and limit, so independent artifacts share a batch while dependent/conflicting
-revisions stay ordered by closure.
+Siblings stand; reroute pending only; never retry/rollback. `USER DECISION REQUIRED`, reconciliation conflicts,
+`FRONTIER ELIGIBLE BLOCKER` handling, and unrecoverable execution errors suspend
+new dispatches without cancelling active siblings; siblings handoff. Resolve
+serial conditions by autonomous rules; resume fresh, no question.
+
+Empty `dispatch`: no free slot/suspension, not terminal blocker.
+Reconciliation uses scheduler/limit: independent share; dependent/conflicting
+stay ordered. At most one initial `specops-explorer` pass uses shared Project
+Context; focused follow-ups.
 
 ## Autonomous reconciliation
 

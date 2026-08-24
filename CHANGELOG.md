@@ -2,6 +2,12 @@
 
 All notable changes to SpecOps are documented in this file.
 
+## [v1.5.0] - unreleased
+
+### Changed
+
+- Planning batches now use rolling bounded scheduling, so independent OpenSpec artifacts start as soon as a slot frees instead of waiting for a full wave to drain.
+
 ## [v1.4.0] - 2026-08-23
 
 ### Changed

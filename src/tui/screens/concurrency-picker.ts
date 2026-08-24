@@ -20,7 +20,7 @@ export function openConcurrencyPicker(session: EditorSession, nav: EditorNavigat
             options: SUBAGENT_CONCURRENCY_OPTIONS.map(value => ({
                 title: String(value),
                 value,
-                description: `Allow up to ${value} planning subagents at once`,
+                description: `Up to ${value} concurrently active SpecOps specialist subagents`,
             })),
             onSelect: option => {
                 staged.maxSubagentConcurrency = Number(option.value);

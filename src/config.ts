@@ -19,8 +19,9 @@ export type AgentConfig = { model?: string; variant?: string };
  *
  * Validation requires one entry for every `AgentId`; individual entries may
  * omit `model` to inherit OpenCode's global default. `frontierEscalation` is
- * normalized to `false`, and `maxSubagentConcurrency` to `2`, when loading an
- * older configuration without those fields.
+ * normalized to `false`, and `maxSubagentConcurrency` (the maximum concurrently
+ * active SpecOps specialist subagents) to `2`, when loading an older
+ * configuration without those fields.
  */
 export type SpecOpsConfig = {
     agents: Record<AgentId, AgentConfig>;
@@ -40,7 +41,7 @@ export const DEFAULT_CONFIG: SpecOpsConfig = {
     maxSubagentConcurrency: 2,
 };
 
-/** Concurrency values accepted for parallel planning batches. */
+/** Concurrency values accepted for concurrently active SpecOps specialist subagents. */
 const ALLOWED_SUBAGENT_CONCURRENCY = new Set([1, 2, 4, 8]);
 
 /**

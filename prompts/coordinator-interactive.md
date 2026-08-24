@@ -43,22 +43,21 @@ Apply the conditional Explorer-dispatch rule from the shared coordinator contrac
 
 ## Planning batches
 
-Use `maxSubagentConcurrency` with
-`nextBatch(freshStatus, maxSubagentConcurrency)`. Dispatch returned
-routes concurrently under the global cap. Scheduler enforces
-`applyRequires`/transitive `requires` closure. Dependencies never share a batch.
+`maxSubagentConcurrency`: maximum number of concurrently active SpecOps specialist subagents. `createRollingScheduler` caps concurrent dispatch; dependencies never share dispatch.
 
-If repository evidence required, run at most one initial `specops-explorer` pass per
-batch and share scoped Project Context. Focused follow-up Explorer questions
-remain available to members.
+Rolling refill starts newly eligible route after any single completion; never
+wait for an entire wave to drain. Completion: handoff gate, complete, fresh
+specops_status (no snapshot reuse), then dispatch free slots.
 
-Handoff gate per result; batch membership changes no ownership. `USER DECISION
-REQUIRED`, `FRONTIER ELIGIBLE BLOCKER`, and execution errors route as serial.
-Never retry or roll back a batch: successful siblings stand and only an affected
-artifact pending again is re-routed. Read `specops_status` fresh before every
-next batch, never reusing the snapshot. Reconciliation uses this scheduler
-and limit, so independent artifacts share a batch while dependent/conflicting
-revisions stay ordered by closure.
+Successful siblings stand; reroute pending only; never retry/rollback. `USER DECISION REQUIRED`, reconciliation conflicts,
+`FRONTIER ELIGIBLE BLOCKER` handling, and unrecoverable execution errors suspend
+new dispatches without cancelling active siblings; siblings handoff; resume
+fresh durable state.
+
+Empty `dispatch`: no free slot/suspension, not terminal blocker.
+Reconciliation reuses scheduler/limit: independent share;
+dependent/conflicting stay ordered. At most one initial `specops-explorer` pass
+uses shared Project Context; focused follow-ups.
 
 ## Intent-change decision
 
