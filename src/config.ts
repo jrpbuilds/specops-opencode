@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { AGENT_IDS, ALL_AGENT_IDS, type AgentId } from "./agents/ids.js";
+import { ROLE_META, type RoleMeta } from "./agents/roles.js";
 import { isRecord } from "./openspec/helpers.js";
 
 /**
@@ -49,11 +50,11 @@ export const DEFAULT_CONFIG: SpecOpsConfig = {
     maxAutoReviewIterations: DEFAULT_AUTO_REVIEW_ITERATIONS,
 };
 
-const REVIEW_SPECIALIST_IDS = new Set<AgentId>([
-    AGENT_IDS.reviewCorrectness,
-    AGENT_IDS.reviewRisk,
-    AGENT_IDS.reviewQuality,
-]);
+const REVIEW_SPECIALIST_IDS = new Set<AgentId>(
+    ALL_AGENT_IDS.filter(
+        id => (ROLE_META[id] as RoleMeta).inheritsModelFrom === AGENT_IDS.reviewer,
+    ),
+);
 
 /** Return a non-blank configuration field, preserving its stored value. */
 function nonBlank(value: string | undefined): string | undefined {

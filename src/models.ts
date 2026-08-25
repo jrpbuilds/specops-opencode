@@ -1,19 +1,11 @@
-import { AGENT_IDS, ALL_AGENT_IDS, type AgentId } from "./agents/ids.js";
+import { ALL_AGENT_IDS, type AgentId } from "./agents/ids.js";
+import { ROLE_META } from "./agents/roles.js";
 import type { AgentConfig, SpecOpsConfig } from "./config.js";
 
-/** Friendly per-role names shown in the configuration editor. */
-const AGENT_DISPLAY_NAMES: Record<AgentId, string> = {
-    [AGENT_IDS.coordinator]: "Coordinator",
-    [AGENT_IDS.explorer]: "Explorer",
-    [AGENT_IDS.planner]: "Planner",
-    [AGENT_IDS.designer]: "Designer",
-    [AGENT_IDS.implementer]: "Implementer",
-    [AGENT_IDS.reviewCorrectness]: "Review - Correctness",
-    [AGENT_IDS.reviewRisk]: "Review - Risk",
-    [AGENT_IDS.reviewQuality]: "Review - Quality",
-    [AGENT_IDS.reviewer]: "Reviewer",
-    [AGENT_IDS.frontier]: "Frontier",
-};
+/** Friendly per-role names shown in the configuration editor, derived from the registry. */
+const AGENT_DISPLAY_NAMES = Object.fromEntries(
+    ALL_AGENT_IDS.map(id => [id, ROLE_META[id].displayName]),
+) as Record<AgentId, string>;
 
 /**
  * A normalized OpenCode model exposed to the SpecOps configuration editor.

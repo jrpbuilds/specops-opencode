@@ -1,21 +1,13 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { AGENT_IDS, type AgentId } from "./agents/ids.js";
+import { ALL_AGENT_IDS, type AgentId } from "./agents/ids.js";
+import { ROLE_META } from "./agents/roles.js";
 
-/** Packaged prompt file backing each configurable role. */
-const PROMPT_FILES: Partial<Record<AgentId, string>> = {
-    [AGENT_IDS.coordinator]: "coordinator.md",
-    [AGENT_IDS.explorer]: "explorer.md",
-    [AGENT_IDS.planner]: "planner.md",
-    [AGENT_IDS.designer]: "designer.md",
-    [AGENT_IDS.implementer]: "implementer.md",
-    [AGENT_IDS.reviewCorrectness]: "review-correctness.md",
-    [AGENT_IDS.reviewRisk]: "review-risk.md",
-    [AGENT_IDS.reviewQuality]: "review-quality.md",
-    [AGENT_IDS.reviewer]: "reviewer.md",
-    [AGENT_IDS.frontier]: "frontier.md",
-};
+/** Packaged prompt file backing each configurable role, derived from the registry. */
+const PROMPT_FILES = Object.fromEntries(
+    ALL_AGENT_IDS.map(id => [id, ROLE_META[id].promptFile]),
+) as Record<AgentId, string>;
 
 /** Packaged prompts directory, resolved relative to the compiled module. */
 const PROMPTS_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "prompts");
@@ -44,7 +36,7 @@ function promptPath(id: AgentId): string {
  */
 export function loadPrompt(id: AgentId): string {
     const prompt = resolveIncludes(readFileSync(promptPath(id), "utf8"), PROMPTS_DIR);
-    const file = PROMPT_FILES[id]!;
+    const file = PROMPT_FILES[id];
     if (!prompt.trim()) throw new Error(`SpecOps prompt is empty: ${file}`);
     return prompt;
 }
