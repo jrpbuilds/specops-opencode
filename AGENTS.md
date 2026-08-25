@@ -1,23 +1,39 @@
 # AGENTS.md
 
-Keep the code simple, readable, and easy to follow.
+## Code
 
-Use clear function and variable names so the code mostly explains itself.
+- Keep changes small, readable, and easy to follow.
+- Use clear names so the code explains itself.
+- Add docblocks for functions and classes when they clarify non-obvious behavior,
+  side effects, or important constraints.
+- Add inline comments only to explain why something is necessary. Do not comment
+  on code that is already self-explanatory.
+- Preserve existing behavior and configuration compatibility unless the change
+  explicitly requires otherwise.
 
-Add docblocks to functions/classes that provide useful context, especially for non-obvious behaviour, side effects, or important constraints.
+## Tests and Verification
 
-Add inline comments only where something needs explanation. Prefer comments that explain **why** rather than narrating what the code already makes obvious.
+- Add tests that protect meaningful user-visible behavior and catch regressions;
+  do not add tests solely to improve coverage numbers or satisfy a statistic.
+- Cover compatibility and failure paths when they are part of the behavior being
+  changed.
+- Run the focused tests while iterating. Before declaring implementation work
+  complete, run `bun run typecheck`, `bun run lint`, and `bun run format:check`.
+- Run `bun run test:packed` when changing package entry points, bundled files, or
+  runtime assets. Prefer `bun run check` before a release or push.
 
-Do not add comments or documentation just for the sake of it.
+## Changelog Entries
 
-## Changelog entries
+- Write brief, plain-language release notes focused on the user's benefit.
+- Each entry should describe one addition, change, or fix in one concise sentence
+  or two short lines.
+- Avoid internal implementation details, file paths, test results, architecture,
+  internal names, and long rationale.
+- Do not include issue numbers, pull request numbers, links, commit hashes, or
+  other tracking references. Keep that context in commits and pull requests.
 
-Write short, user-facing release notes. Each entry should briefly describe one
-addition, change, or fix and its user-visible benefit. Avoid internal
-implementation details, file paths, test results, architecture, and long
-rationale. Keep entries to one concise sentence or two short lines, and include
-an issue reference when relevant.
+## Formatting
 
-## Formatting before commit
-
-Run `bun run format` and verify `bun run format:check` passes before staging a commit or pushing. Never commit or push changes that fail the Prettier check.
+- Run `bun run format` after editing code or documentation.
+- Verify `bun run format:check` passes before staging, committing, or pushing.
+- Never commit or push changes that fail the Prettier check.
