@@ -95,7 +95,9 @@ describe("SpecOps server plugin", () => {
                     template: "$ARGUMENTS",
                 });
                 expect(Object.keys(hooks.tool ?? {}).sort()).toEqual([
+                    "specops_apply_instructions",
                     "specops_archive",
+                    "specops_archive_instructions",
                     "specops_config",
                     "specops_context",
                     "specops_create_change",

@@ -110,9 +110,9 @@ For FAIL, use header `Review needs attention` and question `The reviewer found b
 
 The selected option is the archive/lifecycle confirmation; do not ask again.
 
-- PASS → `Complete and archive`: call `specops_archive` once with the current change name. Report success (including archived-as name/path) or the concrete tool failure; do not retry or use a filesystem fallback.
+- PASS → `Complete and archive`: call `specops_archive` once with current change after `specops_archive_instructions`; pass context/guidance advisory. Report archived-as/path or failure; do not retry or use a filesystem fallback.
 - PASS → `Leave open`: acknowledge briefly and stop.
-- FAIL → `Archive despite findings`: call `specops_archive` once. This overrides only the SpecOps verdict; preserve the findings. Report success/failure and stop.
+- FAIL → `Archive despite findings`: call `specops_archive` once after `specops_archive_instructions`; pass context/guidance advisory. Override verdict, preserve findings, report result.
 - FAIL → `Leave open`: acknowledge briefly and stop.
 - FAIL → `Address findings`: run review remediation below.
 

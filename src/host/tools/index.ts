@@ -1,5 +1,7 @@
 import type { ToolDefinition } from "@opencode-ai/plugin/tool";
 import { archiveTool } from "./archive.js";
+import { archiveInstructionsTool } from "./archive-instructions.js";
+import { applyInstructionsTool } from "./apply-instructions.js";
 import { configTool } from "./config.js";
 import { contextTool } from "./context.js";
 import { createChangeTool } from "./create-change.js";
@@ -15,6 +17,8 @@ import { validateChangeTool } from "./validate-change.js";
  */
 export const TOOLS: Record<string, ToolDefinition> = {
     specops_archive: archiveTool,
+    specops_archive_instructions: archiveInstructionsTool,
+    specops_apply_instructions: applyInstructionsTool,
     specops_config: configTool,
     specops_context: contextTool,
     specops_create_change: createChangeTool,

@@ -1,6 +1,8 @@
 import type { ToolContext, ToolDefinition } from "@opencode-ai/plugin/tool";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { archiveTool } from "../../src/host/tools/archive.js";
+import { archiveInstructionsTool } from "../../src/host/tools/archive-instructions.js";
+import { applyInstructionsTool } from "../../src/host/tools/apply-instructions.js";
 import { configTool } from "../../src/host/tools/config.js";
 import { contextTool } from "../../src/host/tools/context.js";
 import { createChangeTool } from "../../src/host/tools/create-change.js";
@@ -30,6 +32,18 @@ const LIFECYCLE_TOOLS: Array<{
         definition: archiveTool,
         args: { change: "example" },
         metadataTitle: "Archiving OpenSpec change…",
+    },
+    {
+        id: "specops_archive_instructions",
+        definition: archiveInstructionsTool,
+        args: { change: "example" },
+        metadataTitle: "Reading OpenSpec archive instructions…",
+    },
+    {
+        id: "specops_apply_instructions",
+        definition: applyInstructionsTool,
+        args: { change: "example" },
+        metadataTitle: "Reading OpenSpec apply instructions…",
     },
     {
         id: "specops_config",
@@ -173,7 +187,9 @@ describe("lifecycle tool integration", () => {
             const hooks = await SpecOpsPlugin(pluginInput(directory));
 
             expect(Object.keys(hooks.tool ?? {}).sort()).toEqual([
+                "specops_apply_instructions",
                 "specops_archive",
+                "specops_archive_instructions",
                 "specops_config",
                 "specops_context",
                 "specops_create_change",

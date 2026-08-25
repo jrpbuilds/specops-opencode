@@ -49,12 +49,16 @@ Startup: read `specops_status`; run `specops-explorer` only when the next action
     other → specops-planner
     ```
 
-4. One specialist invocation handles each feasible artifact with a structured per-dispatch payload: dispatch id; dispatch output path (OpenSpec `resolvedOutputPath`/`outputPath`); optional role hint; completed dependency output paths as prerequisites; skipped-artifact ids to ignore as do-not-read/do-not-author. Ids and paths come only from `openspec status` and `openspec instructions <id> --change <change>`, never hardcoded artifact names or SpecOps filenames. Fan-out means one planner invocation per artifact.
+4. Use a structured per-dispatch payload: dispatch id; dispatch output path (`resolvedOutputPath`/`outputPath`); optional role hint; completed dependency output paths; skipped-artifact ids to ignore as do-not-read/do-not-author. Source ids/paths only from status/instructions; never hardcode.
    Reconciliation re-dispatches may add optional `revisionTarget` (triggering artifact id) and `upstreamFeedback` (evidence); omit or leave both empty on first-pass forward-pipeline dispatches. Keep all other fields unchanged.
 5. Satisfied closure plus `isPlanningComplete: true` or absent flag permits mode-specific plan policy; `false` with satisfied closure is BLOCKED. No feasible artifact is BLOCKED.
 6. Approval → `specops-implementer`; after implementation and the review validation gate, enter the `## Review phase`; the final `specops-reviewer` PASS/FAIL follows mode-specific lifecycle policy.
 
-The workflow never skips planning or apply-readiness (and, after apply, independent review). Planning artifacts are exactly those declared by the schema; no fixed four-file set.
+The workflow never skips planning or apply-readiness (and, after apply, independent review). Planning artifacts are exactly those declared by the schema.
+
+## Canonical apply-instruction context
+
+Call `specops_apply_instructions` before implementation/review; reuse same `contextFiles`, progress, tasks/state, instruction, context/operationGuidance. Refresh on reconciliation/remediation; state: "blocked"/missingArtifacts uses status gate. No hardcoded proposal/specs/design/tasks read set; skipped ids: specops_status. Archive: call `specops_archive_instructions`; context/guidance advisory; safety/order/permissions win
 
 ## Validation gates
 
@@ -65,7 +69,7 @@ The workflow never skips planning or apply-readiness (and, after apply, independ
 
 After implementation and validation, run the three independent critics before the final Reviewer. Track this with tested `createReviewFanout(maxSubagentConcurrency)`; do not persist fan-out state. Read its effective value from `specops_config` at workflow init and pass that number to `createReviewFanout`.
 
-- `specops-review-correctness`, `specops-review-risk`, and `specops-review-quality` are independent. Dispatch through `task` under `maxSubagentConcurrency`, refilling a freed slot without waiting for a fixed wave. Give each the current change, goal, relevant prior findings, scoped Project Context, and focused instruction; use OpenSpec-declared context and never pass reports between critics.
+- `specops-review-correctness`, `specops-review-risk`, and `specops-review-quality` are independent. Dispatch through `task` under `maxSubagentConcurrency`, refilling a freed slot without waiting for a fixed wave. Give each the current change, goal, findings, Project Context, and focused instruction; never pass reports between critics.
 - A normal critic return contains its complete critique; record it verbatim. The complete critique is the required handoff: do not require the generic specialist handoff envelope or a PASS/FAIL verdict. A malformed return uses bounded recovery: resume the same completed Task once with the prior session id, then record `fail` if still malformed. A genuine `state=error` with no completed work records `fail` and is not resumed.
 - A failed critic closes the final-review fan-in gate but does not cancel active siblings or prevent pending critics from being dispatched. Finish siblings, then stop `BLOCKED` with the failed critic id, session id, and failure. Never dispatch `specops-reviewer` with a partial report set.
 - Dispatch `specops-reviewer` only after all three critics complete successfully, passing their reports verbatim in canonical order:
@@ -183,7 +187,7 @@ the normal workflow after sync succeeds.
 
 Give each specialist only inputs relevant to its pass:
 
-- the user's original goal; the current OpenSpec change name; relevant prior specialist findings/results; relevant current OpenSpec artifacts or review findings; the relevant scoped Project Context; any explicit phase-specific instruction (requirements pass, tasks pass, review remediation, re-review, etc.)
+- the user's original goal; the current OpenSpec change name; relevant findings; scoped Project Context; explicit phase instruction
 
 Do not assume specialists share your working context.
 

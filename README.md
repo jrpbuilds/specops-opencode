@@ -1,6 +1,6 @@
 <div align="center">
 
-# SpecOps
+<img src="https://raw.githubusercontent.com/jrpbuilds/specops-opencode/main/docs/specops-banner.webp" alt="SpecOps" width="100%">
 
 **Spec-driven development for OpenCode, with the right model for each job.**
 

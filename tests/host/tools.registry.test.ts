@@ -13,6 +13,16 @@ const EXPECTED_TOOLS = [
         args: ["change"],
     },
     {
+        id: "specops_archive_instructions",
+        description: "Read normalized OpenSpec archive instructions for a named change.",
+        args: ["change"],
+    },
+    {
+        id: "specops_apply_instructions",
+        description: "Read normalized OpenSpec apply instructions for a named change.",
+        args: ["change"],
+    },
+    {
         id: "specops_config",
         description:
             "Read the effective SpecOps configuration snapshot for the current OpenCode process.",

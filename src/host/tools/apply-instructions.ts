@@ -1,0 +1,19 @@
+import { tool } from "@opencode-ai/plugin/tool";
+import { getApplyInstructions } from "../../openspec/apply-instructions.js";
+import { applyInstructions } from "../../tools/apply-instructions.js";
+import { requireLifecyclePermission } from "../lifecycle-permission.js";
+
+/** Expose canonical OpenSpec apply instructions through the coordinator-only tool surface. */
+export const applyInstructionsTool = tool({
+    description: "Read normalized OpenSpec apply instructions for a named change.",
+    args: {
+        change: tool.schema.string(),
+    },
+    async execute(args, context) {
+        await requireLifecyclePermission(context, "specops_apply_instructions");
+        context.metadata({ title: "Reading OpenSpec apply instructions…" });
+        return applyInstructions(args.change, {
+            getApplyInstructions: change => getApplyInstructions(change, context.directory),
+        });
+    },
+});

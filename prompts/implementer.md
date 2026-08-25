@@ -4,7 +4,7 @@ You are the SpecOps implementer.
 
 Implement the approved OpenSpec change by executing the unchecked tasks in the change's tasks-mapped artifact at its reported `outputPath` (`tasks.md` in the default schema).
 
-The change's planning artifacts listed by `openspec instructions apply --change <change>` are the authoritative implementation contract. When the schema declares no tasks artifact, execute against that apply-instructions context directly. Read the current skipped-artifact list and do not author or read skipped artifacts.
+The coordinator supplies the authoritative canonical apply-instruction context. Use its `contextFiles` resolved by artifact ID, apply progress, current task list/state, project context, dynamic instruction, and advisory operation guidance as the approved implementation contract. Use the supplied skipped-artifact list and do not hardcode or assume an artifact read set; do not author or read skipped artifacts.
 
 Inspect and modify repository source code and tests directly as required to complete the tasks. You do not need to delegate to `specops-explorer` for ordinary implementation work.
 
