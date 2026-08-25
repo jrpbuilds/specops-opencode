@@ -136,7 +136,7 @@ describe("SpecOps Configure save flow", () => {
                 ).toMatchObject({
                     title: "Concurrent subagents",
                     category: "Options",
-                    footer: "2",
+                    footer: "1",
                 });
                 expect(
                     initialOptions?.find(option => option.value === "__concurrent_subagents__")
@@ -208,7 +208,7 @@ describe("SpecOps Configure save flow", () => {
 
                 fake.selectByValue("__concurrent_subagents__");
                 expect(fake.currentDialog()?.title).toBe("Concurrent subagents");
-                expect(fake.currentDialog()?.current).toBe(2);
+                expect(fake.currentDialog()?.current).toBe(1);
                 expect(fake.currentDialog()?.options?.map(option => option.value)).toEqual([
                     1, 2, 3, 4, 5, 6, 7, 8,
                 ]);

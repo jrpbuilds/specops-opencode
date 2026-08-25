@@ -1,5 +1,9 @@
 import { ALL_AGENT_IDS, type AgentId } from "../agents/ids.js";
-import { resolveAgentMapping, type SpecOpsConfig } from "../config.js";
+import {
+    DEFAULT_SUBAGENT_CONCURRENCY,
+    resolveAgentMapping,
+    type SpecOpsConfig,
+} from "../config.js";
 import type { ConfiguredModel } from "../models.js";
 
 /**
@@ -37,10 +41,10 @@ function formatSelection(
  * Resolve the staged concurrency setting while supporting older config shapes.
  *
  * @param config Staged configuration being displayed.
- * @returns The configured limit, defaulting to two concurrent SpecOps specialist subagents.
+ * @returns The configured limit, defaulting to one concurrent SpecOps specialist subagent.
  */
 export function effectiveConcurrency(config: SpecOpsConfig): number {
-    return config.maxSubagentConcurrency ?? 2;
+    return config.maxSubagentConcurrency ?? DEFAULT_SUBAGENT_CONCURRENCY;
 }
 
 /**

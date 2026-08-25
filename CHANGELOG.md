@@ -10,8 +10,11 @@ All notable changes to SpecOps are documented in this file.
 - Reviews now combine feedback from three independent specialists before the final review decision.
 - SpecOps Auto can now retry failed reviews for a configurable number of correction cycles and reports the remaining findings when its budget is exhausted.
 - Added a coordinator-only `specops_config` tool so coordinators can read the effective SpecOps settings without them being baked into prompts.
+- Expanded the documentation into a full user guide covering setup, how it works, configuration, model choices, commands, and troubleshooting.
 
 ### Changed
+
+- Specialists now run one at a time by default; enable parallel subagents in Configure or `specops.json` when you want them to overlap.
 
 - Coordinators now state their restricted tool boundary up front, so models route repository evidence and OpenSpec lifecycle work to the right tools on the first attempt instead of discovering the restriction through failed calls.
 - Standard mode now routes review findings to the right correction path instead of always sending them straight to implementation.

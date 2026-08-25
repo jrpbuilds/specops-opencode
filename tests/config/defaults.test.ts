@@ -30,8 +30,8 @@ describe("DEFAULT_CONFIG", () => {
         expect(DEFAULT_CONFIG.frontierEscalation).toBe(false);
     });
 
-    test("uses two concurrent subagents by default", () => {
-        expect(DEFAULT_CONFIG.maxSubagentConcurrency).toBe(2);
+    test("runs one concurrent subagent by default", () => {
+        expect(DEFAULT_CONFIG.maxSubagentConcurrency).toBe(1);
     });
 
     test("allows three Auto review correction iterations by default", () => {

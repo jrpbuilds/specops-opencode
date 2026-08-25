@@ -20,7 +20,7 @@ export type AgentConfig = { model?: string; variant?: string };
  * Validation fills role entries missing from older configuration files with
  * empty mappings; individual entries may omit `model` to inherit OpenCode's
  * global default. `frontierEscalation` is normalized to `false`,
- * `maxSubagentConcurrency` (the maximum concurrent subagents) to `2`, and
+ * `maxSubagentConcurrency` (the maximum concurrent subagents) to `1`, and
  * `maxAutoReviewIterations` to `3` when loading an older configuration without
  * those fields.
  */
@@ -32,7 +32,7 @@ export type SpecOpsConfig = {
 };
 
 /** Default value used when `maxSubagentConcurrency` is omitted from a config. */
-export const DEFAULT_SUBAGENT_CONCURRENCY = 2;
+export const DEFAULT_SUBAGENT_CONCURRENCY = 1;
 /** Default value used when `maxAutoReviewIterations` is omitted from a config. */
 export const DEFAULT_AUTO_REVIEW_ITERATIONS = 3;
 
@@ -239,7 +239,7 @@ export function validateConfig(value: unknown): SpecOpsConfig {
             ALL_AGENT_IDS.map(id => [id, (entries[id] ?? {}) as AgentConfig]),
         ),
         frontierEscalation: value.frontierEscalation ?? false,
-        maxSubagentConcurrency: value.maxSubagentConcurrency ?? 2,
+        maxSubagentConcurrency: value.maxSubagentConcurrency ?? DEFAULT_SUBAGENT_CONCURRENCY,
         maxAutoReviewIterations: value.maxAutoReviewIterations ?? 3,
     } as SpecOpsConfig;
 

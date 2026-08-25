@@ -20,9 +20,20 @@ Give it a goal:
 /specops add a health endpoint with tests
 ```
 
-SpecOps coordinates specialist agents to investigate the repository, define the requirements, design the solution, plan the implementation, write the code, and independently review the result.
+SpecOps coordinates specialist agents to investigate the repository, define the requirements, design the solution, plan the implementation, write the code, and put the result through independent multi-model review before anything is archived.
 
 Each role can use a different model, while OpenSpec remains the durable source of truth for the change.
+
+## Documentation
+
+|                                                        |                                                     |
+| ------------------------------------------------------ | --------------------------------------------------- |
+| [Getting started](docs/getting-started.md)             | Install, first run, and your first completed change |
+| [How it works](docs/how-it-works.md)                   | The pipeline, the roles, Standard vs Auto           |
+| [Configuration](docs/configuration.md)                 | The Configure screen and `specops.json` reference   |
+| [Model recommendations](docs/model-recommendations.md) | Which model classes suit which roles                |
+| [Commands](docs/commands.md)                           | Every command explained                             |
+| [Troubleshooting](docs/troubleshooting.md)             | Doctor output, BLOCKED runs, common fixes           |
 
 ## Install
 
@@ -38,25 +49,11 @@ Install the OpenSpec CLI:
 npm install -g @fission-ai/openspec
 ```
 
-Then restart OpenCode.
-
-Check the installation:
+Then restart OpenCode and check everything with:
 
 ```text
 /specops-doctor
 ```
-
-`/specops-doctor` checks the installed OpenSpec CLI before trusting its JSON
-responses. SpecOps targets the latest OpenSpec version and probes the required
-read-only command capabilities with `--help`. Older versions whose capability
-probes still pass work too — only a genuine capability gap (a probe that fails)
-is reported as an incompatible-install state with remediation. If you upgrade
-the CLI later, just run `/specops-doctor` again.
-
-SpecOps also validates the active change with the positional command
-`openspec validate <change> --strict --json` before planning artifacts are
-authored or a review can pass. Validation is scoped to the active change, so
-unrelated changes do not block the workflow.
 
 ## Getting started
 
@@ -66,192 +63,84 @@ Open a project and give SpecOps a goal:
 /specops improve the API error responses and add coverage for the new behaviour
 ```
 
-SpecOps automatically initialises OpenSpec on first use.
+SpecOps automatically initialises OpenSpec on first use. You can also initialise explicitly with `/specops-onboard`.
 
-You can also initialise it explicitly:
-
-```text
-/specops-onboard
-```
+You approve the plan before implementation starts, and decide what happens after review. For fully autonomous runs, use `/specops-auto`.
 
 ## How it works
 
-The default `spec-driven` schema typically routes a change through these roles; custom schemas may declare a different artifact graph.
+The coordinator routes your change through specialist agents, then reviews the finished work from three independent perspectives before a final verdict:
 
-```text
-/specops <goal>
-      │
-      ▼
-  Coordinator
-      │
-      ├── Explorer      repository investigation
-      ├── Planner       proposal + specifications
-      ├── Designer      technical design
-      ├── Planner       implementation tasks
-      ├── Implementer   source + tests
-      └── Reviewer      independent verification
+```mermaid
+flowchart TD
+    A[PLAN] --> B[IMPLEMENT]
+    B --> C1[review-correctness]
+    B --> C2[review-risk]
+    B --> C3[review-quality]
+    C1 --> D[specops-reviewer<br/>FINAL AUTHORITY]
+    C2 --> D
+    C3 --> D
+    D --> E{PASS / FAIL}
+    E -->|PASS| F[Lifecycle]
+    E -->|FAIL| G[Find earliest incorrect layer]
+    G --> H[Planning]
+    G --> I[Implementation]
+    H --> J[Planner / Designer]
+    I --> K[Implementer]
+    J --> L[IMPLEMENT]
+    K --> L
+    L --> C1
+    L --> C2
+    L --> C3
 ```
 
-In the default `spec-driven` schema, a typical change produces normal OpenSpec artifacts:
+A Reviewer FAIL is routed to the earliest incorrect layer — implementation, design, or requirements — corrected there, and the complete review pipeline runs again. See [How it works](docs/how-it-works.md) for the full story.
 
-```text
-openspec/changes/<change>/
-├── proposal.md
-├── specs/
-├── design.md
-└── tasks.md
-```
+SpecOps maintains no parallel state machine: all state lives in OpenSpec artifacts under `openspec/changes/<change>/`, so custom schemas and interrupted changes resume naturally.
 
-SpecOps maintains no parallel state machine because the coordinator derives the next step from OpenSpec's own artifact graph via the `specops_status` tool plus task checkbox state, so custom schemas and interrupted changes resume naturally.
-
-The plugin itself stays deliberately small:
-
-- **Models** handle reasoning and orchestration.
-- **OpenSpec** owns durable change state.
-- **TypeScript** handles deterministic plugin operations.
-- **Specialist agents** stay focused on their assigned role.
-
-### Internal agents
-
-The `specops-*` specialist agents (`specops-explorer`, `specops-planner`,
-`specops-designer`, `specops-implementer`, `specops-reviewer`, and, when
-enabled, `specops-frontier`) are internal to the SpecOps workflow. Only the
-`SpecOps` and `SpecOps Auto` coordinators may dispatch them; other OpenCode
-agents cannot invoke them, and they are hidden from the `@` autocomplete menu.
-They cannot themselves delegate to further subagents.
-
-Coordinator agents have native edit tools disabled and may use the shell only
-for `openspec --help` lookups. Ordinary OpenCode primary agents can use the
-user-facing `specops_doctor` and `specops_onboard` tools, while OpenSpec context,
-change creation, archive operations, and the `specops_config` effective-settings
-view remain Coordinator-owned.
+The specialist agents (`specops-explorer`, `specops-planner`, `specops-designer`, `specops-implementer`, `specops-reviewer`, the three review specialists, and optionally `specops-frontier`) are internal to SpecOps: only its coordinators can dispatch them, they are hidden from OpenCode's `@` menu, and coordinators themselves never edit files.
 
 ## Model configuration
 
-Open the OpenCode command palette with `Ctrl+P` and select:
+Open the command palette (`Ctrl+P`), choose **SpecOps Configure**, and map any of the ten roles — coordinator, explorer, planner, designer, implementer, reviewer, three review specialists, and frontier — to their own model and reasoning variant.
 
-```text
-SpecOps Configure
-```
-
-Models and reasoning variants can be configured independently for:
-
-- Coordinator
-- Explorer
-- Planner
-- Designer
-- Implementer
-- Reviewer
-- Frontier
-
-Configuration is stored at:
-
-```text
-~/.config/opencode/specops.json
-```
-
-or the equivalent `$XDG_CONFIG_HOME/opencode/specops.json`.
-
-Example:
+Configuration lives at `~/.config/opencode/specops.json`:
 
 ```json
 {
     "frontierEscalation": false,
-    "maxSubagentConcurrency": 2,
+    "maxSubagentConcurrency": 1,
     "maxAutoReviewIterations": 3,
     "agents": {
-        "specops-coordinator": {
-            "model": "opencode-go/deepseek-v4-flash",
-            "variant": "high"
-        },
-        "specops-explorer": {
-            "model": "openference/Qwen3.7 Plus",
-            "variant": "medium"
-        },
-        "specops-planner": {
-            "model": "openai/gpt-5.6-terra",
-            "variant": "high"
-        },
-        "specops-designer": {
-            "model": "openference/GLM-5.2",
-            "variant": "max"
-        },
-        "specops-implementer": {
-            "model": "openference/Kimi K2.7 Code",
-            "variant": "thinking"
-        },
-        "specops-reviewer": {
-            "model": "openference/DeepSeek-V4-Pro",
-            "variant": "high"
-        },
-        "specops-frontier": {
-            "model": "openai/gpt-5.6-sol",
-            "variant": "high"
-        }
+        "specops-coordinator": { "model": "opencode-go/deepseek-v4-flash", "variant": "high" },
+        "specops-planner": { "model": "openai/gpt-5.6-terra", "variant": "high" },
+        "specops-reviewer": { "model": "openference/DeepSeek-V4-Pro", "variant": "high" }
     }
 }
 ```
 
-Leave a role unset to inherit OpenCode's default model.
+Unset roles inherit OpenCode's default; review specialists without their own entry inherit the Reviewer's model. Specialists run **one at a time by default** — raise `maxSubagentConcurrency` (Configure offers 1–8) to parallelise planning routes and the review fan-out. Auto's correction budget defaults to 3 cycles. Both accept larger finite values set directly in the file.
 
-`frontierEscalation` controls whether the Frontier agent is registered. Changing it requires restarting OpenCode.
-
-`maxSubagentConcurrency` controls the maximum number of parallel SpecOps subagents, and `maxAutoReviewIterations` controls how many correction/re-review cycles Auto may run after its initial review. Both accept any positive integer when set directly in `specops.json`. The Configure screen offers `maxSubagentConcurrency` from 1 to 8 and `maxAutoReviewIterations` from 1 to 3, preserving larger manually configured values.
+For the complete `specops.json` with all ten roles mapped, see [Configuration](docs/configuration.md#where-configuration-lives); for choosing which models go where, see [Model recommendations](docs/model-recommendations.md).
 
 ## Commands
 
-### `/specops <goal>`
+| Command                      | Purpose                                                                |
+| ---------------------------- | ---------------------------------------------------------------------- |
+| `/specops <goal>`            | Start or resume a change in Standard mode                              |
+| `/specops-auto <goal>`       | Fully autonomous run ending in `COMPLETED` or `BLOCKED`                |
+| `/specops-update <feedback>` | Revise the active change in place                                      |
+| `/specops-sync [<change>]`   | Merge an active change's delta specs into main specs without archiving |
+| `/specops-onboard`           | Initialise OpenSpec in the current project                             |
+| `/specops-doctor`            | Diagnose installation, OpenSpec, configuration, and models             |
 
-Starts or resumes a SpecOps change.
-
-```text
-/specops stop the background animation when the game is over
-```
-
-### `/specops-auto <goal>`
-
-Runs the workflow autonomously without human checkpoints and finishes with a terminal `COMPLETED` or `BLOCKED` report.
-
-Useful for headless runs:
-
-```bash
-opencode run --auto --command specops-auto "<goal>"
-```
-
-### `/specops-update <revision>`
-
-Revises an active change in place from a goal:
-
-```text
-/specops-update <revision>
-```
-
-The workflow resumes the active change, determines the owning artifact, dispatches the owning specialist with feedback verbatim, reconciles the revision, and re-presents the plan checkpoint if the effective plan changed. (issue #11)
-
-### `/specops-sync`
-
-Synchronizes an active change's delta specs into the main specs without
-archiving it. Use it when a parallel change needs to build on newly defined
-specs, or when you want to review the merged main spec before archive. Archive
-remains the right path once the change is finished and ready to be finalized.
-
-### `/specops-onboard`
-
-Initialises OpenSpec in the current project.
-
-### `/specops-doctor`
-
-Checks the SpecOps installation, OpenSpec availability, project state, configuration, and configured models.
+Headless example: `opencode run --auto --command specops-auto "<goal>"` — see [Commands](docs/commands.md).
 
 ## Engram (optional)
 
-SpecOps works without Engram.
+SpecOps works without Engram. For cross-session project memory, you can optionally run the [Engram](https://github.com/Gentleman-Programming/engram) MCP server so agents can consult past decisions and project conventions.
 
-For cross-session project memory, you can optionally use the [Engram](https://github.com/Gentleman-Programming/engram) MCP server. SpecOps agents may use it for historical architectural decisions, conventions, previous discoveries, and project-specific context.
-
-Engram is contextual memory only. Current user instructions, OpenSpec artifacts, repository state, and executed evidence always take precedence.
-
-Install Engram using its [installation guide](https://github.com/Gentleman-Programming/engram/blob/main/docs/INSTALLATION.md), then follow its [OpenCode setup](https://github.com/Gentleman-Programming/engram/blob/main/docs/AGENT-SETUP.md).
+Engram is contextual memory only. Current user instructions, OpenSpec artifacts, repository state, and executed evidence always take precedence. See its [installation guide](https://github.com/Gentleman-Programming/engram/blob/main/docs/INSTALLATION.md) and [OpenCode setup](https://github.com/Gentleman-Programming/engram/blob/main/docs/AGENT-SETUP.md).
 
 ## Example
 
@@ -274,10 +163,7 @@ SpecOps uses Bun and TypeScript throughout.
 
 ## Status
 
-SpecOps v1.0.0 is released and being dogfooded against real software changes.
-The v1.0.0 milestone delivers schema-aware planning specialists, status-routed
-coordinator orchestration, and the `specops_status` lifecycle tool. Post-1.0
-work is tracked in the [issue tracker](https://github.com/jrpbuilds/specops-opencode/issues).
+Actively developed and dogfooded against real software changes. Roadmap and open work are tracked in the [issue tracker](https://github.com/jrpbuilds/specops-opencode/issues).
 
 > Make structured multi-model software development useful without building another workflow engine.
 

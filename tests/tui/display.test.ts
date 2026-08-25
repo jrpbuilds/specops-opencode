@@ -46,10 +46,10 @@ describe("effectiveConcurrency", () => {
         expect(effectiveConcurrency(configWith([], { maxSubagentConcurrency: 8 }))).toBe(8);
     });
 
-    test("defaults to two for older configurations without the field", () => {
+    test("defaults to one for older configurations without the field", () => {
         expect(
             effectiveConcurrency({ agents: configWith().agents, frontierEscalation: false }),
-        ).toBe(2);
+        ).toBe(1);
     });
 });
 

@@ -126,7 +126,7 @@ describe("loadConfig", () => {
         });
     });
 
-    test("loads an older config without concurrency as 2", async () => {
+    test("loads an older config without concurrency as serial", async () => {
         await withTempDir(async dir => {
             const destination = configPath(dir);
             await writeFile(
@@ -134,7 +134,7 @@ describe("loadConfig", () => {
                 JSON.stringify({ agents: DEFAULT_CONFIG.agents, frontierEscalation: false }),
                 "utf8",
             );
-            expect((await loadConfig(destination)).maxSubagentConcurrency).toBe(2);
+            expect((await loadConfig(destination)).maxSubagentConcurrency).toBe(1);
             expect((await loadConfig(destination)).maxAutoReviewIterations).toBe(3);
         });
     });
