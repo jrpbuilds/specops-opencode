@@ -1,4 +1,5 @@
 import { tool } from "@opencode-ai/plugin/tool";
+import { countChangeDeltas } from "../../openspec/deltas.js";
 import { validateChange as runOpenSpecValidation } from "../../openspec/validate.js";
 import { validateChange } from "../../tools/validate-change.js";
 import { requireLifecyclePermission } from "../lifecycle-permission.js";
@@ -20,7 +21,9 @@ function assertValidateChangeArgs(args: unknown): asserts args is { change: stri
 
 /** Expose the scoped validation gate to coordinator agents. */
 export const validateChangeTool = tool({
-    description: "Validate one active OpenSpec change with strict, change-scoped validation.",
+    description:
+        "Validate one active OpenSpec change with strict, change-scoped validation. " +
+        "Reports planningIncomplete: true when the failure only reflects missing first-pass deltas.",
     args: {
         change: tool.schema.string(),
     },
@@ -30,6 +33,7 @@ export const validateChangeTool = tool({
         context.metadata({ title: "Validating OpenSpec change…" });
         const result = await validateChange(args.change, {
             validateChange: change => runOpenSpecValidation(change, context.directory),
+            countDeltas: change => countChangeDeltas(change, context.directory),
         });
         return JSON.stringify(result);
     },

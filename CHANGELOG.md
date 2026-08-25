@@ -24,6 +24,7 @@ All notable changes to SpecOps are documented in this file.
 - Advanced users can set concurrency above 8 and Auto review iterations above 3 directly in `specops.json`; Configure continues to offer concurrency from 1 to 8 and Auto review iterations from 1 to 3.
 - Shared coordinator rules (Explorer dispatch, planning batches, decision envelopes, review re-runs, and archiving) now live in one place, so Standard and Auto modes can no longer drift apart on how they follow them.
 - Role display names, prompt assets, and review model fallbacks now share one source of truth, so catalogues can no longer drift when roles change.
+- Fresh changes now report as planning-incomplete instead of failing validation while their first capability specifications are still being written, so new planning runs no longer stall on spurious "no deltas" errors.
 
 ## [v1.4.0] - 2026-08-23
 

@@ -4,6 +4,7 @@ export type OpenSpecErrorCode =
     | "OPENSPEC_INCOMPATIBLE"
     | "OPENSPEC_MALFORMED_RESPONSE"
     | "OPENSPEC_OUTPUT_PATH_INVALID"
+    | "OPENSPEC_PLANNING_INCOMPLETE"
     | "OPENSPEC_VALIDATION_FAILED";
 
 /**
@@ -56,6 +57,14 @@ export function formatRemediation(
                 `${code}: ${wrapper} returned unusable output path \"${path}\"`,
                 "Fix:",
                 `  1. Run \`openspec instructions ${details.id ?? "<id>"} --change ${change}\` manually to regenerate the instructions, then retry.`,
+            ].join("\n");
+        case "OPENSPEC_PLANNING_INCOMPLETE":
+            return [
+                `${code}: ${change} has no requirement deltas yet`,
+                "This is expected while first-pass planning artifacts are still being authored, not a validation failure.",
+                "Fix:",
+                `  1. Continue planning: author the remaining proposal and capability specifications for ${change}.`,
+                `  2. Re-run \`openspec validate ${change} --strict\` once the capability specifications exist.`,
             ].join("\n");
         case "OPENSPEC_VALIDATION_FAILED":
             return [

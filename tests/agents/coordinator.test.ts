@@ -97,8 +97,11 @@ describe("coordinator prompt composition", () => {
         // Budget raised from 33k to 34k for issue #34: single-sourced shared
         // contract fragments expand into each assembled prompt with slightly more
         // explicit canonical wording than the mode-specific shorthand they replaced.
-        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(34_000);
-        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(34_000);
+        // Budget raised from 34k to 35k for the fresh-change validation gate:
+        // specops_validate_change now distinguishes planningIncomplete so first-pass
+        // authoring dispatches proceed instead of deadlocking on missing deltas.
+        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(35_000);
+        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(35_000);
     });
 });
 

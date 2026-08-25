@@ -30,8 +30,9 @@ function context(): ToolContext {
 
 function deps(
     result: Awaited<ReturnType<ValidateChangeDeps["validateChange"]>>,
+    countDeltas: ValidateChangeDeps["countDeltas"] = async () => 1,
 ): ValidateChangeDeps {
-    return { validateChange: async () => result };
+    return { validateChange: async () => result, countDeltas };
 }
 
 function outputOf(result: Awaited<ReturnType<typeof validateChangeTool.execute>>): string {
@@ -56,6 +57,35 @@ describe("validateChange tool adapter", () => {
             expect(result.remediation).toContain("OPENSPEC_VALIDATION_FAILED");
             expect(result.remediation).toContain("tasks.md: missing checkbox");
             expect(result.remediation).toContain("openspec validate example --strict");
+        }
+    });
+
+    test("classifies a failure with zero deltas as expected mid-planning state", async () => {
+        const issues = [
+            { level: "error", path: "file", message: "Change must have at least one delta." },
+        ];
+        const result = await validateChange(
+            "example",
+            deps({ valid: false, issues }, async () => 0),
+        );
+        expect(result).toMatchObject({ valid: false, planningIncomplete: true, issues });
+        if (!result.valid) {
+            expect(result.remediation).toContain("OPENSPEC_PLANNING_INCOMPLETE");
+            expect(result.remediation).not.toContain("OPENSPEC_VALIDATION_FAILED");
+        }
+    });
+
+    test("keeps the blocking classification when delta counting fails", async () => {
+        const result = await validateChange(
+            "example",
+            deps({ valid: false, issues: [] }, async () => {
+                throw new Error("openspec show exploded");
+            }),
+        );
+        expect(result).toMatchObject({ valid: false });
+        expect("planningIncomplete" in result).toBe(false);
+        if (!result.valid) {
+            expect(result.remediation).toContain("OPENSPEC_VALIDATION_FAILED");
         }
     });
 
@@ -113,5 +143,48 @@ describe("validateChange tool adapter", () => {
             { level: "error", path: "proposal.md", message: "invalid" },
         ]);
         expect(result.remediation).toContain("OPENSPEC_VALIDATION_FAILED");
+    });
+
+    test("reports planningIncomplete through the real wrapper when no deltas exist", async () => {
+        const failedResponse = {
+            ...validResponse,
+            items: [
+                {
+                    ...validResponse.items[0],
+                    valid: false,
+                    issues: [
+                        {
+                            level: "error",
+                            path: "file",
+                            message: "Change must have at least one delta.",
+                        },
+                    ],
+                },
+            ],
+        };
+        spyOn(helpers, "runCaptureStdout").mockImplementation(async (_command, args) => {
+            if (args[0] === "show") {
+                return {
+                    stdout: JSON.stringify({
+                        id: "example",
+                        title: "Example",
+                        deltaCount: 0,
+                        deltas: [],
+                        root: { path: "/project", source: "nearest" },
+                    }),
+                    exitCode: 0,
+                };
+            }
+            return { stdout: JSON.stringify(failedResponse), exitCode: 1 };
+        });
+
+        const result = JSON.parse(
+            outputOf(await validateChangeTool.execute({ change: "example" }, context())),
+        );
+        expect(result).toMatchObject({
+            valid: false,
+            planningIncomplete: true,
+        });
+        expect(result.remediation).toContain("OPENSPEC_PLANNING_INCOMPLETE");
     });
 });

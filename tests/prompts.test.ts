@@ -336,3 +336,35 @@ describe("shared coordinator contract fragments (issue #34)", () => {
         },
     );
 });
+
+describe("fresh-change validation gate contract", () => {
+    function validationGatesSection(prompt: string): string {
+        const start = prompt.indexOf("## Validation gates");
+        expect(start).toBeGreaterThanOrEqual(0);
+        const end = prompt.indexOf("## ", start + 3);
+        expect(end).toBeGreaterThan(start);
+        return prompt.slice(start, end);
+    }
+
+    test("shared coordinator dispatches normally while first-pass deltas are pending", () => {
+        const section = validationGatesSection(loadPrompt(AGENT_IDS.coordinator));
+        expect(section).toContain("`{planningIncomplete: true}`");
+        expect(section).toContain("dispatch normally");
+        expect(section).toMatch(/Any other `\{valid: false, …\}` blocks/);
+    });
+
+    test.each(["interactive", "auto"] as const)(
+        "%s coordinator keeps incomplete planning out of review",
+        mode => {
+            const section = validationGatesSection(buildCoordinatorPrompt(mode, false));
+            expect(section).toContain("can never pass review");
+        },
+    );
+
+    test("planner skips validation until every required capability specification exists", () => {
+        const prompt = loadSpecialistPrompt("planner");
+        expect(prompt).toContain("do not run `openspec validate <change>`");
+        expect(prompt).toContain('"no deltas found"');
+        expect(prompt).toContain("expected mid-planning");
+    });
+});

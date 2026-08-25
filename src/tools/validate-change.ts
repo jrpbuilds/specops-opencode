@@ -6,13 +6,25 @@ export type ValidateChangeResult =
     | { valid: true; issues: [] }
     | {
           valid: false;
+          planningIncomplete: true;
+          issues: ChangeValidation["issues"];
+          remediation: string;
+      }
+    | {
+          valid: false;
           issues: ChangeValidation["issues"];
           remediation: string;
       };
 
-/** Dependency boundary keeping validation deterministic and host-free. */
+/**
+ * Dependency boundary keeping validation deterministic and host-free.
+ *
+ * `countDeltas` classifies a failed change as mid-planning when its parsed
+ * delta count is zero; failures of the counter itself fall back to blocking.
+ */
 export type ValidateChangeDeps = {
     validateChange: (change: string) => Promise<ChangeValidation>;
+    countDeltas: (change: string) => Promise<number>;
 };
 
 /** Run scoped strict validation and attach the standard remediation on failure. */
@@ -22,14 +34,26 @@ export async function validateChange(
 ): Promise<ValidateChangeResult> {
     assertChangeName(change);
     try {
-        const result = await deps.validateChange(change.trim());
+        const trimmed = change.trim();
+        const result = await deps.validateChange(trimmed);
         if (result.valid) return { valid: true, issues: [] };
+
+        if (await isPlanningIncomplete(trimmed, deps)) {
+            return {
+                valid: false,
+                planningIncomplete: true,
+                issues: result.issues,
+                remediation: formatRemediation("OPENSPEC_PLANNING_INCOMPLETE", {
+                    change: trimmed,
+                }),
+            };
+        }
 
         return {
             valid: false,
             issues: result.issues,
             remediation: formatRemediation("OPENSPEC_VALIDATION_FAILED", {
-                change: change.trim(),
+                change: trimmed,
                 issues: formatIssues(result.issues),
             }),
         };
@@ -49,6 +73,22 @@ export async function validateChange(
                 issues: formatIssues(issues),
             }),
         };
+    }
+}
+
+/**
+ * Whether a failing change only lacks first-pass deltas.
+ *
+ * Zero parsed deltas means strict validation cannot pass yet by design, so
+ * the failure is reported as expected mid-planning state. A broken or
+ * malformed count must never soften a real violation, so any error here
+ * keeps the blocking classification.
+ */
+async function isPlanningIncomplete(change: string, deps: ValidateChangeDeps): Promise<boolean> {
+    try {
+        return (await deps.countDeltas(change)) === 0;
+    } catch {
+        return false;
     }
 }
 

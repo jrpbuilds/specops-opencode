@@ -51,7 +51,7 @@ Preserve completed artifacts unless the coordinator explicitly returns them for 
 Do not author artifacts outside the dispatched set during this pass, including design-role or task-planning artifacts.
 Do not make technical design decisions.
 
-After the proposal and required capability specifications are complete, run `openspec validate <change>` to confirm they are well-formed, then return a concise summary to the coordinator immediately in the standard SpecOps handoff envelope (see ## Handoff). If you are returning a USER DECISION REQUIRED request instead, do so immediately without authoring partial artifacts. Do not continue into technical design or task authoring during this pass.
+After the proposal and required capability specifications are complete, run `openspec validate <change>` to confirm they are well-formed, then return a concise summary to the coordinator immediately in the standard SpecOps handoff envelope (see ## Handoff). When this pass did not author every required capability specification (and none are skipped), do not run `openspec validate <change>`: it fails with "no deltas found" until those specs exist, which is expected mid-planning rather than a failure — just return the summary. If you are returning a USER DECISION REQUIRED request instead, do so immediately without authoring partial artifacts. Do not continue into technical design or task authoring during this pass.
 
 ## Task planning
 

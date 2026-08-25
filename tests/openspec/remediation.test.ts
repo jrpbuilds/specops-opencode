@@ -22,6 +22,11 @@ describe("formatRemediation", () => {
         ["OPENSPEC_MALFORMED_RESPONSE", "resolvedOutputPath", "openspec-compatibility"],
         ["OPENSPEC_OUTPUT_PATH_INVALID", "/missing/output.md", "openspec instructions proposal"],
         [
+            "OPENSPEC_PLANNING_INCOMPLETE",
+            "no requirement deltas yet",
+            "openspec validate example --strict",
+        ],
+        [
             "OPENSPEC_VALIDATION_FAILED",
             "tasks.md: missing checkbox",
             "openspec validate example --strict",

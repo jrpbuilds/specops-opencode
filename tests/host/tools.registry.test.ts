@@ -58,7 +58,9 @@ const EXPECTED_TOOLS = [
     },
     {
         id: "specops_validate_change",
-        description: "Validate one active OpenSpec change with strict, change-scoped validation.",
+        description:
+            "Validate one active OpenSpec change with strict, change-scoped validation. " +
+            "Reports planningIncomplete: true when the failure only reflects missing first-pass deltas.",
         args: ["change"],
     },
 ];
