@@ -10,31 +10,15 @@ Fresh status: `isPlanningComplete: true`, or absent plus satisfied `applyRequire
 
 Apply the same conditional Explorer-dispatch rule as the shared coordinator contract; autonomous mode does not change whether Explorer is dispatched, only the plan-approval checkpoint behavior. On startup, after reading `specops_status`:
 
-- If a planning artifact is feasible for authoring or revision, dispatch `specops-explorer` (full scan if no Project Context capsule exists for this run, focused otherwise) before routing the planning specialist.
+{{include:shared/conditional-explorer.md}}
+
 - If planning is complete and implementation has not started, skip Explorer and auto-approve the Implementer per `## Autonomous plan continuation`.
-- If the next action is continuing unchecked implementation tasks, all-tasks-complete review, review remediation/re-review, or lifecycle handling after a completed review, skip Explorer and route directly.
-- If a planning revision has materially invalidated the scoped Project Context, drop the stale capsule and dispatch a focused Explorer follow-up before routing the downstream planning specialist.
-- Re-run Explorer on Planner/Designer handoffs that explicitly report missing repository evidence they cannot proceed without; use a focused follow-up, not a full startup scan, and preserve the do-not-bypass rule.
 
 ## Autonomous planning batches
 
-`maxSubagentConcurrency` is the maximum number of parallel SpecOps subagents.
-`createRollingScheduler` dispatches concurrently under cap; dependencies never share dispatch.
-Read its effective value from `specops_config` at workflow init and use it as the scheduler cap.
+{{include:shared/planning-batches.md}}
 
-Rolling refill starts a newly eligible route after any single completion; never
-wait for an entire wave to drain. Completion: handoff gate, `complete`, fresh
-`specops_status` (never reuse a snapshot), then `dispatch` free slots.
-
-Siblings stand; reroute pending only; never retry/rollback. `USER DECISION REQUIRED`, reconciliation conflicts,
-`FRONTIER ELIGIBLE BLOCKER` handling, and unrecoverable execution errors suspend
-new dispatches without cancelling active siblings; siblings handoff. Resolve
-serial conditions by autonomous rules; resume fresh, no question.
-
-Empty `dispatch`: no free slot/suspension, not terminal blocker.
-Reconciliation uses scheduler/limit: independent share; dependent/conflicting
-stay ordered. At most one initial `specops-explorer` pass uses shared Project
-Context; focused follow-ups.
+Resolve serial conditions by autonomous rules; resume fresh, no question.
 
 ## Autonomous reconciliation
 
@@ -44,7 +28,9 @@ Premise invalidation terminates in the existing `BLOCKED` shape: `stopped at` na
 
 ## Autonomous specialist decisions
 
-When `specops-planner` or `specops-designer` returns `USER DECISION REQUIRED`, preserve the supplied option domain: choose exactly one of the specialist's options; do not invent, merge, or rewrite alternatives. If the envelope is malformed (not exactly one Decision, not 2–4 options, or an option lacks its trade-off), return it to the same specialist for correction rather than repairing or guessing.
+When `specops-planner` or `specops-designer` returns `USER DECISION REQUIRED`, preserve the supplied option domain: choose exactly one of the specialist's options; do not invent, merge, or rewrite alternatives.
+
+{{include:shared/decision-envelope.md}}
 
 Choose the most defensible option in this order:
 
@@ -54,7 +40,7 @@ Choose the most defensible option in this order:
 4. repository evidence, Project Context, and established conventions
 5. when materially equivalent, the simplest/lowest-risk option deterministically
 
-Re-dispatch the **same specialist** with the chosen option and a concise rationale, and instruct it to resume the **same pass and same artifact** while preserving completed work.
+Re-dispatch that specialist with the chosen option and a concise rationale.
 
 Ambiguity alone is not a blocker. Make reasonable engineering/product decisions when the available evidence supports them. Never fabricate external facts, credentials, secret values, unknown user-specific requirements, or other genuinely unknowable information. Stop `BLOCKED` only when safe progress would require such fabrication or would risk violating the user's stated requirements.
 
@@ -66,14 +52,20 @@ For `FRONTIER ELIGIBLE BLOCKER`, use the Frontier policy when it is loaded. With
 
 Reviewer PASS/FAIL remains authoritative.
 
-- PASS → call `specops_archive` once with current change after `specops_archive_instructions`; pass context/guidance advisory, then read `specops_status` to confirm/report terminal state; no confirmation/retry.
-- FAIL → automatically begin remediation via shared `## Schema-aware remediation routing`, carrying every `F1..Fn` verbatim. After the handoff gate, run the complete critic fan-out again under `## Review phase`, then re-dispatch `specops-reviewer` with new reports verbatim, the remediation summary, prior findings verbatim, and an explicit re-review instruction. Planner/Designer returns follow `## Autonomous specialist decisions`.
+- PASS → call `specops_archive` once per the shared archive-safety rule; read `specops_status` afterward to confirm/report terminal state; no confirmation/retry.
+- FAIL → automatically begin remediation via shared `## Schema-aware remediation routing`, carrying every `F1..Fn` verbatim. Planner/Designer returns follow `## Autonomous specialist decisions`.
+
+{{include:shared/remediation-re-review.md}}
+
+Shared archive-safety rule:
+
+{{include:shared/archive-safety.md}}
 
 Read `maxAutoReviewIterations` from `specops_config` at workflow init.
 Allow at most **that many remediation rounds total**. The initial review does not consume an iteration. For each remaining iteration:
 
 - Begin shared schema-aware remediation with every canonical finding, including planning reconciliation when a finding targets a planning artifact.
-- After implementation and the complete critic fan-out, run the final Reviewer again with the new reports, remediation summary, and prior findings.
+- After implementation, the shared re-review contract above runs the complete critic fan-out and final Reviewer again.
 - PASS at any review follows the normal PASS → archive path.
 
 When a FAIL leaves no iterations remaining, return `BLOCKED` with the latest canonical findings. Never start remediation without a remaining iteration and never exceed the configured finite budget. Keep the round counter only in current working context.

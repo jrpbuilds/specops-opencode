@@ -260,3 +260,79 @@ describe("coordinator bash discipline contract", () => {
         expectBashDisciplineContract(buildCoordinatorPrompt("auto", true));
     });
 });
+
+describe("shared coordinator contract fragments (issue #34)", () => {
+    const PROMPTS_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "prompts");
+
+    // Each extracted cross-mode contract is single-sourced in a shared fragment.
+    // The anchor is wording unique to that contract so occurrence counting across
+    // the prompts tree catches accidental re-duplication in a mode appendix.
+    const SHARED_CONTRACTS = [
+        {
+            fragment: "conditional-explorer.md",
+            anchor: "full scan if no Project Context capsule exists",
+        },
+        {
+            fragment: "planning-batches.md",
+            anchor: "wait for an entire wave to drain",
+        },
+        {
+            fragment: "decision-envelope.md",
+            anchor: "not exactly one Decision, not 2–4 options",
+        },
+        {
+            fragment: "remediation-re-review.md",
+            anchor: "do not summarize, paraphrase, renumber, or drop findings",
+        },
+        {
+            fragment: "archive-safety.md",
+            anchor: "never use a filesystem fallback",
+        },
+    ] as const;
+
+    function listPromptFiles(directory: string = PROMPTS_DIR): string[] {
+        return readdirSync(directory, { recursive: true })
+            .map((entry: unknown) => String(entry))
+            .filter(entry => entry.endsWith(".md"))
+            .map(entry => path.join(directory, entry));
+    }
+
+    test("both mode appendices include every shared contract fragment by directive", async () => {
+        for (const mode of ["coordinator-interactive.md", "coordinator-auto.md"]) {
+            const content = await readFile(path.join(PROMPTS_DIR, mode), "utf8");
+            for (const { fragment } of SHARED_CONTRACTS) {
+                expect(content).toContain(`{{include:shared/${fragment}}}`);
+            }
+        }
+    });
+
+    test("extracted contracts stay single-source across the prompts tree", async () => {
+        const contents = await Promise.all(
+            listPromptFiles().map(async file => [file, await readFile(file, "utf8")] as const),
+        );
+
+        for (const { anchor } of SHARED_CONTRACTS) {
+            const occurrences = contents.reduce(
+                (count, [, content]) => count + content.split(anchor).length - 1,
+                0,
+            );
+            expect(occurrences).toBe(1);
+        }
+
+        // The single occurrence must live in the shared fragment itself.
+        for (const { fragment, anchor } of SHARED_CONTRACTS) {
+            const content = await readFile(path.join(PROMPTS_DIR, "shared", fragment), "utf8");
+            expect(content).toContain(anchor);
+        }
+    });
+
+    test.each(["interactive", "auto"] as const)(
+        "assembled %s coordinator exposes every shared contract",
+        mode => {
+            const prompt = buildCoordinatorPrompt(mode, false);
+            for (const { anchor } of SHARED_CONTRACTS) {
+                expect(prompt).toContain(anchor);
+            }
+        },
+    );
+});

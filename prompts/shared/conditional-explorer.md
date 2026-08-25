@@ -1,0 +1,4 @@
+- If a planning artifact is feasible for authoring or revision, dispatch `specops-explorer` (full scan if no Project Context capsule exists for this run, focused otherwise) before routing the planning specialist.
+- If the next action is continuing unchecked implementation tasks, all-tasks-complete review, review remediation/re-review, or lifecycle handling after a completed review, skip Explorer and route directly.
+- If a planning revision has materially invalidated the scoped Project Context, drop the stale capsule and dispatch a focused Explorer follow-up before routing the downstream planning specialist.
+- Re-run Explorer on Planner/Designer handoffs that explicitly report missing repository evidence they cannot proceed without; use a focused follow-up, not a full startup scan, and preserve the do-not-bypass rule.

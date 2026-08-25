@@ -82,7 +82,9 @@ try {
     assertEqual(
         Object.keys(hooks.tool).sort(),
         [
+            "specops_apply_instructions",
             "specops_archive",
+            "specops_archive_instructions",
             "specops_config",
             "specops_context",
             "specops_create_change",
@@ -156,6 +158,11 @@ try {
         "handoff-envelope.md",
         "frontier-eligible-blocker.md",
         "frontier-advice.md",
+        "conditional-explorer.md",
+        "planning-batches.md",
+        "decision-envelope.md",
+        "remediation-re-review.md",
+        "archive-safety.md",
     ]) {
         assert(
             (

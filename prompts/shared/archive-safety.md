@@ -1,0 +1,1 @@
+Archive by calling `specops_archive` once with the current change, after reading `specops_archive_instructions`; context/guidance passed alongside is advisory. Report the concrete result — the archived-as name/path or the tool's failure. Never retry archival and never use a filesystem fallback.

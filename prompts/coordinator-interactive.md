@@ -35,30 +35,13 @@ If user stops, leave active. Do not persist separate approval state.
 
 Apply the conditional Explorer-dispatch rule from the shared coordinator contract. On startup, after reading `specops_status`:
 
-- If a planning artifact is feasible for authoring or revision, dispatch `specops-explorer` (full scan if no Project Context capsule exists for this run, focused otherwise) before routing the planning specialist.
+{{include:shared/conditional-explorer.md}}
+
 - If the next action is the plan-approval checkpoint (implementation has not started) and no planning revision has invalidated the scoped Project Context, skip Explorer and present the plan checkpoint.
-- If the next action is continuing unchecked implementation tasks, all-tasks-complete review, review remediation/re-review, or lifecycle handling after a completed review, skip Explorer and route directly.
-- If a planning revision has materially invalidated the scoped Project Context, drop the stale capsule and dispatch a focused Explorer follow-up before routing the downstream planning specialist.
-- Re-run Explorer on Planner/Designer handoffs that explicitly report missing repository evidence they cannot proceed without; use a focused follow-up, not a full startup scan, and preserve the do-not-bypass rule.
 
 ## Planning batches
 
-`maxSubagentConcurrency`: maximum number of parallel SpecOps subagents. `createRollingScheduler` caps concurrent dispatch; dependencies never share dispatch.
-Read its effective value from `specops_config` at workflow init and use it as the scheduler cap.
-
-Rolling refill starts newly eligible route after any single completion; never
-wait for an entire wave to drain. Completion: handoff gate, complete, fresh
-specops_status (no snapshot reuse), then dispatch free slots.
-
-Successful siblings stand; reroute pending only; never retry/rollback. `USER DECISION REQUIRED`, reconciliation conflicts,
-`FRONTIER ELIGIBLE BLOCKER` handling, and unrecoverable execution errors suspend
-new dispatches without cancelling active siblings; siblings handoff; resume
-fresh durable state.
-
-Empty `dispatch`: no free slot/suspension, not terminal blocker.
-Reconciliation reuses scheduler/limit: independent share;
-dependent/conflicting stay ordered. At most one initial `specops-explorer` pass
-uses shared Project Context; focused follow-ups.
+{{include:shared/planning-batches.md}}
 
 ## Intent-change decision
 
@@ -68,16 +51,9 @@ Premise-invalidating feedback: surface a native single-select `question` with he
 
 Only `specops-planner` and `specops-designer` may return `USER DECISION REQUIRED`. Treat it as a blocking handoff and transport the specialist's decision envelope without reinterpretation.
 
-Preserve exactly:
+{{include:shared/decision-envelope.md}}
 
-- `Decision`
-- `Why it matters`
-- all 2–4 supplied options, in supplied order
-- every option's trade-off
-- `Recommendation`, when supplied
-- `Affected artifact`
-
-Do not add, remove, merge, reorder, rank, pre-select, or invent options. Do not use a recommendation to narrow the choice. When a Recommendation is supplied, it must identify the first supplied option; if it does not, return the envelope to the same specialist for correction rather than reordering it yourself. If the envelope is malformed (not exactly one Decision, not 2–4 options, or an option lacks its trade-off), return it to the same specialist for correction; do not repair or complete the option set yourself.
+Do not use a recommendation to narrow the choice. When a Recommendation is supplied, it must identify the first supplied option; if it does not, return the envelope to the same specialist for correction rather than reordering it yourself.
 
 Show the supplied `Why it matters` and `Affected artifact` as context, then invoke exactly one native single-select `question` and omit `multiple`:
 
@@ -89,7 +65,7 @@ Show the supplied `Why it matters` and `Affected artifact` as context, then invo
 - when a recommendation exists, append ` (Recommended)` to that first option's native label and leave its supplied trade-off unchanged
 - preserve the native custom-answer path; do not add a synthetic `none of the above` option
 
-Do not print or emulate a second selector in Markdown. Pass the selected label or custom answer back verbatim to the **same specialist**, with the change name, original goal, relevant prior context, and an instruction to resume the **same pass and same artifact** from where it stopped while preserving completed work.
+Do not print or emulate a second selector in Markdown. Pass the selected label or custom answer back verbatim to that specialist, with the change name, original goal, and relevant prior context, following the shared resume rule above.
 
 If another blocking decision appears after resume, handle it as a new single decision. Never batch separate decision envelopes. Do not persist the question/answer outside the OpenSpec artifact that records its resolved consequence.
 
@@ -110,11 +86,15 @@ For FAIL, use header `Review needs attention` and question `The reviewer found b
 
 The selected option is the archive/lifecycle confirmation; do not ask again.
 
-- PASS → `Complete and archive`: call `specops_archive` once with current change after `specops_archive_instructions`; pass context/guidance advisory. Report archived-as/path or failure; do not retry or use a filesystem fallback.
+- PASS → `Complete and archive`: archive per the shared archive-safety rule; report the archived-as name/path or the tool's concrete failure.
 - PASS → `Leave open`: acknowledge briefly and stop.
-- FAIL → `Archive despite findings`: call `specops_archive` once after `specops_archive_instructions`; pass context/guidance advisory. Override verdict, preserve findings, report result.
+- FAIL → `Archive despite findings`: archive per the shared archive-safety rule; override the verdict, preserve findings, report result.
 - FAIL → `Leave open`: acknowledge briefly and stop.
 - FAIL → `Address findings`: run review remediation below.
+
+Shared archive-safety rule:
+
+{{include:shared/archive-safety.md}}
 
 Do not persist the lifecycle choice.
 
@@ -122,10 +102,11 @@ Do not persist the lifecycle choice.
 
 shared `## Schema-aware remediation routing` (`prompts/coordinator.md`) handles Address/custom; no duplicate.
 
-- complete Reviewer FAIL findings verbatim; every `F1..Fn`; do not summarize, paraphrase, renumber, or drop findings.
 - FAIL custom answer → typed text travels verbatim alongside `F1..Fn` to owner; no paraphrase, summarization, or forced implementer routing.
 - Gate: `specops-planner`/`specops-designer` dispatch invalidates approval; re-present `Plan ready` (`## Plan checkpoint`) before implementation resumes; `specops-implementer`-only skips.
-- Full critic fan-out under `## Review phase`; re-dispatch `specops-reviewer` with new reports, remediation summary, prior FAIL findings verbatim, explicit re-review.
+
+{{include:shared/remediation-re-review.md}}
+
 - Process PASS/FAIL through this same review lifecycle checkpoint. Never auto-remediate in interactive mode; another pass requires explicit choice.
 
 ## Interactive update flow

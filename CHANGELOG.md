@@ -19,6 +19,7 @@ All notable changes to SpecOps are documented in this file.
 - The Configure screen now offers subagent limits from 1 to 8 with less clutter.
 - Review corrections now start at the earliest affected planning or implementation step, making complex fixes more reliable.
 - Advanced users can set concurrency above 8 and Auto review iterations above 3 directly in `specops.json`; Configure continues to offer concurrency from 1 to 8 and Auto review iterations from 1 to 3.
+- Shared coordinator rules (Explorer dispatch, planning batches, decision envelopes, review re-runs, and archiving) now live in one place, so Standard and Auto modes can no longer drift apart on how they follow them.
 
 ## [v1.4.0] - 2026-08-23
 

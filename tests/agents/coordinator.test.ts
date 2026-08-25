@@ -94,11 +94,11 @@ describe("coordinator prompt composition", () => {
 
     test("assembled prompts stay within regression budgets", () => {
         // Frontier-enabled variants are the largest assembled prompts for each mode.
-        // Budget raised from 32k to 33k for issue #39: coordinator prompts now
-        // instruct reading maxSubagentConcurrency and maxAutoReviewIterations from
-        // the specops_config tool, adding ~200 bytes over the prior cap.
-        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(33_000);
-        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(33_000);
+        // Budget raised from 33k to 34k for issue #34: single-sourced shared
+        // contract fragments expand into each assembled prompt with slightly more
+        // explicit canonical wording than the mode-specific shorthand they replaced.
+        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(34_000);
+        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(34_000);
     });
 });
 
@@ -483,8 +483,8 @@ describe("interactive coordinator contract", () => {
         expect(section).toContain(
             "The selected option is the archive/lifecycle confirmation; do not ask again",
         );
-        expect(section).toContain("call `specops_archive` once");
-        expect(section).toContain("do not retry or use a filesystem fallback");
+        expect(section).toContain("`specops_archive` once");
+        expect(section).toContain("never use a filesystem fallback");
     });
 
     test("keeps interactive remediation user-controlled and lossless", () => {
@@ -494,7 +494,7 @@ describe("interactive coordinator contract", () => {
         expect(section).toContain("every `F1..Fn`");
         expect(section).toContain("do not summarize, paraphrase, renumber, or drop findings");
         expect(section).toContain("re-dispatch `specops-reviewer`");
-        expect(section).toContain("prior FAIL findings verbatim");
+        expect(section).toContain("prior findings verbatim");
         expect(section).toContain("same review lifecycle checkpoint");
         expect(section).toContain("Never auto-remediate in interactive mode");
         expect(section).toContain("another pass requires explicit choice");
@@ -608,7 +608,7 @@ describe("interactive coordinator contract", () => {
         expect(remediation).toContain("re-present `Plan ready`");
         expect(remediation).toContain("specops-implementer`-only skips");
         expect(remediation.indexOf("specops-implementer`-only skips")).toBeLessThan(
-            remediation.indexOf("Full critic fan-out"),
+            remediation.indexOf("complete critic fan-out"),
         );
 
         expect(plan).toContain("header: `Plan ready`");
@@ -633,11 +633,11 @@ describe("interactive coordinator contract", () => {
             "## Interactive update flow",
         );
 
-        expect(remediation).toContain("Full critic fan-out under `## Review phase`");
+        expect(remediation).toContain("complete critic fan-out again under `## Review phase`");
         expect(remediation).toContain("re-dispatch `specops-reviewer`");
         expect(remediation).toContain("new reports");
         expect(remediation).toContain("remediation summary");
-        expect(remediation).toContain("prior FAIL findings verbatim");
+        expect(remediation).toContain("prior findings verbatim");
         expect(remediation).toContain("explicit re-review");
         expect(remediation).toContain("this same review lifecycle checkpoint");
         expect(remediation).toContain("Never auto-remediate in interactive mode");
@@ -664,7 +664,7 @@ describe("interactive coordinator contract", () => {
         expect(checkpoint).toContain("`Complete and archive`");
         expect(checkpoint).toContain("`Leave open`");
         expect(checkpoint).toContain(
-            "FAIL → `Archive despite findings`: call `specops_archive` once",
+            "FAIL → `Archive despite findings`: archive per the shared archive-safety rule",
         );
         expect(checkpoint).toContain("FAIL → `Leave open`: acknowledge briefly and stop");
         expect(checkpoint).not.toContain(removedFailOption);
