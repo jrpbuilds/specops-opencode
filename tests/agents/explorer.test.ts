@@ -45,6 +45,16 @@ describe("registerExplorerAgent", () => {
         expect(prompt).toContain("Do not require the coordinator to resume your session");
     });
 
+    test("explorer follows a lightweight evidence path and labels uncertainty", () => {
+        const prompt = loadPrompt(AGENT_IDS.explorer);
+
+        expect(prompt).toContain(
+            "entrypoint → callers/dependencies → data/control flow → relevant contracts → tests/tooling → repository conventions → uncertainty",
+        );
+        expect(prompt).toContain("stopping when the evidence is sufficient and proportional");
+        expect(prompt).toContain("Clearly label inference, missing evidence");
+    });
+
     test("explorer prompt returns the standard handoff envelope before its findings", () => {
         const prompt = loadPrompt(AGENT_IDS.explorer);
 

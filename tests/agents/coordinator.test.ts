@@ -865,6 +865,11 @@ describe("Auto coordinator contract", () => {
             "Planner/Designer returns follow `## Autonomous specialist decisions`",
         );
         expect(section).toContain("complete critic fan-out again");
+        expect(section).toContain("root-cause-oriented remediation");
+        expect(section).toContain("fresh independent specialist critics");
+        expect(section).toContain("authoritative full re-review");
+        expect(section).toContain("each canonical finding remains independently verified");
+        expect(section).toContain("inspect the whole approved change for regressions");
         expect(section).toContain("Read `maxAutoReviewIterations` from `specops_config`");
         expect(section).toContain("at most **that many remediation rounds total**");
         expect(section).toContain("The initial review does not consume an iteration");

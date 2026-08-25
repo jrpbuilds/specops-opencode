@@ -55,6 +55,33 @@ describe("registerReviewerAgent", () => {
         expect(prompt).toContain("The compliance matrix, finding contract, PASS/FAIL authority");
     });
 
+    test("reviewer directly disposes specialist blocking candidates instead of counting votes", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain("Their `blocking candidate` labels do not determine materiality");
+        expect(prompt).toContain("accepted as a canonical `Fk`");
+        expect(prompt).toContain("merged into another `Fk`");
+        expect(prompt).toContain("downgraded to a sparse non-blocking observation");
+        expect(prompt).toContain("Give direct evidence for every downgrade or rejection");
+        expect(prompt).toContain("Specialist disposition:");
+        expect(prompt).toContain(
+            "Do not accept a claim merely because several specialists repeat it",
+        );
+    });
+
+    test("reviewer treats claims and broad checks as leads, not behavioural proof", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain("none is proof by assertion");
+        expect(prompt).toContain("actively try to falsify the implementation");
+        expect(prompt).toContain("directly exercises or proves that behaviour");
+        expect(prompt).toContain("A passing build, typecheck, lint, or unrelated test");
+        expect(prompt).toContain("it is not behavioural verification by default");
+        expect(prompt).toContain(
+            "A PASS must be defensible from direct, behaviour-relevant evidence",
+        );
+    });
+
     test("reviewer prompt enforces strict pending-verification failure", () => {
         const prompt = loadPrompt(AGENT_IDS.reviewer);
 
@@ -351,13 +378,14 @@ describe("registerReviewerAgent", () => {
     test("reviewer prompt restricts re-review scope and preserves the single verdict", () => {
         const prompt = loadPrompt(AGENT_IDS.reviewer);
 
-        expect(prompt).toContain("Do not rediscover unrelated stylistic issues");
+        expect(prompt).toContain("Perform a fresh full review of the current approved change");
+        expect(prompt).toContain("independently verify each prior finding");
+        expect(prompt).toContain("material approved-scope defects that earlier review missed");
+        expect(prompt).toContain("Do not report unrelated cleanup, subjective relitigation");
         expect(prompt).toContain("Do not relitigate a finding marked `RESOLVED`");
-        expect(prompt).toContain(
-            "Expand back to a broader full review only when the remediation materially changed scope",
-        );
-        expect(prompt).toContain("A new blocking `Fk` is allowed only when");
-        expect(prompt).toContain("re-verified against the delta");
+        expect(prompt).toContain("including one missed during initial review");
+        expect(prompt).toContain("continuing the existing numbering");
+        expect(prompt).toContain("Revalidate the complete compliance matrix");
         expect(prompt).toContain("The `REMEDIATION REVIEW` block is informational");
         expect(prompt).toContain("`PASS`/`FAIL` remains the only verdict");
     });

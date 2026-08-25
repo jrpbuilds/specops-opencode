@@ -140,10 +140,10 @@ describe("applyAgentDefinition translation", () => {
         registerReviewRiskAgent(config, specOpsConfig);
         registerReviewQualityAgent(config, specOpsConfig);
 
-        for (const [id, dimension] of [
-            [REVIEW_CORRECTNESS_AGENT_ID, "correctness"],
-            [REVIEW_RISK_AGENT_ID, "risk"],
-            [REVIEW_QUALITY_AGENT_ID, "quality"],
+        for (const id of [
+            REVIEW_CORRECTNESS_AGENT_ID,
+            REVIEW_RISK_AGENT_ID,
+            REVIEW_QUALITY_AGENT_ID,
         ] as const) {
             const agent = config.agent?.[id] as Record<string, unknown>;
             const permission = agent.permission as Record<string, unknown>;
@@ -151,8 +151,10 @@ describe("applyAgentDefinition translation", () => {
             expect(permission.edit).toEqual({ "*": "deny" });
             expect(agent.model).toBe("reviewer/model");
             expect(agent.variant).toBe("high");
-            expect(agent.prompt).toContain(`SpecOps ${dimension} review specialist`);
-            expect(agent.prompt).toContain("non-final critique only");
+            expect(agent.prompt).toContain("## Specialist evidence contract");
+            expect(agent.prompt).toContain(
+                "Never issue, imply, or recommend an overall PASS or FAIL",
+            );
             expect(agent.prompt).toContain("specops-reviewer");
         }
     });

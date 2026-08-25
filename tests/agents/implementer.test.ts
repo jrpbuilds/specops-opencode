@@ -75,6 +75,18 @@ describe("registerImplementerAgent", () => {
         expect(prompt).toContain("add or update tests when warranted");
     });
 
+    test("implementer maps approved behaviour to production code and meaningful evidence", () => {
+        const prompt = loadPrompt(AGENT_IDS.implementer);
+
+        expect(prompt).toContain("map each approved behaviour and design decision");
+        expect(prompt).toContain("callers, surrounding contracts, lifecycle");
+        expect(prompt).toContain("clean, maintainable production code");
+        expect(prompt).toContain("Do not use hacks or introduce accidental complexity");
+        expect(prompt).toContain("assertions must prove required behaviour");
+        expect(prompt).toContain("mock away the contract under test");
+        expect(prompt).toContain("proves only what it directly exercises");
+    });
+
     test("implementer prompt preserves planning boundaries and forbids self-approval", () => {
         const prompt = loadPrompt(AGENT_IDS.implementer);
 
@@ -110,6 +122,16 @@ describe("registerImplementerAgent", () => {
         expect(prompt).toContain("Run `openspec validate <change>` after remediation changes");
         expect(prompt).toContain("cannot be resolved without changing approved requirements");
         expect(prompt).toContain("Leave that item unchecked and return the conflict");
+    });
+
+    test("implementer remediation targets root causes and checks regressions", () => {
+        const prompt = loadPrompt(AGENT_IDS.implementer);
+
+        expect(prompt).toContain("Fix the underlying cause");
+        expect(prompt).toContain("every canonical `F1..Fn` independently traceable");
+        expect(prompt).toContain("verified it independently");
+        expect(prompt).toContain("Inspect the remediation delta for regressions");
+        expect(prompt).toContain("do not independently redesign approved work");
     });
 
     test("applies configured implementer model and variant", () => {

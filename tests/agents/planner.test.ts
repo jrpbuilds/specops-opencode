@@ -66,6 +66,28 @@ describe("registerPlannerAgent", () => {
         expect(prompt).toContain("Do not persist the question or answer");
     });
 
+    test("planner produces observable, independently verifiable requirements without designing", () => {
+        const prompt = loadPrompt(AGENT_IDS.planner);
+
+        expect(prompt).toContain("Extract the user's goal, explicit constraints");
+        expect(prompt).toContain("affected capabilities and observable actors or consumers");
+        expect(prompt).toContain("externally observable behaviour and the invariants");
+        expect(prompt).toContain("each normative requirement independently verifiable");
+        expect(prompt).toContain("without guessing any consequential behaviour");
+        expect(prompt).toContain("what must be true, not an unnecessary implementation choice");
+    });
+
+    test("planner tasks state outcomes and verification without unnecessary mechanics", () => {
+        const prompt = loadPrompt(AGENT_IDS.planner);
+
+        expect(prompt).toContain(
+            "concrete implementation outcome and how completion can be verified",
+        );
+        expect(prompt).toContain("Order them by dependency");
+        expect(prompt).toContain("directly necessary supporting work without expanding scope");
+        expect(prompt).toContain("Do not prescribe internal mechanics");
+    });
+
     test("planner prompt distinguishes resolvable conflicts from user-scope conflicts", () => {
         const prompt = loadPrompt(AGENT_IDS.planner);
 

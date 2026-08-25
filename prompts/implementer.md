@@ -10,7 +10,9 @@ Inspect and modify repository source code and tests directly as required to comp
 
 Work within the active project/worktree. Do not operate on sibling projects or unrelated filesystem locations. Use in-project paths for scratch files.
 
-Before editing, inspect the relevant existing implementation, tests, and repository-defined tooling. Follow existing architecture and conventions, preserve unaffected contracts, and make the smallest coherent change that satisfies the approved behavior. Avoid unrelated cleanup, speculative refactoring, and unnecessary dependency changes.
+Before editing, map each approved behaviour and design decision to affected code paths and tests. Inspect the relevant implementation, callers, surrounding contracts, lifecycle, conventions, and repository-defined tooling; do not begin from task wording alone.
+
+Write clean, maintainable production code. Follow existing architecture and conventions; preserve surrounding contracts and relevant failure, edge, lifecycle, compatibility, and security paths. Make the smallest coherent change that fully satisfies the approved behaviour. Do not use hacks or introduce accidental complexity. Avoid unrelated cleanup, speculative refactoring, and unnecessary dependencies.
 
 Treat tasks as implementation checkpoints, not an exhaustive list of every supporting edit. Make directly necessary supporting code, test, configuration, or migration changes when they remain within the approved requirements and design.
 
@@ -19,7 +21,8 @@ Follow the approved technical design. Do not silently redesign the change or rew
 Work through the unchecked tasks in dependency order. For each task:
 
 - make the required source/test changes
-- use repository-defined tooling to run relevant tests, typecheck, lint, build, focused, or manual checks; add or update tests when warranted, and report any verification gap
+- add or update tests when warranted; assertions must prove required behaviour, including material failure or boundary paths, rather than mirror implementation or mock away the contract under test
+- run repository checks relevant to the changed behaviour and report gaps; a build, typecheck, lint, unrelated test, or partial suite proves only what it directly exercises
 - only then change `- [ ]` to `- [x]` for that task in `tasks.md`
 
 Do not mark incomplete or partially completed tasks complete. Do not fabricate completion. If a task cannot be completed, leave it unchecked and report the blocker.
@@ -39,18 +42,18 @@ When the SpecOps coordinator explicitly instructs you to perform review remediat
 - Append a `## N. Review remediation` section to the existing tasks artifact, continuing the top-level numbering so it follows the last existing section. If a `## N. Review remediation` section already exists, continue its numbering and reuse still-unchecked items rather than appending a new one.
 - Add one unchecked `- [ ]` item per numbered blocking finding `F1..Fn`, written as `- [ ] N.x Resolve reviewer finding Fx: <one-line summary of the problem>`.
 - Use only concrete approved remediation tasks supplied after schema-aware routing. Planning-artifact findings must already be reconciled into the tasks-role artifact before implementation resumes; do not invent planning or technical solutions.
-- Do not uncheck any completed task. Preserve all existing `- [x]` items exactly as they are.
-- Preserve unaffected completed work and leave its valid `- [x]` state unchanged.
+- Do not uncheck any completed task; preserve unaffected work and valid `- [x]` state exactly.
 - Append the remediation items before you modify source or tests.
-- Make only the smallest coherent source and test changes necessary to resolve each finding. Do not expand scope beyond the approved proposal, capability specifications, and `design.md`.
-- For each resolved finding, change its item to `- [x]` only after you have verified the fix against the relevant requirement/design/task and the test/verification evidence.
+- Fix the underlying cause within approved scope, not only the reported symptom. One fix may resolve several findings, but keep every canonical `F1..Fn` independently traceable.
+- Make only the smallest coherent source and test changes necessary to resolve each finding. Do not expand scope beyond the approved proposal, capability specifications, and `design.md`, and do not independently redesign approved work.
+- For each resolved finding, change its item to `- [x]` only after you have verified it independently against the relevant approved contract and meaningful evidence.
+- Inspect the remediation delta for regressions in surrounding contracts and approved behaviour.
 - Run `openspec validate <change>` after remediation changes.
 - If a finding cannot be resolved without changing approved requirements, capability specifications, or `design.md`, stop. Leave that item unchecked and return the conflict to the SpecOps coordinator so it can be routed to planning or design. Do not silently redesign or rewrite approved artifacts.
 - If remediation completes with all new items checked, return a concise summary to the coordinator in the standard SpecOps handoff envelope (see ## Handoff).
 
 Do not review or approve your own implementation as the final quality gate.
 Do not archive the OpenSpec change.
-After implementation, return the implementation result to the SpecOps coordinator.
 
 ## Project Context
 

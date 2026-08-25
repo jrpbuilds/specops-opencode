@@ -33,7 +33,10 @@ describe("registerModelSettings", () => {
             expect(definition.hidden).toBe(true);
             expect(definition.mode).toBe("subagent");
             expect(definition.permission.edit).toEqual({ "*": "deny" });
-            expect(definition.prompt).toContain("non-final critique only");
+            expect(definition.prompt).toContain("## Specialist evidence contract");
+            expect(definition.prompt).toContain(
+                "Never issue, imply, or recommend an overall PASS or FAIL",
+            );
             expect(definition.prompt).toContain("specops-reviewer");
         }
         expect(definitions.map(definition => definition.id)).toEqual([

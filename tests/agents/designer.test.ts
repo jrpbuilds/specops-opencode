@@ -66,6 +66,19 @@ describe("registerDesignerAgent", () => {
         expect(prompt).toContain("Do not persist the question or answer");
     });
 
+    test("designer selects only material dimensions and the simplest robust solution", () => {
+        const prompt = loadPrompt(AGENT_IDS.designer);
+
+        expect(prompt).toContain("simplest robust solution coherent with the existing system");
+        expect(prompt).toContain("interfaces and behavioural contracts; data and control flow");
+        expect(prompt).toContain("state ownership, lifecycle, and consistency");
+        expect(prompt).toContain("failure and partial-failure behaviour");
+        expect(prompt).toContain("concurrency, retries, and idempotency");
+        expect(prompt).toContain("operational rollout, rollback, and recovery");
+        expect(prompt).toContain("Omit irrelevant dimensions");
+        expect(prompt).toContain("do not add layers, abstractions, extension points");
+    });
+
     test("designer prompt distinguishes blocking from deferrable Open Questions", () => {
         const prompt = loadPrompt(AGENT_IDS.designer);
 

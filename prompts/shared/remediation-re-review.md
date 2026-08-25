@@ -1,3 +1,3 @@
-Remediation carries the complete Reviewer FAIL findings verbatim — every `F1..Fn`; do not summarize, paraphrase, renumber, or drop findings.
+Carry the complete Reviewer FAIL findings verbatim — every `F1..Fn`; do not summarize, paraphrase, renumber, or drop findings. Fix root causes within approved scope. One fix may address several findings, but verify each canonical finding independently.
 
-After remediation implementation completes, run the complete critic fan-out again under `## Review phase`, then re-dispatch `specops-reviewer` with the new reports, the remediation summary, the prior findings verbatim, and an explicit re-review instruction.
+After implementation, reset review state and run the complete critic fan-out again under `## Review phase` with fresh critics on current code. Then re-dispatch `specops-reviewer` for a full re-review with new reports, remediation summary, prior findings verbatim, and an explicit re-review instruction. Re-check the complete approved change, every prior finding, remediation regressions, and new material approved-scope defects; resolved findings must not distract from remaining defects.

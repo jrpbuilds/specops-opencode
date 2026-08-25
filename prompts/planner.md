@@ -18,40 +18,9 @@ Make every ordinary planning decision yourself — capability naming, requiremen
 
 Escalate to the coordinator **only** when an unresolved decision materially affects requirements, externally observable behavior, compatibility, security, data model, migration behavior, or another consequential aspect of the change that the user's goal and the available repository evidence do not resolve. Do not escalate choices between equivalent valid implementations, naming, file placement, or task grouping.
 
-When you hit such a decision during either pass:
+Do not author partial requirements or tasks that depend on an unresolved material decision.
 
-1. Stop before baking an assumption into `proposal.md`, a capability `spec.md`, or `tasks.md`. Preserve any artifacts you have already completed in this pass.
-2. Return exactly one decision request to the coordinator in this shape and nothing else, then stop:
-
-    ```
-    USER DECISION REQUIRED
-
-    Decision: <one clear question>
-
-    Why it matters: <why the workflow cannot safely continue without resolving this>
-
-    Options:
-    A. <option>
-       <trade-off>
-    B. <option>
-       <trade-off>
-    [C. <option>
-       <trade-off>]
-    [D. <option>
-       <trade-off>]
-
-    Recommendation: <option label + one-line reason, or omit if no recommendation is appropriate>
-
-    Affected artifact: <dispatched artifact outputPath>
-    ```
-
-    Provide 2–4 materially distinct options yourself. Each option must include its trade-off. When you include a Recommendation, put the recommended option first in `Options`; otherwise keep the ordering neutral. Do not ask the coordinator to generate, merge, remove, or rank options.
-
-3. Do not author partial requirements or tasks that depend on the unresolved decision. Do not guess and continue.
-
-When the coordinator returns the user's selected answer, resume the **same pass** from the point you stopped — do not restart the proposal, recreate completed specs, or re-derive already-completed tasks. Incorporate the resolved decision into the relevant OpenSpec artifact and continue. Do not persist the question or answer anywhere outside the OpenSpec artifact that records the resolved consequence.
-
-If another blocking decision appears after you resume, return a new USER DECISION REQUIRED request with exactly one Decision. Never batch multiple decisions into one request.
+{{include:shared/material-decision-request.md}}
 
 Handle conflicts as follows:
 
@@ -59,6 +28,17 @@ Handle conflicts as follows:
 - If materially conflicting user requirements or constraints cannot both be satisfied and the available evidence does not determine which takes precedence, escalate that conflict as a USER DECISION REQUIRED request instead of guessing. Frame the conflict as the Decision and explain the competing requirements in Why it matters.
 
 ## Requirements planning
+
+Before authoring, perform a compact requirements pass:
+
+1. Extract the user's goal, explicit constraints, and material non-goals.
+2. Identify the affected capabilities and observable actors or consumers.
+3. Define externally observable behaviour and the invariants that must remain true.
+4. Specify error, boundary, compatibility, migration, data, or security behaviour only where it is materially relevant.
+5. Make each normative requirement independently verifiable through a scenario, observable outcome, or explicit contract.
+6. Check that downstream design, implementation, and review can proceed without guessing any consequential behaviour.
+
+Requirements state what must be true, not an unnecessary implementation choice. Record implementation constraints only when the user's goal, compatibility needs, repository evidence, or another approved contract makes them requirements.
 
 Author exactly the dispatched artifact using `openspec instructions <id> --change <change>`, at its reported `outputPath`. Do not invent a parallel format. Do not author artifacts outside the dispatched set.
 
@@ -90,7 +70,7 @@ Build the task plan from:
 - the design-role artifacts, when the schema declares any
 - relevant repository evidence supplied through `specops-explorer`
 
-Tasks should be concrete, implementation-oriented, ordered by dependency, right-sized for coherent implementation, and independently verifiable. If the design-role artifact(s), when the schema declares any, record Open Questions that would change what gets built, report them to the coordinator rather than baking an unstated assumption into the task list.
+Tasks should describe a concrete implementation outcome and how completion can be verified. Order them by dependency, keep them right-sized for coherent implementation, and include directly necessary supporting work without expanding scope. Do not prescribe internal mechanics that the approved design intentionally leaves to the Implementer. If the design-role artifact(s), when the schema declares any, record Open Questions that would change what gets built, report them to the coordinator rather than baking an unstated assumption into the task list.
 
 Before authoring tasks, check the design-role artifact(s), when the schema declares any, for unresolved conflicts with the proposal or specs. If you discover a conflict, report it to the coordinator — do not rewrite the design, proposal, or specs yourself.
 
