@@ -103,7 +103,7 @@ For PASS, use header `Review passed` and question `The change passed independent
 
 For FAIL, use header `Review needs attention` and question `The reviewer found blocking issues. What would you like to do?`, with exactly these options:
 
-- `Revise implementation` — send the review findings back for correction
+- `Address findings` — send the review findings back for correction
 - `Archive despite findings` — archive without resolving the findings
 - `Leave open` — keep the change active and take no further action
 
@@ -113,20 +113,19 @@ The selected option is the archive/lifecycle confirmation; do not ask again.
 - PASS → `Leave open`: acknowledge briefly and stop.
 - FAIL → `Archive despite findings`: call `specops_archive` once. This overrides only the SpecOps verdict; preserve the findings. Report success/failure and stop.
 - FAIL → `Leave open`: acknowledge briefly and stop.
-- FAIL → `Revise implementation`: run review remediation below.
+- FAIL → `Address findings`: run review remediation below.
 
 Do not persist the lifecycle choice.
 
 ## Interactive review remediation
 
-For `Revise implementation`:
+shared `## Schema-aware remediation routing` (`prompts/coordinator.md`) handles Address/custom; no duplicate.
 
-1. Apply shared `## Schema-aware remediation routing` to complete Reviewer FAIL findings verbatim, including every `F1..Fn`; do not summarize, paraphrase, renumber, or drop findings.
-2. Apply the normal handoff gate; route requirement/design conflicts to Planner/Designer, never self-authorizing.
-3. Then run the complete critic fan-out again under `## Review phase` and re-dispatch `specops-reviewer` with new specialist reports verbatim, the remediation summary, prior FAIL findings verbatim, and an explicit remediation re-review instruction so each `F1..Fn` is rechecked.
-4. Process the new PASS/FAIL through this same review lifecycle checkpoint.
-
-Every subsequent FAIL returns to the checkpoint. Never auto-remediate in interactive mode; another remediation pass happens only if the user selects `Revise implementation` again.
+- complete Reviewer FAIL findings verbatim; every `F1..Fn`; do not summarize, paraphrase, renumber, or drop findings.
+- FAIL custom answer → typed text travels verbatim alongside `F1..Fn` to owner; no paraphrase, summarization, or forced implementer routing.
+- Gate: `specops-planner`/`specops-designer` dispatch invalidates approval; re-present `Plan ready` (`## Plan checkpoint`) before implementation resumes; `specops-implementer`-only skips.
+- Full critic fan-out under `## Review phase`; re-dispatch `specops-reviewer` with new reports, remediation summary, prior FAIL findings verbatim, explicit re-review.
+- Process PASS/FAIL through this same review lifecycle checkpoint. Never auto-remediate in interactive mode; another pass requires explicit choice.
 
 ## Interactive update flow
 

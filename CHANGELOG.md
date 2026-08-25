@@ -15,6 +15,7 @@ All notable changes to SpecOps are documented in this file.
 
 ### Changed
 
+- Standard mode's review FAIL checkpoint now routes accepted findings through schema-aware remediation instead of sending every finding straight to the implementer (#26).
 - Planning batches now use rolling bounded scheduling, so independent OpenSpec
   artifacts start as soon as a slot frees instead of waiting for a full wave to
   drain.

@@ -44,6 +44,25 @@ function promptOf(config: Config, id: string): string {
     return config.agent?.[id]?.prompt as string;
 }
 
+function sectionBetween(prompt: string, startMarker: string, endMarker: string): string {
+    const start = prompt.indexOf(startMarker);
+    const end = prompt.indexOf(endMarker, start);
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(end).toBeGreaterThan(start);
+    return prompt.slice(start, end);
+}
+
+function failOptions(prompt: string): string[] {
+    const checkpoint = sectionBetween(
+        prompt,
+        "For FAIL, use header",
+        "The selected option is the archive/lifecycle confirmation",
+    );
+    return [...checkpoint.matchAll(/^- `([^`]+)`/gm)].map(match => match[1]);
+}
+
+const removedFailOption = ["Revise", "implementation"].join(" ");
+
 describe("coordinator prompt composition", () => {
     test("interactive and Auto receive mutually exclusive mode policies", () => {
         const interactive = buildCoordinatorPrompt("interactive", false);
@@ -449,11 +468,11 @@ describe("interactive coordinator contract", () => {
 
         const failStart = section.indexOf("For FAIL, use header");
         const fail = section.slice(failStart);
-        const revise = fail.indexOf("`Revise implementation`");
+        const addressFindings = fail.indexOf("`Address findings`");
         const archive = fail.indexOf("`Archive despite findings`");
         const leaveOpen = fail.indexOf("`Leave open`");
-        expect(revise).toBeGreaterThan(-1);
-        expect(archive).toBeGreaterThan(revise);
+        expect(addressFindings).toBeGreaterThan(-1);
+        expect(archive).toBeGreaterThan(addressFindings);
         expect(leaveOpen).toBeGreaterThan(archive);
         expect(fail).toContain("header `Review needs attention`");
         expect(fail).toContain("The reviewer found blocking issues. What would you like to do?");
@@ -475,7 +494,180 @@ describe("interactive coordinator contract", () => {
         expect(section).toContain("prior FAIL findings verbatim");
         expect(section).toContain("same review lifecycle checkpoint");
         expect(section).toContain("Never auto-remediate in interactive mode");
-        expect(section).toContain("only if the user selects `Revise implementation` again");
+        expect(section).toContain("another pass requires explicit choice");
+    });
+
+    test("FAIL checkpoint exposes the renamed options and native custom-answer path", () => {
+        const checkpoint = sectionBetween(
+            prompt,
+            "## Review lifecycle checkpoint",
+            "## Interactive review remediation",
+        );
+
+        expect(failOptions(checkpoint)).toEqual([
+            "Address findings",
+            "Archive despite findings",
+            "Leave open",
+        ]);
+        expect(checkpoint).not.toContain(removedFailOption);
+        expect(checkpoint).toContain("omit `multiple`");
+        expect(checkpoint).not.toContain("custom` field");
+    });
+
+    test("Address findings uses shared routing for implementation-only findings", () => {
+        const remediation = sectionBetween(
+            prompt,
+            "## Interactive review remediation",
+            "## Interactive update flow",
+        );
+
+        expect(remediation).toContain("shared `## Schema-aware remediation routing`");
+        expect(prompt).toContain(
+            "**Implementation-only:** all targets are `implementation` and approved planning guidance is sufficient → direct `specops-implementer`",
+        );
+    });
+
+    test("Address findings sends design findings to Designer instead of Implementer", () => {
+        const routing = sectionBetween(
+            prompt,
+            "## Schema-aware remediation routing",
+            "## Reconciling revised planning artifacts",
+        );
+
+        expect(routing).toContain("`design` → `specops-designer`");
+        expect(routing).not.toContain("`design` → `specops-implementer`");
+    });
+
+    test("Address findings sends other planning-artifact findings to Planner", () => {
+        const routing = sectionBetween(
+            prompt,
+            "## Schema-aware remediation routing",
+            "## Reconciling revised planning artifacts",
+        );
+
+        expect(routing).toContain(
+            "other declared ids (requirements, tasks, custom) → `specops-planner`",
+        );
+        expect(routing).not.toContain("requirements, tasks, custom) → `specops-implementer`");
+    });
+
+    test("Address findings keeps mixed targets in one coherent remediation pass", () => {
+        const routing = sectionBetween(
+            prompt,
+            "## Schema-aware remediation routing",
+            "## Reconciling revised planning artifacts",
+        );
+        const remediation = sectionBetween(
+            prompt,
+            "## Interactive review remediation",
+            "## Interactive update flow",
+        );
+
+        expect(routing).toContain("**Mixed targets:** one coherent pass");
+        expect(routing).toContain("earliest planning root(s) first");
+        expect(remediation).toContain("shared `## Schema-aware remediation routing`");
+    });
+
+    test("FAIL custom feedback travels verbatim to the shared-routing owner", () => {
+        const remediation = sectionBetween(
+            prompt,
+            "## Interactive review remediation",
+            "## Interactive update flow",
+        );
+
+        expect(remediation).toContain("FAIL custom answer");
+        expect(remediation).toContain("typed text travels verbatim");
+        expect(remediation).toContain("alongside `F1..Fn`");
+        expect(remediation).toContain(
+            "no paraphrase, summarization, or forced implementer routing",
+        );
+        expect(remediation).not.toContain("custom answer → direct `specops-implementer`");
+        expect(prompt).toContain(
+            "other declared ids (requirements, tasks, custom) → `specops-planner`",
+        );
+    });
+
+    test("planning remediation re-presents Plan ready while implementation-only remediation skips it", () => {
+        const plan = sectionBetween(
+            prompt,
+            "## Plan checkpoint",
+            "## Lossless specialist decisions",
+        );
+        const remediation = sectionBetween(
+            prompt,
+            "## Interactive review remediation",
+            "## Interactive update flow",
+        );
+
+        expect(remediation).toContain("specops-planner");
+        expect(remediation).toContain("specops-designer");
+        expect(remediation).toContain("invalidates approval");
+        expect(remediation).toContain("re-present `Plan ready`");
+        expect(remediation).toContain("specops-implementer`-only skips");
+        expect(remediation.indexOf("specops-implementer`-only skips")).toBeLessThan(
+            remediation.indexOf("Full critic fan-out"),
+        );
+
+        expect(plan).toContain("header: `Plan ready`");
+        expect(plan).toContain(
+            "question: `Review the plan above. Start implementation, or type your feedback if you'd like anything changed.`",
+        );
+        expect(plan).toContain("sole option: `Start implementation`");
+        expect(plan).toContain(
+            "Do not add `Leave open`, `Revise plan`, or any other explicit option",
+        );
+    });
+
+    test("remediation re-runs the full review pipeline and returns to the same lifecycle checkpoint", () => {
+        const checkpoint = sectionBetween(
+            prompt,
+            "## Review lifecycle checkpoint",
+            "## Interactive review remediation",
+        );
+        const remediation = sectionBetween(
+            prompt,
+            "## Interactive review remediation",
+            "## Interactive update flow",
+        );
+
+        expect(remediation).toContain("Full critic fan-out under `## Review phase`");
+        expect(remediation).toContain("re-dispatch `specops-reviewer`");
+        expect(remediation).toContain("new reports");
+        expect(remediation).toContain("remediation summary");
+        expect(remediation).toContain("prior FAIL findings verbatim");
+        expect(remediation).toContain("explicit re-review");
+        expect(remediation).toContain("this same review lifecycle checkpoint");
+        expect(remediation).toContain("Never auto-remediate in interactive mode");
+        expect(failOptions(checkpoint)).toEqual([
+            "Address findings",
+            "Archive despite findings",
+            "Leave open",
+        ]);
+        expect(checkpoint).toContain("header `Review passed`");
+        expect(checkpoint).toContain("header `Review needs attention`");
+    });
+
+    test("PASS, Archive despite findings, and Leave open retain their terminal behavior", () => {
+        const checkpoint = sectionBetween(
+            prompt,
+            "## Review lifecycle checkpoint",
+            "## Interactive review remediation",
+        );
+
+        expect(checkpoint).toContain("header `Review passed`");
+        expect(checkpoint).toContain(
+            "The change passed independent review. What would you like to do?",
+        );
+        expect(checkpoint).toContain("`Complete and archive`");
+        expect(checkpoint).toContain("`Leave open`");
+        expect(checkpoint).toContain(
+            "FAIL → `Archive despite findings`: call `specops_archive` once",
+        );
+        expect(checkpoint).toContain("FAIL → `Leave open`: acknowledge briefly and stop");
+        expect(checkpoint).not.toContain(removedFailOption);
+        expect(checkpoint).not.toContain(
+            "Complete and archive` — finish the change and archive it in OpenSpec\n- `Leave open` — keep the completed change active without archiving\n- `Address findings`",
+        );
     });
 });
 
