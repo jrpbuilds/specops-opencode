@@ -19,15 +19,16 @@ export type AgentConfig = { model?: string; variant?: string };
  *
  * Validation fills role entries missing from older configuration files with
  * empty mappings; individual entries may omit `model` to inherit OpenCode's
- * global default. `frontierEscalation` is
- * normalized to `false`, and `maxSubagentConcurrency` (the maximum concurrent
- * subagents) to `2`, when loading an older
- * configuration without those fields.
+ * global default. `frontierEscalation` is normalized to `false`,
+ * `maxSubagentConcurrency` (the maximum concurrent subagents) to `2`, and
+ * `maxAutoReviewIterations` to `3` when loading an older configuration without
+ * those fields.
  */
 export type SpecOpsConfig = {
     agents: Record<AgentId, AgentConfig>;
     frontierEscalation: boolean;
     maxSubagentConcurrency?: number;
+    maxAutoReviewIterations?: number;
 };
 
 /**
@@ -40,6 +41,7 @@ export const DEFAULT_CONFIG: SpecOpsConfig = {
     agents: Object.fromEntries(ALL_AGENT_IDS.map(id => [id, {}])) as SpecOpsConfig["agents"],
     frontierEscalation: false,
     maxSubagentConcurrency: 2,
+    maxAutoReviewIterations: 3,
 };
 
 const REVIEW_SPECIALIST_IDS = new Set<AgentId>([
@@ -87,9 +89,15 @@ export function resolveAgentMapping(config: SpecOpsConfig, roleId: AgentId): Age
     };
 }
 
-/** Inclusive bounds for the global concurrent subagent limit. */
+/** Minimum persisted value for the global concurrent subagent limit. */
 export const MIN_SUBAGENT_CONCURRENCY = 1;
-export const MAX_SUBAGENT_CONCURRENCY = 8;
+/** Largest concurrent subagent value offered by the TUI. */
+export const MAX_SUBAGENT_CONCURRENCY_SELECTABLE = 8;
+
+/** Minimum persisted Auto review correction budget. */
+export const MIN_AUTO_REVIEW_ITERATIONS = 1;
+/** Largest Auto review budget value offered by the TUI. */
+export const MAX_AUTO_REVIEW_ITERATIONS_SELECTABLE = 3;
 
 /**
  * Resolve the OpenCode configuration directory using the XDG convention.
@@ -165,7 +173,12 @@ export async function loadConfig(
 export function validateConfig(value: unknown): SpecOpsConfig {
     if (
         !isRecord(value) ||
-        !hasOnlyKeys(value, ["agents", "frontierEscalation", "maxSubagentConcurrency"]) ||
+        !hasOnlyKeys(value, [
+            "agents",
+            "frontierEscalation",
+            "maxSubagentConcurrency",
+            "maxAutoReviewIterations",
+        ]) ||
         !isRecord(value.agents)
     ) {
         throw new Error("invalid SpecOps configuration");
@@ -177,12 +190,17 @@ export function validateConfig(value: unknown): SpecOpsConfig {
     if (
         "maxSubagentConcurrency" in value &&
         (!Number.isInteger(maxSubagentConcurrency) ||
-            maxSubagentConcurrency < MIN_SUBAGENT_CONCURRENCY ||
-            maxSubagentConcurrency > MAX_SUBAGENT_CONCURRENCY)
+            maxSubagentConcurrency < MIN_SUBAGENT_CONCURRENCY)
     ) {
-        throw new Error(
-            `maxSubagentConcurrency must be an integer from ${MIN_SUBAGENT_CONCURRENCY} to ${MAX_SUBAGENT_CONCURRENCY}`,
-        );
+        throw new Error("maxSubagentConcurrency must be a positive integer");
+    }
+    const maxAutoReviewIterations = value.maxAutoReviewIterations as number;
+    if (
+        "maxAutoReviewIterations" in value &&
+        (!Number.isInteger(maxAutoReviewIterations) ||
+            maxAutoReviewIterations < MIN_AUTO_REVIEW_ITERATIONS)
+    ) {
+        throw new Error("maxAutoReviewIterations must be a positive integer");
     }
 
     // Unknown role ids stay a hard error because they almost certainly name a
@@ -217,6 +235,7 @@ export function validateConfig(value: unknown): SpecOpsConfig {
         ),
         frontierEscalation: value.frontierEscalation ?? false,
         maxSubagentConcurrency: value.maxSubagentConcurrency ?? 2,
+        maxAutoReviewIterations: value.maxAutoReviewIterations ?? 3,
     } as SpecOpsConfig;
 
     for (const id of ALL_AGENT_IDS) {

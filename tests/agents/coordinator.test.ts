@@ -851,7 +851,7 @@ describe("Auto coordinator contract", () => {
         expect(prompt).toContain("genuinely unknowable information");
     });
 
-    test("automatically remediates review FAIL with a hard two-round limit", () => {
+    test("automatically remediates review FAIL within the configured finite budget", () => {
         const section = prompt.slice(prompt.indexOf("## Autonomous review remediation"));
         expect(section).toContain("PASS → call `specops_archive` once");
         expect(section).toContain("FAIL → automatically begin remediation");
@@ -862,9 +862,25 @@ describe("Auto coordinator contract", () => {
             "Planner/Designer returns follow `## Autonomous specialist decisions`",
         );
         expect(section).toContain("complete critic fan-out again");
-        expect(section).toContain("at most **2 remediation rounds total**");
-        expect(section).toContain("re-review after round 2 still FAIL → `BLOCKED`");
-        expect(section).toContain("Never run a third remediation round and never loop");
+        expect(section).toContain("at most **3 remediation rounds total**");
+        expect(section).toContain("The initial review does not consume an iteration");
+        expect(section).toContain("When a FAIL leaves no iterations remaining, return `BLOCKED`");
+        expect(section).toContain("never exceed the configured finite budget");
+        expect(section).not.toContain("{{maxAutoReviewIterations}}");
+    });
+
+    test("keeps Auto remediation and re-review visible in the non-authoritative Todo projection", () => {
+        expect(prompt).toContain("Auto review remediation");
+        expect(prompt).toContain("Auto review re-review");
+        expect(prompt).toContain("Never use Todo state to decide workflow routing");
+    });
+
+    test("injects an explicitly configured Auto review budget", () => {
+        const prompt = buildCoordinatorPrompt("auto", false, 12);
+        const section = prompt.slice(prompt.indexOf("## Autonomous review remediation"));
+
+        expect(section).toContain("at most **12 remediation rounds total**");
+        expect(section).not.toContain("at most **3 remediation rounds total**");
     });
 
     test("retains terminal COMPLETED/BLOCKED result contracts", () => {
@@ -1027,6 +1043,18 @@ describe("coordinator registration", () => {
         expect(autoPermission.bash).toEqual(interactivePermission.bash);
         expect(interactivePermission[SPECOPS_LIFECYCLE_PERMISSION]).toBe("allow");
         expect(autoPermission[SPECOPS_LIFECYCLE_PERMISSION]).toBe("allow");
+    });
+
+    test("injects the configured Auto review budget into the registered prompt", () => {
+        const specOpsConfig = makeConfig();
+        specOpsConfig.maxAutoReviewIterations = 12;
+        const config: Config = {};
+
+        registerAutoCoordinatorAgent(config, specOpsConfig);
+
+        expect(promptOf(config, SPECOPS_AUTO_AGENT_ID)).toBe(
+            buildCoordinatorPrompt("auto", false, 12),
+        );
     });
 
     test("restricts both coordinators to the private SpecOps subagent namespace", () => {

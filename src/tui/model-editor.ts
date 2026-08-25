@@ -12,6 +12,7 @@ import type { TuiPluginApi } from "@opencode-ai/plugin/tui";
 import { loadConfig } from "../config.js";
 import { createCloseGuard, type EditorNavigator, type EditorSession } from "./editor-session.js";
 import { configuredModels, createConfigDraft } from "../models.js";
+import { openAutoReviewIterationsPicker } from "./screens/auto-review-iterations-picker.js";
 import { openConcurrencyPicker } from "./screens/concurrency-picker.js";
 import { openModelPicker, openVariantPicker } from "./screens/model-picker.js";
 import { openReview } from "./screens/review-flow.js";
@@ -56,6 +57,7 @@ export async function showModelEditor(api: TuiPluginApi, onClose: () => void): P
         showModelPicker: id => openModelPicker(session, nav, id),
         showVariantPicker: (id, model) => openVariantPicker(session, nav, id, model),
         showConcurrencyPicker: () => openConcurrencyPicker(session, nav),
+        showAutoReviewIterationsPicker: () => openAutoReviewIterationsPicker(session, nav),
         showReview: () => openReview(session, nav),
     };
 

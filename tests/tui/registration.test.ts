@@ -72,6 +72,7 @@ describe("registerModelSettings", () => {
                     ...ALL_AGENT_IDS,
                     "__frontier_escalation__",
                     "__concurrent_subagents__",
+                    "__auto_review_iterations__",
                     "__save__",
                     "__cancel__",
                 ]);

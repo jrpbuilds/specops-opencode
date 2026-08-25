@@ -1,10 +1,21 @@
+import {
+    MAX_AUTO_REVIEW_ITERATIONS_SELECTABLE,
+    MAX_SUBAGENT_CONCURRENCY_SELECTABLE,
+} from "../../config.js";
 import { ROLE_WORKFLOW_ORDER, type AgentId } from "../../agents/ids.js";
 import { agentDisplayName, validateConfigSelections } from "../../models.js";
-import { changedAgentIds, describeSelection, effectiveConcurrency } from "../display.js";
+import {
+    changedAgentIds,
+    describeSelection,
+    effectiveAutoReviewIterations,
+    effectiveConcurrency,
+    formatConfiguredValue,
+} from "../display.js";
 import type { EditorNavigator, EditorSession } from "../editor-session.js";
 
 const FRONTIER_ESCALATION = "__frontier_escalation__";
 const CONCURRENT_SUBAGENTS = "__concurrent_subagents__";
+const AUTO_REVIEW_ITERATIONS = "__auto_review_iterations__";
 
 /**
  * Render the role/options list that drives the editor state machine.
@@ -26,6 +37,8 @@ export function openRoleList(session: EditorSession, nav: EditorNavigator): void
     const changed = new Set(changedAgentIds(initial, staged));
     const frontierEscalationChanged = staged.frontierEscalation !== initial.frontierEscalation;
     const concurrencyChanged = effectiveConcurrency(staged) !== effectiveConcurrency(initial);
+    const autoReviewIterationsChanged =
+        effectiveAutoReviewIterations(staged) !== effectiveAutoReviewIterations(initial);
     const roleOptions = ROLE_WORKFLOW_ORDER.map(id => ({
         // "!" = saved model unavailable in the current catalogue; "*" = staged change.
         title: `${unresolved.has(id) ? "! " : ""}${changed.has(id) ? "* " : ""}${agentDisplayName(id)}`,
@@ -51,13 +64,25 @@ export function openRoleList(session: EditorSession, nav: EditorNavigator): void
                         value: CONCURRENT_SUBAGENTS,
                         category: "Options",
                         title: `${concurrencyChanged ? "* " : ""}Concurrent subagents`,
-                        footer: String(effectiveConcurrency(staged)),
+                        footer: formatConfiguredValue(
+                            effectiveConcurrency(staged),
+                            MAX_SUBAGENT_CONCURRENCY_SELECTABLE,
+                        ),
+                    },
+                    {
+                        value: AUTO_REVIEW_ITERATIONS,
+                        category: "Options",
+                        title: `${autoReviewIterationsChanged ? "* " : ""}Auto review iterations`,
+                        footer: formatConfiguredValue(
+                            effectiveAutoReviewIterations(staged),
+                            MAX_AUTO_REVIEW_ITERATIONS_SELECTABLE,
+                        ),
                     },
                     {
                         title: "Review and save",
                         value: "__save__",
                         category: "Actions",
-                        footer: `${changed.size + (frontierEscalationChanged ? 1 : 0) + (concurrencyChanged ? 1 : 0)} changed`,
+                        footer: `${changed.size + (frontierEscalationChanged ? 1 : 0) + (concurrencyChanged ? 1 : 0) + (autoReviewIterationsChanged ? 1 : 0)} changed`,
                     },
                     {
                         title: "Cancel",
@@ -71,6 +96,8 @@ export function openRoleList(session: EditorSession, nav: EditorNavigator): void
                         nav.showRoleList();
                     } else if (option.value === CONCURRENT_SUBAGENTS) {
                         nav.showConcurrencyPicker();
+                    } else if (option.value === AUTO_REVIEW_ITERATIONS) {
+                        nav.showAutoReviewIterationsPicker();
                     } else if (option.value === "__save__") {
                         nav.showReview();
                     } else if (option.value === "__cancel__") {

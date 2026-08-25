@@ -25,11 +25,14 @@ describe("createConfigDraft", () => {
         });
     });
 
-    test("preserves the persisted concurrency limit", () => {
+    test("preserves persisted global budgets", () => {
         const source = structuredClone(DEFAULT_CONFIG);
-        source.maxSubagentConcurrency = 8;
+        source.maxSubagentConcurrency = 12;
+        source.maxAutoReviewIterations = 14;
 
-        expect(createConfigDraft(source, models).config.maxSubagentConcurrency).toBe(8);
+        const draft = createConfigDraft(source, models).config;
+        expect(draft.maxSubagentConcurrency).toBe(12);
+        expect(draft.maxAutoReviewIterations).toBe(14);
     });
 
     test("drops a blank model (trimmed) so the entry has no model key", () => {

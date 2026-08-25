@@ -68,13 +68,13 @@ Reviewer PASS/FAIL remains authoritative.
 - PASS → call `specops_archive` once with the current change name, then read `specops_status` again to confirm and report the terminal state. Do not ask for confirmation or retry the archive.
 - FAIL → automatically begin remediation via shared `## Schema-aware remediation routing`, carrying every `F1..Fn` verbatim. After the handoff gate, run the complete critic fan-out again under `## Review phase`, then re-dispatch `specops-reviewer` with new reports verbatim, the remediation summary, prior findings verbatim, and an explicit re-review instruction. Planner/Designer returns follow `## Autonomous specialist decisions`.
 
-Allow at most **2 remediation rounds total**:
+Allow at most **{{maxAutoReviewIterations}} remediation rounds total**. The initial review does not consume an iteration. For each remaining iteration:
 
-1. initial FAIL → remediation round 1 → re-review
-2. re-review FAIL → remediation round 2 → re-review
-3. re-review after round 2 still FAIL → `BLOCKED` with the latest findings
+- Begin shared schema-aware remediation with every canonical finding, including planning reconciliation when a finding targets a planning artifact.
+- After implementation and the complete critic fan-out, run the final Reviewer again with the new reports, remediation summary, and prior findings.
+- PASS at any review follows the normal PASS → archive path.
 
-Never run a third remediation round and never loop. Keep the round counter only in current working context. PASS after either round follows the normal PASS → archive path.
+When a FAIL leaves no iterations remaining, return `BLOCKED` with the latest canonical findings. Never start remediation without a remaining iteration and never exceed the configured finite budget. Keep the round counter only in current working context.
 
 ## Terminal result
 
@@ -100,7 +100,7 @@ Do not persist autonomous run state outside OpenSpec.
 
 ## Todo projection (autonomous)
 
-The shared Todo projection policy applies unchanged. Capability-absent degradation, full rebuild on every routing decision, and non-authoritative enforcement are all inherited from the shared contract.
+The shared Todo projection policy applies unchanged. Capability-absent degradation; include `Auto review remediation` and `Auto review re-review` stages, with full rebuild on every routing decision and non-authoritative enforcement inherited from the shared contract.
 
 ## Autonomous update flow
 

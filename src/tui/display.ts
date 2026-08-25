@@ -44,6 +44,27 @@ export function effectiveConcurrency(config: SpecOpsConfig): number {
 }
 
 /**
+ * Resolve the Auto review correction budget while supporting older config shapes.
+ *
+ * @param config Staged configuration being displayed.
+ * @returns The configured number of correction/re-review iterations.
+ */
+export function effectiveAutoReviewIterations(config: SpecOpsConfig): number {
+    return config.maxAutoReviewIterations ?? 3;
+}
+
+/**
+ * Mark a value that was configured above the TUI's selectable range.
+ *
+ * @param value Effective persisted value.
+ * @param selectableMax Largest value offered by the TUI.
+ * @returns A compact display value for an options row or footer.
+ */
+export function formatConfiguredValue(value: number, selectableMax: number): string {
+    return value > selectableMax ? `${value} (manual)` : String(value);
+}
+
+/**
  * Return roles whose staged model mapping differs from the opened snapshot.
  *
  * JSON comparison is sufficient because configuration entries contain only

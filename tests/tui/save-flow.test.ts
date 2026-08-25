@@ -115,6 +115,7 @@ describe("SpecOps Configure save flow", () => {
                     "specops-frontier",
                     "__frontier_escalation__",
                     "__concurrent_subagents__",
+                    "__auto_review_iterations__",
                     "__save__",
                     "__cancel__",
                 ]);
@@ -141,6 +142,13 @@ describe("SpecOps Configure save flow", () => {
                     initialOptions?.find(option => option.value === "__concurrent_subagents__")
                         ?.description,
                 ).toBeUndefined();
+                expect(
+                    initialOptions?.find(option => option.value === "__auto_review_iterations__"),
+                ).toMatchObject({
+                    title: "Auto review iterations",
+                    category: "Options",
+                    footer: "3",
+                });
                 expect(initialOptions?.find(option => option.value === "__save__")).toMatchObject({
                     title: "Review and save",
                     category: "Actions",
@@ -236,6 +244,104 @@ describe("SpecOps Configure save flow", () => {
                 const saved = await loadConfig(path.join(home, "opencode", "specops.json"));
                 expect(saved.maxSubagentConcurrency).toBe(5);
                 expect(typeof saved.maxSubagentConcurrency).toBe("number");
+            }),
+        );
+    });
+
+    test("persists the selected Auto review iteration budget and shows it in the save review", async () => {
+        await withTempDir(async home =>
+            withConfigHome(home, async () => {
+                const fake = fakeTuiApi(allProviders);
+                registerModelSettings(fake.api);
+                await fake.runCommand();
+
+                fake.selectByValue("__auto_review_iterations__");
+                expect(fake.currentDialog()?.title).toBe("Auto review iterations");
+                expect(fake.currentDialog()?.current).toBe(3);
+                expect(fake.currentDialog()?.options?.map(option => option.value)).toEqual([
+                    1, 2, 3,
+                ]);
+                expect(fake.currentDialog()?.options?.map(option => option.description)).toEqual([
+                    "1 correction/re-review iteration",
+                    "2 correction/re-review iterations",
+                    "3 correction/re-review iterations",
+                ]);
+
+                fake.selectByValue(2);
+                fake.selectByValue("__save__");
+                expect(fake.currentDialog()?.message).toContain("Auto review iterations: 2.");
+                await fake.confirm();
+
+                const saved = await loadConfig(path.join(home, "opencode", "specops.json"));
+                expect(saved.maxAutoReviewIterations).toBe(2);
+            }),
+        );
+    });
+
+    test("preserves manual budgets above the selectable range during unrelated TUI saves", async () => {
+        await withTempDir(async home =>
+            withConfigHome(home, async () => {
+                const destination = path.join(home, "opencode", "specops.json");
+                const persisted = await loadConfig(destination);
+                persisted.maxSubagentConcurrency = 12;
+                persisted.maxAutoReviewIterations = 14;
+                await saveConfig(persisted, destination);
+
+                const fake = fakeTuiApi(allProviders);
+                registerModelSettings(fake.api);
+                await fake.runCommand();
+
+                expect(
+                    fake
+                        .currentDialog()
+                        ?.options?.find(option => option.value === "__concurrent_subagents__"),
+                ).toMatchObject({ footer: "12 (manual)" });
+                expect(
+                    fake
+                        .currentDialog()
+                        ?.options?.find(option => option.value === "__auto_review_iterations__"),
+                ).toMatchObject({ footer: "14 (manual)" });
+
+                await openPlannerModelVariant(fake);
+                fake.selectByValue("__save__");
+                await fake.confirm();
+
+                const saved = await loadConfig(destination);
+                expect(saved.maxSubagentConcurrency).toBe(12);
+                expect(saved.maxAutoReviewIterations).toBe(14);
+            }),
+        );
+    });
+
+    test("explicitly replaces manually configured budgets from the TUI", async () => {
+        await withTempDir(async home =>
+            withConfigHome(home, async () => {
+                const destination = path.join(home, "opencode", "specops.json");
+                const persisted = await loadConfig(destination);
+                persisted.maxSubagentConcurrency = 12;
+                persisted.maxAutoReviewIterations = 14;
+                await saveConfig(persisted, destination);
+
+                const fake = fakeTuiApi(allProviders);
+                registerModelSettings(fake.api);
+                await fake.runCommand();
+
+                fake.selectByValue("__concurrent_subagents__");
+                expect(fake.currentDialog()?.title).toBe("Concurrent subagents (manual: 12)");
+                expect(fake.currentDialog()?.current).toBe(12);
+                fake.selectByValue(4);
+
+                fake.selectByValue("__auto_review_iterations__");
+                expect(fake.currentDialog()?.title).toBe("Auto review iterations (manual: 14)");
+                expect(fake.currentDialog()?.current).toBe(14);
+                fake.selectByValue(2);
+
+                fake.selectByValue("__save__");
+                await fake.confirm();
+
+                const saved = await loadConfig(destination);
+                expect(saved.maxSubagentConcurrency).toBe(4);
+                expect(saved.maxAutoReviewIterations).toBe(2);
             }),
         );
     });

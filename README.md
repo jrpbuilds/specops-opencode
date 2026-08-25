@@ -156,6 +156,8 @@ Example:
 ```json
 {
     "frontierEscalation": false,
+    "maxSubagentConcurrency": 2,
+    "maxAutoReviewIterations": 3,
     "agents": {
         "specops-coordinator": {
             "model": "opencode-go/deepseek-v4-flash",
@@ -192,6 +194,8 @@ Example:
 Leave a role unset to inherit OpenCode's default model.
 
 `frontierEscalation` controls whether the Frontier agent is registered. Changing it requires restarting OpenCode.
+
+`maxSubagentConcurrency` controls the maximum number of parallel SpecOps subagents, and `maxAutoReviewIterations` controls how many correction/re-review cycles Auto may run after its initial review. Both accept any positive integer when set directly in `specops.json`. The Configure screen offers `maxSubagentConcurrency` from 1 to 8 and `maxAutoReviewIterations` from 1 to 3, preserving larger manually configured values.
 
 ## Commands
 

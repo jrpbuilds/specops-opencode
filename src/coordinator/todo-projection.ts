@@ -28,8 +28,16 @@ const FIXED_STAGES = [
     { id: "plan-approval", content: "Plan approval checkpoint" },
     { id: "implementation", content: "Implementation" },
     { id: "independent-review", content: "Independent review" },
-    { id: "lifecycle-remediation", content: "Lifecycle/remediation" },
 ] as const;
+
+/** Auto-only stages that make bounded review correction visible in the projection. */
+const AUTO_REVIEW_STAGES = [
+    { id: "auto-review-remediation", content: "Auto review remediation" },
+    { id: "auto-review-re-review", content: "Auto review re-review" },
+] as const;
+
+/** Terminal lifecycle stage shared by interactive and Auto modes. */
+const LIFECYCLE_STAGE = { id: "lifecycle-remediation", content: "Lifecycle/remediation" } as const;
 
 /** Leading evidence stage owned by the explorer; omitted on conditional skips. */
 const REPOSITORY_EVIDENCE_STAGE = {
@@ -79,7 +87,12 @@ export function buildTodoProjection(
     ];
 
     if (planningComplete) {
-        for (const stage of FIXED_STAGES) {
+        const stages = [
+            ...FIXED_STAGES,
+            ...(mode === "auto" ? AUTO_REVIEW_STAGES : []),
+            LIFECYCLE_STAGE,
+        ];
+        for (const stage of stages) {
             if (stage.id === "plan-approval" && mode === "auto") continue;
             entries.push({ ...stage, status: "pending" });
         }

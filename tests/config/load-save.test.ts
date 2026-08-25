@@ -49,7 +49,12 @@ function fullyPopulated() {
         model: "openai/gpt-5.6-sol",
         variant: "high",
     };
-    return { agents, frontierEscalation: true, maxSubagentConcurrency: 2 };
+    return {
+        agents,
+        frontierEscalation: true,
+        maxSubagentConcurrency: 12,
+        maxAutoReviewIterations: 14,
+    };
 }
 
 describe("loadConfig", () => {
@@ -130,6 +135,7 @@ describe("loadConfig", () => {
                 "utf8",
             );
             expect((await loadConfig(destination)).maxSubagentConcurrency).toBe(2);
+            expect((await loadConfig(destination)).maxAutoReviewIterations).toBe(3);
         });
     });
 });

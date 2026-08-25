@@ -177,7 +177,18 @@ describe("buildTodoProjection", () => {
             "proposal",
             "Implementation",
             "Independent review",
+            "Auto review remediation",
+            "Auto review re-review",
             "Lifecycle/remediation",
         ]);
+    });
+
+    test("keeps Auto remediation stages ephemeral and non-authoritative", () => {
+        const status = fixture([artifact("proposal", "done")], ["proposal"]);
+        const entries = buildTodoProjection(status, "auto");
+
+        expect(entries.map(entry => entry.id)).toContain("auto-review-remediation");
+        expect(entries.map(entry => entry.id)).toContain("auto-review-re-review");
+        expect(status.artifacts[0]?.status).toBe("done");
     });
 });

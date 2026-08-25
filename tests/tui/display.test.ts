@@ -7,7 +7,13 @@ import {
 } from "../../src/agents/ids.js";
 import type { AgentConfig, SpecOpsConfig } from "../../src/config.js";
 import { agentDisplayName, configuredModels, type ConfiguredModel } from "../../src/models.js";
-import { changedAgentIds, describeSelection, effectiveConcurrency } from "../../src/tui/display.js";
+import {
+    changedAgentIds,
+    describeSelection,
+    effectiveAutoReviewIterations,
+    effectiveConcurrency,
+    formatConfiguredValue,
+} from "../../src/tui/display.js";
 import { allProviders } from "../fixtures.js";
 
 const models = configuredModels(allProviders);
@@ -44,6 +50,33 @@ describe("effectiveConcurrency", () => {
         expect(
             effectiveConcurrency({ agents: configWith().agents, frontierEscalation: false }),
         ).toBe(2);
+    });
+});
+
+describe("effectiveAutoReviewIterations", () => {
+    test("returns the configured correction budget", () => {
+        expect(effectiveAutoReviewIterations(configWith([], { maxAutoReviewIterations: 12 }))).toBe(
+            12,
+        );
+    });
+
+    test("defaults to three for older configurations without the field", () => {
+        expect(
+            effectiveAutoReviewIterations({
+                agents: configWith().agents,
+                frontierEscalation: false,
+            }),
+        ).toBe(3);
+    });
+});
+
+describe("formatConfiguredValue", () => {
+    test("marks values above the selectable range as manually configured", () => {
+        expect(formatConfiguredValue(12, 8)).toBe("12 (manual)");
+    });
+
+    test("keeps selectable values compact", () => {
+        expect(formatConfiguredValue(8, 8)).toBe("8");
     });
 });
 

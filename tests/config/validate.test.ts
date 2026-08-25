@@ -53,10 +53,17 @@ describe("validateConfig - valid shapes", () => {
         expect(validateConfig(value).frontierEscalation).toBe(false);
     });
 
-    for (const maxSubagentConcurrency of [1, 2, 3, 4, 5, 6, 7, 8]) {
+    for (const maxSubagentConcurrency of [1, 2, 3, 4, 5, 6, 7, 8, 9, 64]) {
         test(`accepts concurrency limit ${maxSubagentConcurrency}`, () => {
             const value = { agents: allRoles(), maxSubagentConcurrency };
             expect(validateConfig(value).maxSubagentConcurrency).toBe(maxSubagentConcurrency);
+        });
+    }
+
+    for (const maxAutoReviewIterations of [1, 2, 3, 8, 9, 64]) {
+        test(`accepts Auto review iteration budget ${maxAutoReviewIterations}`, () => {
+            const value = { agents: allRoles(), maxAutoReviewIterations };
+            expect(validateConfig(value).maxAutoReviewIterations).toBe(maxAutoReviewIterations);
         });
     }
 });
@@ -102,16 +109,36 @@ describe("validateConfig - top-level structure", () => {
         ["zero", 0],
         ["negative", -1],
         ["fraction", 2.5],
-        ["above maximum", 9],
         ["string", "2"],
         ["boolean", true],
         ["object", {}],
         ["array", []],
         ["null", null],
+        ["NaN", NaN],
+        ["infinity", Infinity],
     ] as const) {
         test(`rejects an invalid concurrency limit: ${label}`, () => {
             expect(() => validateConfig({ agents: allRoles(), maxSubagentConcurrency })).toThrow(
-                "maxSubagentConcurrency must be an integer from 1 to 8",
+                "maxSubagentConcurrency must be a positive integer",
+            );
+        });
+    }
+
+    for (const [label, maxAutoReviewIterations] of [
+        ["zero", 0],
+        ["negative", -1],
+        ["fraction", 2.5],
+        ["string", "2"],
+        ["boolean", true],
+        ["object", {}],
+        ["array", []],
+        ["null", null],
+        ["NaN", NaN],
+        ["infinity", Infinity],
+    ] as const) {
+        test(`rejects an invalid Auto review iteration budget: ${label}`, () => {
+            expect(() => validateConfig({ agents: allRoles(), maxAutoReviewIterations })).toThrow(
+                "maxAutoReviewIterations must be a positive integer",
             );
         });
     }

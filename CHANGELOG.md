@@ -6,26 +6,17 @@ All notable changes to SpecOps are documented in this file.
 
 ### Added
 
-- Added read-only correctness, risk, and quality review specialists that
-  critique changes alongside the final reviewer. They reuse the Reviewer's model
-  unless configured with their own, and existing configuration files adopt them
-  automatically on next save.
-- Multi-model review now runs the three specialists through bounded rolling
-  fan-out before the final Reviewer, which remains the sole PASS/FAIL authority.
+- Added independent correctness, risk, and quality reviews to catch more problems before a change is completed.
+- Reviews now combine feedback from three independent specialists before the final review decision.
+- SpecOps Auto can now retry failed reviews for a configurable number of correction cycles and reports the remaining findings when its budget is exhausted.
 
 ### Changed
 
-- Standard mode's review FAIL checkpoint now routes accepted findings through schema-aware remediation instead of sending every finding straight to the implementer (#26).
-- Planning batches now use rolling bounded scheduling, so independent OpenSpec
-  artifacts start as soon as a slot frees instead of waiting for a full wave to
-  drain.
-- The Concurrent subagents picker now lets you choose any number from 1 to 8
-  (up from just 1, 2, 4, or 8), and the Configure screen is tidier with less
-  descriptive text.
-- Review remediation now fixes the earliest incorrect layer first: the reviewer
-  reports which layer each finding targets, and the coordinator routes
-  implementation-only findings straight back to the implementer while planning
-  defects go to the planner or designer before work resumes.
+- Standard mode now routes review findings to the right correction path instead of always sending them straight to implementation.
+- Planning now starts newly available work as soon as a slot opens, reducing unnecessary waiting.
+- The Configure screen now offers subagent limits from 1 to 8 with less clutter.
+- Review corrections now start at the earliest affected planning or implementation step, making complex fixes more reliable.
+- Advanced users can set concurrency above 8 and Auto review iterations above 3 directly in `specops.json`; Configure continues to offer concurrency from 1 to 8 and Auto review iterations from 1 to 3.
 
 ## [v1.4.0] - 2026-08-23
 
@@ -60,38 +51,29 @@ All notable changes to SpecOps are documented in this file.
 
 ### Changed
 
-- Revised the OpenSpec compatibility policy to target the latest release and
-  accept older versions whose capability probes still pass. (issue #10)
+- Revised compatibility checks to target the latest release while accepting older versions that still support the required features.
 - Updated the OpenSpec compatibility target to 1.10.0 and removed the legacy
   version alias.
 
 ### Added
 
-- Added `/specops-update`, so users can revise an active change in place without
-  losing completed planning work. (issue #11)
-- Added `/specops-sync`, so users can sync an active change's delta specs into
-  main specs without archiving it. (issue #12)
-- Added native workflow Todo projections, so users can follow SpecOps progress
-  from Explorer through planning, implementation, review, and lifecycle. (issue #16)
+- Added `/specops-update`, so users can revise an active change without losing completed planning work.
+- Added `/specops-sync`, so users can apply an active change's updates to the main specs without archiving it.
+- Added workflow progress tracking, so users can follow work from exploration through planning, implementation, review, and completion.
 
 ## [v1.1.0] - 2026-08-21
 
 ### Added
 
-- Added OpenSpec compatibility diagnostics and strict validation gates, so
-  incompatible installs and malformed responses are caught early with
-  actionable guidance. (issue #10)
+- Added compatibility diagnostics and validation checks, so unsupported installs and malformed responses are caught early with actionable guidance.
 
 ## [v1.0.0] - 2026-08-20
 
 ### Added
 
-- Added support for custom OpenSpec schemas, so planning follows each project's
-  artifacts and structure instead of assuming the default layout. (issue #7)
-- Improved workflow routing from live OpenSpec status, so skipped, blocked, and
-  custom artifacts advance correctly. (issue #6)
-- Added `specops_status`, so the coordinator can check the current change state
-  without browsing project files. (issue #5)
+- Added support for custom project workflows, so planning follows each project's structure instead of assuming a default layout.
+- Improved workflow progress for skipped, blocked, and custom planning steps.
+- Added `specops_status`, so the coordinator can check current change progress without browsing project files.
 
 ### Fixed
 
@@ -136,7 +118,6 @@ All notable changes to SpecOps are documented in this file.
 ### Fixed
 
 - Fixed headless `/specops-auto` runs stalling on cross-directory commands.
-  (issue #3)
 
 ## [v0.4.0] - 2026-08-14
 
