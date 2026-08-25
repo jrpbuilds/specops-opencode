@@ -30,6 +30,30 @@ function expectSyncFlowContract(prompt: string): void {
     expect(prompt).toContain("never invoke `openspec archive`");
 }
 
+function expectBashDisciplineContract(prompt: string): void {
+    const sectionStart = prompt.indexOf("## Bash discipline");
+    expect(sectionStart).toBeGreaterThanOrEqual(0);
+    const sectionEnd = prompt.indexOf("## ", sectionStart + 3);
+    expect(sectionEnd).toBeGreaterThan(sectionStart);
+    const section = prompt.slice(sectionStart, sectionEnd);
+
+    expect(section).toContain("`ls`");
+    expect(section).toContain("`find`");
+    expect(section).toContain("`grep`/`rg`");
+    expect(section).toContain("`cat`");
+    expect(section).toContain("`head`");
+    expect(section).toContain("`tail`");
+    expect(section).toContain("`git`");
+    expect(section).toContain("`pwd`");
+    expect(section).toContain("`sed`");
+    expect(section).toContain("equivalent commands");
+    expect(section).toContain("shell composition");
+    expect(section).toContain("`Read`, `Glob`, or `Grep`");
+    expect(section).toContain("specops-explorer");
+    expect(section).toContain("denial as a boundary");
+    expect(section).toContain("coordinator-native");
+}
+
 async function withTempPromptDirectory(run: (directory: string) => Promise<void>): Promise<void> {
     const directory = await mkdtemp(path.join(os.tmpdir(), "specops-prompts-"));
     try {
@@ -214,5 +238,25 @@ describe("coordinator config-view migration (issue #39)", () => {
 
     test("prompts directory exists at the expected packaged location", () => {
         expect(existsSync(PROMPTS_DIR)).toBe(true);
+    });
+});
+
+describe("coordinator bash discipline contract", () => {
+    test("shared coordinator prompt states the Bash boundary before startup", () => {
+        const prompt = loadPrompt(AGENT_IDS.coordinator);
+
+        expectBashDisciplineContract(prompt);
+        expect(prompt.indexOf("## Bash discipline")).toBeLessThan(prompt.indexOf("## Startup"));
+    });
+
+    test.each(["interactive", "auto"] as const)(
+        "%s coordinator inherits the Bash discipline contract",
+        mode => {
+            expectBashDisciplineContract(buildCoordinatorPrompt(mode, false));
+        },
+    );
+
+    test("frontier-enabled Auto coordinator inherits the Bash discipline contract", () => {
+        expectBashDisciplineContract(buildCoordinatorPrompt("auto", true));
     });
 });

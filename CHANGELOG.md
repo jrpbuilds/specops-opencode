@@ -13,6 +13,7 @@ All notable changes to SpecOps are documented in this file.
 
 ### Changed
 
+- Coordinators now state their restricted tool boundary up front, so models route repository evidence and OpenSpec lifecycle work to the right tools on the first attempt instead of discovering the restriction through failed calls.
 - Standard mode now routes review findings to the right correction path instead of always sending them straight to implementation.
 - Planning now starts newly available work as soon as a slot opens, reducing unnecessary waiting.
 - The Configure screen now offers subagent limits from 1 to 8 with less clutter.
