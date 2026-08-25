@@ -94,8 +94,11 @@ describe("coordinator prompt composition", () => {
 
     test("assembled prompts stay within regression budgets", () => {
         // Frontier-enabled variants are the largest assembled prompts for each mode.
-        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(32_000);
-        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(32_000);
+        // Budget raised from 32k to 33k for issue #39: coordinator prompts now
+        // instruct reading maxSubagentConcurrency and maxAutoReviewIterations from
+        // the specops_config tool, adding ~200 bytes over the prior cap.
+        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(33_000);
+        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(33_000);
     });
 });
 
@@ -862,7 +865,8 @@ describe("Auto coordinator contract", () => {
             "Planner/Designer returns follow `## Autonomous specialist decisions`",
         );
         expect(section).toContain("complete critic fan-out again");
-        expect(section).toContain("at most **3 remediation rounds total**");
+        expect(section).toContain("Read `maxAutoReviewIterations` from `specops_config`");
+        expect(section).toContain("at most **that many remediation rounds total**");
         expect(section).toContain("The initial review does not consume an iteration");
         expect(section).toContain("When a FAIL leaves no iterations remaining, return `BLOCKED`");
         expect(section).toContain("never exceed the configured finite budget");
@@ -875,12 +879,16 @@ describe("Auto coordinator contract", () => {
         expect(prompt).toContain("Never use Todo state to decide workflow routing");
     });
 
-    test("injects an explicitly configured Auto review budget", () => {
-        const prompt = buildCoordinatorPrompt("auto", false, 12);
+    test("reads the Auto review budget from specops_config instead of baking it into the prompt", () => {
+        const prompt = buildCoordinatorPrompt("auto", false);
         const section = prompt.slice(prompt.indexOf("## Autonomous review remediation"));
 
-        expect(section).toContain("at most **12 remediation rounds total**");
-        expect(section).not.toContain("at most **3 remediation rounds total**");
+        // The placeholder substitution is gone; the prompt instructs the
+        // coordinator to read the effective budget from specops_config.
+        expect(section).not.toContain("{{maxAutoReviewIterations}}");
+        expect(section).not.toContain("at most **12 remediation rounds total**");
+        expect(section).toContain("Read `maxAutoReviewIterations` from `specops_config`");
+        expect(section).toContain("at most **that many remediation rounds total**");
     });
 
     test("retains terminal COMPLETED/BLOCKED result contracts", () => {
@@ -1045,16 +1053,21 @@ describe("coordinator registration", () => {
         expect(autoPermission[SPECOPS_LIFECYCLE_PERMISSION]).toBe("allow");
     });
 
-    test("injects the configured Auto review budget into the registered prompt", () => {
+    test("does not bake the configured Auto review budget into the registered prompt", () => {
+        // The configured value lives in the process snapshot read by specops_config;
+        // the prompt no longer substitutes it, so a larger configured budget must
+        // not appear verbatim in the assembled prompt.
         const specOpsConfig = makeConfig();
         specOpsConfig.maxAutoReviewIterations = 12;
         const config: Config = {};
 
         registerAutoCoordinatorAgent(config, specOpsConfig);
 
-        expect(promptOf(config, SPECOPS_AUTO_AGENT_ID)).toBe(
-            buildCoordinatorPrompt("auto", false, 12),
-        );
+        const prompt = promptOf(config, SPECOPS_AUTO_AGENT_ID);
+        expect(prompt).toBe(buildCoordinatorPrompt("auto", false));
+        expect(prompt).not.toContain("12 remediation rounds");
+        expect(prompt).not.toContain("{{maxAutoReviewIterations}}");
+        expect(prompt).toContain("Read `maxAutoReviewIterations` from `specops_config`");
     });
 
     test("restricts both coordinators to the private SpecOps subagent namespace", () => {

@@ -1,12 +1,18 @@
 import type { ToolContext, ToolDefinition } from "@opencode-ai/plugin/tool";
-import { describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { archiveTool } from "../../src/host/tools/archive.js";
+import { configTool } from "../../src/host/tools/config.js";
 import { contextTool } from "../../src/host/tools/context.js";
 import { createChangeTool } from "../../src/host/tools/create-change.js";
 import { doctorTool } from "../../src/host/tools/doctor.js";
 import { onboardTool } from "../../src/host/tools/onboard.js";
 import { statusTool } from "../../src/host/tools/status.js";
 import { validateChangeTool } from "../../src/host/tools/validate-change.js";
+import {
+    __resetProcessConfigForTesting,
+    setProcessConfig,
+} from "../../src/host/config-snapshot.js";
+import { DEFAULT_CONFIG } from "../../src/config.js";
 import { SpecOpsPlugin } from "../../src/index.js";
 import { withTempDir } from "../helpers.js";
 
@@ -24,6 +30,12 @@ const LIFECYCLE_TOOLS: Array<{
         definition: archiveTool,
         args: { change: "example" },
         metadataTitle: "Archiving OpenSpec change…",
+    },
+    {
+        id: "specops_config",
+        definition: configTool,
+        args: {},
+        metadataTitle: "Reading SpecOps config…",
     },
     {
         id: "specops_context",
@@ -93,6 +105,16 @@ function toolContext(
 }
 
 describe("lifecycle tool integration", () => {
+    // specops_config reads the process-effective config snapshot; populate it
+    // once for this suite so the "permission granted" test path can proceed.
+    // Other tools ignore the snapshot, so this is harmless to them.
+    beforeAll(() => {
+        setProcessConfig(DEFAULT_CONFIG);
+    });
+    afterAll(() => {
+        __resetProcessConfigForTesting();
+    });
+
     test.each(LIFECYCLE_TOOLS)("$id checks lifecycle permission before proceeding", async item => {
         await withTempDir(async directory => {
             const originalConfigHome = process.env.XDG_CONFIG_HOME;
@@ -152,6 +174,7 @@ describe("lifecycle tool integration", () => {
 
             expect(Object.keys(hooks.tool ?? {}).sort()).toEqual([
                 "specops_archive",
+                "specops_config",
                 "specops_context",
                 "specops_create_change",
                 "specops_doctor",

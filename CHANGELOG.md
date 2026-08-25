@@ -9,6 +9,7 @@ All notable changes to SpecOps are documented in this file.
 - Added independent correctness, risk, and quality reviews to catch more problems before a change is completed.
 - Reviews now combine feedback from three independent specialists before the final review decision.
 - SpecOps Auto can now retry failed reviews for a configurable number of correction cycles and reports the remaining findings when its budget is exhausted.
+- Added a coordinator-only `specops_config` tool so coordinators can read the effective SpecOps settings without them being baked into prompts.
 
 ### Changed
 

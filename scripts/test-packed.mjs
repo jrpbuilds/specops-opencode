@@ -83,6 +83,7 @@ try {
         Object.keys(hooks.tool).sort(),
         [
             "specops_archive",
+            "specops_config",
             "specops_context",
             "specops_create_change",
             "specops_doctor",

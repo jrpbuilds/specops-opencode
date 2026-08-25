@@ -1,6 +1,7 @@
 import type { Config, Plugin } from "@opencode-ai/plugin";
 import { loadConfig } from "./config.js";
 import { applyCommands } from "./host/commands.js";
+import { setProcessConfig } from "./host/config-snapshot.js";
 import {
     registerAutoCoordinatorAgent,
     registerCoordinatorAgent,
@@ -37,6 +38,12 @@ export const SpecOpsPlugin: Plugin = async () => ({
 
         try {
             const specOpsConfig = await loadConfig();
+            // Capture the process-effective configuration before registering
+            // agents so coordinator tools (specops_config) read the same
+            // validated snapshot that produced the registered agent catalogue.
+            // SpecOps settings require an OpenCode restart to take effect, so
+            // the snapshot is intentionally frozen for the process lifetime.
+            setProcessConfig(specOpsConfig);
             registerCoordinatorAgent(config, specOpsConfig);
             registerAutoCoordinatorAgent(config, specOpsConfig);
             registerExplorerAgent(config, specOpsConfig);

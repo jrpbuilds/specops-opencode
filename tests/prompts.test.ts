@@ -1,6 +1,9 @@
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { readdirSync } from "node:fs";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "bun:test";
 import { buildCoordinatorPrompt } from "../src/agents/coordinator.js";
 import { AGENT_IDS } from "../src/agents/ids.js";
@@ -165,5 +168,51 @@ describe("engram ordering contract", () => {
             );
             expect(prompt).toContain("Never call an Engram tool after emitting your handoff");
         }
+    });
+});
+
+describe("coordinator config-view migration (issue #39)", () => {
+    const PROMPTS_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "prompts");
+
+    test("no coordinator prompt file retains the maxAutoReviewIterations placeholder", async () => {
+        const files = readdirSync(PROMPTS_DIR);
+        const coordinatorFiles = files.filter((file: string) => file.startsWith("coordinator"));
+        expect(coordinatorFiles.length).toBeGreaterThan(0);
+        for (const file of coordinatorFiles) {
+            const content = await readFile(path.join(PROMPTS_DIR, file), "utf8");
+            expect(content).not.toContain("{{maxAutoReviewIterations}}");
+        }
+    });
+
+    test("assembled coordinator prompts do not contain the placeholder", () => {
+        for (const mode of ["interactive", "auto"] as const) {
+            for (const frontier of [false, true]) {
+                const prompt = buildCoordinatorPrompt(mode, frontier);
+                expect(prompt).not.toContain("{{maxAutoReviewIterations}}");
+            }
+        }
+    });
+
+    test("every coordinator mode instructs reading maxSubagentConcurrency from specops_config", () => {
+        // The shared coordinator prompt and both mode-specific prompts must
+        // direct the LLM to read the effective concurrency value from the
+        // config tool instead of leaving it as an opaque symbolic name.
+        const shared = loadPrompt(AGENT_IDS.coordinator);
+        expect(shared).toContain("specops_config");
+        expect(shared).toContain("maxSubagentConcurrency");
+        for (const mode of ["interactive", "auto"] as const) {
+            const prompt = buildCoordinatorPrompt(mode, false);
+            expect(prompt).toContain("from `specops_config` at workflow init");
+        }
+    });
+
+    test("Auto prompt instructs reading the review budget from specops_config", () => {
+        const prompt = buildCoordinatorPrompt("auto", false);
+        expect(prompt).toContain("Read `maxAutoReviewIterations` from `specops_config`");
+        expect(prompt).not.toContain("12 remediation rounds");
+    });
+
+    test("prompts directory exists at the expected packaged location", () => {
+        expect(existsSync(PROMPTS_DIR)).toBe(true);
     });
 });

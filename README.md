@@ -123,7 +123,8 @@ They cannot themselves delegate to further subagents.
 Coordinator agents have native edit tools disabled and may use the shell only
 for `openspec --help` lookups. Ordinary OpenCode primary agents can use the
 user-facing `specops_doctor` and `specops_onboard` tools, while OpenSpec context,
-change creation, and archive operations remain Coordinator-owned.
+change creation, archive operations, and the `specops_config` effective-settings
+view remain Coordinator-owned.
 
 ## Model configuration
 

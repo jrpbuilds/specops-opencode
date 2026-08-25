@@ -44,6 +44,7 @@ Apply the conditional Explorer-dispatch rule from the shared coordinator contrac
 ## Planning batches
 
 `maxSubagentConcurrency`: maximum number of parallel SpecOps subagents. `createRollingScheduler` caps concurrent dispatch; dependencies never share dispatch.
+Read its effective value from `specops_config` at workflow init and use it as the scheduler cap.
 
 Rolling refill starts newly eligible route after any single completion; never
 wait for an entire wave to drain. Completion: handoff gate, complete, fresh

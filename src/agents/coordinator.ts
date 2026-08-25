@@ -18,23 +18,20 @@ export const SPECOPS_AUTO_AGENT_ID = "SpecOps Auto";
  *
  * Interactive and Auto policies are mutually exclusive. Frontier policy is
  * included only when the feature is enabled, keeping disabled policy out of
- * the model context. Auto's concrete review budget is inserted into its
- * mode-specific prompt so the coordinator can enforce the configured bound.
+ * the model context.
+ *
+ * Coordinator-visible numeric policy — the Auto review-remediation budget and
+ * the subagent concurrency cap — is read from the `specops_config` tool at
+ * workflow initialization rather than baked into the prompt. Keeping these
+ * values out of static prompt construction decouples prompt shape from config
+ * shape and lets coordinator logic read the effective snapshot that produced
+ * the currently-registered agents.
  */
-export function buildCoordinatorPrompt(
-    mode: CoordinatorMode,
-    frontierEscalation: boolean,
-    maxAutoReviewIterations = 3,
-): string {
+export function buildCoordinatorPrompt(mode: CoordinatorMode, frontierEscalation: boolean): string {
     const modePrompt = loadPromptFile(
         mode === "interactive" ? "coordinator-interactive.md" : "coordinator-auto.md",
     );
-    const fragments = [
-        loadPrompt(AGENT_IDS.coordinator),
-        mode === "auto"
-            ? modePrompt.replaceAll("{{maxAutoReviewIterations}}", String(maxAutoReviewIterations))
-            : modePrompt,
-    ];
+    const fragments = [loadPrompt(AGENT_IDS.coordinator), modePrompt];
 
     if (frontierEscalation) {
         fragments.push(loadPromptFile("coordinator-frontier.md"));
@@ -98,11 +95,7 @@ export function autoCoordinatorAgentDefinition(
             "Autonomous SpecOps coordinator for headless runs: executes the SpecOps workflow " +
             "without human checkpoints. Use via the specops-auto command.",
         mode: "primary",
-        prompt: buildCoordinatorPrompt(
-            "auto",
-            specOpsConfig.frontierEscalation,
-            specOpsConfig.maxAutoReviewIterations,
-        ),
+        prompt: buildCoordinatorPrompt("auto", specOpsConfig.frontierEscalation),
         permission: {
             ...COORDINATOR_PERMISSION,
             question: "deny",

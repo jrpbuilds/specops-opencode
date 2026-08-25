@@ -13,6 +13,12 @@ const EXPECTED_TOOLS = [
         args: ["change"],
     },
     {
+        id: "specops_config",
+        description:
+            "Read the effective SpecOps configuration snapshot for the current OpenCode process.",
+        args: [],
+    },
+    {
         id: "specops_context",
         description:
             "Return deterministic current OpenSpec facts: availability, initialization, and active changes.",

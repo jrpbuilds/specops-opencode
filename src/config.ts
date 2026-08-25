@@ -31,6 +31,11 @@ export type SpecOpsConfig = {
     maxAutoReviewIterations?: number;
 };
 
+/** Default value used when `maxSubagentConcurrency` is omitted from a config. */
+export const DEFAULT_SUBAGENT_CONCURRENCY = 2;
+/** Default value used when `maxAutoReviewIterations` is omitted from a config. */
+export const DEFAULT_AUTO_REVIEW_ITERATIONS = 3;
+
 /**
  * Initial configuration used when no SpecOps file exists.
  *
@@ -40,8 +45,8 @@ export type SpecOpsConfig = {
 export const DEFAULT_CONFIG: SpecOpsConfig = {
     agents: Object.fromEntries(ALL_AGENT_IDS.map(id => [id, {}])) as SpecOpsConfig["agents"],
     frontierEscalation: false,
-    maxSubagentConcurrency: 2,
-    maxAutoReviewIterations: 3,
+    maxSubagentConcurrency: DEFAULT_SUBAGENT_CONCURRENCY,
+    maxAutoReviewIterations: DEFAULT_AUTO_REVIEW_ITERATIONS,
 };
 
 const REVIEW_SPECIALIST_IDS = new Set<AgentId>([

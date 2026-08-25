@@ -53,7 +53,7 @@ The workflow never skips planning or apply-readiness (and, after apply, independ
 
 ## Review phase
 
-After implementation and validation, run the three independent critics before the final Reviewer. Track this with tested `createReviewFanout(maxSubagentConcurrency)`; do not persist fan-out state.
+After implementation and validation, run the three independent critics before the final Reviewer. Track this with tested `createReviewFanout(maxSubagentConcurrency)`; do not persist fan-out state. Read its effective value from `specops_config` at workflow init and pass that number to `createReviewFanout`.
 
 - `specops-review-correctness`, `specops-review-risk`, and `specops-review-quality` are independent. Dispatch through `task` under `maxSubagentConcurrency`, refilling a freed slot without waiting for a fixed wave. Give each the current change, goal, relevant prior findings, scoped Project Context, and focused instruction; use OpenSpec-declared context and never pass reports between critics.
 - A normal critic return contains its complete critique; record it verbatim. The complete critique is the required handoff: do not require the generic specialist handoff envelope or a PASS/FAIL verdict. A malformed return uses bounded recovery: resume the same completed Task once with the prior session id, then record `fail` if still malformed. A genuine `state=error` with no completed work records `fail` and is not resumed.

@@ -74,7 +74,13 @@ export const FRONTIER_PERMISSION = {
 
 /**
  * Ordinary primary agents may run only `specops_doctor` and `specops_onboard`;
- * archive, context, and change-creation lifecycle operations remain denied.
+ * archive, context, status, validate-change, and config lifecycle operations
+ * remain denied.
+ *
+ * `specops_config` is intentionally NOT allowlisted here. It is a
+ * coordinator-only surface, and ordinary agents are denied through the
+ * `"*": "deny"` fallback. Add it here only if ordinary agents should ever gain
+ * read access to the effective SpecOps configuration (not currently desired).
  */
 export const ORDINARY_LIFECYCLE_PERMISSION = {
     "*": "deny",
