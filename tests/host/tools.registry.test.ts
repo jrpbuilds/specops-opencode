@@ -52,6 +52,13 @@ const EXPECTED_TOOLS = [
         args: [],
     },
     {
+        id: "specops_review_guard",
+        description:
+            "Capture or verify the review worktree-mutation guard for a named change: snapshot " +
+            "protected state before review fan-out and verify no protected state changed after fan-in.",
+        args: ["change", "operation"],
+    },
+    {
         id: "specops_status",
         description: "Read normalized OpenSpec workflow status for a named change.",
         args: ["change"],

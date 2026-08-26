@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ALL_AGENT_IDS } from "../../src/agents/ids.js";
+import { AGENT_IDS, ALL_AGENT_IDS } from "../../src/agents/ids.js";
 import { ROLE_CAPABILITY_POLICY } from "../../src/agents/permission-policy.js";
 import {
     COORDINATOR_PERMISSION,
@@ -16,6 +16,18 @@ import {
     SPECOPS_TASK_GLOB,
     denyTaskGlob,
 } from "../../src/agents/permissions.js";
+import { reviewCorrectnessAgentDefinition } from "../../src/agents/review-correctness.js";
+import { reviewQualityAgentDefinition } from "../../src/agents/review-quality.js";
+import { reviewRiskAgentDefinition } from "../../src/agents/review-risk.js";
+import type { SpecOpsConfig } from "../../src/config.js";
+
+/** Build a complete valid role config with no model overrides. */
+function makeConfig(): SpecOpsConfig {
+    const agents = Object.fromEntries(
+        Object.values(AGENT_IDS).map(id => [id, {}]),
+    ) as SpecOpsConfig["agents"];
+    return { agents, frontierEscalation: false };
+}
 
 describe("role permission profiles", () => {
     test("does not retain execution-mode permission exports", async () => {
@@ -96,6 +108,24 @@ describe("role permission profiles", () => {
             expect(ROLE_CAPABILITY_POLICY[id].edit).toEqual({ "*": "deny" });
             expect(ROLE_CAPABILITY_POLICY[id].bash).toBe("allow");
         }
+    });
+
+    test("keeps review roles denied from specops tools and lifecycle", () => {
+        const config = makeConfig();
+        const criticDefinitions = [
+            reviewCorrectnessAgentDefinition(config),
+            reviewRiskAgentDefinition(config),
+            reviewQualityAgentDefinition(config),
+        ];
+        for (const definition of criticDefinitions) {
+            // The critics reuse the reviewer permission verbatim, so they can
+            // never invoke coordinator-only surfaces such as specops_review_guard.
+            expect(definition.permission).toEqual(REVIEWER_PERMISSION);
+            expect(definition.permission["specops_*"]).toBe("deny");
+            expect(definition.permission[SPECOPS_LIFECYCLE_PERMISSION]).toBe("deny");
+        }
+        expect(REVIEWER_PERMISSION["specops_*"]).toBe("deny");
+        expect(REVIEWER_PERMISSION[SPECOPS_LIFECYCLE_PERMISSION]).toBe("deny");
     });
 
     test("restricts ordinary lifecycle access to doctor and onboarding", () => {

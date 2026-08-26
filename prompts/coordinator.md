@@ -69,9 +69,13 @@ Call `specops_apply_instructions` before implementation/review; reuse same `cont
 
 After implementation and validation, run the three independent critics before the final Reviewer. Track this with tested `createReviewFanout(maxSubagentConcurrency)`; do not persist fan-out state. Read its effective value from `specops_config` at workflow init and pass that number to `createReviewFanout`.
 
+The review worktree-mutation guard is coordinator-owned: only you can call `specops_review_guard`. Review agents are denied `specops_*` and `specops_lifecycle`, so they cannot capture or verify for you; never ask one to.
+
+- Immediately after `specops_validate_change` passes and before dispatching the critic fan-out, call `specops_review_guard` with `{ operation: "capture", change }` exactly once. This snapshots protected state (git-tracked files plus the `openspec/` tree, excluding build/test artifacts) as the review window boundary. Capture is best-effort: if it reports an error rather than a clean capture result, note it and continue — the later `verify` fails closed on `missingBaseline`.
 - `specops-review-correctness`, `specops-review-risk`, and `specops-review-quality` are independent. Dispatch through `task` under `maxSubagentConcurrency`, refilling a freed slot without waiting for a fixed wave. Give each the current change, goal, findings, Project Context, and focused instruction; never pass reports between critics.
 - A normal critic return contains its complete critique; record it verbatim. The complete critique is the required handoff: do not require the generic specialist handoff envelope or a PASS/FAIL verdict. A malformed return uses bounded recovery: resume the same completed Task once with the prior session id, then record `fail` if still malformed. A genuine `state=error` with no completed work records `fail` and is not resumed.
 - A failed critic closes the final-review fan-in gate but does not cancel active siblings or prevent pending critics from being dispatched. Finish siblings, then stop `BLOCKED` with the failed critic id, session id, and failure. Never dispatch `specops-reviewer` with a partial report set.
+- After all three critics complete successfully, call `specops_review_guard` with `{ operation: "verify", change }` before building the `## Specialist evidence` envelope. If `mutated` is `true` or `missingBaseline` is `true`, stop `BLOCKED`, surface the `violations` array verbatim (path, kind, scope, baseline/current hashes), and do **not** dispatch `specops-reviewer`. Do not auto-revert the mutation.
 - Dispatch `specops-reviewer` only after all three critics complete successfully, passing their reports verbatim in canonical order:
 
     ```text
@@ -89,7 +93,8 @@ After implementation and validation, run the three independent critics before th
 
     The Reviewer treats these reports as evidence, not votes or authority; it remains the sole owner of the compliance matrix and PASS/FAIL verdict.
 
-- On remediation re-review, reset fan-out state and run the complete critic fan-out again. Pass new reports verbatim with prior `F1..Fn` findings verbatim and the explicit remediation re-review instruction. Never run only a subset of critics on re-review.
+- After `specops-reviewer` returns and before proceeding to archive/lifecycle, call `specops_review_guard` with `{ operation: "verify", change }` again. If `mutated` or `missingBaseline`, block the handoff and surface the `violations` verbatim. Do not auto-revert.
+- On remediation re-review, reset fan-out state and run the complete critic fan-out again; the guard capture above re-runs at the new fan-out boundary so remediation edits are not falsely reported. Pass new reports verbatim with prior `F1..Fn` findings verbatim and the explicit remediation re-review instruction. Never run only a subset of critics on re-review.
 
 ## Schema-aware remediation routing
 

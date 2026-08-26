@@ -103,6 +103,7 @@ describe("SpecOps server plugin", () => {
                     "specops_create_change",
                     "specops_doctor",
                     "specops_onboard",
+                    "specops_review_guard",
                     "specops_status",
                     "specops_validate_change",
                 ]);

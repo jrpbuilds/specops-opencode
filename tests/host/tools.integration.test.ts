@@ -8,6 +8,7 @@ import { contextTool } from "../../src/host/tools/context.js";
 import { createChangeTool } from "../../src/host/tools/create-change.js";
 import { doctorTool } from "../../src/host/tools/doctor.js";
 import { onboardTool } from "../../src/host/tools/onboard.js";
+import { reviewGuardTool } from "../../src/host/tools/review-guard.js";
 import { statusTool } from "../../src/host/tools/status.js";
 import { validateChangeTool } from "../../src/host/tools/validate-change.js";
 import {
@@ -74,6 +75,12 @@ const LIFECYCLE_TOOLS: Array<{
         definition: onboardTool,
         args: {},
         metadataTitle: "Onboarding project for OpenSpec…",
+    },
+    {
+        id: "specops_review_guard",
+        definition: reviewGuardTool,
+        args: { operation: "capture", change: "example" },
+        metadataTitle: "Capturing review guard baseline…",
     },
     {
         id: "specops_status",
@@ -195,6 +202,7 @@ describe("lifecycle tool integration", () => {
                 "specops_create_change",
                 "specops_doctor",
                 "specops_onboard",
+                "specops_review_guard",
                 "specops_status",
                 "specops_validate_change",
             ]);
@@ -218,7 +226,12 @@ describe("lifecycle tool integration", () => {
                     },
                 );
 
-                const args = id === "specops_validate_change" ? { change: "example" } : {};
+                const args =
+                    id === "specops_validate_change"
+                        ? { change: "example" }
+                        : id === "specops_review_guard"
+                          ? { operation: "capture", change: "example" }
+                          : {};
                 await expect(definition.execute(args, context)).rejects.toThrow("lifecycle denied");
                 expect(requests).toHaveLength(1);
                 expect(requests[0]).toEqual({

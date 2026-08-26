@@ -100,7 +100,10 @@ describe("coordinator prompt composition", () => {
         // Budget raised from 34k to 35k for the fresh-change validation gate:
         // specops_validate_change now distinguishes planningIncomplete so first-pass
         // authoring dispatches proceed instead of deadlocking on missing deltas.
-        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(35_000);
+        // Budget raised from 35k to 36k for the review worktree-mutation guard:
+        // the review phase now brackets critic fan-out with specops_review_guard
+        // capture/verify instructions (issue #31).
+        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(36_000);
         expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(35_000);
     });
 });
