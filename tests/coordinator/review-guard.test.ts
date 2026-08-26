@@ -58,7 +58,9 @@ describe("isIgnored", () => {
         expect(isIgnored("openspec/changes/demo/dist/notes.md")).toBe(true);
         expect(isIgnored("run.log")).toBe(true);
         expect(isIgnored("src/nested/run.log")).toBe(true);
+        expect(isIgnored(".opencode/specops-review-guard/demo.json")).toBe(true);
         expect(isIgnored(".specops-review-guard/demo.json")).toBe(true);
+        expect(isIgnored(".opencode/commands/my-command.md")).toBe(false);
     });
 });
 
@@ -242,7 +244,7 @@ describe("captureBaseline", () => {
             });
 
             const raw = await readFile(
-                path.join(dir, ".specops-review-guard", "demo.json"),
+                path.join(dir, ".opencode", "specops-review-guard", "demo.json"),
                 "utf8",
             );
             const baseline = JSON.parse(raw) as Baseline;
@@ -401,7 +403,7 @@ describe("review guard window", () => {
 
             await captureBaseline("demo", dir, deps);
             const raw = await readFile(
-                path.join(dir, ".specops-review-guard", "demo.json"),
+                path.join(dir, ".opencode", "specops-review-guard", "demo.json"),
                 "utf8",
             );
             expect(Object.keys((JSON.parse(raw) as Baseline).tracked)).toEqual(["src/a.ts"]);
@@ -418,14 +420,14 @@ describe("review guard window", () => {
 
     test("excludes the guard's own baseline store from the protected set", async () => {
         await withTempDir(async dir => {
-            const tracked = ["src/a.ts", ".specops-review-guard/demo.json"];
+            const tracked = ["src/a.ts", ".opencode/specops-review-guard/demo.json"];
             await writeFiles(dir, ["src/a.ts"]);
             mockGit(dir, () => tracked);
             const deps = { capture: helpers.runCaptureStdout };
 
             await captureBaseline("demo", dir, deps);
             const raw = await readFile(
-                path.join(dir, ".specops-review-guard", "demo.json"),
+                path.join(dir, ".opencode", "specops-review-guard", "demo.json"),
                 "utf8",
             );
             expect(Object.keys((JSON.parse(raw) as Baseline).tracked)).toEqual(["src/a.ts"]);
@@ -475,7 +477,10 @@ describe("review guard window", () => {
             const deps = { capture: helpers.runCaptureStdout };
 
             await captureBaseline("demo", dir, deps);
-            await writeFile(path.join(dir, ".specops-review-guard", "demo.json"), "not json");
+            await writeFile(
+                path.join(dir, ".opencode", "specops-review-guard", "demo.json"),
+                "not json",
+            );
 
             const result = await verifyBaseline("demo", dir, deps);
             expect(result).toEqual({ mutated: false, missingBaseline: true, violations: [] });
@@ -490,7 +495,7 @@ describe("review guard window", () => {
 
             await captureBaseline("demo", dir, deps);
             await writeFile(
-                path.join(dir, ".specops-review-guard", "demo.json"),
+                path.join(dir, ".opencode", "specops-review-guard", "demo.json"),
                 JSON.stringify({ version: 2, change: "demo", tracked: "not-a-map" }),
             );
 

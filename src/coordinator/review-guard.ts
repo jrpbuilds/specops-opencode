@@ -61,13 +61,20 @@ export type CaptureResult = {
  * Verification artifacts (any path component named `node_modules`, `dist`, or
  * `coverage`, and any `.log` file) are excluded so running tests, builds,
  * linters, and typechecks during review never produces a false positive. The
- * guard's own baseline store is excluded so a reviewer staging or rewriting it
- * cannot trip the detector or cover its tracks.
+ * guard's own baseline store is excluded wherever it lives so a reviewer
+ * staging or rewriting it cannot trip the detector or cover its tracks.
  */
 export function isIgnored(relPath: string): boolean {
     const components = relPath.split(/[\\/]+/).filter(Boolean);
     if (components.length === 0) return false;
-    if (components[0] === ".specops-review-guard") return true;
+    if (
+        components.some(
+            component =>
+                component === "specops-review-guard" || component === ".specops-review-guard",
+        )
+    ) {
+        return true;
+    }
     const basename = components[components.length - 1];
     if (basename.endsWith(".log")) return true;
     return components.some(
@@ -191,10 +198,10 @@ export async function resolveRepoRoot(cwd: string, capture: CaptureStdout): Prom
 /**
  * Capture the protected-state baseline for one change.
  *
- * Writes `<root>/.specops-review-guard/<change>.json` (directory created on
- * demand). The store lives outside both the tracked set and the `openspec/`
- * walk and is filtered by {@link isIgnored}, so the guard never flags its own
- * artifact.
+ * Writes `<root>/.opencode/specops-review-guard/<change>.json` (directory
+ * created on demand). The store lives under opencode's project config dir,
+ * outside both the tracked set and the `openspec/` walk, and is filtered by
+ * {@link isIgnored}, so the guard never flags its own artifact.
  */
 export async function captureBaseline(
     change: string,
@@ -213,7 +220,7 @@ export async function captureBaseline(
         tracked,
         openspec,
     };
-    const storeDir = path.join(root, ".specops-review-guard");
+    const storeDir = path.join(root, ".opencode", "specops-review-guard");
     await mkdir(storeDir, { recursive: true });
     await writeFile(
         path.join(storeDir, `${change}.json`),
@@ -290,7 +297,10 @@ export async function verifyBaseline(
 async function readBaseline(change: string, root: string): Promise<Baseline | undefined> {
     let raw: string;
     try {
-        raw = await readFile(path.join(root, ".specops-review-guard", `${change}.json`), "utf8");
+        raw = await readFile(
+            path.join(root, ".opencode", "specops-review-guard", `${change}.json`),
+            "utf8",
+        );
     } catch {
         return undefined;
     }
