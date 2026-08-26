@@ -79,6 +79,24 @@ export async function doctor(deps: DoctorDeps): Promise<string> {
                 }
             }
         }
+
+        if (result.archived) {
+            lines.push("");
+            if (result.archived.state === "supported-healthy") {
+                lines.push("✓ OpenSpec archived changes valid");
+            } else if (result.archived.state === "supported-invalid") {
+                lines.push("✗ OpenSpec archived changes invalid:");
+                for (const issue of result.archived.issues ?? []) {
+                    lines.push(
+                        `  - ${issue.itemId}: ${issue.message.replaceAll("\n", "\n    ")} (${issue.level}, ${issue.path})`,
+                    );
+                }
+            } else if (result.archived.state === "unsupported") {
+                lines.push("• OpenSpec archived check unsupported / not checked");
+            } else {
+                lines.push(`✗ OpenSpec archived check failed: ${result.archived.error}`);
+            }
+        }
     }
 
     let config: SpecOpsConfig | undefined;

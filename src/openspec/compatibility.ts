@@ -13,12 +13,16 @@ export type Capability = {
     id: string;
     description: string;
     probe?: ProbeSpec;
+    /** Defaults to blocking (`undefined` === true). A non-blocking miss lands in
+     *  `unsupportedCapabilities` and never flips `compatible`. */
+    blocking?: boolean;
 };
 
 /** Outcome of probing the installed OpenSpec CLI against the target surface. */
 export type CompatibilityReport = {
     compatible: boolean;
     missingCapabilities: Capability[];
+    unsupportedCapabilities: Capability[];
     installedVersion: string | null;
     targetVersion: string;
     warnings: string[];
@@ -76,6 +80,12 @@ export const OPENSPEC_CAPABILITIES: readonly Capability[] = [
         },
     },
     {
+        id: "validate-archived",
+        description: "openspec validate --archived JSON output",
+        probe: { helpArgs: ["validate", "--help"], tokens: ["--archived", "--json"] },
+        blocking: false,
+    },
+    {
         id: "instructions-resolved-output-path",
         description: "instructions responses include a usable resolved output path",
     },
@@ -107,7 +117,13 @@ export async function probeCompatibility(
 ): Promise<CompatibilityReport> {
     const installedVersion = await readVersion();
     const missingCapabilities: Capability[] = [];
+    const unsupportedCapabilities: Capability[] = [];
     const warnings: string[] = [];
+
+    const recordMiss = (capability: Capability) =>
+        (capability.blocking === false ? unsupportedCapabilities : missingCapabilities).push(
+            capability,
+        );
 
     for (const capability of OPENSPEC_CAPABILITIES) {
         if (!capability.probe) {
@@ -126,7 +142,7 @@ export async function probeCompatibility(
         try {
             result = await capture("openspec", capability.probe.helpArgs, cwd);
         } catch {
-            missingCapabilities.push(capability);
+            recordMiss(capability);
             continue;
         }
 
@@ -135,13 +151,14 @@ export async function probeCompatibility(
             result.exitCode === null ||
             !capability.probe.tokens.every(token => result.stdout.includes(token))
         ) {
-            missingCapabilities.push(capability);
+            recordMiss(capability);
         }
     }
 
     return {
         compatible: missingCapabilities.length === 0,
         missingCapabilities,
+        unsupportedCapabilities,
         installedVersion,
         targetVersion: TARGET_OPENSPEC_VERSION,
         warnings,

@@ -9,13 +9,14 @@ import type { CaptureStdout } from "../../src/openspec/helpers.js";
 
 function completeHelp(captureMissing?: string): CaptureStdout {
     return async (_command, args) => {
-        const capability = OPENSPEC_CAPABILITIES.find(item =>
+        const capabilities = OPENSPEC_CAPABILITIES.filter(item =>
             item.probe?.helpArgs.every((arg, index) => args[index] === arg),
         );
-        const tokens = capability?.probe?.tokens ?? [];
+        const tokens = [...new Set(capabilities.flatMap(item => item.probe?.tokens ?? []))];
+        const missing = capabilities.some(item => item.id === captureMissing);
         return {
-            exitCode: captureMissing === capability?.id ? 1 : 0,
-            stdout: captureMissing === capability?.id ? "" : tokens.join(" "),
+            exitCode: missing ? 1 : 0,
+            stdout: missing ? "" : tokens.join(" "),
         };
     };
 }
@@ -29,11 +30,14 @@ describe("OpenSpec compatibility policy", () => {
         );
         expect(result.compatible).toBe(true);
         expect(result.missingCapabilities).toEqual([]);
+        expect(result.unsupportedCapabilities).toEqual([]);
         expect(result.warnings).toEqual([]);
     });
 
-    test("names each individually missing help capability", async () => {
-        for (const capability of OPENSPEC_CAPABILITIES.filter(item => item.probe)) {
+    test("names each individually missing blocking help capability", async () => {
+        for (const capability of OPENSPEC_CAPABILITIES.filter(
+            item => item.probe && item.blocking !== false,
+        )) {
             const result = await probeCompatibility(
                 "/project",
                 completeHelp(capability.id),
@@ -42,6 +46,71 @@ describe("OpenSpec compatibility policy", () => {
             expect(result.compatible).toBe(false);
             expect(result.missingCapabilities.map(item => item.id)).toContain(capability.id);
         }
+    });
+
+    test("reports a missing non-blocking capability as unsupported without flipping compatible", async () => {
+        // `validate-strict-scoped` and `validate-archived` share the same help
+        // argv, so the capture fails only the second (archived) probe.
+        let validateStrictServed = false;
+        const result = await probeCompatibility(
+            "/project",
+            async (_command, args) => {
+                const capability = OPENSPEC_CAPABILITIES.find(item =>
+                    item.probe?.helpArgs.every((arg, index) => args[index] === arg),
+                );
+                if (capability?.id === "validate-strict-scoped") {
+                    if (!validateStrictServed) {
+                        validateStrictServed = true;
+                        return {
+                            stdout: capability.probe?.tokens.join(" ") ?? "",
+                            exitCode: 0,
+                        };
+                    }
+                    return { stdout: "", exitCode: 1 };
+                }
+                return { stdout: capability?.probe?.tokens.join(" ") ?? "", exitCode: 0 };
+            },
+            async () => TARGET_OPENSPEC_VERSION,
+        );
+
+        expect(result.compatible).toBe(true);
+        expect(result.missingCapabilities).toEqual([]);
+        expect(result.unsupportedCapabilities.map(item => item.id)).toContain("validate-archived");
+    });
+
+    test("reports validate-archived unsupported when help omits its tokens", async () => {
+        const result = await probeCompatibility(
+            "/project",
+            async (_command, args) => {
+                const capability = OPENSPEC_CAPABILITIES.find(item =>
+                    item.probe?.helpArgs.every((arg, index) => args[index] === arg),
+                );
+                return {
+                    stdout:
+                        capability?.id === "validate-archived"
+                            ? "Usage: openspec validate [item-name] --strict --json"
+                            : (capability?.probe?.tokens.join(" ") ?? ""),
+                    exitCode: 0,
+                };
+            },
+            async () => TARGET_OPENSPEC_VERSION,
+        );
+
+        expect(result.compatible).toBe(true);
+        expect(result.unsupportedCapabilities.map(item => item.id)).toContain("validate-archived");
+        expect(result.missingCapabilities.map(item => item.id)).not.toContain("validate-archived");
+    });
+
+    test("a missing blocking capability still flips compatible", async () => {
+        const result = await probeCompatibility(
+            "/project",
+            completeHelp("list-json"),
+            async () => TARGET_OPENSPEC_VERSION,
+        );
+
+        expect(result.compatible).toBe(false);
+        expect(result.missingCapabilities.map(item => item.id)).toContain("list-json");
+        expect(result.unsupportedCapabilities).toEqual([]);
     });
 
     test("reports a non-zero help command as missing", async () => {

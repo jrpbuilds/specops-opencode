@@ -223,4 +223,96 @@ describe("doctor", () => {
         expect(result).toContain("OpenSpec: unavailable");
         expect(result).toContain("✗ OpenSpec CLI not found");
     });
+
+    test("renders a supported-healthy archived check between doctor and config lines", async () => {
+        const result = await doctor(
+            deps({
+                openspecDoctor: async () => ({
+                    initialized: true,
+                    healthy: true,
+                    incompatible: null,
+                    issues: [],
+                    archived: { state: "supported-healthy" },
+                }),
+            }),
+        );
+
+        expect(result).toContain(
+            "✓ OpenSpec doctor healthy\n\n✓ OpenSpec archived changes valid\n✓ SpecOps configuration valid",
+        );
+        expect(result).toContain("SpecOps is ready.");
+    });
+
+    test("renders invalid archived changes with per-issue details", async () => {
+        const result = await doctor(
+            deps({
+                openspecDoctor: async () => ({
+                    initialized: true,
+                    healthy: true,
+                    incompatible: null,
+                    issues: [],
+                    archived: {
+                        state: "supported-invalid",
+                        issues: [
+                            {
+                                itemId: "archived-change",
+                                level: "error",
+                                path: "proposal.md",
+                                message: "missing why",
+                            },
+                        ],
+                    },
+                }),
+            }),
+        );
+
+        expect(result).toContain("✗ OpenSpec archived changes invalid:");
+        expect(result).toContain("  - archived-change: missing why (error, proposal.md)");
+        expect(result).toContain("✓ OpenSpec doctor healthy");
+        expect(result).toContain("SpecOps is ready.");
+    });
+
+    test("renders an unsupported archived check neutrally", async () => {
+        const result = await doctor(
+            deps({
+                openspecDoctor: async () => ({
+                    initialized: true,
+                    healthy: true,
+                    incompatible: null,
+                    issues: [],
+                    archived: { state: "unsupported" },
+                }),
+            }),
+        );
+
+        expect(result).toContain("• OpenSpec archived check unsupported / not checked");
+        expect(result).toContain("✓ OpenSpec doctor healthy");
+        expect(result).toContain("SpecOps is ready.");
+    });
+
+    test("renders an errored archived check without changing the verdict", async () => {
+        const result = await doctor(
+            deps({
+                openspecDoctor: async () => ({
+                    initialized: true,
+                    healthy: true,
+                    incompatible: null,
+                    issues: [],
+                    archived: { state: "errored", error: "archived validate crashed" },
+                }),
+            }),
+        );
+
+        expect(result).toContain("✗ OpenSpec archived check failed: archived validate crashed");
+        expect(result).toContain("✓ OpenSpec doctor healthy");
+        expect(result).toContain("SpecOps is ready.");
+    });
+
+    test("renders no archived lines when the archived check is absent", async () => {
+        const result = await doctor(deps());
+
+        expect(result).not.toContain("OpenSpec archived");
+        expect(result).toContain("✓ OpenSpec doctor healthy");
+        expect(result).toContain("SpecOps is ready.");
+    });
 });

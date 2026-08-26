@@ -4,6 +4,7 @@ import { runCaptureStdout } from "../helpers.js";
 import { formatRemediation } from "./remediation.js";
 import { errorMessage, formatCommandFailure } from "./helpers.js";
 import type { CaptureStdout } from "./helpers.js";
+import { validateArchived, type ArchivedIssue } from "./validate.js";
 import { assertShape, type Schema, OpenSpecShapeError } from "./validation.js";
 
 /** Incompatibility details surfaced when capability probes fail. */
@@ -22,6 +23,15 @@ export type OpenSpecDoctorResult = {
     issues: readonly string[];
     error?: string;
     remediation?: string;
+    /** Archived-change integrity, present only when evaluated on the success path. */
+    archived?: ArchivedDoctorResult;
+};
+
+/** Normalized archived-change integrity result for the doctor report. */
+export type ArchivedDoctorResult = {
+    state: "supported-healthy" | "supported-invalid" | "unsupported" | "errored";
+    issues?: ArchivedIssue[];
+    error?: string;
 };
 
 /** Signature shared by doctor's compatibility probes for test injection. */
@@ -139,7 +149,7 @@ export async function runOpenSpecDoctor(
         const root = validated.root as Record<string, unknown> | undefined;
         const status = validated.status as Array<Record<string, unknown>>;
         const issues = status.map(formatStatus);
-        return {
+        const result: OpenSpecDoctorResult = {
             initialized: root !== undefined,
             healthy: root?.healthy === true && !issues.some(issue => issue.severity === "error"),
             incompatible: null,
@@ -148,11 +158,41 @@ export async function runOpenSpecDoctor(
                 ...compatibility.warnings.map(warning => `warning: ${warning}`),
             ],
         };
+        if (root !== undefined) {
+            result.archived = await checkArchived(cwd, capture, compatibility);
+        }
+        return result;
     } catch (error) {
         if (error instanceof OpenSpecShapeError) return failure(error.message);
         return failure(
             formatCommandFailure(parsed as Record<string, unknown>, result.exitCode, "doctor"),
         );
+    }
+}
+
+/**
+ * Run the archived-change integrity check when the capability is supported.
+ *
+ * The capability gates the native invocation: an unsupported install reports
+ * the state without ever starting `openspec validate --archived`. Any failure
+ * of the supported check maps to the errored state, never an uncaught throw,
+ * so the archived sub-check can never break the base doctor result.
+ */
+async function checkArchived(
+    cwd: string,
+    capture: CaptureStdout,
+    compatibility: CompatibilityReport,
+): Promise<ArchivedDoctorResult> {
+    if (compatibility.unsupportedCapabilities.some(item => item.id === "validate-archived")) {
+        return { state: "unsupported" };
+    }
+    try {
+        const validation = await validateArchived(cwd, capture);
+        return validation.valid
+            ? { state: "supported-healthy" }
+            : { state: "supported-invalid", issues: validation.issues };
+    } catch (error) {
+        return { state: "errored", error: errorMessage(error) };
     }
 }
 
