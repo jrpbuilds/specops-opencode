@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
-import { DEFAULT_CONFIG, resolveAgentMapping, type SpecOpsConfig } from "../../src/config.js";
+import { DEFAULT_CONFIG, type SpecOpsConfig } from "../../src/config.js";
+import { resolveAgentMapping } from "../../src/models.js";
 
 function configWith(overrides: Partial<SpecOpsConfig["agents"]> = {}): SpecOpsConfig {
     return {

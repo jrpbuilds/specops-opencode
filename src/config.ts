@@ -2,9 +2,9 @@ import { mkdir, open, readFile, rename, unlink } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { AGENT_IDS, ALL_AGENT_IDS, type AgentId } from "./agents/ids.js";
-import { ROLE_META, type RoleMeta } from "./agents/roles.js";
+import { ALL_AGENT_IDS, type AgentId } from "./agents/ids.js";
 import { isRecord } from "./openspec/helpers.js";
+import { resolveAgentMapping } from "./models.js";
 
 /**
  * Model and optional reasoning variant selected for one role.
@@ -49,51 +49,6 @@ export const DEFAULT_CONFIG: SpecOpsConfig = {
     maxSubagentConcurrency: DEFAULT_SUBAGENT_CONCURRENCY,
     maxAutoReviewIterations: DEFAULT_AUTO_REVIEW_ITERATIONS,
 };
-
-const REVIEW_SPECIALIST_IDS = new Set<AgentId>(
-    ALL_AGENT_IDS.filter(
-        id => (ROLE_META[id] as RoleMeta).inheritsModelFrom === AGENT_IDS.reviewer,
-    ),
-);
-
-/** Return a non-blank configuration field, preserving its stored value. */
-function nonBlank(value: string | undefined): string | undefined {
-    return value?.trim() ? value : undefined;
-}
-
-/**
- * Resolve the effective model mapping for one role without changing persisted
- * configuration. A review specialist with its own model uses only its own
- * entry; one without a model inherits the reviewer's model and variant
- * together, keeping variants from leaking onto a different model. Every other
- * role uses its own stored entry unchanged.
- *
- * @param config Validated or draft SpecOps configuration.
- * @param roleId Role whose effective mapping is needed.
- * @returns A model/variant mapping suitable for host or editor display.
- */
-export function resolveAgentMapping(config: SpecOpsConfig, roleId: AgentId): AgentConfig {
-    const own = config.agents[roleId];
-    if (!REVIEW_SPECIALIST_IDS.has(roleId)) return { ...own };
-
-    const ownModel = nonBlank(own.model);
-    if (ownModel) {
-        const ownVariant = nonBlank(own.variant);
-        return { model: ownModel, ...(ownVariant ? { variant: ownVariant } : {}) };
-    }
-
-    // No own model: inherit the reviewer's model and variant as one mapping so
-    // model-specific variants are never applied to the specialist's own model.
-    const reviewer = config.agents[AGENT_IDS.reviewer];
-    const reviewerModel = nonBlank(reviewer.model);
-    if (!reviewerModel) return {};
-
-    const variant = nonBlank(own.variant) ?? nonBlank(reviewer.variant);
-    return {
-        model: reviewerModel,
-        ...(variant ? { variant } : {}),
-    };
-}
 
 /** Minimum persisted value for the global concurrent subagent limit. */
 export const MIN_SUBAGENT_CONCURRENCY = 1;

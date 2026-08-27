@@ -1,5 +1,6 @@
 import { ALL_AGENT_IDS } from "../agents/ids.js";
-import { resolveAgentMapping, type SpecOpsConfig } from "../config.js";
+import type { SpecOpsConfig } from "../config.js";
+import { resolveAgentMapping } from "../models.js";
 import type { OpenSpecDoctorResult } from "../openspec/doctor.js";
 import { errorMessage } from "../openspec/helpers.js";
 import { formatRemediation } from "../openspec/remediation.js";

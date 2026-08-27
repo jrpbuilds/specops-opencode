@@ -1,6 +1,6 @@
 import { ALL_AGENT_IDS, type AgentId } from "../agents/ids.js";
-import { resolveAgentMapping, type SpecOpsConfig } from "../config.js";
-import type { ConfiguredModel } from "../models.js";
+import type { SpecOpsConfig } from "../config.js";
+import { resolveAgentMapping, type ConfiguredModel } from "../models.js";
 
 /**
  * Format one role's staged selection for the role list footer.

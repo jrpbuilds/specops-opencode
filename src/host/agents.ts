@@ -1,6 +1,7 @@
 import type { Config } from "@opencode-ai/plugin";
 import type { SpecOpsAgentDefinition } from "../agents/definition.js";
-import { resolveAgentMapping, type SpecOpsConfig } from "../config.js";
+import type { SpecOpsConfig } from "../config.js";
+import { resolveAgentMapping } from "../models.js";
 import { AGENT_IDS, type AgentId } from "../agents/ids.js";
 import {
     autoCoordinatorAgentDefinition,

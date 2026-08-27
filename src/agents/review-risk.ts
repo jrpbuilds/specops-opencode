@@ -1,5 +1,6 @@
 import { loadPrompt } from "../prompts.js";
-import { resolveAgentMapping, type SpecOpsConfig } from "../config.js";
+import type { SpecOpsConfig } from "../config.js";
+import { resolveAgentMapping } from "../models.js";
 import { AGENT_IDS } from "./ids.js";
 import { REVIEWER_PERMISSION } from "./permissions.js";
 import type { SpecOpsAgentDefinition } from "./definition.js";
