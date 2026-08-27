@@ -1,6 +1,7 @@
 import { runCaptureStdout } from "../helpers.js";
 import type { CaptureStdout } from "./helpers.js";
-import { formatCommandFailure, isRecord } from "./helpers.js";
+import { isRecord } from "./helpers.js";
+import { runOpenSpecJson } from "./exec.js";
 import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
 /** Scoped strict-validation outcome for one named change. */
@@ -69,17 +70,13 @@ export async function validateChange(
     cwd?: string,
     capture: CaptureStdout = runCaptureStdout,
 ): Promise<ChangeValidation> {
-    let result: { stdout: string; exitCode: number | null };
-    try {
-        result = await capture("openspec", ["validate", changeName, "--strict", "--json"], cwd);
-    } catch (error) {
-        throw new Error(`Unable to run OpenSpec validate: ${errorMessage(error)}`);
-    }
-
-    let parsed: unknown;
-    try {
-        parsed = JSON.parse(result.stdout);
-    } catch {
+    const result = await runOpenSpecJson(
+        "validate",
+        ["validate", changeName, "--strict", "--json"],
+        { cwd, capture, nonZero: "passthrough" },
+    );
+    if (result.kind === "spawn") throw new Error(result.message);
+    if (result.kind === "invalidJson" || result.kind === "terminated") {
         throw new OpenSpecShapeError(
             "openspec validate",
             "response",
@@ -87,9 +84,10 @@ export async function validateChange(
             result.stdout || "empty output",
         );
     }
+    if (result.kind !== "success") throw new Error(result.message);
 
-    assertShape(parsed, responseSchema, "openspec validate");
-    const validated = parsed as Record<string, unknown>;
+    assertShape(result.parsed, responseSchema, "openspec validate");
+    const validated = result.parsed as Record<string, unknown>;
 
     const items = validated.items as Array<Record<string, unknown>>;
     const issues = items.flatMap(item => item.issues as Array<Record<string, string>>);
@@ -101,11 +99,6 @@ export async function validateChange(
             message: issue.message,
         })),
     };
-}
-
-/** Extract a message from an unknown thrown value. */
-function errorMessage(error: unknown): string {
-    return error instanceof Error ? error.message : String(error);
 }
 
 /** One archived-change issue, carrying the owning archived item's id. */
@@ -134,21 +127,17 @@ export async function validateArchived(
     cwd?: string,
     capture: CaptureStdout = runCaptureStdout,
 ): Promise<ArchivedValidation> {
-    let result: { stdout: string; exitCode: number | null };
-    try {
-        result = await capture("openspec", ["validate", "--archived", "--json"], cwd);
-    } catch (error) {
-        throw new Error(`Unable to run OpenSpec validate: ${errorMessage(error)}`);
+    const result = await runOpenSpecJson("validate", ["validate", "--archived", "--json"], {
+        cwd,
+        capture,
+        nonZero: "status-envelope",
+        terminatedName: "validate --archived",
+    });
+    if (result.kind === "spawn" || result.kind === "nonZero") {
+        throw new Error(result.message);
     }
-
-    if (result.exitCode === null) {
-        throw new Error("OpenSpec validate --archived was terminated before returning a result");
-    }
-
-    let parsed: unknown;
-    try {
-        parsed = JSON.parse(result.stdout);
-    } catch {
+    if (result.kind === "terminated") throw new Error(result.message);
+    if (result.kind === "invalidJson") {
         throw new OpenSpecShapeError(
             "openspec validate",
             "response",
@@ -156,12 +145,9 @@ export async function validateArchived(
             result.stdout || "empty output",
         );
     }
+    if (result.kind !== "success") throw new Error(result.message);
 
-    // A non-zero exit with a status envelope is a command failure, not an
-    // invalid-archives verdict; surface the envelope's message and fix.
-    if (result.exitCode !== 0 && isRecord(parsed) && Array.isArray(parsed.status)) {
-        throw new Error(formatCommandFailure(parsed, result.exitCode, "validate"));
-    }
+    const parsed = result.parsed;
 
     // OpenSpec omits the top-level `items` field entirely when the archive is
     // empty. A successful run with no items means "no archived changes to

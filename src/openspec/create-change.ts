@@ -1,6 +1,7 @@
 import { runCaptureStdout } from "../helpers.js";
-import { errorMessage, formatCommandFailure, isRecord } from "./helpers.js";
+import { formatCommandFailure } from "./helpers.js";
 import type { CaptureStdout } from "./helpers.js";
+import { runOpenSpecJson } from "./exec.js";
 import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
 /** Normalized result of creating one named OpenSpec change. */
@@ -46,53 +47,36 @@ export async function createOpenSpecChange(
     if (goal) args.push("--goal", goal);
     args.push("--json");
 
-    let result: { stdout: string; exitCode: number | null };
+    const result = await runOpenSpecJson("create change", args, {
+        cwd,
+        capture,
+        requireRecord: true,
+    });
+    if (result.kind === "nonZero") {
+        return {
+            ok: false,
+            error: formatCommandFailure(result.parsed, result.exitCode, "create change"),
+        };
+    }
+    if (result.kind !== "success") return { ok: false, error: result.message };
+
     try {
-        result = await capture("openspec", args, cwd);
+        assertShape(result.parsed, createChangeSchema, "openspec create change");
+        const validated = result.parsed as Record<string, unknown>;
+        const created = validated.change as Record<string, unknown>;
+        return {
+            ok: true,
+            name: created.id as string,
+            path: created.path as string,
+        };
     } catch (error) {
-        return { ok: false, error: `Unable to run OpenSpec create change: ${errorMessage(error)}` };
-    }
-
-    if (result.exitCode === null) {
-        return {
-            ok: false,
-            error: "OpenSpec create change was terminated before returning a result",
-        };
-    }
-
-    let parsed: unknown;
-    try {
-        parsed = JSON.parse(result.stdout);
-    } catch {
-        return {
-            ok: false,
-            error: `OpenSpec create change returned invalid JSON${result.stdout ? `: ${result.stdout}` : ""}`,
-        };
-    }
-
-    if (!isRecord(parsed)) {
-        return { ok: false, error: "OpenSpec create change returned an invalid result" };
-    }
-
-    if (result.exitCode === 0) {
-        try {
-            assertShape(parsed, createChangeSchema, "openspec create change");
-            const validated = parsed as Record<string, unknown>;
-            const created = validated.change as Record<string, unknown>;
-            return {
-                ok: true,
-                name: created.id as string,
-                path: created.path as string,
-            };
-        } catch (error) {
-            if (error instanceof OpenSpecShapeError) return { ok: false, error: error.message };
-        }
+        if (error instanceof OpenSpecShapeError) return { ok: false, error: error.message };
     }
 
     return {
         ok: false,
         error: formatCommandFailure(
-            parsed as Record<string, unknown>,
+            result.parsed as Record<string, unknown>,
             result.exitCode,
             "create change",
         ),

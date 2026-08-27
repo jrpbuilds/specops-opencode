@@ -1,5 +1,5 @@
 import { runCaptureStdout } from "../helpers.js";
-import { formatCommandFailure, isRecord } from "./helpers.js";
+import { invalidResultMessage, runOpenSpecJson } from "./exec.js";
 import type { CaptureStdout } from "./helpers.js";
 import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
@@ -51,34 +51,15 @@ export async function getOpenSpecContext(
     cwd: string,
     capture: CaptureStdout = runCaptureStdout,
 ): Promise<OpenSpecContextResult> {
-    let result: { stdout: string; exitCode: number | null };
-    try {
-        result = await capture("openspec", ["list", "--json"], cwd);
-    } catch {
+    const result = await runOpenSpecJson("list", ["list", "--json"], { capture, cwd });
+    if (result.kind === "spawn") {
         return { available: false, initialized: false, activeChanges: [] };
     }
-
-    if (result.exitCode === null) {
-        return contextError("OpenSpec list was terminated before returning a result");
-    }
-
-    let parsed: unknown;
-    try {
-        parsed = JSON.parse(result.stdout);
-    } catch {
-        return contextError(
-            `OpenSpec list returned invalid JSON${result.stdout ? `: ${result.stdout}` : ""}`,
-        );
-    }
-
-    if (result.exitCode !== 0) {
-        if (!isRecord(parsed)) return contextError("OpenSpec list returned an invalid result");
-        return contextError(formatCommandFailure(parsed, result.exitCode, "list"));
-    }
+    if (result.kind !== "success") return contextError(result.message);
 
     try {
-        assertShape(parsed, contextSchema, "openspec list");
-        const validated = parsed as Record<string, unknown>;
+        assertShape(result.parsed, contextSchema, "openspec list");
+        const validated = result.parsed as Record<string, unknown>;
         const root = validated.root as Record<string, unknown>;
         const changes = validated.changes as Array<Record<string, unknown>>;
 
@@ -97,7 +78,7 @@ export async function getOpenSpecContext(
         };
     } catch (error) {
         if (error instanceof OpenSpecShapeError) return contextError(error.message);
-        return contextError("OpenSpec list returned an invalid result");
+        return contextError(invalidResultMessage("list"));
     }
 }
 

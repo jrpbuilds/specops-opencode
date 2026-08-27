@@ -1,5 +1,5 @@
 import { runCaptureStdout } from "../helpers.js";
-import { errorMessage, formatCommandFailure, isRecord } from "./helpers.js";
+import { invalidResultMessage, runOpenSpecJson } from "./exec.js";
 import type { CaptureStdout } from "./helpers.js";
 import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
@@ -84,50 +84,16 @@ export async function getApplyInstructions(
     cwd: string,
     capture: CaptureStdout = runCaptureStdout,
 ): Promise<ApplyInstructionsResult> {
-    let result: { stdout: string; exitCode: number | null };
-    try {
-        result = await capture(
-            "openspec",
-            ["instructions", "apply", "--change", change, "--json"],
-            cwd,
-        );
-    } catch (error) {
-        return {
-            ok: false,
-            error: `Unable to run OpenSpec instructions apply: ${errorMessage(error)}`,
-        };
-    }
-
-    if (result.exitCode === null) {
-        return {
-            ok: false,
-            error: "OpenSpec instructions apply was terminated before returning a result",
-        };
-    }
-
-    let parsed: unknown;
-    try {
-        parsed = JSON.parse(result.stdout);
-    } catch {
-        return {
-            ok: false,
-            error: `OpenSpec instructions apply returned invalid JSON${result.stdout ? `: ${result.stdout}` : ""}`,
-        };
-    }
-
-    if (result.exitCode !== 0) {
-        if (!isRecord(parsed)) {
-            return { ok: false, error: "OpenSpec instructions apply returned an invalid result" };
-        }
-        return {
-            ok: false,
-            error: formatCommandFailure(parsed, result.exitCode, "instructions apply"),
-        };
-    }
+    const result = await runOpenSpecJson(
+        "instructions apply",
+        ["instructions", "apply", "--change", change, "--json"],
+        { capture, cwd },
+    );
+    if (result.kind !== "success") return { ok: false, error: result.message };
 
     try {
-        assertShape(parsed, applyInstructionsSchema, "openspec instructions apply");
-        const validated = parsed as Record<string, unknown>;
+        assertShape(result.parsed, applyInstructionsSchema, "openspec instructions apply");
+        const validated = result.parsed as Record<string, unknown>;
         const contextFiles = validated.contextFiles as Record<string, unknown>;
         // The top-level schema confirms a record; each artifact must still contain string paths.
         for (const [artifactId, paths] of Object.entries(contextFiles)) {
@@ -187,6 +153,6 @@ export async function getApplyInstructions(
         };
     } catch (error) {
         if (error instanceof OpenSpecShapeError) return { ok: false, error: error.message };
-        return { ok: false, error: "OpenSpec instructions apply returned an invalid result" };
+        return { ok: false, error: invalidResultMessage("instructions apply") };
     }
 }

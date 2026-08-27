@@ -1,6 +1,7 @@
 import { getOpenSpecVersion } from "./cli.js";
 import { probeCompatibility, type CompatibilityReport } from "./compatibility.js";
 import { runCaptureStdout } from "../helpers.js";
+import { runOpenSpecJson } from "./exec.js";
 import { formatRemediation } from "./remediation.js";
 import { errorMessage, formatCommandFailure } from "./helpers.js";
 import type { CaptureStdout } from "./helpers.js";
@@ -123,33 +124,21 @@ export async function runOpenSpecDoctor(
         };
     }
 
-    let result: { stdout: string; exitCode: number | null };
-    try {
-        result = await capture("openspec", ["doctor", "--json"], cwd);
-    } catch (error) {
-        return unavailable(errorMessage(error));
-    }
-
-    if (result.exitCode === null) {
-        return failure("OpenSpec doctor was terminated before returning a result");
-    }
-
-    let parsed: unknown;
-    try {
-        parsed = JSON.parse(result.stdout);
-    } catch {
-        return failure(
-            `OpenSpec doctor returned invalid JSON${result.stdout ? `: ${result.stdout}` : ""}`,
-        );
-    }
+    const result = await runOpenSpecJson("doctor", ["doctor", "--json"], {
+        capture,
+        cwd,
+        nonZero: "passthrough",
+    });
+    if (result.kind === "spawn") return unavailable(errorMessage(result.error));
+    if (result.kind !== "success") return failure(result.message);
 
     try {
-        assertShape(parsed, doctorSchema, "openspec doctor");
-        const validated = parsed as Record<string, unknown>;
+        assertShape(result.parsed, doctorSchema, "openspec doctor");
+        const validated = result.parsed as Record<string, unknown>;
         const root = validated.root as Record<string, unknown> | undefined;
         const status = validated.status as Array<Record<string, unknown>>;
         const issues = status.map(formatStatus);
-        const result: OpenSpecDoctorResult = {
+        const doctorResult: OpenSpecDoctorResult = {
             initialized: root !== undefined,
             healthy: root?.healthy === true && !issues.some(issue => issue.severity === "error"),
             incompatible: null,
@@ -159,13 +148,17 @@ export async function runOpenSpecDoctor(
             ],
         };
         if (root !== undefined) {
-            result.archived = await checkArchived(cwd, capture, compatibility);
+            doctorResult.archived = await checkArchived(cwd, capture, compatibility);
         }
-        return result;
+        return doctorResult;
     } catch (error) {
         if (error instanceof OpenSpecShapeError) return failure(error.message);
         return failure(
-            formatCommandFailure(parsed as Record<string, unknown>, result.exitCode, "doctor"),
+            formatCommandFailure(
+                result.parsed as Record<string, unknown>,
+                result.exitCode,
+                "doctor",
+            ),
         );
     }
 }

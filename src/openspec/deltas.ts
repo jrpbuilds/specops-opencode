@@ -1,5 +1,6 @@
 import { runCaptureStdout } from "../helpers.js";
-import { errorMessage, type CaptureStdout } from "./helpers.js";
+import type { CaptureStdout } from "./helpers.js";
+import { runOpenSpecJson } from "./exec.js";
 import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
 /**
@@ -29,17 +30,13 @@ export async function countChangeDeltas(
     cwd?: string,
     capture: CaptureStdout = runCaptureStdout,
 ): Promise<number> {
-    let result: { stdout: string; exitCode: number | null };
-    try {
-        result = await capture("openspec", ["show", changeName, "--json", "--deltas-only"], cwd);
-    } catch (error) {
-        throw new Error(`Unable to run OpenSpec show: ${errorMessage(error)}`);
-    }
-
-    let parsed: unknown;
-    try {
-        parsed = JSON.parse(result.stdout);
-    } catch {
+    const result = await runOpenSpecJson("show", ["show", changeName, "--json", "--deltas-only"], {
+        cwd,
+        capture,
+        nonZero: "passthrough",
+    });
+    if (result.kind === "spawn") throw new Error(result.message);
+    if (result.kind === "invalidJson" || result.kind === "terminated") {
         throw new OpenSpecShapeError(
             "openspec show",
             "response",
@@ -47,8 +44,9 @@ export async function countChangeDeltas(
             result.stdout || "empty output",
         );
     }
+    if (result.kind !== "success") throw new Error(result.message);
 
-    assertShape(parsed, responseSchema, "openspec show");
-    const validated = parsed as Record<string, unknown>;
+    assertShape(result.parsed, responseSchema, "openspec show");
+    const validated = result.parsed as Record<string, unknown>;
     return (validated.deltas as unknown[]).length;
 }

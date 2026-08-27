@@ -1,5 +1,7 @@
 import { runCaptureStdout } from "../helpers.js";
-import { errorMessage, formatCommandFailure, isRecord } from "./helpers.js";
+import { formatCommandFailure } from "./helpers.js";
+import type { CaptureStdout } from "./helpers.js";
+import { runOpenSpecJson } from "./exec.js";
 import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
 /** Validates the `openspec archive --json` response shape. */
@@ -52,49 +54,43 @@ export type OpenSpecArchiveResult =
  * @param cwd The project directory in which OpenSpec resolves its root.
  * @returns The normalized archive result for the calling SpecOps tool.
  */
-export async function archiveChange(change: string, cwd: string): Promise<OpenSpecArchiveResult> {
-    let result: { stdout: string; exitCode: number | null };
-    try {
-        result = await runCaptureStdout("openspec", ["archive", change, "--yes", "--json"], cwd);
-    } catch (error) {
-        return { ok: false, error: `Unable to run OpenSpec archive: ${errorMessage(error)}` };
-    }
-
-    if (result.exitCode === null) {
-        return { ok: false, error: "OpenSpec archive was terminated before returning a result" };
-    }
-
-    let parsed: unknown;
-    try {
-        parsed = JSON.parse(result.stdout);
-    } catch {
+export async function archiveChange(
+    change: string,
+    cwd: string,
+    capture: CaptureStdout = runCaptureStdout,
+): Promise<OpenSpecArchiveResult> {
+    const result = await runOpenSpecJson("archive", ["archive", change, "--yes", "--json"], {
+        cwd,
+        capture,
+        requireRecord: true,
+    });
+    if (result.kind === "nonZero") {
         return {
             ok: false,
-            error: `OpenSpec archive returned invalid JSON${result.stdout ? `: ${result.stdout}` : ""}`,
+            error: formatCommandFailure(result.parsed, result.exitCode, "archive"),
         };
     }
+    if (result.kind !== "success") return { ok: false, error: result.message };
 
-    if (!isRecord(parsed)) {
-        return { ok: false, error: "OpenSpec archive returned an invalid result" };
-    }
-
-    if (result.exitCode === 0) {
-        try {
-            assertShape(parsed, archiveSchema, "openspec archive");
-            const validated = parsed as Record<string, unknown>;
-            const archive = validated.archive as Record<string, unknown>;
-            return {
-                ok: true,
-                archivedAs: archive.archivedAs as string,
-                path: archive.path as string,
-            };
-        } catch (error) {
-            if (error instanceof OpenSpecShapeError) return { ok: false, error: error.message };
-        }
+    try {
+        assertShape(result.parsed, archiveSchema, "openspec archive");
+        const validated = result.parsed as Record<string, unknown>;
+        const archive = validated.archive as Record<string, unknown>;
+        return {
+            ok: true,
+            archivedAs: archive.archivedAs as string,
+            path: archive.path as string,
+        };
+    } catch (error) {
+        if (error instanceof OpenSpecShapeError) return { ok: false, error: error.message };
     }
 
     return {
         ok: false,
-        error: formatCommandFailure(parsed as Record<string, unknown>, result.exitCode, "archive"),
+        error: formatCommandFailure(
+            result.parsed as Record<string, unknown>,
+            result.exitCode,
+            "archive",
+        ),
     };
 }
