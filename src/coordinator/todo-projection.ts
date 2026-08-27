@@ -1,3 +1,4 @@
+import { AGENT_IDS } from "../agents/ids.js";
 import type { NormalizedArtifact, NormalizedStatus } from "../openspec/status.js";
 import { requiredClosure, transitiveRequires } from "./artifact-graph.js";
 
@@ -6,11 +7,11 @@ export type TodoProjectionStatus = "complete" | "in_progress" | "pending";
 
 /** Specialist responsible for a planning artifact. */
 export type TodoProjectionOwner =
-    | "specops-explorer"
-    | "specops-designer"
-    | "specops-planner"
-    | "specops-implementer"
-    | "specops-reviewer";
+    | typeof AGENT_IDS.explorer
+    | typeof AGENT_IDS.designer
+    | typeof AGENT_IDS.planner
+    | typeof AGENT_IDS.implementer
+    | typeof AGENT_IDS.reviewer;
 
 /** One ephemeral Todo entry projected for the current SpecOps run. */
 export type TodoProjectionEntry = {
@@ -43,7 +44,7 @@ const LIFECYCLE_STAGE = { id: "lifecycle-remediation", content: "Lifecycle/remed
 const REPOSITORY_EVIDENCE_STAGE = {
     id: "repository-evidence",
     content: "Repository evidence",
-    owner: "specops-explorer",
+    owner: AGENT_IDS.explorer,
 } as const;
 
 /**
@@ -114,7 +115,7 @@ function toPlanningEntry(artifact: NormalizedArtifact): TodoProjectionEntry {
         id: `planning:${artifact.id}`,
         content: artifact.id,
         status: isComplete(artifact) ? "complete" : "pending",
-        owner: artifact.id === "design" ? "specops-designer" : "specops-planner",
+        owner: artifact.id === "design" ? AGENT_IDS.designer : AGENT_IDS.planner,
     };
 }
 
