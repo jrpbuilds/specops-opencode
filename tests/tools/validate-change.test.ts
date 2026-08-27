@@ -68,7 +68,12 @@ describe("validateChange tool adapter", () => {
             "example",
             deps({ valid: false, issues }, async () => 0),
         );
-        expect(result).toMatchObject({ valid: false, planningIncomplete: true, issues });
+        expect(result).toMatchObject({
+            valid: false,
+            planningIncomplete: true,
+            action: "continue_planning",
+            issues,
+        });
         if (!result.valid) {
             expect(result.remediation).toContain("OPENSPEC_PLANNING_INCOMPLETE");
             expect(result.remediation).not.toContain("OPENSPEC_VALIDATION_FAILED");
@@ -82,7 +87,7 @@ describe("validateChange tool adapter", () => {
                 throw new Error("openspec show exploded");
             }),
         );
-        expect(result).toMatchObject({ valid: false });
+        expect(result).toMatchObject({ valid: false, action: "block" });
         expect("planningIncomplete" in result).toBe(false);
         if (!result.valid) {
             expect(result.remediation).toContain("OPENSPEC_VALIDATION_FAILED");
@@ -139,6 +144,7 @@ describe("validateChange tool adapter", () => {
             outputOf(await validateChangeTool.execute({ change: "example" }, context())),
         );
         expect(result.valid).toBe(false);
+        expect(result.action).toBe("block");
         expect(result.issues).toEqual([
             { level: "error", path: "proposal.md", message: "invalid" },
         ]);
@@ -184,7 +190,53 @@ describe("validateChange tool adapter", () => {
         expect(result).toMatchObject({
             valid: false,
             planningIncomplete: true,
+            action: "continue_planning",
         });
         expect(result.remediation).toContain("OPENSPEC_PLANNING_INCOMPLETE");
+    });
+
+    test("reports planningIncomplete before the first proposal exists", async () => {
+        const failedResponse = {
+            ...validResponse,
+            items: [
+                {
+                    ...validResponse.items[0],
+                    valid: false,
+                    issues: [
+                        {
+                            level: "error",
+                            path: "file",
+                            message: "Change must have at least one delta. No deltas found.",
+                        },
+                    ],
+                },
+            ],
+        };
+        spyOn(helpers, "runCaptureStdout").mockImplementation(async (_command, args) => {
+            if (args[0] === "show") {
+                return {
+                    stdout: JSON.stringify({
+                        status: [
+                            {
+                                severity: "error",
+                                code: "show_error",
+                                message: 'Change "example" has no proposal.md yet.',
+                            },
+                        ],
+                    }),
+                    exitCode: 1,
+                };
+            }
+            return { stdout: JSON.stringify(failedResponse), exitCode: 1 };
+        });
+
+        const result = JSON.parse(
+            outputOf(await validateChangeTool.execute({ change: "example" }, context())),
+        );
+        expect(result).toMatchObject({
+            valid: false,
+            planningIncomplete: true,
+            action: "continue_planning",
+        });
     });
 });

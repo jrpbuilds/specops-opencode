@@ -30,49 +30,46 @@ A complete example:
 
 ```json
 {
-    "frontierEscalation": false,
-    "maxSubagentConcurrency": 1,
-    "maxAutoReviewIterations": 3,
+    "frontierEscalation": true,
+    "maxSubagentConcurrency": 3,
+    "maxAutoReviewIterations": 1,
     "agents": {
         "specops-coordinator": {
             "model": "opencode-go/deepseek-v4-flash",
             "variant": "high"
         },
         "specops-explorer": {
-            "model": "openference/Qwen3.7 Plus",
-            "variant": "medium"
+            "model": "opencode-go/mimo-v2.5"
         },
         "specops-planner": {
-            "model": "openai/gpt-5.6-terra",
+            "model": "opencode-go/deepseek-v4-pro",
             "variant": "high"
         },
         "specops-designer": {
-            "model": "openference/GLM-5.2",
-            "variant": "max"
-        },
-        "specops-implementer": {
-            "model": "openference/Kimi K2.7 Code",
+            "model": "opencode-go/minimax-m3",
             "variant": "thinking"
         },
+        "specops-implementer": {
+            "model": "opencode-go/kimi-k2.7-code"
+        },
         "specops-reviewer": {
-            "model": "openference/DeepSeek-V4-Pro",
-            "variant": "high"
+            "model": "opencode-go/mimo-v2.5-pro"
         },
         "specops-review-correctness": {
             "model": "opencode-go/deepseek-v4-flash",
             "variant": "high"
         },
         "specops-review-risk": {
-            "model": "opencode-go/deepseek-v4-flash",
+            "model": "opencode-go/hy3",
             "variant": "high"
         },
         "specops-review-quality": {
-            "model": "opencode-go/deepseek-v4-flash",
+            "model": "opencode-go/glm-5.3-flash",
             "variant": "high"
         },
         "specops-frontier": {
             "model": "openai/gpt-5.6-sol",
-            "variant": "high"
+            "variant": "max"
         }
     }
 }

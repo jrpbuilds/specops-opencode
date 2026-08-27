@@ -1,97 +1,113 @@
 # Model recommendations
 
-SpecOps's main idea is that each role should use the model best suited to its job — a cheap fast model for mechanical work, a strong reasoner where judgement matters. This page gives practical starting points. All roles default to OpenCode's global model, so you only need to map the roles where a different choice pays off.
+Use the right model for each role instead of putting an expensive frontier model everywhere. SpecOps defaults to OpenCode's global model, so only map roles where a different choice helps.
 
-## Matching model classes to roles
+## Quick guide
 
-| Role                    | Job character                                               | Suggested class                                    |
-| ----------------------- | ----------------------------------------------------------- | -------------------------------------------------- |
-| Coordinator             | Deterministic routing and checkpointing; no specialist work | Fast, cheap, instruction-reliable                  |
-| Explorer                | Repository scanning and evidence gathering                  | Fast, cheap, long-context                          |
-| Planner                 | Requirements, specifications, task decomposition            | Strong reasoning                                   |
-| Designer                | Technical design trade-offs                                 | Strong reasoning                                   |
-| Implementer             | Code and test authoring                                     | Strong coding model; speed matters on large passes |
-| Reviewer                | Final verdict authority                                     | The strongest reasoner you are willing to pay for  |
-| Review specialists (×3) | Focused critiques run three-wide in parallel                | Cheap-to-mid tier — volume multiplies cost here    |
-| Frontier (optional)     | Escalation consultant for hard blockers                     | Your strongest available model                     |
+| Role           | What matters most                                   | Good options                                      |
+| -------------- | --------------------------------------------------- | ------------------------------------------------- |
+| Coordinator    | Reliable long-context instructions and tool routing | DeepSeek V4 Flash; Hy3 is a promising alternative |
+| Explorer       | Fast, cheap repository reading                      | MiMo V2.5, DeepSeek V4 Flash, Muse Spark 1.2      |
+| Planner        | Requirements judgement                              | DeepSeek V4 Pro, Qwen3.7 Plus, Kimi K3            |
+| Designer       | Architecture and trade-offs                         | MiniMax M3, GLM 5.3, MiMo V2.5 Pro                |
+| Implementer    | Long-horizon coding and tests                       | Kimi K2.7 Code, MiniMax M3                        |
+| Review critics | Affordable independent code analysis                | DeepSeek V4 Flash, Hy3, GLM 5.3 Flash             |
+| Reviewer       | Calibrated final PASS/FAIL judgement                | MiMo V2.5 Pro, DeepSeek V4 Pro, Kimi K3           |
+| Frontier       | Rare difficult blockers                             | GPT-5.6 Sol                                       |
 
-Two principles fall out of this table:
+The Coordinator is not a trivial router: it carries a large, stateful workflow contract. Review critics run three times per round, so use different affordable model families rather than letting all three inherit the Reviewer.
 
-1. **Spend on judgement, save on volume.** The Planner, Designer, and Reviewer shape or judge the whole change — weak models here cause rework downstream. The review critics run three times per review, so a budget model there keeps the pipeline affordable without hurting the final verdict (the Reviewer still decides alone).
-2. **The Coordinator does not need to be clever.** It routes and asks questions; it never writes code. A reliable cheap model is ideal.
+## OpenCode Go or a provider?
 
-## Example setups
+[OpenCode Go](https://opencode.ai/docs/go/) is excellent for trying models and keeping high-multiplier options such as MiMo, DeepSeek Flash, Hy3, and MiniMax available cheaply. It is not an unlimited heavy-use plan; substantial planning, implementation, and repeated reviews can consume its limits quickly, especially with Kimi K3 or GLM 5.3.
 
-### Budget
+For regular heavy use, move your busiest roles to a dedicated inference provider, coding package, or self-hosted endpoint. Keeping Go for cheaper roles alongside another provider is often the best-value setup. Always use the exact provider/model ID and variants shown by `opencode models`.
 
-Fast and inexpensive everywhere except planning and the final verdict:
+Muse Spark 1.2 Contributor is great for public-code exploration, but prompts and completions may be used for training. Do not use it for private source or confidential data.
 
-```json
-{
-    "agents": {
-        "specops-coordinator": { "model": "opencode-go/deepseek-v4-flash", "variant": "high" },
-        "specops-explorer": { "model": "opencode-go/deepseek-v4-flash" },
-        "specops-planner": { "model": "openai/gpt-5.6-terra", "variant": "high" },
-        "specops-designer": { "model": "openference/GLM-5.2", "variant": "high" },
-        "specops-implementer": { "model": "openference/Kimi K2.7 Code", "variant": "thinking" },
-        "specops-reviewer": { "model": "openference/DeepSeek-V4-Pro", "variant": "high" }
-    }
-}
-```
+## 1. Strong everyday open stack
 
-Review specialists inherit the Reviewer's mapping, so all three critics ride the strong reviewer model too. For a cheaper pipeline, give them their own entries pointing at `opencode-go/deepseek-v4-flash`.
-
-### Balanced
-
-Strong models where they shape outcomes, mid-tier for volume critique:
-
-```json
-{
-    "agents": {
-        "specops-coordinator": { "model": "opencode-go/deepseek-v4-flash", "variant": "high" },
-        "specops-explorer": { "model": "openference/Qwen3.7 Plus", "variant": "medium" },
-        "specops-planner": { "model": "openai/gpt-5.6-terra", "variant": "high" },
-        "specops-designer": { "model": "openference/GLM-5.2", "variant": "max" },
-        "specops-implementer": { "model": "openference/Kimi K2.7 Code", "variant": "thinking" },
-        "specops-reviewer": { "model": "openference/DeepSeek-V4-Pro", "variant": "high" },
-        "specops-review-correctness": {
-            "model": "opencode-go/deepseek-v4-flash",
-            "variant": "high"
-        },
-        "specops-review-risk": { "model": "opencode-go/deepseek-v4-flash", "variant": "high" },
-        "specops-review-quality": { "model": "opencode-go/deepseek-v4-flash", "variant": "high" }
-    }
-}
-```
-
-Mixing model _families_ between the critics and the Reviewer is deliberate: independent perspectives catch more than three copies of the same model thinking the same way.
-
-### Maximum quality
-
-Frontier escalation on, strongest models at every judgement point:
+The recommended private-work starting point. Sol is called only for rare Frontier escalation.
 
 ```json
 {
     "frontierEscalation": true,
+    "maxSubagentConcurrency": 3,
+    "maxAutoReviewIterations": 1,
     "agents": {
         "specops-coordinator": { "model": "opencode-go/deepseek-v4-flash", "variant": "high" },
-        "specops-planner": { "model": "openai/gpt-5.6-terra", "variant": "high" },
-        "specops-designer": { "model": "openai/gpt-5.6-terra", "variant": "max" },
-        "specops-implementer": { "model": "openference/Kimi K2.7 Code", "variant": "thinking" },
-        "specops-reviewer": { "model": "openai/gpt-5.6-sol", "variant": "high" },
-        "specops-frontier": { "model": "openai/gpt-5.6-sol", "variant": "high" }
+        "specops-explorer": { "model": "opencode-go/mimo-v2.5" },
+        "specops-planner": { "model": "opencode-go/deepseek-v4-pro", "variant": "high" },
+        "specops-designer": { "model": "opencode-go/minimax-m3", "variant": "thinking" },
+        "specops-implementer": { "model": "opencode-go/kimi-k2.7-code" },
+        "specops-reviewer": { "model": "opencode-go/mimo-v2.5-pro" },
+        "specops-review-correctness": {
+            "model": "opencode-go/deepseek-v4-flash",
+            "variant": "high"
+        },
+        "specops-review-risk": { "model": "opencode-go/hy3", "variant": "high" },
+        "specops-review-quality": { "model": "opencode-go/glm-5.3-flash", "variant": "high" },
+        "specops-frontier": { "model": "openai/gpt-5.6-sol", "variant": "max" }
     }
 }
 ```
 
-## Variants
+Kimi K3 is a strong Planner or Reviewer upgrade, but it is too expensive in Go for a general default.
 
-Variants select a model's reasoning-effort mode (for example `low`, `medium`, `high`, `max`, or `thinking`), and every model exposes a different set. Rules of thumb:
+## 2. Public OSS sleeper stack
 
-- Planning, design, and review benefit from higher effort; the extra latency is small relative to the stage's importance.
-- Exploration and coordination are fine at default or medium effort.
-- A variant without a model is invalid; changing a role's model may reset an incompatible variant (the editor drops it rather than saving a broken pair).
+Uses Hy3 orchestration, Muse exploration, Qwen planning, GLM design, MiniMax implementation, and MiMo review.
 
-## Tuning parallelism with cost in mind
+```json
+{
+    "frontierEscalation": true,
+    "maxSubagentConcurrency": 3,
+    "maxAutoReviewIterations": 1,
+    "agents": {
+        "specops-coordinator": { "model": "opencode-go/hy3", "variant": "high" },
+        "specops-explorer": {
+            "model": "opencode-go/muse-spark-1.2-contributor",
+            "variant": "medium"
+        },
+        "specops-planner": { "model": "opencode-go/qwen3.7-plus" },
+        "specops-designer": { "model": "opencode-go/glm-5.3", "variant": "high" },
+        "specops-implementer": { "model": "opencode-go/minimax-m3", "variant": "thinking" },
+        "specops-reviewer": { "model": "opencode-go/mimo-v2.5-pro" },
+        "specops-review-correctness": {
+            "model": "opencode-go/deepseek-v4-flash",
+            "variant": "high"
+        },
+        "specops-review-risk": { "model": "opencode-go/kimi-k2.6" },
+        "specops-review-quality": { "model": "opencode-go/glm-5.3-flash", "variant": "high" },
+        "specops-frontier": { "model": "openai/gpt-5.6-sol", "variant": "max" }
+    }
+}
+```
 
-[Concurrent subagents](configuration.md#maxsubagentconcurrency-default-1) defaults to **1** (serial). Raising it mainly speeds up stages that fan out — planning routes and especially the three-way review. If cost is the priority, stay at 1; if wall-clock time is the priority during reviews, 3 lets the critics run side by side. Auto's correction budget ([Auto review iterations](configuration.md#maxautoreviewiterations-default-3)) multiplies review cost on failing changes, so keep it low until you trust your mapping.
+For private work, replace Muse with `opencode-go/mimo-v2.5`.
+
+## 3. Premium models everywhere
+
+The intentionally expensive option for users with suitable provider plans or coding packages.
+
+```json
+{
+    "frontierEscalation": true,
+    "maxSubagentConcurrency": 3,
+    "maxAutoReviewIterations": 3,
+    "agents": {
+        "specops-coordinator": { "model": "openai/gpt-5.6-luna", "variant": "high" },
+        "specops-explorer": { "model": "openai/gpt-5.6-luna", "variant": "high" },
+        "specops-planner": { "model": "opencode/claude-opus-5", "variant": "max" },
+        "specops-designer": { "model": "openai/gpt-5.6-terra", "variant": "max" },
+        "specops-implementer": { "model": "opencode/claude-sonnet-5", "variant": "max" },
+        "specops-reviewer": { "model": "openai/gpt-5.6-sol", "variant": "max" },
+        "specops-review-correctness": { "model": "openai/gpt-5.6-terra", "variant": "high" },
+        "specops-review-risk": { "model": "opencode/claude-sonnet-5", "variant": "high" },
+        "specops-review-quality": { "model": "openai/gpt-5.6-terra", "variant": "high" },
+        "specops-frontier": { "model": "openai/gpt-5.6-sol", "variant": "max" }
+    }
+}
+```
+
+Concurrency changes speed, not total calls. Auto review iterations repeat all three critics and the final Reviewer, so keep the value at 1 until you trust your mapping.

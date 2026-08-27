@@ -62,8 +62,8 @@ Call `specops_apply_instructions` before implementation/review; reuse same `cont
 
 ## Validation gates
 
-- Before dispatching planner or designer to author or revise any planning artifact, call `specops_validate_change` for the active change. `{planningIncomplete: true}` only means the change has no requirement deltas yet — the expected state while first-pass artifacts are unwritten; dispatch normally. Any other `{valid: false, …}` blocks: do not dispatch; surface the blocking error and remediation.
-- Before dispatching the review fan-out, call `specops_validate_change` for the active change. If it returns `{valid: false, …}` — including `{planningIncomplete: true}`, which can never pass review — block the review and route the violations back to the implementer as findings. The fan-out and final Reviewer use this already-validated change; do not add a second validation call between them.
+- Before dispatching planner or designer to author or revise any planning artifact, call `specops_validate_change` for the active change. On a failing result, treat `action` as authoritative: `action: "continue_planning"` means the change has no requirement deltas yet — the expected state while first-pass artifacts are unwritten; dispatch normally and do not emit `BLOCKED` or route remediation. `action: "block"` means a real validation failure; do not dispatch, and surface the blocking error and remediation.
+- Before dispatching the review fan-out, call `specops_validate_change` for the active change. A result with `action: "continue_planning"` can never pass review and must block the review until planning is complete; a result with `action: "block"` also blocks the review. Route the violations back to the implementer as findings. The fan-out and final Reviewer use this already-validated change; do not add a second validation call between them.
 
 ## Review phase
 

@@ -348,9 +348,10 @@ describe("fresh-change validation gate contract", () => {
 
     test("shared coordinator dispatches normally while first-pass deltas are pending", () => {
         const section = validationGatesSection(loadPrompt(AGENT_IDS.coordinator));
-        expect(section).toContain("`{planningIncomplete: true}`");
+        expect(section).toContain('`action: "continue_planning"`');
         expect(section).toContain("dispatch normally");
-        expect(section).toMatch(/Any other `\{valid: false, …\}` blocks/);
+        expect(section).toContain("do not emit `BLOCKED`");
+        expect(section).toContain('`action: "block"`');
     });
 
     test.each(["interactive", "auto"] as const)(
@@ -358,6 +359,7 @@ describe("fresh-change validation gate contract", () => {
         mode => {
             const section = validationGatesSection(buildCoordinatorPrompt(mode, false));
             expect(section).toContain("can never pass review");
+            expect(section).toContain('`action: "continue_planning"`');
         },
     );
 

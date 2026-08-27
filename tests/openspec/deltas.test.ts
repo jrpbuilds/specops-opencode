@@ -41,6 +41,21 @@ describe("countChangeDeltas", () => {
         expect(await countChangeDeltas("example", "/project", captureJson(empty))).toBe(0);
     });
 
+    test("reports zero before the first proposal exists", async () => {
+        const missingProposal = {
+            status: [
+                {
+                    severity: "error",
+                    code: "show_error",
+                    message: 'Change "example" has no proposal.md yet.',
+                },
+            ],
+        };
+        expect(
+            await countChangeDeltas("example", "/project", captureJson(missingProposal, 1)),
+        ).toBe(0);
+    });
+
     test("accepts unknown envelope fields and opaque delta entries as forward-compatible", async () => {
         const forward = {
             ...response,

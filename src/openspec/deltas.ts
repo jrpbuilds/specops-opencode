@@ -1,6 +1,7 @@
 import { runCaptureStdout } from "../helpers.js";
 import type { CaptureStdout } from "./helpers.js";
 import { runOpenSpecJson } from "./exec.js";
+import { isRecord } from "./helpers.js";
 import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
 /**
@@ -23,7 +24,9 @@ const responseSchema: Schema = {
  *
  * A count of zero means strict validation can only fail with "no deltas
  * found", which distinguishes mid-planning changes from genuinely invalid
- * ones. Throws on spawn failure or a malformed CLI response.
+ * ones. A newly-created change has no proposal yet, so OpenSpec reports that
+ * state as a non-zero `show` response; it is also an empty delta set. Throws
+ * on spawn failure or a malformed CLI response.
  */
 export async function countChangeDeltas(
     changeName: string,
@@ -45,8 +48,21 @@ export async function countChangeDeltas(
         );
     }
     if (result.kind !== "success") throw new Error(result.message);
+    if (result.exitCode !== 0 && isMissingProposalResponse(result.parsed)) return 0;
 
     assertShape(result.parsed, responseSchema, "openspec show");
     const validated = result.parsed as Record<string, unknown>;
     return (validated.deltas as unknown[]).length;
+}
+
+/** Recognize the expected response for a change before its first artifact exists. */
+function isMissingProposalResponse(value: unknown): boolean {
+    if (!isRecord(value) || !Array.isArray(value.status)) return false;
+    return value.status.some(
+        status =>
+            isRecord(status) &&
+            status.code === "show_error" &&
+            typeof status.message === "string" &&
+            status.message.includes("has no proposal.md yet"),
+    );
 }

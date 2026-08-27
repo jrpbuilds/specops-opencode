@@ -7,11 +7,13 @@ export type ValidateChangeResult =
     | {
           valid: false;
           planningIncomplete: true;
+          action: "continue_planning";
           issues: ChangeValidation["issues"];
           remediation: string;
       }
     | {
           valid: false;
+          action: "block";
           issues: ChangeValidation["issues"];
           remediation: string;
       };
@@ -42,6 +44,7 @@ export async function validateChange(
             return {
                 valid: false,
                 planningIncomplete: true,
+                action: "continue_planning",
                 issues: result.issues,
                 remediation: formatRemediation("OPENSPEC_PLANNING_INCOMPLETE", {
                     change: trimmed,
@@ -51,6 +54,7 @@ export async function validateChange(
 
         return {
             valid: false,
+            action: "block",
             issues: result.issues,
             remediation: formatRemediation("OPENSPEC_VALIDATION_FAILED", {
                 change: trimmed,
@@ -67,6 +71,7 @@ export async function validateChange(
         ];
         return {
             valid: false,
+            action: "block",
             issues,
             remediation: formatRemediation("OPENSPEC_VALIDATION_FAILED", {
                 change: change.trim(),
