@@ -1,5 +1,4 @@
 import { MAX_SUBAGENT_CONCURRENCY_SELECTABLE, MIN_SUBAGENT_CONCURRENCY } from "../../config.js";
-import { effectiveConcurrency } from "../display.js";
 import type { EditorNavigator, EditorSession } from "../editor-session.js";
 
 const SUBAGENT_CONCURRENCY_OPTIONS: readonly number[] = Array.from(
@@ -18,7 +17,7 @@ const SUBAGENT_CONCURRENCY_OPTIONS: readonly number[] = Array.from(
  */
 export function openConcurrencyPicker(session: EditorSession, nav: EditorNavigator): void {
     const { api, staged } = session;
-    const current = effectiveConcurrency(staged);
+    const current = staged.maxSubagentConcurrency;
     api.ui.dialog.replace(() =>
         api.ui.DialogSelect<number>({
             title:

@@ -1,5 +1,4 @@
 import { MAX_AUTO_REVIEW_ITERATIONS_SELECTABLE, MIN_AUTO_REVIEW_ITERATIONS } from "../../config.js";
-import { effectiveAutoReviewIterations } from "../display.js";
 import type { EditorNavigator, EditorSession } from "../editor-session.js";
 
 const AUTO_REVIEW_ITERATION_OPTIONS: readonly number[] = Array.from(
@@ -22,7 +21,7 @@ const AUTO_REVIEW_ITERATION_OPTIONS: readonly number[] = Array.from(
  */
 export function openAutoReviewIterationsPicker(session: EditorSession, nav: EditorNavigator): void {
     const { api, staged } = session;
-    const current = effectiveAutoReviewIterations(staged);
+    const current = staged.maxAutoReviewIterations;
     api.ui.dialog.replace(() =>
         api.ui.DialogSelect<number>({
             title:

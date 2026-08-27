@@ -19,14 +19,23 @@ import {
 import { reviewCorrectnessAgentDefinition } from "../../src/agents/review-correctness.js";
 import { reviewQualityAgentDefinition } from "../../src/agents/review-quality.js";
 import { reviewRiskAgentDefinition } from "../../src/agents/review-risk.js";
-import type { SpecOpsConfig } from "../../src/config.js";
+import {
+    DEFAULT_AUTO_REVIEW_ITERATIONS,
+    DEFAULT_SUBAGENT_CONCURRENCY,
+    type SpecOpsConfig,
+} from "../../src/config.js";
 
 /** Build a complete valid role config with no model overrides. */
 function makeConfig(): SpecOpsConfig {
     const agents = Object.fromEntries(
         Object.values(AGENT_IDS).map(id => [id, {}]),
     ) as SpecOpsConfig["agents"];
-    return { agents, frontierEscalation: false };
+    return {
+        agents,
+        frontierEscalation: false,
+        maxSubagentConcurrency: DEFAULT_SUBAGENT_CONCURRENCY,
+        maxAutoReviewIterations: DEFAULT_AUTO_REVIEW_ITERATIONS,
+    };
 }
 
 describe("role permission profiles", () => {

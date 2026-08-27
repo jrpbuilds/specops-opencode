@@ -5,7 +5,11 @@ import { PLANNER_AGENT_ID } from "../../src/agents/planner.js";
 import { registerPlannerAgent } from "../../src/host/agents.js";
 import { PLANNER_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
-import type { SpecOpsConfig } from "../../src/config.js";
+import {
+    DEFAULT_AUTO_REVIEW_ITERATIONS,
+    DEFAULT_SUBAGENT_CONCURRENCY,
+    type SpecOpsConfig,
+} from "../../src/config.js";
 
 /** Build a complete valid role config with optional planner overrides. */
 function makeConfig(overrides: Partial<SpecOpsConfig["agents"]> = {}): SpecOpsConfig {
@@ -15,6 +19,8 @@ function makeConfig(overrides: Partial<SpecOpsConfig["agents"]> = {}): SpecOpsCo
     return {
         agents: { ...defaults, ...overrides } as SpecOpsConfig["agents"],
         frontierEscalation: false,
+        maxSubagentConcurrency: DEFAULT_SUBAGENT_CONCURRENCY,
+        maxAutoReviewIterations: DEFAULT_AUTO_REVIEW_ITERATIONS,
     };
 }
 

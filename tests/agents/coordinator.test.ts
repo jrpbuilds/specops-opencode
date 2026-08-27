@@ -12,7 +12,11 @@ import {
     SPECOPS_LIFECYCLE_PERMISSION,
     SPECOPS_TASK_ALLOW,
 } from "../../src/agents/permissions.js";
-import type { SpecOpsConfig } from "../../src/config.js";
+import {
+    DEFAULT_AUTO_REVIEW_ITERATIONS,
+    DEFAULT_SUBAGENT_CONCURRENCY,
+    type SpecOpsConfig,
+} from "../../src/config.js";
 import { loadPrompt } from "../../src/prompts.js";
 
 function makeConfig(
@@ -25,6 +29,8 @@ function makeConfig(
     return {
         agents: { ...defaults, ...overrides } as SpecOpsConfig["agents"],
         frontierEscalation,
+        maxSubagentConcurrency: DEFAULT_SUBAGENT_CONCURRENCY,
+        maxAutoReviewIterations: DEFAULT_AUTO_REVIEW_ITERATIONS,
     };
 }
 

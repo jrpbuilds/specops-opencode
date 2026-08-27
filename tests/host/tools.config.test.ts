@@ -1,6 +1,10 @@
 import type { ToolContext } from "@opencode-ai/plugin/tool";
 import { afterAll, describe, expect, test } from "bun:test";
-import type { SpecOpsConfig } from "../../src/config.js";
+import {
+    DEFAULT_AUTO_REVIEW_ITERATIONS,
+    DEFAULT_SUBAGENT_CONCURRENCY,
+    type SpecOpsConfig,
+} from "../../src/config.js";
 import {
     __resetProcessConfigForTesting,
     getProcessConfig,
@@ -20,10 +24,12 @@ function outputOf(result: ToolResult): string {
  */
 function makeConfig(overrides: Partial<SpecOpsConfig> = {}): SpecOpsConfig {
     return {
-        agents: {},
+        agents: {} as SpecOpsConfig["agents"],
         frontierEscalation: false,
+        maxSubagentConcurrency: DEFAULT_SUBAGENT_CONCURRENCY,
+        maxAutoReviewIterations: DEFAULT_AUTO_REVIEW_ITERATIONS,
         ...overrides,
-    } as unknown as SpecOpsConfig;
+    };
 }
 
 function toolContext(ask: ToolContext["ask"]): ToolContext {

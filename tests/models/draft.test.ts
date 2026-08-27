@@ -35,6 +35,15 @@ describe("createConfigDraft", () => {
         expect(draft.maxAutoReviewIterations).toBe(14);
     });
 
+    test("passes normalized numeric fields through as concrete numbers", () => {
+        const draft = createConfigDraft(DEFAULT_CONFIG, models).config;
+
+        expect(draft.maxSubagentConcurrency).toBe(DEFAULT_CONFIG.maxSubagentConcurrency);
+        expect(draft.maxAutoReviewIterations).toBe(DEFAULT_CONFIG.maxAutoReviewIterations);
+        expect(typeof draft.maxSubagentConcurrency).toBe("number");
+        expect(typeof draft.maxAutoReviewIterations).toBe("number");
+    });
+
     test("drops a blank model (trimmed) so the entry has no model key", () => {
         const source = structuredClone(DEFAULT_CONFIG);
         source.agents[AGENT_IDS.explorer] = { model: "   " };

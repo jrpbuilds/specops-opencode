@@ -13,10 +13,12 @@ import { configView, type ConfigViewDeps } from "../../src/tools/config.js";
  */
 function makeConfig(overrides: Partial<SpecOpsConfig> = {}): SpecOpsConfig {
     return {
-        agents: {},
+        agents: {} as SpecOpsConfig["agents"],
         frontierEscalation: false,
+        maxSubagentConcurrency: DEFAULT_SUBAGENT_CONCURRENCY,
+        maxAutoReviewIterations: DEFAULT_AUTO_REVIEW_ITERATIONS,
         ...overrides,
-    } as unknown as SpecOpsConfig;
+    };
 }
 
 function deps(config: SpecOpsConfig, calls: number[] = []): ConfigViewDeps {
@@ -57,21 +59,25 @@ describe("configView", () => {
         });
     });
 
-    test("backfills missing maxSubagentConcurrency with the default", () => {
-        const view = configView(deps(makeConfig({ maxAutoReviewIterations: 2 })));
+    test("reports maxSubagentConcurrency from the config directly", () => {
+        const view = configView(
+            deps(makeConfig({ maxSubagentConcurrency: 7, maxAutoReviewIterations: 2 })),
+        );
 
-        expect(view.maxSubagentConcurrency).toBe(DEFAULT_SUBAGENT_CONCURRENCY);
+        expect(view.maxSubagentConcurrency).toBe(7);
         expect(view.maxAutoReviewIterations).toBe(2);
     });
 
-    test("backfills missing maxAutoReviewIterations with the default", () => {
-        const view = configView(deps(makeConfig({ maxSubagentConcurrency: 8 })));
+    test("reports maxAutoReviewIterations from the config directly", () => {
+        const view = configView(
+            deps(makeConfig({ maxSubagentConcurrency: 8, maxAutoReviewIterations: 4 })),
+        );
 
         expect(view.maxSubagentConcurrency).toBe(8);
-        expect(view.maxAutoReviewIterations).toBe(DEFAULT_AUTO_REVIEW_ITERATIONS);
+        expect(view.maxAutoReviewIterations).toBe(4);
     });
 
-    test("keeps frontierEscalation authoritative when numerics are absent", () => {
+    test("copies frontierEscalation directly", () => {
         const view = configView(deps(makeConfig({ frontierEscalation: true })));
 
         expect(view.frontierEscalation).toBe(true);

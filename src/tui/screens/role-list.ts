@@ -4,13 +4,7 @@ import {
 } from "../../config.js";
 import { ROLE_WORKFLOW_ORDER, type AgentId } from "../../agents/ids.js";
 import { agentDisplayName, validateConfigSelections } from "../../models.js";
-import {
-    changedAgentIds,
-    describeSelection,
-    effectiveAutoReviewIterations,
-    effectiveConcurrency,
-    formatConfiguredValue,
-} from "../display.js";
+import { changedAgentIds, describeSelection, formatConfiguredValue } from "../display.js";
 import type { EditorNavigator, EditorSession } from "../editor-session.js";
 
 const FRONTIER_ESCALATION = "__frontier_escalation__";
@@ -36,9 +30,9 @@ export function openRoleList(session: EditorSession, nav: EditorNavigator): void
     );
     const changed = new Set(changedAgentIds(initial, staged));
     const frontierEscalationChanged = staged.frontierEscalation !== initial.frontierEscalation;
-    const concurrencyChanged = effectiveConcurrency(staged) !== effectiveConcurrency(initial);
+    const concurrencyChanged = staged.maxSubagentConcurrency !== initial.maxSubagentConcurrency;
     const autoReviewIterationsChanged =
-        effectiveAutoReviewIterations(staged) !== effectiveAutoReviewIterations(initial);
+        staged.maxAutoReviewIterations !== initial.maxAutoReviewIterations;
     const roleOptions = ROLE_WORKFLOW_ORDER.map(id => ({
         // "!" = saved model unavailable in the current catalogue; "*" = staged change.
         title: `${unresolved.has(id) ? "! " : ""}${changed.has(id) ? "* " : ""}${agentDisplayName(id)}`,
@@ -65,7 +59,7 @@ export function openRoleList(session: EditorSession, nav: EditorNavigator): void
                         category: "Options",
                         title: `${concurrencyChanged ? "* " : ""}Concurrent subagents`,
                         footer: formatConfiguredValue(
-                            effectiveConcurrency(staged),
+                            staged.maxSubagentConcurrency,
                             MAX_SUBAGENT_CONCURRENCY_SELECTABLE,
                         ),
                     },
@@ -74,7 +68,7 @@ export function openRoleList(session: EditorSession, nav: EditorNavigator): void
                         category: "Options",
                         title: `${autoReviewIterationsChanged ? "* " : ""}Auto review iterations`,
                         footer: formatConfiguredValue(
-                            effectiveAutoReviewIterations(staged),
+                            staged.maxAutoReviewIterations,
                             MAX_AUTO_REVIEW_ITERATIONS_SELECTABLE,
                         ),
                     },

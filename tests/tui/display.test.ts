@@ -5,13 +5,16 @@ import {
     ROLE_WORKFLOW_ORDER,
     type AgentId,
 } from "../../src/agents/ids.js";
-import type { AgentConfig, SpecOpsConfig } from "../../src/config.js";
+import {
+    DEFAULT_AUTO_REVIEW_ITERATIONS,
+    DEFAULT_SUBAGENT_CONCURRENCY,
+    type AgentConfig,
+    type SpecOpsConfig,
+} from "../../src/config.js";
 import { agentDisplayName, configuredModels, type ConfiguredModel } from "../../src/models.js";
 import {
     changedAgentIds,
     describeSelection,
-    effectiveAutoReviewIterations,
-    effectiveConcurrency,
     formatConfiguredValue,
 } from "../../src/tui/display.js";
 import { allProviders } from "../fixtures.js";
@@ -37,36 +40,20 @@ function configWith(
             ALL_AGENT_IDS.map(id => [id, overrides.get(id) ?? {}]),
         ) as SpecOpsConfig["agents"],
         frontierEscalation: false,
+        maxSubagentConcurrency: DEFAULT_SUBAGENT_CONCURRENCY,
+        maxAutoReviewIterations: DEFAULT_AUTO_REVIEW_ITERATIONS,
         ...extra,
     };
 }
 
-describe("effectiveConcurrency", () => {
-    test("returns the configured concurrency limit", () => {
-        expect(effectiveConcurrency(configWith([], { maxSubagentConcurrency: 8 }))).toBe(8);
-    });
+describe("normalized SpecOpsConfig shape", () => {
+    test("configWith produces non-optional numeric fields", () => {
+        const config = configWith();
 
-    test("defaults to one for older configurations without the field", () => {
-        expect(
-            effectiveConcurrency({ agents: configWith().agents, frontierEscalation: false }),
-        ).toBe(1);
-    });
-});
-
-describe("effectiveAutoReviewIterations", () => {
-    test("returns the configured correction budget", () => {
-        expect(effectiveAutoReviewIterations(configWith([], { maxAutoReviewIterations: 12 }))).toBe(
-            12,
-        );
-    });
-
-    test("defaults to three for older configurations without the field", () => {
-        expect(
-            effectiveAutoReviewIterations({
-                agents: configWith().agents,
-                frontierEscalation: false,
-            }),
-        ).toBe(3);
+        expect(config.maxSubagentConcurrency).toBe(DEFAULT_SUBAGENT_CONCURRENCY);
+        expect(config.maxAutoReviewIterations).toBe(DEFAULT_AUTO_REVIEW_ITERATIONS);
+        expect(typeof config.maxSubagentConcurrency).toBe("number");
+        expect(typeof config.maxAutoReviewIterations).toBe("number");
     });
 });
 

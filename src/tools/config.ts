@@ -1,8 +1,4 @@
-import {
-    DEFAULT_AUTO_REVIEW_ITERATIONS,
-    DEFAULT_SUBAGENT_CONCURRENCY,
-    type SpecOpsConfig,
-} from "../config.js";
+import type { SpecOpsConfig } from "../config.js";
 
 /**
  * Allow-listed, coordinator-relevant view of the effective SpecOps configuration.
@@ -36,10 +32,10 @@ export type ConfigViewDeps = {
 /**
  * Build the allow-listed coordinator config view from a validated config.
  *
- * Optional numeric fields are normalized against {@link DEFAULT_CONFIG} so
- * older config files missing those keys still produce a complete, deterministic
- * view rather than leaking `undefined` to the LLM. The returned object is a fresh
- * copy; mutating it does not affect the supplied configuration.
+ * The normalized `SpecOpsConfig` already carries concrete values for every
+ * allow-listed field, so the view copies them directly rather than re-defaulting.
+ * The returned object is a fresh copy; mutating it does not affect the supplied
+ * configuration.
  *
  * @param deps Provides the effective SpecOps configuration.
  * @returns A structured coordinator config view; the tool wrapper handles JSON
@@ -48,8 +44,8 @@ export type ConfigViewDeps = {
 export function configView(deps: ConfigViewDeps): CoordinatorConfigView {
     const config = deps.getConfig();
     return {
-        maxSubagentConcurrency: config.maxSubagentConcurrency ?? DEFAULT_SUBAGENT_CONCURRENCY,
-        maxAutoReviewIterations: config.maxAutoReviewIterations ?? DEFAULT_AUTO_REVIEW_ITERATIONS,
+        maxSubagentConcurrency: config.maxSubagentConcurrency,
+        maxAutoReviewIterations: config.maxAutoReviewIterations,
         frontierEscalation: config.frontierEscalation,
     };
 }

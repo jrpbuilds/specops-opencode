@@ -1,11 +1,7 @@
 import { ALL_AGENT_IDS } from "../../agents/ids.js";
 import { saveConfig } from "../../config.js";
 import { validateConfigSelections } from "../../models.js";
-import {
-    changedAgentIds,
-    effectiveAutoReviewIterations,
-    effectiveConcurrency,
-} from "../display.js";
+import { changedAgentIds } from "../display.js";
 import type { EditorNavigator, EditorSession } from "../editor-session.js";
 
 /**
@@ -87,8 +83,8 @@ export function openReview(session: EditorSession, nav: EditorNavigator): void {
                 `The configuration contains all ${ALL_AGENT_IDS.length} roles.`,
                 `${changed} role selection${changed === 1 ? "" : "s"} changed.`,
                 `Frontier escalation: ${staged.frontierEscalation ? "Enabled" : "Disabled"}.`,
-                `Concurrent subagents: ${effectiveConcurrency(staged)}.`,
-                `Auto review iterations: ${effectiveAutoReviewIterations(staged)}.`,
+                `Concurrent subagents: ${staged.maxSubagentConcurrency}.`,
+                `Auto review iterations: ${staged.maxAutoReviewIterations}.`,
                 "Only model mappings and these options are stored.",
             ].join("\n"),
             onConfirm: () => saveStagedConfig(session, nav),
