@@ -66,6 +66,8 @@ After implementation, the coordinator fans the work out to three independent rev
 
 The final `specops-reviewer` receives all three reports verbatim as evidence and owns the only PASS/FAIL decision.
 
+Review agents are isolated from mutating repository or OpenSpec state during the review window, so a PASS reflects only the work that was actually reviewed.
+
 ## What happens on FAIL
 
 A FAIL is not automatically sent back to the Implementer. The coordinator classifies every finding by its correction target and fixes the **earliest incorrect layer** first:

@@ -61,6 +61,7 @@ Diagnoses the installation in one shot:
 - SpecOps version and OpenSpec CLI availability/compatibility
 - Whether the current project is initialised for OpenSpec
 - Whether your `specops.json` parses and validates
+- Whether archived changes still validate against the current OpenSpec schema
 - How many of the ten roles have explicit model mappings vs inheriting OpenCode's default
 
 Run it first whenever anything behaves oddly — see [Troubleshooting](troubleshooting.md).

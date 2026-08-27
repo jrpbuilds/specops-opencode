@@ -7,10 +7,12 @@ All notable changes to SpecOps are documented in this file.
 ### Added
 
 - Added independent correctness, risk, and quality reviews to catch more problems before a change is completed.
-- Reviews now combine feedback from three independent specialists before the final review decision.
+- Reviews now combine evidence-backed findings from three independent specialists before the final review decision.
+- Added a review-window mutation guard: if repository or OpenSpec state changes during review, the run stops with the exact violations instead of passing a tampered review.
 - SpecOps Auto can now retry failed reviews for a configurable number of correction cycles and reports the remaining findings when its budget is exhausted.
 - Added a coordinator-only `specops_config` tool so coordinators can read the effective SpecOps settings without them being baked into prompts.
 - Expanded the documentation into a full user guide covering setup, how it works, configuration, model choices, commands, and troubleshooting.
+- Added archived-change validation to `/specops-doctor`, so stale archived specs surface during diagnostics.
 
 ### Changed
 
