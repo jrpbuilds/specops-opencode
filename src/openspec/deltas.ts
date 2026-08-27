@@ -12,10 +12,10 @@ import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 const responseSchema: Schema = {
     id: { kind: "string", required: true },
     deltas: {
-        kind: "record",
+        kind: "array",
         required: true,
         arrayItem: { kind: "record", required: true },
-    } as never,
+    },
 };
 
 /**

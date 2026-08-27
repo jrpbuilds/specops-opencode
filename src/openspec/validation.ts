@@ -4,13 +4,44 @@ import { isNormalizedArtifact, isRecord } from "./helpers.js";
 /** Primitive shapes recognized inside OpenSpec response contracts. */
 export type FieldKind = "string" | "boolean" | "number" | "stringArray" | "record" | "artifact";
 
-/** One field's expectations inside a response {@link Schema}. */
-export type FieldSpec = {
-    kind: FieldKind;
+/** Expectations for one scalar-valued field (`string`, `boolean`, `number`, `stringArray`). */
+type ScalarFieldSpec = {
+    kind: Exclude<FieldKind, "record" | "artifact">;
+    required: boolean;
+    nullable?: boolean;
+};
+
+/** Expectations for one record-valued field, optionally recursing into `schema`. */
+type RecordFieldSpec = {
+    kind: "record";
     required: boolean;
     schema?: Schema;
     nullable?: boolean;
 };
+
+/** Expectations for one artifact-valued field checked by the shared artifact guard. */
+type ArtifactFieldSpec = {
+    kind: "artifact";
+    required: boolean;
+    nullable?: boolean;
+};
+
+/** Expectations for one array-valued field whose elements each satisfy `arrayItem`. */
+type ArrayFieldSpec = {
+    kind: "array";
+    required: boolean;
+    arrayItem: FieldSpec;
+    nullable?: boolean;
+};
+
+/**
+ * One field's expectations inside a response {@link Schema}.
+ *
+ * Discriminated on `kind`: value fields validate the value itself (records
+ * recursing into an optional nested `schema`), while `array` fields validate
+ * the container and apply `arrayItem` to every element.
+ */
+export type FieldSpec = ScalarFieldSpec | RecordFieldSpec | ArtifactFieldSpec | ArrayFieldSpec;
 
 /** A field-spec table describing one OpenSpec JSON response shape. */
 export type Schema = Record<string, FieldSpec>;
@@ -87,12 +118,11 @@ export function assertNoExtraFields(
 /** Validate one field against its spec, throwing {@link OpenSpecShapeError} on violation. */
 function assertField(value: unknown, field: string, spec: FieldSpec, ctx: string): void {
     if (value === null && spec.nullable) return;
-    const arrayItem = (spec as FieldSpec & { arrayItem?: FieldSpec }).arrayItem;
-    if (arrayItem) {
+    if (spec.kind === "array") {
         if (!Array.isArray(value)) {
             throw new OpenSpecShapeError(ctx, field, "array", describeValue(value));
         }
-        for (const item of value) assertField(item, field, arrayItem, `${ctx}.${field}[]`);
+        for (const item of value) assertField(item, field, spec.arrayItem, `${ctx}.${field}[]`);
         return;
     }
     const valid = matchesKind(value, spec);
@@ -105,7 +135,10 @@ function assertField(value: unknown, field: string, spec: FieldSpec, ctx: string
 }
 
 /** Whether a value satisfies a field kind without recursing into nested schemas. */
-function matchesKind(value: unknown, spec: FieldSpec): boolean {
+function matchesKind(
+    value: unknown,
+    spec: ScalarFieldSpec | RecordFieldSpec | ArtifactFieldSpec,
+): boolean {
     switch (spec.kind) {
         case "string":
             return typeof value === "string";

@@ -92,3 +92,68 @@ describe("OpenSpec response validator", () => {
         );
     });
 });
+
+const arraySchema: Schema = {
+    steps: {
+        kind: "array",
+        required: true,
+        arrayItem: {
+            kind: "record",
+            required: true,
+            schema: { label: { kind: "string", required: true } },
+        },
+    },
+    artifacts: {
+        kind: "array",
+        required: false,
+        arrayItem: { kind: "artifact", required: true },
+    },
+};
+
+describe("array field specs", () => {
+    test("accepts a valid array of records and an omitted optional array", () => {
+        expect(() =>
+            assertShape(
+                { steps: [{ label: "one" }, { label: "two" }] },
+                arraySchema,
+                "openspec fixture",
+            ),
+        ).not.toThrow();
+    });
+
+    test("rejects a non-array value with the array expectation", () => {
+        expect(() => assertShape({ steps: "one" }, arraySchema, "openspec fixture")).toThrow(
+            'openspec fixture: field "steps" expected array, got string',
+        );
+    });
+
+    test("recurses into arrayItem record schemas", () => {
+        expect(() =>
+            assertShape({ steps: [{ label: "ok" }, {}] }, arraySchema, "openspec fixture"),
+        ).toThrow('openspec fixture.steps[].steps: field "label"');
+    });
+
+    test("rejects array items violating the item kind", () => {
+        expect(() =>
+            assertShape({ steps: ["not-a-record"] }, arraySchema, "openspec fixture"),
+        ).toThrow('openspec fixture.steps[]: field "steps" expected record, got string');
+    });
+
+    test("validates artifact items through the shared artifact guard", () => {
+        expect(() =>
+            assertShape(
+                {
+                    steps: [],
+                    artifacts: [
+                        { id: "proposal", outputPath: "proposal.md", status: "done", requires: [] },
+                    ],
+                },
+                arraySchema,
+                "openspec fixture",
+            ),
+        ).not.toThrow();
+        expect(() =>
+            assertShape({ steps: [], artifacts: [{ id: "bad" }] }, arraySchema, "openspec fixture"),
+        ).toThrow('field "artifacts" expected artifact');
+    });
+});

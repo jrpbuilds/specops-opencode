@@ -71,10 +71,10 @@ const statusSchema: Schema = {
     },
     applyRequires: { kind: "stringArray", required: false },
     artifacts: {
-        kind: "record",
+        kind: "array",
         required: false,
         arrayItem: { kind: "artifact", required: true },
-    } as never,
+    },
 };
 
 /** Validates the artifactPaths block consumed by dispatch and sync flows. */

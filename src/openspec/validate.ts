@@ -23,10 +23,10 @@ const itemSchema: Schema = {
     type: { kind: "string", required: true },
     valid: { kind: "boolean", required: true },
     issues: {
-        kind: "record",
+        kind: "array",
         required: true,
         arrayItem: { kind: "record", required: true, schema: issueSchema },
-    } as never,
+    },
     durationMs: { kind: "number", required: true },
 };
 
@@ -48,10 +48,10 @@ const summarySchema: Schema = {
 /** Validates the full `openspec validate --strict --json` envelope. */
 const responseSchema: Schema = {
     items: {
-        kind: "record",
+        kind: "array",
         required: true,
         arrayItem: { kind: "record", required: true, schema: itemSchema },
-    } as never,
+    },
     summary: { kind: "record", required: true, schema: summarySchema },
     version: { kind: "string", required: true },
     root: {

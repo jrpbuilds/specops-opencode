@@ -32,10 +32,10 @@ const changeSchema: Schema = {
 /** Validates the aggregated context payload built from the active-change list. */
 const contextSchema: Schema = {
     changes: {
-        kind: "record",
+        kind: "array",
         required: true,
         arrayItem: { kind: "record", required: true, schema: changeSchema },
-    } as never,
+    },
     root: {
         kind: "record",
         required: true,

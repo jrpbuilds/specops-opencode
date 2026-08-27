@@ -69,10 +69,10 @@ const instructionsSchema: Schema = {
     root: { kind: "record", required: true, schema: rootSchema },
     template: { kind: "string", required: false },
     dependencies: {
-        kind: "record",
+        kind: "array",
         required: false,
         arrayItem: { kind: "record", required: true, schema: dependencySchema },
-    } as never,
+    },
     context: { kind: "string", required: false },
     rules: { kind: "string", required: false },
     skipped: { kind: "boolean", required: false },

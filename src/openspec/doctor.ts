@@ -63,10 +63,10 @@ const doctorSchema: Schema = {
         },
     },
     status: {
-        kind: "record",
+        kind: "array",
         required: true,
         arrayItem: { kind: "record", required: true, schema: statusEntrySchema },
-    } as never,
+    },
     store: { kind: "record", required: true, nullable: true },
     references: { kind: "stringArray", required: true },
 };
