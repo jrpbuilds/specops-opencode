@@ -12,17 +12,15 @@
 
 </div>
 
-SpecOps is a lightweight [OpenCode](https://opencode.ai) plugin for running software changes through a structured [OpenSpec](https://github.com/Fission-AI/OpenSpec) workflow.
+SpecOps is a lightweight [OpenCode](https://opencode.ai) plugin that runs software changes through a structured [OpenSpec](https://github.com/Fission-AI/OpenSpec) workflow.
 
-Give it a goal:
+You give it a goal:
 
 ```text
 /specops add a health endpoint with tests
 ```
 
-SpecOps coordinates specialist agents to investigate the repository, define the requirements, design the solution, plan the implementation, write the code, and put the result through independent multi-model review before anything is archived.
-
-Each role can use a different model, while OpenSpec remains the durable source of truth for the change.
+Specialist agents then investigate the repository, work out the requirements, design the solution, plan the implementation, and write the code. Before anything gets archived, the finished work goes through three independent reviews. Each role can run on its own model, and OpenSpec keeps the whole change on disk as the source of truth.
 
 ## Documentation
 
@@ -63,13 +61,13 @@ Open a project and give SpecOps a goal:
 /specops improve the API error responses and add coverage for the new behaviour
 ```
 
-SpecOps automatically initialises OpenSpec on first use. You can also initialise explicitly with `/specops-onboard`.
+SpecOps initialises OpenSpec on first use, so there's nothing to set up by hand (or run `/specops-onboard` yourself if you prefer).
 
-You approve the plan before implementation starts, and decide what happens after review. For fully autonomous runs, use `/specops-auto`.
+You approve the plan before implementation starts, and you decide what happens after review. If you want a run with no checkpoints at all, that's `/specops-auto`.
 
 ## How it works
 
-The coordinator routes your change through specialist agents, then reviews the finished work from three independent perspectives before a final verdict:
+The coordinator routes your change through specialist agents, then has the finished work reviewed from three independent perspectives before a final verdict:
 
 ```mermaid
 flowchart TD
@@ -94,17 +92,17 @@ flowchart TD
     L --> C3
 ```
 
-A Reviewer FAIL is routed to the earliest incorrect layer — implementation, design, or requirements — corrected there, and the complete review pipeline runs again. See [How it works](docs/how-it-works.md) for the full story.
+When the Reviewer fails the work, the coordinator finds the earliest incorrect layer (implementation, design, or requirements), gets it corrected there, and runs the whole review pipeline again. [How it works](docs/how-it-works.md) covers the details.
 
-SpecOps maintains no parallel state machine: all state lives in OpenSpec artifacts under `openspec/changes/<change>/`, so custom schemas and interrupted changes resume naturally.
+SpecOps keeps no state of its own: everything lives in OpenSpec artifacts under `openspec/changes/<change>/`. That's why custom schemas work, and why an interrupted change picks up where it left off.
 
-The specialist agents (`specops-explorer`, `specops-planner`, `specops-designer`, `specops-implementer`, `specops-reviewer`, the three review specialists, and optionally `specops-frontier`) are internal to SpecOps: only its coordinators can dispatch them, they are hidden from OpenCode's `@` menu, and coordinators themselves never edit files.
+The specialist agents (`specops-explorer`, `specops-planner`, `specops-designer`, `specops-implementer`, `specops-reviewer`, the three review specialists, and optionally `specops-frontier`) are internal to SpecOps. Only its coordinators can dispatch them, they don't show up in OpenCode's `@` menu, and the coordinators themselves never edit files.
 
 ## Model configuration
 
 Open the command palette (`Ctrl+P`), choose **SpecOps Configure**, and map any of the ten roles — coordinator, explorer, planner, designer, implementer, reviewer, three review specialists, and frontier — to their own model and reasoning variant.
 
-Configuration lives at `~/.config/opencode/specops.json`:
+Configuration lives at `~/.config/opencode/specops.json` and looks like this:
 
 ```json
 {
@@ -119,9 +117,9 @@ Configuration lives at `~/.config/opencode/specops.json`:
 }
 ```
 
-Unset roles inherit OpenCode's default; review specialists without their own entry inherit the Reviewer's model. Specialists run **one at a time by default** — raise `maxSubagentConcurrency` (Configure offers 1–8) to parallelise planning routes and the review fan-out. Auto's correction budget defaults to 3 cycles. Both accept larger finite values set directly in the file.
+Any role you leave out inherits OpenCode's default model. Review specialists without their own entry inherit the Reviewer's. Specialists run one at a time by default; raise `maxSubagentConcurrency` (Configure offers 1–8) to parallelise planning routes and the review fan-out. Auto's correction budget defaults to 3 cycles, and both settings accept larger finite values if you set them directly in the file.
 
-For the complete `specops.json` with all ten roles mapped, see [Configuration](docs/configuration.md#where-configuration-lives); for choosing which models go where, see [Model recommendations](docs/model-recommendations.md).
+For the full `specops.json` with all ten roles mapped, see [Configuration](docs/configuration.md#where-configuration-lives). For advice on which models go where, see [Model recommendations](docs/model-recommendations.md).
 
 ## Commands
 
@@ -134,17 +132,13 @@ For the complete `specops.json` with all ten roles mapped, see [Configuration](d
 | `/specops-onboard`           | Initialise OpenSpec in the current project                             |
 | `/specops-doctor`            | Diagnose installation, OpenSpec, configuration, and models             |
 
-Headless example: `opencode run --auto --command specops-auto "<goal>"` — see [Commands](docs/commands.md).
+Headless example: `opencode run --auto --command specops-auto "<goal>"`. Details in [Commands](docs/commands.md).
 
 ## Engram (optional)
 
-SpecOps works without Engram. For cross-session project memory, you can optionally run the [Engram](https://github.com/Gentleman-Programming/engram) MCP server so agents can consult past decisions and project conventions.
+SpecOps works fine without Engram. If you want agents to remember decisions and conventions across sessions, you can run the [Engram](https://github.com/Gentleman-Programming/engram) MCP server alongside it.
 
-Engram is contextual memory only. Current user instructions, OpenSpec artifacts, repository state, and executed evidence always take precedence. See its [installation guide](https://github.com/Gentleman-Programming/engram/blob/main/docs/INSTALLATION.md) and [OpenCode setup](https://github.com/Gentleman-Programming/engram/blob/main/docs/AGENT-SETUP.md).
-
-## Example
-
-- [Galaxy Shooter](https://jrpbuilds.github.io/specops-opencode/galaxy-shooter/) — a browser arcade game generated through the SpecOps workflow.
+Engram is contextual memory only. What's in front of the agents always wins: your current instructions, the OpenSpec artifacts, the state of the repository, and evidence from commands that actually ran. See Engram's [installation guide](https://github.com/Gentleman-Programming/engram/blob/main/docs/INSTALLATION.md) and [OpenCode setup](https://github.com/Gentleman-Programming/engram/blob/main/docs/AGENT-SETUP.md).
 
 ## Development
 
@@ -153,19 +147,13 @@ bun install
 bun run check
 ```
 
-Build the plugin with:
-
-```bash
-bun run build
-```
-
-SpecOps uses Bun and TypeScript throughout.
+`bun run build` builds the plugin. SpecOps uses Bun and TypeScript throughout.
 
 ## Status
 
-Actively developed and dogfooded against real software changes. Roadmap and open work are tracked in the [issue tracker](https://github.com/jrpbuilds/specops-opencode/issues).
+SpecOps is actively developed, and I dogfood it on real software changes. Roadmap and open work live in the [issue tracker](https://github.com/jrpbuilds/specops-opencode/issues).
 
-> Make structured multi-model software development useful without building another workflow engine.
+The idea behind the project: make structured multi-model software development useful without building another workflow engine.
 
 ## Community
 
