@@ -33,10 +33,10 @@ They inherit the Reviewer's model and variant unless they have their own entry �
 ## Workflow problems
 
 **The run stopped with `BLOCKED`**
-This is deliberate, not a crash. The report names the phase, the exact blocker, the evidence, and a recommended next action — typically information only you can supply (credentials, access, a product decision). Provide what it asks for and run the command again; durable state means nothing was lost.
+This is deliberate. The report names the phase, the exact blocker, the evidence, and a recommended next action — typically information only you can supply (credentials, access, a product decision). Provide what it asks for and run the command again; nothing was lost, it's all in OpenSpec state.
 
 **A review stopped with `BLOCKED` and a list of `violations`**
-During the review window, review agents are not allowed to change tracked repository files or the `openspec/` tree. If protected state changed mid-review, the run stops with the exact paths and how each changed (`modified`, `added`, `removed`) rather than passing a review that no longer matches the work. This is a safety trip, not a crash — rerun the command; completed planning and implementation work is preserved in OpenSpec state.
+During the review window, review agents are not allowed to change tracked repository files or the `openspec/` tree. If protected state changed mid-review, the run stops with the exact paths and how each changed (`modified`, `added`, `removed`) rather than passing a review that no longer matches the work. Rerun the command; completed planning and implementation work is preserved in OpenSpec state.
 
 **Auto ended immediately with `BLOCKED` mentioning iterations**
 Every [Auto review correction cycle](how-it-works.md#standard-vs-auto) consumes one of a finite budget (default 3). Either address the reported findings yourself, raise the budget in `specops.json`, or start a fresh change scoped more narrowly.
@@ -45,10 +45,10 @@ Every [Auto review correction cycle](how-it-works.md#standard-vs-auto) consumes 
 SpecOps refuses to author planning artifacts against an invalid change, and refuses to pass review until the change validates again. Route the problem back through the workflow (`/specops-update <what's wrong>`) rather than editing artifacts around it.
 
 **A specialist return looked malformed**
-One bounded recovery per dispatch is automatic: the same agent session is asked to re-emit its result. If recovery fails, the run stops as `BLOCKED` naming the specialist — rerun the command to continue from durable state.
+One bounded recovery per dispatch is automatic: the same agent session is asked to re-emit its result. If recovery fails, the run stops as `BLOCKED` naming the specialist — rerun the command to continue from saved state.
 
 **The coordinator refused to edit files or run shell commands itself**
-Working as intended. Coordinators orchestrate; specialist agents do the hands-on work. Denials are a boundary, not a malfunction.
+Working as intended. Coordinators orchestrate; specialist agents do the hands-on work.
 
 **An Auto run stopped unexpectedly early**
 Host-level loop protection ends turns that repeat without progress instead of spinning indefinitely. Resume with `/specops-auto`; completed work is preserved in OpenSpec artifacts.

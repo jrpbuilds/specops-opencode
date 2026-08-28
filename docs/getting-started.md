@@ -1,6 +1,6 @@
 # Getting started
 
-SpecOps is an [OpenCode](https://opencode.ai) plugin that runs software changes through a structured [OpenSpec](https://github.com/Fission-AI/OpenSpec) workflow using specialist agents. This page gets you from zero to your first completed change.
+SpecOps is an [OpenCode](https://opencode.ai) plugin that runs software changes through a structured [OpenSpec](https://github.com/Fission-AI/OpenSpec) workflow using specialist agents. This page takes you from nothing to your first completed change.
 
 ## Prerequisites
 
@@ -18,7 +18,7 @@ opencode plugin @jrpbuilds/specops-opencode -g
 
 ## Install the OpenSpec CLI
 
-SpecOps drives [OpenSpec](https://github.com/Fission-AI/OpenSpec) for durable change state, so its CLI must be available:
+SpecOps uses [OpenSpec](https://github.com/Fission-AI/OpenSpec) to store change state, so its CLI needs to be on your PATH:
 
 ```bash
 npm install -g @fission-ai/openspec
@@ -34,7 +34,7 @@ Run the doctor command inside OpenCode:
 /specops-doctor
 ```
 
-A healthy report confirms four things: the OpenSpec CLI is available and compatible, the current project is initialised for OpenSpec, your SpecOps configuration file is valid, and your configured models resolve. If anything fails, the report says what to do next — see [Troubleshooting](troubleshooting.md).
+A healthy report covers four things: the OpenSpec CLI is available and compatible, the current project is initialised for OpenSpec, your SpecOps configuration file is valid, and your configured models actually resolve. If something fails, the report tells you what to do next. More detail in [Troubleshooting](troubleshooting.md).
 
 ## Run your first change
 
@@ -44,9 +44,9 @@ Open a project and give SpecOps a goal:
 /specops improve the API error responses and add coverage for the new behaviour
 ```
 
-That is the whole interaction model: describe the outcome you want in plain language.
+That's the whole interaction model: describe the outcome you want in plain language.
 
-On first use, SpecOps initialises OpenSpec in the project automatically. You can also initialise explicitly at any time:
+The first run initialises OpenSpec in the project for you. You can also do it explicitly at any time:
 
 ```text
 /specops-onboard
@@ -54,9 +54,9 @@ On first use, SpecOps initialises OpenSpec in the project automatically. You can
 
 ## What happens next
 
-The coordinator investigates your repository, plans the requirements and design for your approval, implements the change with specialist agents, then puts the finished work through independent review before anything is archived. You approve the plan before implementation starts, and decide what happens after review — SpecOps never archives a change without your say-so in Standard mode.
+The coordinator investigates your repository and plans the requirements and design for your approval. Once you approve, specialist agents implement the change, and the finished work goes through independent review before anything is archived. In Standard mode you stay in control at every checkpoint: SpecOps never archives a change without your say-so.
 
-While the change runs, its state lives in ordinary files under `openspec/changes/<change>/` (proposal, specifications, design, tasks). Nothing is hidden in a side database, so you can stop mid-change, close the terminal, and resume later with the same command.
+While the change runs, its state lives in ordinary files under `openspec/changes/<change>/` (proposal, specifications, design, tasks). There's no hidden side database, so you can stop mid-change, close the terminal, and pick it up later with the same command.
 
 ## Choose your mode
 
@@ -65,7 +65,7 @@ While the change runs, its state lives in ordinary files under `openspec/changes
 | Standard   | `/specops <goal>`      | Asks you to approve the plan and after every review result                   |
 | Autonomous | `/specops-auto <goal>` | Runs end-to-end without checkpoints, retrying failed reviews within a budget |
 
-Start with Standard until you trust the results on your codebase, then use Auto for routine or well-understood changes — see [Commands](commands.md).
+Start with Standard until you trust the results on your codebase. Auto is better for routine or well-understood changes. Both are covered in [Commands](commands.md).
 
 ## Next steps
 

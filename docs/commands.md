@@ -12,7 +12,7 @@ Starts or resumes a change in Standard mode.
 
 - Establishes exactly one current change (resuming an existing relevant one instead of creating duplicates).
 - Takes you through: investigation → plan approval → implementation → three-way review → your decision on the result.
-- Re-running it later with the same project resumes any active change from durable state.
+- Re-running it later in the same project resumes any active change from saved state.
 
 ## `/specops-auto <goal>`
 
@@ -37,22 +37,22 @@ Revises the active change in place without starting over:
 /specops-update the timeout should be configurable via environment variable
 ```
 
-The feedback travels verbatim to the specialist that owns the affected artifact, downstream artifacts are reconciled, and in Standard mode the plan approval is re-presented if the effective plan changed. Use this when you want to steer a change that is already underway.
+The feedback goes verbatim to the specialist that owns the affected artifact, downstream artifacts get reconciled, and in Standard mode the plan approval is re-presented if the effective plan changed. Use it to steer a change that's already underway.
 
 ## `/specops-sync [<change-name>]`
 
-Synchronizes an active change's delta specifications into the project's main specs **without archiving** the change:
+Synchronises an active change's delta specifications into the project's main specs **without archiving** the change:
 
 ```text
 /specops-sync
 /specops-sync add-health-endpoint
 ```
 
-Useful when a parallel change needs to build on newly defined specs, or when you want to review merged main specs while keeping the change open. With several active changes, Standard mode asks which one; Auto mode picks the most recently modified. The change remains active afterwards and still finishes through the normal archive flow.
+Useful when a parallel change needs to build on newly defined specs, or when you want to review the merged main specs while keeping the change open. With several active changes, Standard mode asks which one; Auto mode picks the most recently modified. The change stays active afterwards and still finishes through the normal archive flow.
 
 ## `/specops-onboard`
 
-Initialises OpenSpec in the current project. SpecOps does this automatically on first use, so you only need this explicitly when setting up a project ahead of time or re-checking initialization.
+Initialises OpenSpec in the current project. SpecOps does this automatically on first use, so you only need the explicit command when setting up a project ahead of time or re-checking initialization.
 
 ## `/specops-doctor`
 
@@ -64,10 +64,10 @@ Diagnoses the installation in one shot:
 - Whether archived changes still validate against the current OpenSpec schema
 - How many of the ten roles have explicit model mappings vs inheriting OpenCode's default
 
-Run it first whenever anything behaves oddly — see [Troubleshooting](troubleshooting.md).
+Run it first whenever anything behaves oddly. If it reports a problem, [Troubleshooting](troubleshooting.md) has the fixes.
 
 ## Tips
 
-- One goal per command; describe outcomes, not implementation steps.
-- Feedback during checkpoints (plan approval, review result) is routed to the owning specialist verbatim — write it as you would brief a colleague.
-- Nothing is archived without an explicit choice in Standard mode; leaving a change open is always safe and resumable.
+- One goal per command, and describe outcomes rather than implementation steps.
+- Feedback during checkpoints (plan approval, review result) goes to the specialist that owns the affected work, verbatim. Write it as you'd brief a colleague.
+- Nothing is archived without an explicit choice in Standard mode. Leaving a change open is always safe, and you can come back to it later.

@@ -1,6 +1,6 @@
 # How it works
 
-SpecOps turns one goal into a fully reviewed software change by coordinating specialist agents around [OpenSpec](https://github.com/Fission-AI/OpenSpec) artifacts. This page explains what happens, stage by stage.
+SpecOps takes one goal and turns it into a fully reviewed software change by coordinating specialist agents around [OpenSpec](https://github.com/Fission-AI/OpenSpec) artifacts. Here's what happens, stage by stage.
 
 ## The pipeline
 
@@ -31,18 +31,18 @@ flowchart TD
 
 ## The roles
 
-| Role                                | What it does                                                                                                          |
-| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Coordinator                         | Owns routing, checkpoints, and the OpenSpec lifecycle. Never writes code itself.                                      |
-| Explorer                            | Investigates the repository and produces evidence-backed context for planning.                                        |
-| Planner                             | Authors the proposal, specifications, and implementation tasks.                                                       |
-| Designer                            | Authors the technical design artifact when the schema calls for one.                                                  |
-| Implementer                         | Writes the source code and tests.                                                                                     |
-| Review correctness / risk / quality | Three independent critics that review the finished work from different angles in parallel.                            |
-| Reviewer                            | The final authority. Combines the three critiques into one PASS/FAIL verdict — the critics never vote or overrule it. |
-| Frontier (optional)                 | A stronger escalation model consulted only for blockers that cheaper routes cannot resolve.                           |
+| Role                                | What it does                                                                                |
+| ----------------------------------- | ------------------------------------------------------------------------------------------- |
+| Coordinator                         | Owns routing, checkpoints, and the OpenSpec lifecycle. Never writes code itself.            |
+| Explorer                            | Investigates the repository and produces evidence-backed context for planning.              |
+| Planner                             | Authors the proposal, specifications, and implementation tasks.                             |
+| Designer                            | Authors the technical design artifact when the schema calls for one.                        |
+| Implementer                         | Writes the source code and tests.                                                           |
+| Review correctness / risk / quality | Three independent critics that review the finished work from different angles in parallel.  |
+| Reviewer                            | The final authority. Combines the three critiques into one PASS/FAIL verdict.               |
+| Frontier (optional)                 | A stronger escalation model consulted only for blockers that cheaper routes cannot resolve. |
 
-The specialist agents are internal: only SpecOps coordinators can dispatch them, they are hidden from OpenCode's `@` menu, and the coordinator itself cannot edit files — it orchestrates.
+The specialist agents are internal. Only SpecOps coordinators can dispatch them, they don't appear in OpenCode's `@` menu, and the coordinator itself can't edit files — it orchestrates.
 
 ## Planning comes from your schema, not a hardcoded list
 
@@ -56,28 +56,28 @@ openspec/changes/<change>/
 └── tasks.md
 ```
 
-Custom schemas with different or fewer artifacts work the same way — the coordinator plans from the declared graph, dispatches each artifact to its owning role (design work to the Designer, everything else to the Planner), and skips nothing you did not declare. Because all state lives in these files plus task checkboxes, an interrupted change resumes naturally: run `/specops` again and the coordinator re-reads durable status instead of guessing.
+Custom schemas with different or fewer artifacts work the same way. The coordinator plans from the declared graph, sends each artifact to the role that owns it (design work to the Designer, everything else to the Planner), and skips nothing you didn't declare. And because all state is these files plus task checkboxes, an interrupted change just picks up where it left off: run `/specops` again and the coordinator re-reads the saved status instead of guessing.
 
-Before any planning artifact is authored, and again before review can pass, SpecOps validates the change with OpenSpec's own validator (`--strict`). A change that does not validate cannot move forward.
+Before any planning artifact is written, and again before review can pass, SpecOps validates the change with OpenSpec's own validator (`--strict`). A change that doesn't validate doesn't move forward.
 
 ## Review: three perspectives, one verdict
 
-After implementation, the coordinator fans the work out to three independent review specialists — **correctness**, **risk**, and **quality** — running in parallel up to your concurrency limit. Each returns a complete critique; they never see each other's reports. Every blocking finding is numbered (`F1`, `F2`, …) so it can be traced through remediation.
+After implementation, the coordinator sends the work to three independent review specialists — **correctness**, **risk**, and **quality** — running in parallel up to your concurrency limit. Each returns a complete critique, and none of them sees the others' reports. Blocking findings are numbered (`F1`, `F2`, …) so they can be traced through remediation.
 
-The final `specops-reviewer` receives all three reports verbatim as evidence and owns the only PASS/FAIL decision.
+The final `specops-reviewer` receives all three reports verbatim as evidence and owns the only PASS/FAIL decision. The critics don't vote and can't overrule it.
 
-Review agents are isolated from mutating repository or OpenSpec state during the review window, so a PASS reflects only the work that was actually reviewed.
+During the review window, review agents can't change tracked repository files or the `openspec/` tree. If protected state changes mid-review, the run stops rather than pass a review that no longer matches the work — so a PASS means the review looked at exactly what shipped.
 
 ## What happens on FAIL
 
-A FAIL is not automatically sent back to the Implementer. The coordinator classifies every finding by its correction target and fixes the **earliest incorrect layer** first:
+A FAIL doesn't automatically go back to the Implementer. The coordinator classifies every finding by its correction target and fixes the **earliest incorrect layer** first:
 
-- Findings about source or tests → straight back to the Implementer with the findings verbatim.
-- Findings about design → the Designer revises the design, downstream artifacts are reconciled, then implementation resumes.
+- Findings about source or tests → straight back to the Implementer, findings verbatim.
+- Findings about design → the Designer revises the design, downstream artifacts get reconciled, then implementation resumes.
 - Findings about requirements or tasks → the Planner revises those artifacts first.
-- Mixed findings → one coherent pass, earliest roots first, preserving completed work.
+- Mixed findings → one coherent pass, earliest roots first, keeping completed work.
 
-After correction, the entire three-specialist fan-out runs again — never a partial subset — followed by a fresh Reviewer verdict.
+After correction, the full three-specialist fan-out runs again — never a partial subset — followed by a fresh Reviewer verdict.
 
 ## Standard vs Auto
 
@@ -91,8 +91,8 @@ Both modes use exactly the same pipeline. Only the lifecycle policy differs:
 | After FAIL           | You choose: address findings, archive despite them, or leave open | Automatically corrects and re-reviews within the configured iteration budget (default 3) |
 | When stuck           | Waits for you                                                     | Returns a terminal `BLOCKED` report with exact findings and what is needed to continue   |
 
-Auto ends every run with either `COMPLETED` (including verification and archive results) or `BLOCKED` (what stopped it, the evidence, and how to continue). It never loops forever: the correction budget is finite, and genuinely unknowable information stops the run rather than being fabricated.
+Auto ends every run with either `COMPLETED` (including verification and archive results) or `BLOCKED` (what stopped it, the evidence, and how to continue). It never loops forever: the correction budget is finite, and if the run is missing information it genuinely can't get, it stops and tells you rather than making something up.
 
 ## Memory across sessions (optional)
 
-SpecOps works without any memory server. If you run the optional [Engram](https://github.com/Gentleman-Programming/engram) MCP server, agents may additionally consult historical decisions and conventions from earlier sessions. Engram is contextual memory only — current instructions, OpenSpec artifacts, repository state, and executed evidence always win. Install it via its [installation guide](https://github.com/Gentleman-Programming/engram/blob/main/docs/INSTALLATION.md) and [OpenCode setup](https://github.com/Gentleman-Programming/engram/blob/main/docs/AGENT-SETUP.md).
+SpecOps works without any memory server. If you run the optional [Engram](https://github.com/Gentleman-Programming/engram) MCP server, agents can also look up decisions and conventions from earlier sessions. Engram is contextual memory only — current instructions, OpenSpec artifacts, repository state, and executed evidence always win. Install it via its [installation guide](https://github.com/Gentleman-Programming/engram/blob/main/docs/INSTALLATION.md) and [OpenCode setup](https://github.com/Gentleman-Programming/engram/blob/main/docs/AGENT-SETUP.md).
