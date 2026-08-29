@@ -108,6 +108,7 @@ The maximum number of SpecOps specialist subagents that may run at the same time
 - The Configure screen offers **1–8**.
 - You can set any positive integer directly in `specops.json`; values above 8 stay effective and show up in Configure as manual values.
 - Work never exceeds this limit no matter how many routes are eligible. Raising it speeds up parallel stages like the review fan-out, at the cost of more concurrent model calls.
+- **For the best experience, launch OpenCode with `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true`.** With it, parallel specialists run as background tasks and a new one starts the moment any specialist finishes. Without it, work still parallelises but refills in waves — the next dispatch waits for every in-flight sibling to finish.
 
 ### `maxAutoReviewIterations` (default: `3`)
 

@@ -47,6 +47,9 @@ SpecOps refuses to author planning artifacts against an invalid change, and refu
 **A specialist return looked malformed**
 One bounded recovery per dispatch is automatic: the same agent session is asked to re-emit its result. If recovery fails, the run stops as `BLOCKED` naming the specialist — rerun the command to continue from saved state.
 
+**Parallel work restarts only after every in-flight specialist finishes**
+Without `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true`, OpenCode's foreground task calls return their results together, so concurrency works in waves: a freed slot is only refilled once all in-flight siblings have finished. Launch OpenCode with that variable set (see [Configuration](configuration.md#maxsubagentconcurrency-default-1)) and each specialist's completion immediately opens its slot again.
+
 **The coordinator refused to edit files or run shell commands itself**
 Working as intended. Coordinators orchestrate; specialist agents do the hands-on work.
 
@@ -58,5 +61,6 @@ Host-level loop protection ends turns that repeat without progress instead of sp
 - Changing **Frontier escalation** requires restarting OpenCode — the Frontier agent is registered at startup only.
 - The optional Engram memory server being absent is never an error; agents simply skip it.
 - Concurrency defaults to **1**: if stages that used to overlap now run one-at-a-time, check [maxSubagentConcurrency](configuration.md#maxsubagentconcurrency-default-1).
+- For per-completion slot refill across parallel stages, launch OpenCode with `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true` — otherwise parallel work refills in waves.
 
 Still stuck? Search the [issue tracker](https://github.com/jrpbuilds/specops-opencode/issues) or open a new issue with your `/specops-doctor` output (redact anything private).

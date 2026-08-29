@@ -99,21 +99,13 @@ describe("coordinator prompt composition", () => {
     });
 
     test("assembled prompts stay within regression budgets", () => {
-        // Frontier-enabled variants are the largest assembled prompts for each mode.
-        // Budget raised from 33k to 34k for issue #34: single-sourced shared
-        // contract fragments expand into each assembled prompt with slightly more
-        // explicit canonical wording than the mode-specific shorthand they replaced.
-        // Budget raised from 34k to 35k for the fresh-change validation gate:
-        // specops_validate_change now distinguishes planningIncomplete so first-pass
-        // authoring dispatches proceed instead of deadlocking on missing deltas.
-        // Budget raised from 35k to 36k for the review worktree-mutation guard:
-        // the review phase now brackets critic fan-out with specops_review_guard
-        // capture/verify instructions (issue #31).
-        // Budget raised from 36k to 40k (interactive) and 35k to 39k (auto) for
-        // scoped-parallel-implementer: the shared `## Implementation phase`
-        // contract composes into both modes' assembled prompts.
-        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(40_000);
-        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(39_000);
+        // Frontier-enabled variants are the largest assembled prompts for each
+        // mode. Shared contracts (fragments, validation gates, the review guard,
+        // scoped-parallel implementation, background dispatch) expand into every
+        // assembled prompt, so the budget guards against unbounded prompt growth.
+        // It must not be exceeded.
+        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(46_000);
+        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(42_000);
     });
 });
 
@@ -280,6 +272,7 @@ describe("shared coordinator contract", () => {
         expect(section).toContain("specops-review-correctness");
         expect(section).toContain("specops-review-risk");
         expect(section).toContain("specops-review-quality");
+        expect(section).toContain("using the background dispatch contract");
         expect(section).toContain("without waiting for a fixed wave");
         expect(section).toContain("complete critique is the required handoff");
         expect(section).toContain("do not require the generic specialist handoff envelope");
@@ -435,10 +428,27 @@ describe("implementation-phase contract (scoped parallel implementer)", () => {
         const section = delimitedSection("## Implementation phase", "## Review phase");
 
         expect(section).toContain(
-            "up to `maxSubagentConcurrency` foreground `specops-implementer` Task calls concurrently",
+            "up to `maxSubagentConcurrency` `specops-implementer` Task calls concurrently under the background dispatch contract",
         );
         expect(section).toContain(
             "non-empty, unique within the dispatch, currently unchecked, and disjoint from every active sibling's assignment",
+        );
+    });
+
+    test("carries the shared background dispatch contract for rolling refill", () => {
+        // Parallel dispatches run as background Task calls so each completion
+        // wakes the coordinator immediately instead of at wave boundaries.
+        expect(prompt).toContain("`background: true`");
+        expect(prompt).toContain("Process exactly one injected completion per arrival");
+        expect(prompt).toContain("refill only the freed slot from fresh durable state");
+        expect(prompt).toContain("do not sleep, poll for progress");
+
+        // Serial dispatches and hosts without background support keep working.
+        expect(prompt).toContain(
+            "Serial dispatches under a concurrency cap of 1 always use ordinary foreground Task calls",
+        );
+        expect(prompt).toContain(
+            "retry that same dispatch as an ordinary foreground call and refill per-wave instead",
         );
     });
 

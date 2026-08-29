@@ -1,6 +1,8 @@
 `maxSubagentConcurrency` is the maximum number of parallel SpecOps subagents; `createRollingScheduler` dispatches concurrently under cap, and dependencies never share dispatch.
 Read its effective value from `specops_config` at workflow init and use it as the scheduler cap.
 
+Concurrent author dispatches follow the background dispatch contract defined earlier in this prompt: dispatch as background Task calls, process each injected completion on arrival, and refill only the freed slot.
+
 Rolling refill starts a newly eligible route after any single completion; never
 wait for an entire wave to drain. Completion: handoff gate, `complete`, fresh
 `specops_status` (never reuse a snapshot), then `dispatch` free slots.

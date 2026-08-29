@@ -267,26 +267,40 @@ describe("shared coordinator contract fragments (issue #34)", () => {
     // Each extracted cross-mode contract is single-sourced in a shared fragment.
     // The anchor is wording unique to that contract so occurrence counting across
     // the prompts tree catches accidental re-duplication in a mode appendix.
+    // `includers` lists the files that must carry the include directive: the two
+    // mode appendices for mode-specific wiring, or the shared `coordinator.md`
+    // base when the contract reaches every assembled prompt through the base.
+    const MODE_APPENDICES = ["coordinator-interactive.md", "coordinator-auto.md"] as const;
     const SHARED_CONTRACTS = [
         {
             fragment: "conditional-explorer.md",
             anchor: "full scan if no Project Context capsule exists",
+            includers: MODE_APPENDICES,
         },
         {
             fragment: "planning-batches.md",
             anchor: "wait for an entire wave to drain",
+            includers: MODE_APPENDICES,
         },
         {
             fragment: "decision-envelope.md",
             anchor: "not exactly one Decision, not 2–4 options",
+            includers: MODE_APPENDICES,
         },
         {
             fragment: "remediation-re-review.md",
             anchor: "do not summarize, paraphrase, renumber, or drop findings",
+            includers: MODE_APPENDICES,
         },
         {
             fragment: "archive-safety.md",
             anchor: "never use a filesystem fallback",
+            includers: MODE_APPENDICES,
+        },
+        {
+            fragment: "background-dispatch.md",
+            anchor: "Process exactly one injected completion per arrival",
+            includers: ["coordinator.md"],
         },
     ] as const;
 
@@ -297,10 +311,10 @@ describe("shared coordinator contract fragments (issue #34)", () => {
             .map(entry => path.join(directory, entry));
     }
 
-    test("both mode appendices include every shared contract fragment by directive", async () => {
-        for (const mode of ["coordinator-interactive.md", "coordinator-auto.md"]) {
-            const content = await readFile(path.join(PROMPTS_DIR, mode), "utf8");
-            for (const { fragment } of SHARED_CONTRACTS) {
+    test("every shared contract fragment is included by directive from its declared includers", async () => {
+        for (const { fragment, includers } of SHARED_CONTRACTS) {
+            for (const includer of includers) {
+                const content = await readFile(path.join(PROMPTS_DIR, includer), "utf8");
                 expect(content).toContain(`{{include:shared/${fragment}}}`);
             }
         }
@@ -335,6 +349,19 @@ describe("shared coordinator contract fragments (issue #34)", () => {
             }
         },
     );
+
+    test("planning batches defer concurrent dispatch to the shared background contract", async () => {
+        const content = await readFile(
+            path.join(PROMPTS_DIR, "shared", "planning-batches.md"),
+            "utf8",
+        );
+        expect(content).toContain(
+            "Concurrent author dispatches follow the background dispatch contract",
+        );
+        // The contract reaches every assembled prompt through the coordinator
+        // base; re-including it here would duplicate the contract text.
+        expect(content).not.toContain("{{include:shared/background-dispatch.md}}");
+    });
 });
 
 describe("fresh-change validation gate contract", () => {

@@ -7,10 +7,10 @@ All notable changes to SpecOps are documented in this file.
 ### Added
 
 - Added scoped parallel implementation, so independent tasks build simultaneously (bounded by the concurrent subagents setting) with each implementer working only its assigned tasks.
+- Parallel specialists now run as background tasks, so a finished specialist's slot is refilled immediately instead of waiting for the whole batch. Launch OpenCode with `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true` for this behaviour; without it, parallel work still runs concurrently but refills in waves.
 
 ### Changed
 
-- Implementation slots refill as soon as one implementer finishes, so slow tasks no longer hold up unrelated work.
 - Implementation stays serial at the default limit of 1 and whenever task independence is uncertain.
 - Parallel implementation suspends new work when tasks turn out to be dependent or overlapping, keeping completed work safe while the remainder continues serially.
 - Planning now favors coherent, independently verifiable task units, so more implementation work can safely run in parallel.
