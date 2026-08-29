@@ -109,6 +109,75 @@ export async function getApplyInstructions(
 
         const progress = validated.progress as Record<string, unknown>;
         const tasks = validated.tasks as Array<Record<string, unknown>>;
+        const normalizedTasks: NormalizedApplyTask[] = tasks.map(task => ({
+            id: task.id as string,
+            description: task.description as string,
+            done: task.done as boolean,
+        }));
+        const seenIds = new Set<string>();
+        for (const task of normalizedTasks) {
+            if (seenIds.has(task.id)) {
+                throw new OpenSpecShapeError(
+                    "openspec instructions apply",
+                    "tasks",
+                    "unique task ids",
+                    `duplicate id "${task.id}"`,
+                );
+            }
+            seenIds.add(task.id);
+        }
+
+        const total = progress.total as number;
+        const complete = progress.complete as number;
+        const remaining = progress.remaining as number;
+        for (const [name, value] of [
+            ["total", total],
+            ["complete", complete],
+            ["remaining", remaining],
+        ] as const) {
+            if (!Number.isInteger(value) || value < 0) {
+                throw new OpenSpecShapeError(
+                    "openspec instructions apply",
+                    "progress",
+                    "non-negative integer counters",
+                    `${name}=${value}`,
+                );
+            }
+        }
+        if (complete + remaining !== total) {
+            throw new OpenSpecShapeError(
+                "openspec instructions apply",
+                "progress",
+                "complete + remaining === total",
+                `complete=${complete} + remaining=${remaining} !== total=${total}`,
+            );
+        }
+        const doneCount = normalizedTasks.filter(task => task.done).length;
+        const notDoneCount = normalizedTasks.length - doneCount;
+        if (doneCount > complete) {
+            throw new OpenSpecShapeError(
+                "openspec instructions apply",
+                "progress",
+                "counters not contradicted by the task list",
+                `done tasks=${doneCount} > complete=${complete}`,
+            );
+        }
+        if (notDoneCount > remaining) {
+            throw new OpenSpecShapeError(
+                "openspec instructions apply",
+                "progress",
+                "counters not contradicted by the task list",
+                `not-done tasks=${notDoneCount} > remaining=${remaining}`,
+            );
+        }
+        if (normalizedTasks.length > total) {
+            throw new OpenSpecShapeError(
+                "openspec instructions apply",
+                "progress",
+                "counters not contradicted by the task list",
+                `tasks=${normalizedTasks.length} > total=${total}`,
+            );
+        }
         const root = validated.root as Record<string, unknown> | undefined;
         return {
             ok: true,
@@ -122,11 +191,7 @@ export async function getApplyInstructions(
                     complete: progress.complete as number,
                     remaining: progress.remaining as number,
                 },
-                tasks: tasks.map(task => ({
-                    id: task.id as string,
-                    description: task.description as string,
-                    done: task.done as boolean,
-                })),
+                tasks: normalizedTasks,
                 state: validated.state as NormalizedApplyInstructionContext["state"],
                 instruction: validated.instruction as string,
                 ...(typeof validated.missingArtifacts === "undefined"
