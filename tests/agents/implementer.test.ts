@@ -287,3 +287,64 @@ describe("registerImplementerAgent", () => {
         expect(section).toContain("leave the item unchecked and return the conflict");
     });
 });
+
+describe("scoped task assignment contract", () => {
+    function scopedAssignmentSection(): string {
+        const prompt = loadPrompt(AGENT_IDS.implementer);
+        const start = prompt.indexOf("## Scoped task assignment");
+        const end = prompt.indexOf("## Review remediation", start);
+        return prompt.slice(start, end);
+    }
+
+    test("requires verify-first ownership of the entire assigned task list", () => {
+        const section = scopedAssignmentSection();
+
+        expect(section).toContain("that list is your entire assignment");
+        expect(section).toContain(
+            "verify every assigned ID exists in the supplied canonical task list and is unchecked",
+        );
+        expect(section).toContain(
+            "stop and report the stale assignment in your handoff instead of implementing",
+        );
+    });
+
+    test.each([
+        "Work only the assigned task IDs",
+        "Every other unchecked task is out of scope: do not implement it, verify it, or check it off",
+        "never opportunistically consume extra tasks because they look trivial or adjacent",
+    ])("keeps scoped work bounded: %s", clause => {
+        expect(scopedAssignmentSection()).toContain(clause);
+    });
+
+    test("limits supporting changes and stops rather than expanding scope", () => {
+        const section = scopedAssignmentSection();
+
+        expect(section).toContain("changes only where directly required by the assigned tasks");
+        expect(section).toContain("unexpected dependency on an unassigned task");
+        expect(section).toContain("shared integration point another dispatch may touch");
+        expect(section).toContain("evidence your assignment is stale");
+        expect(section).toContain("stop expanding scope and report the condition");
+        expect(section).toContain("Leave the affected task unchecked");
+    });
+
+    test.each([
+        "Mark only your assigned tasks complete",
+        "smallest possible targeted edit flipping `- [ ]` to `- [x]` on your own task lines",
+        "Never rewrite, reorder, or reformat the tasks artifact, and never alter another task's checkbox",
+    ])("keeps completion edits limited to assigned task lines: %s", clause => {
+        expect(scopedAssignmentSection()).toContain(clause);
+    });
+
+    test("requires the scoped handoff to report completed task IDs and blockers", () => {
+        expect(scopedAssignmentSection()).toContain(
+            "reporting which assigned task IDs you completed and any blocker",
+        );
+    });
+
+    test.each([
+        "When the dispatch carries no `assignedTaskIds`, execute all unchecked tasks under the whole-list rules below",
+        "this remains the serial path and is unchanged",
+    ])("preserves the serial whole-list path: %s", clause => {
+        expect(scopedAssignmentSection()).toContain(clause);
+    });
+});

@@ -131,6 +131,23 @@ describe("serial coordination", () => {
         expect(authorIds(scheduler.dispatch(statusAfter))).toEqual(["bravo"]);
     });
 
+    test("keeps repeated unchanged-status dispatches within the serial cap", () => {
+        const scheduler = createRollingScheduler(1);
+        const status = fixture(
+            [artifact("alpha", "ready"), artifact("bravo", "ready")],
+            ["alpha", "bravo"],
+            false,
+        );
+
+        expect(authorIds(scheduler.dispatch(status))).toEqual(["alpha"]);
+        expect(scheduler.active).toBeLessThanOrEqual(1);
+
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+            expect(scheduler.dispatch(status)).toEqual([]);
+            expect(scheduler.active).toBeLessThanOrEqual(1);
+        }
+    });
+
     test("never exceeds the configured cap", () => {
         const scheduler = createRollingScheduler(2);
         const status = fixture(
@@ -182,6 +199,33 @@ describe("fresh-status gating", () => {
             false,
         );
         expect(authorIds(scheduler.dispatch(unblocked))).toEqual(["X"]);
+    });
+
+    test("refills from newly feasible durable state between dispatches", () => {
+        const scheduler = createRollingScheduler(2);
+        const initial = fixture(
+            [
+                artifact("blocker", "ready"),
+                artifact("dependent", "ready", ["blocker"]),
+                artifact("later", "done"),
+            ],
+            ["blocker", "dependent", "later"],
+            false,
+        );
+        expect(authorIds(scheduler.dispatch(initial))).toEqual(["blocker"]);
+        expect(scheduler.complete("blocker")).toBe(true);
+
+        const refreshed = fixture(
+            [
+                artifact("blocker", "done"),
+                artifact("dependent", "ready", ["blocker"]),
+                artifact("later", "ready"),
+            ],
+            ["blocker", "dependent", "later"],
+            false,
+        );
+        expect(authorIds(scheduler.dispatch(refreshed))).toEqual(["dependent", "later"]);
+        expect(scheduler.active).toBe(2);
     });
 });
 
@@ -282,6 +326,60 @@ describe("serial-condition suspension", () => {
             false,
         );
         expect(authorIds(scheduler.dispatch(status2))).toEqual(["C"]);
+    });
+});
+
+describe("composed protocol shape", () => {
+    test("refills, suspends, and resumes from fresh status at cap 2", () => {
+        const scheduler = createRollingScheduler(2);
+        const initial = fixture(
+            [
+                artifact("A", "ready"),
+                artifact("B", "ready"),
+                artifact("C", "ready"),
+                artifact("D", "done"),
+            ],
+            ["A", "B", "C", "D"],
+            false,
+        );
+
+        expect(authorIds(scheduler.dispatch(initial))).toEqual(["A", "B"]);
+        expect(scheduler.active).toBe(2);
+
+        expect(scheduler.complete("A")).toBe(true);
+        const refilled = fixture(
+            [
+                artifact("A", "done"),
+                artifact("B", "done"),
+                artifact("C", "ready"),
+                artifact("D", "done"),
+            ],
+            ["A", "B", "C", "D"],
+            false,
+        );
+        expect(authorIds(scheduler.dispatch(refilled))).toEqual(["C"]);
+        expect(scheduler.active).toBe(2);
+
+        scheduler.suspend();
+        expect(scheduler.suspended).toBe(true);
+        expect(scheduler.active).toBe(2);
+        expect(scheduler.dispatch(refilled)).toEqual([]);
+        expect(scheduler.complete("B")).toBe(true);
+        expect(scheduler.active).toBe(1);
+
+        scheduler.resume();
+        const recovered = fixture(
+            [
+                artifact("A", "done"),
+                artifact("B", "done"),
+                artifact("C", "done"),
+                artifact("D", "ready"),
+            ],
+            ["A", "B", "C", "D"],
+            false,
+        );
+        expect(authorIds(scheduler.dispatch(recovered))).toEqual(["D"]);
+        expect(scheduler.active).toBe(2);
     });
 });
 

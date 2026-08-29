@@ -105,6 +105,20 @@ describe("createReviewFanout", () => {
         expect(fanout.allReportsCollected()).toBe(false);
     });
 
+    test("preserves completed sibling reports after a critic failure", () => {
+        const fanout = createReviewFanout(3);
+
+        fanout.dispatch();
+        fanout.complete("correctness", report("correctness"));
+        fanout.complete("quality", report("quality"));
+        fanout.fail("risk");
+
+        expect([...fanout.reports().entries()]).toEqual([
+            ["correctness", report("correctness")],
+            ["quality", report("quality")],
+        ]);
+    });
+
     test("lets active and pending critics finish after a failure", () => {
         const fanout = createReviewFanout(2);
 
@@ -144,6 +158,27 @@ describe("createReviewFanout", () => {
         expect(fanout.failed).toEqual([]);
         expect([...fanout.reports()]).toEqual([]);
         expect(fanout.dispatch()).toEqual(["correctness", "risk", "quality"]);
+    });
+
+    test("recovers to a complete fan-in after resetting a partial-success round", () => {
+        const fanout = createReviewFanout(3);
+
+        fanout.dispatch();
+        fanout.complete("correctness", report("correctness"));
+        fanout.complete("risk", report("risk"));
+        fanout.fail("quality");
+
+        expect(fanout.blocked).toBe(true);
+        expect(fanout.completed).toEqual(["correctness", "risk"]);
+        expect(fanout.allReportsCollected()).toBe(false);
+
+        fanout.reset();
+        expect(fanout.dispatch()).toEqual(["correctness", "risk", "quality"]);
+        fanout.complete("correctness", report("correctness"));
+        fanout.complete("risk", report("risk"));
+        fanout.complete("quality", report("quality"));
+
+        expect(fanout.allReportsCollected()).toBe(true);
     });
 
     test("rejects duplicate completion and unknown completion without changing state", () => {

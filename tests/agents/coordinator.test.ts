@@ -419,6 +419,82 @@ describe("implementation-phase contract (scoped parallel implementer)", () => {
         expect(section).toContain("Never reconstruct or persist batch state");
     });
 
+    test("preserves the serial fallback at the default concurrency cap", () => {
+        const section = delimitedSection("## Implementation phase", "## Review phase");
+
+        expect(section).toContain(
+            "`maxSubagentConcurrency` (read once from `specops_config` at workflow init; default 1)",
+        );
+        expect(section).toContain(
+            "Dispatch exactly one `specops-implementer` with no `assignedTaskIds` (whole-list behaviour) when: `maxSubagentConcurrency` is 1",
+        );
+        expect(section).toContain("Uncertainty always means serial");
+    });
+
+    test("requires explicitly scoped, bounded parallel ownership", () => {
+        const section = delimitedSection("## Implementation phase", "## Review phase");
+
+        expect(section).toContain(
+            "up to `maxSubagentConcurrency` foreground `specops-implementer` Task calls concurrently",
+        );
+        expect(section).toContain(
+            "non-empty, unique within the dispatch, currently unchecked, and disjoint from every active sibling's assignment",
+        );
+    });
+
+    test.each([
+        "`specops_apply_instructions` is the only per-task authority",
+        "Read it fresh before the initial dispatch and before every refill; select only from its current unchecked tasks",
+        "run its handoff gate, then refill the freed slot from a fresh `specops_apply_instructions` read without waiting for the remaining siblings",
+        "re-establish independence against still-active assignments before each refill dispatch",
+    ])("keeps apply authority and rolling refill wording: %s", clause => {
+        const section = delimitedSection("## Implementation phase", "## Review phase");
+
+        expect(section).toContain(clause);
+    });
+
+    test("requires fresh durable verification before review can follow partial success", () => {
+        const section = delimitedSection("## Implementation phase", "## Review phase");
+
+        expect(section).toContain(
+            "before counting an assignment complete, read fresh `specops_apply_instructions` and `specops_status` and confirm every assigned task ID is durably checked",
+        );
+        expect(section).toContain(
+            "Successful siblings stand: a failed or blocked shard never rolls back or cancels them",
+        );
+        expect(prompt).toContain(
+            "after implementation and the review validation gate, enter the `## Review phase`",
+        );
+    });
+
+    test.each([
+        "unexpected overlap",
+        "newly discovered dependency",
+        "shared integration point",
+        "malformed handoff",
+        "bounded malformed-return recovery",
+        "stale task state",
+        "an assigned ID missing or already checked",
+        "checkbox regression",
+        "task-state mismatch between claimed and durable state",
+        "without cancelling active siblings",
+        "Let active siblings finish",
+        "resume only from fresh durable state, re-forming assignments from scratch",
+    ])("suspends safely on the implementation boundary: %s", clause => {
+        const section = delimitedSection("## Implementation phase", "## Review phase");
+
+        expect(section).toContain(clause);
+    });
+
+    test("rebuilds recovery from durable state without retained batch state", () => {
+        const section = delimitedSection("## Implementation phase", "## Review phase");
+
+        expect(section).toContain("Never reconstruct or persist batch state");
+        expect(section).toContain(
+            "resume only from fresh durable state, re-forming assignments from scratch",
+        );
+    });
+
     test("routes approval through the implementation phase and scopes assignedTaskIds to implementation dispatches", () => {
         expect(prompt).toContain("6. Approval → `## Implementation phase`");
 
@@ -431,6 +507,7 @@ describe("implementation-phase contract (scoped parallel implementer)", () => {
     });
 
     test("keeps remediation implementation dispatch single and serial", () => {
+        const implementation = delimitedSection("## Implementation phase", "## Review phase");
         const routing = delimitedSection(
             "## Schema-aware remediation routing",
             "## Reconciling revised planning artifacts",
@@ -439,6 +516,22 @@ describe("implementation-phase contract (scoped parallel implementer)", () => {
             "**Implementation-only:** all targets are `implementation` and approved planning guidance is sufficient → direct a single, serial `specops-implementer` with goal, change name, findings verbatim, and explicit remediation; never a parallel shard.",
         );
         expect(routing).toContain("never a parallel shard");
+        expect(implementation).toContain(
+            "the schema declares no tasks artifact or the apply flow is dynamic",
+        );
+        expect(implementation).toContain("the work is review-remediation task creation");
+        expect(implementation).toContain("the delegation is the sync flow");
+    });
+
+    test("keeps task-selection judgement out of deterministic tooling", () => {
+        const section = delimitedSection("## Implementation phase", "## Review phase");
+
+        expect(section).toContain(
+            "Task selection, dependency reasoning, routing, and overlap analysis are coordinator judgements; never move them into deterministic tooling",
+        );
+        expect(section).not.toContain("work all unchecked tasks");
+        expect(section).not.toContain("deterministic selector");
+        expect(section).not.toContain("deterministic implementation-task selector");
     });
 });
 

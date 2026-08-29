@@ -327,3 +327,94 @@ describe("getApplyInstructions", () => {
         expect(handoffs[0]).toBe(JSON.stringify(completeContext, null, 2));
     });
 });
+
+describe("parallel-window apply-state regression", () => {
+    // The detailed single-invariant cases remain covered by the #41 tests above:
+    // "rejects duplicate task IDs", "rejects progress with %s", and
+    // "rejects task-list contradiction: %s".
+    test.each([
+        [
+            "duplicate IDs with contradictory counters",
+            {
+                ...completeContext,
+                progress: { total: 4, complete: 1, remaining: 2 },
+                tasks: [
+                    { id: "2.1", description: "First shard task", done: false },
+                    { id: "2.1", description: "Refilled shard task", done: false },
+                ],
+            },
+        ],
+        [
+            "done task with mid-flight refill counters",
+            {
+                ...completeContext,
+                progress: { total: 6, complete: 1, remaining: 5 },
+                tasks: [
+                    { id: "3.1", description: "Completed shard task", done: true },
+                    { id: "3.2", description: "Completed sibling task", done: true },
+                    { id: "3.3", description: "Fresh refill task", done: false },
+                    { id: "3.4", description: "Fresh sibling task", done: false },
+                ],
+            },
+        ],
+    ])("rejects combined parallel-shard payload: %s", async (_description, payload) => {
+        const result = await getApplyInstructions(
+            "example-change",
+            "/project",
+            captureJson(payload),
+        );
+
+        expect(result).toEqual({
+            ok: false,
+            error: expect.stringContaining("OPENSPEC_MALFORMED_RESPONSE"),
+        });
+        expect(result).not.toHaveProperty("context");
+    });
+
+    test("keeps duplicate IDs and contradictory counters rejected", async () => {
+        const cases = [
+            {
+                ...completeContext,
+                tasks: [
+                    { id: "4.1", description: "First task", done: false },
+                    { id: "4.1", description: "Duplicate task", done: false },
+                ],
+            },
+            {
+                ...completeContext,
+                progress: { total: 4, complete: 2, remaining: 1 },
+            },
+        ];
+
+        for (const payload of cases) {
+            const result = await getApplyInstructions(
+                "example-change",
+                "/project",
+                captureJson(payload),
+            );
+
+            expect(result.ok).toBe(false);
+            if (!result.ok) expect(result.error).toContain("OPENSPEC_MALFORMED_RESPONSE");
+        }
+    });
+
+    test("accepts a consistent mid-parallel-dispatch durable read", async () => {
+        const payload = {
+            ...completeContext,
+            progress: { total: 6, complete: 2, remaining: 4 },
+            tasks: [
+                { id: "5.1", description: "Independent unchecked task", done: false },
+                { id: "5.2", description: "Independent sibling task", done: false },
+                { id: "5.3", description: "Freshly refilled task", done: false },
+            ],
+        };
+
+        const result = await getApplyInstructions(
+            "example-change",
+            "/project",
+            captureJson(payload),
+        );
+
+        expect(result).toEqual({ ok: true, context: payload });
+    });
+});
