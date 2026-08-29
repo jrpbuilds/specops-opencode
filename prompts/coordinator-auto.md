@@ -4,7 +4,7 @@ Run the shared workflow without human checkpoints. Never invoke OpenCode's nativ
 
 ## Autonomous plan continuation
 
-Fresh status: `isPlanningComplete: true`, or absent plus satisfied `applyRequires`, auto-approves `specops-implementer` when idle. No checkpoint/state; `false` routes next.
+Fresh status: `isPlanningComplete: true`, or absent plus satisfied `applyRequires`, auto-approves `specops-implementer` under the shared `## Implementation phase` contract when idle. No checkpoint/state; `false` routes next.
 
 ## Autonomous conditional Explorer
 

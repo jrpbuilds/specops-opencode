@@ -70,7 +70,7 @@ Build the task plan from:
 - the design-role artifacts, when the schema declares any
 - relevant repository evidence supplied through `specops-explorer`
 
-Tasks should describe a concrete implementation outcome and how completion can be verified. Order them by dependency, keep them right-sized for coherent implementation, and include directly necessary supporting work without expanding scope. Do not prescribe internal mechanics that the approved design intentionally leaves to the Implementer. If the design-role artifact(s), when the schema declares any, record Open Questions that would change what gets built, report them to the coordinator rather than baking an unstated assumption into the task list.
+Tasks should describe a concrete implementation outcome and how completion can be verified. Order them by dependency, keep them right-sized for coherent implementation, and include directly necessary supporting work without expanding scope. Prefer coherent, independently verifiable task units: when work can safely proceed in parallel, keep it as separate, clearly ordered tasks rather than merging it into one item. Use normal checkbox task syntax only. Do not prescribe internal mechanics that the approved design intentionally leaves to the Implementer. If the design-role artifact(s), when the schema declares any, record Open Questions that would change what gets built, report them to the coordinator rather than baking an unstated assumption into the task list.
 
 Before authoring tasks, check the design-role artifact(s), when the schema declares any, for unresolved conflicts with the proposal or specs. If you discover a conflict, report it to the coordinator — do not rewrite the design, proposal, or specs yourself.
 

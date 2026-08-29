@@ -370,3 +370,82 @@ describe("fresh-change validation gate contract", () => {
         expect(prompt).toContain("expected mid-planning");
     });
 });
+
+describe("coordinator implementation-phase contract (scoped parallel implementer)", () => {
+    // Anchor on newline-delimited headers: the routing bullet mentions the
+    // section name as inline code, so a bare indexOf would match there first.
+    function delimitedSection(prompt: string, startHeader: string, endHeader: string): string {
+        const marker = `\n${startHeader}\n`;
+        const start = prompt.indexOf(marker);
+        expect(start).toBeGreaterThanOrEqual(0);
+        const startOffset = start + 1;
+        const end = prompt.indexOf(`\n${endHeader}\n`, startOffset);
+        expect(end).toBeGreaterThan(startOffset);
+        return prompt.slice(startOffset, end);
+    }
+
+    test.each(["interactive", "auto"] as const)(
+        "%s coordinator composes the new Implementation phase section",
+        mode => {
+            const prompt = buildCoordinatorPrompt(mode, false);
+            const section = delimitedSection(prompt, "## Implementation phase", "## Review phase");
+
+            expect(section).toContain("Serial fallback (default)");
+            expect(section).toContain("Scoped parallel dispatch");
+            expect(section).toContain("Rolling refill");
+            expect(section).toContain("Durable verification");
+            expect(section).toContain("Suspension");
+            expect(section).toContain("assignedTaskIds");
+            expect(section).toContain(
+                "`maxSubagentConcurrency` (read once from `specops_config` at workflow init; default 1)",
+            );
+            expect(section).toContain("Uncertainty always means serial");
+
+            // The routing bullet now points approval at the new section.
+            expect(prompt).toContain("6. Approval → `## Implementation phase`");
+        },
+    );
+
+    test("delegation contract sends assignedTaskIds only to implementation dispatches", () => {
+        const prompt = buildCoordinatorPrompt("interactive", false);
+        const section = delimitedSection(prompt, "## Delegation contract", "## Handoff gate");
+        expect(section).toContain("optional `assignedTaskIds`");
+        expect(section).toContain(
+            "sent only to `specops-implementer` dispatches during the `## Implementation phase`",
+        );
+        expect(section).toContain("omit it everywhere else");
+    });
+});
+
+describe("implementer scoped task assignment contract", () => {
+    test("implementer prompt pins the assignedTaskIds scoping rules", () => {
+        const prompt = loadSpecialistPrompt("implementer");
+
+        // Anchor on the newline-delimited header: the opening paragraph mentions
+        // the section name as inline code, so a bare indexOf would match there.
+        const start = prompt.indexOf("\n## Scoped task assignment\n");
+        expect(start).toBeGreaterThanOrEqual(0);
+        const sectionStart = start + 1;
+        const end = prompt.indexOf("Work through the unchecked tasks", sectionStart);
+        expect(end).toBeGreaterThan(sectionStart);
+        const section = prompt.slice(sectionStart, end);
+
+        expect(section).toContain("that list is your entire assignment");
+        expect(section).toContain("stop and report the stale assignment");
+        expect(section).toContain("Work only the assigned task IDs");
+        expect(section).toContain("Every other unchecked task is out of scope");
+        expect(section).toContain(
+            "stop expanding scope and report the condition to the coordinator",
+        );
+        expect(section).toContain("smallest possible targeted edit flipping `- [ ]` to `- [x]`");
+        expect(section).toContain("never alter another task's checkbox");
+
+        // Absent assignedTaskIds preserves the unchanged whole-list serial path.
+        expect(section).toContain(
+            "When the dispatch carries no `assignedTaskIds`, execute all unchecked tasks",
+        );
+        expect(prompt).toContain(
+            "Work through the unchecked tasks — or, under a scoped assignment, your assigned tasks — in dependency order.",
+        );
+    });
+});

@@ -109,8 +109,11 @@ describe("coordinator prompt composition", () => {
         // Budget raised from 35k to 36k for the review worktree-mutation guard:
         // the review phase now brackets critic fan-out with specops_review_guard
         // capture/verify instructions (issue #31).
-        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(36_000);
-        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(35_000);
+        // Budget raised from 36k to 40k (interactive) and 35k to 39k (auto) for
+        // scoped-parallel-implementer: the shared `## Implementation phase`
+        // contract composes into both modes' assembled prompts.
+        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(40_000);
+        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(39_000);
     });
 });
 
@@ -378,6 +381,67 @@ describe("shared coordinator contract", () => {
     });
 });
 
+describe("implementation-phase contract (scoped parallel implementer)", () => {
+    const prompt = buildCoordinatorPrompt("interactive", false);
+
+    // Anchor on newline-delimited headers: inline-code mentions of the section
+    // name elsewhere in the prompt would defeat a bare indexOf.
+    function delimitedSection(startHeader: string, endHeader: string): string {
+        const marker = `\n${startHeader}\n`;
+        const start = prompt.indexOf(marker);
+        expect(start).toBeGreaterThanOrEqual(0);
+        const startOffset = start + 1;
+        const end = prompt.indexOf(`\n${endHeader}\n`, startOffset);
+        expect(end).toBeGreaterThan(startOffset);
+        return prompt.slice(startOffset, end);
+    }
+
+    test("exposes the bounded, LLM-driven implementation dispatch contract", () => {
+        const section = delimitedSection("## Implementation phase", "## Review phase");
+        expect(section).toContain(
+            "`maxSubagentConcurrency` (read once from `specops_config` at workflow init; default 1)",
+        );
+        expect(section).toContain(
+            "Task selection, dependency reasoning, routing, and overlap analysis are coordinator judgements",
+        );
+        expect(section).toContain("`specops_apply_instructions` is the only per-task authority");
+        expect(section).toContain("`specops_status` carries no checkbox state");
+        expect(section).toContain("Serial fallback (default)");
+        expect(section).toContain("Uncertainty always means serial");
+        expect(section).toContain("Scoped parallel dispatch");
+        expect(section).toContain("disjoint from every active sibling's assignment");
+        expect(section).toContain("Rolling refill");
+        expect(section).toContain("without waiting for the remaining siblings");
+        expect(section).toContain("Durable verification");
+        expect(section).toContain("Successful siblings stand");
+        expect(section).toContain("Suspension");
+        expect(section).toContain("checkbox regression");
+        expect(section).toContain("Never reconstruct or persist batch state");
+    });
+
+    test("routes approval through the implementation phase and scopes assignedTaskIds to implementation dispatches", () => {
+        expect(prompt).toContain("6. Approval → `## Implementation phase`");
+
+        const delegation = delimitedSection("## Delegation contract", "## Handoff gate");
+        expect(delegation).toContain("optional `assignedTaskIds`");
+        expect(delegation).toContain(
+            "sent only to `specops-implementer` dispatches during the `## Implementation phase`",
+        );
+        expect(delegation).toContain("omit it everywhere else");
+    });
+
+    test("keeps remediation implementation dispatch single and serial", () => {
+        const routing = delimitedSection(
+            "## Schema-aware remediation routing",
+            "## Reconciling revised planning artifacts",
+        );
+        expect(routing).toContain(
+            "**Implementation-only:** all targets are `implementation` and approved planning guidance is sufficient → direct a single, serial `specops-implementer` with goal, change name, findings verbatim, and explicit remediation; never a parallel shard.",
+        );
+        expect(routing).toContain("never a parallel shard");
+    });
+});
+
 describe("interactive coordinator contract", () => {
     const prompt = buildCoordinatorPrompt("interactive", false);
 
@@ -538,7 +602,7 @@ describe("interactive coordinator contract", () => {
 
         expect(remediation).toContain("shared `## Schema-aware remediation routing`");
         expect(prompt).toContain(
-            "**Implementation-only:** all targets are `implementation` and approved planning guidance is sufficient → direct `specops-implementer`",
+            "**Implementation-only:** all targets are `implementation` and approved planning guidance is sufficient → direct a single, serial `specops-implementer` with goal, change name, findings verbatim, and explicit remediation; never a parallel shard.",
         );
     });
 

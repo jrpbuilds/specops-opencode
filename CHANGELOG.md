@@ -2,7 +2,20 @@
 
 All notable changes to SpecOps are documented in this file.
 
-## [v1.5.0] - unreleased
+## [v1.6.0] - unreleased
+
+### Added
+
+- Added scoped parallel implementation, so independent tasks build simultaneously (bounded by the concurrent subagents setting) with each implementer working only its assigned tasks.
+
+### Changed
+
+- Implementation slots refill as soon as one implementer finishes, so slow tasks no longer hold up unrelated work.
+- Implementation stays serial at the default limit of 1 and whenever task independence is uncertain.
+- Parallel implementation suspends new work when tasks turn out to be dependent or overlapping, keeping completed work safe while the remainder continues serially.
+- Planning now favors coherent, independently verifiable task units, so more implementation work can safely run in parallel.
+
+## [v1.5.0] - 2026-08-28
 
 ### Added
 

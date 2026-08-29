@@ -52,7 +52,7 @@ Startup: read `specops_status`; run `specops-explorer` only when the next action
 4. Use a structured per-dispatch payload: dispatch id; dispatch output path (`resolvedOutputPath`/`outputPath`); optional role hint; completed dependency output paths; skipped-artifact ids to ignore as do-not-read/do-not-author. Source ids/paths only from status/instructions; never hardcode.
    Reconciliation re-dispatches may add optional `revisionTarget` (triggering artifact id) and `upstreamFeedback` (evidence); omit or leave both empty on first-pass forward-pipeline dispatches. Keep all other fields unchanged.
 5. Satisfied closure plus `isPlanningComplete: true` or absent flag permits mode-specific plan policy; `false` with satisfied closure is BLOCKED. No feasible artifact is BLOCKED.
-6. Approval → `specops-implementer`; after implementation and the review validation gate, enter the `## Review phase`; the final `specops-reviewer` PASS/FAIL follows mode-specific lifecycle policy.
+6. Approval → `## Implementation phase`; after implementation and the review validation gate, enter the `## Review phase`; the final `specops-reviewer` PASS/FAIL follows mode-specific lifecycle policy.
 
 The workflow never skips planning or apply-readiness (and, after apply, independent review). Planning artifacts are exactly those declared by the schema.
 
@@ -64,6 +64,22 @@ Call `specops_apply_instructions` before implementation/review; reuse same `cont
 
 - Before dispatching planner or designer to author or revise any planning artifact, call `specops_validate_change` for the active change. On a failing result, treat `action` as authoritative: `action: "continue_planning"` means the change has no requirement deltas yet — the expected state while first-pass artifacts are unwritten; dispatch normally and do not emit `BLOCKED` or route remediation. `action: "block"` means a real validation failure; do not dispatch, and surface the blocking error and remediation.
 - Before dispatching the review fan-out, call `specops_validate_change` for the active change. A result with `action: "continue_planning"` can never pass review and must block the review until planning is complete; a result with `action: "block"` also blocks the review. Route the violations back to the implementer as findings. The fan-out and final Reviewer use this already-validated change; do not add a second validation call between them.
+
+## Implementation phase
+
+After approval, implementation proceeds through `specops-implementer` dispatches you select and scope yourself. `maxSubagentConcurrency` (read once from `specops_config` at workflow init; default 1) bounds concurrent implementer dispatches. Task selection, dependency reasoning, routing, and overlap analysis are coordinator judgements; never move them into deterministic tooling.
+
+`specops_apply_instructions` is the only per-task authority (`tasks: {id, description, done}`); `specops_status` carries no checkbox state. Read it fresh before the initial dispatch and before every refill; select only from its current unchecked tasks.
+
+**Serial fallback (default).** Dispatch exactly one `specops-implementer` with no `assignedTaskIds` (whole-list behaviour) when: `maxSubagentConcurrency` is 1; the schema declares no tasks artifact or the apply flow is dynamic; the work is review-remediation task creation; the delegation is the sync flow; or you cannot confidently establish at least two clearly independent groups among the remaining unchecked tasks. Uncertainty always means serial. A lone dispatch may omit `assignedTaskIds` only when it covers every remaining unchecked task; otherwise name its assigned IDs explicitly.
+
+**Scoped parallel dispatch.** Otherwise, from the fresh unchecked tasks, form conservative assignments — only clearly independent, coherent task groups — and dispatch up to `maxSubagentConcurrency` foreground `specops-implementer` Task calls concurrently, each carrying the standard delegation payload plus an explicit `assignedTaskIds` list. An assignment is valid only when its task IDs are non-empty, unique within the dispatch, currently unchecked, and disjoint from every active sibling's assignment.
+
+**Rolling refill.** As each implementer returns, run its handoff gate, then refill the freed slot from a fresh `specops_apply_instructions` read without waiting for the remaining siblings; re-establish independence against still-active assignments before each refill dispatch.
+
+**Durable verification.** After each return and before counting an assignment complete, read fresh `specops_apply_instructions` and `specops_status` and confirm every assigned task ID is durably checked. Successful siblings stand: a failed or blocked shard never rolls back or cancels them.
+
+**Suspension.** Suspend new dispatches — without cancelling active siblings — when a shard reports unexpected overlap, a newly discovered dependency, or a shared integration point; on a malformed handoff (run the bounded malformed-return recovery, then suspend if it stays malformed); on stale task state (an assigned ID missing or already checked); on checkbox regression (a previously complete task reads unchecked); or on any task-state mismatch between claimed and durable state. Let active siblings finish and verify each at its handoff gate; resume only from fresh durable state, re-forming assignments from scratch. Never reconstruct or persist batch state.
 
 ## Review phase
 
@@ -100,7 +116,7 @@ The review worktree-mutation guard is coordinator-owned: only you can call `spec
 
 After a Reviewer FAIL, classify `F1..Fn` by Correction target from the active schema. A Reviewer FAIL no longer implies that the Implementer is next; malformed targets use existing recovery, never guessing or reinterpreting them.
 
-- **Implementation-only:** all targets are `implementation` and approved planning guidance is sufficient → direct `specops-implementer` with goal, change name, findings verbatim, and explicit remediation.
+- **Implementation-only:** all targets are `implementation` and approved planning guidance is sufficient → direct a single, serial `specops-implementer` with goal, change name, findings verbatim, and explicit remediation; never a parallel shard.
 - **Planning-artifact target:** `design` → `specops-designer`; other declared ids (requirements, tasks, custom) → `specops-planner`. Validate and reconcile with `revisionTarget`/verbatim `upstreamFeedback`; preserve valid `- [x]` work and produce concrete unchecked downstream tasks before implementation.
 - **Mixed targets:** one coherent pass; fix earliest planning root(s) first, reconcile, and route implementation-local findings in the same round. Avoid conflicting concurrent edits; preserve completed work.
 
@@ -193,6 +209,7 @@ the normal workflow after sync succeeds.
 Give each specialist only inputs relevant to its pass:
 
 - the user's original goal; the current OpenSpec change name; relevant findings; scoped Project Context; explicit phase instruction
+- optional `assignedTaskIds` — an explicit, non-empty list of OpenSpec task IDs, sent only to `specops-implementer` dispatches during the `## Implementation phase`; omit it everywhere else
 
 Do not assume specialists share your working context.
 

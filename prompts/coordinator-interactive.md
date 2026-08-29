@@ -19,7 +19,7 @@ Do not add `Leave open`, `Revise plan`, or any other explicit option.
 
 Result handling:
 
-- `Start implementation` → the current plan is approved; continue to `specops-implementer`.
+- `Start implementation` → the current plan is approved; continue to `specops-implementer` under `## Implementation phase`.
 - custom answer → treat the text verbatim as plan feedback; do not implement. Route it to the owner:
     - requirements, externally observable behavior, scope, compatibility, security, data model, migration, or similar → Planner requirements pass
     - architecture, technical approach, data/control flow, design risks, or similar → Designer
