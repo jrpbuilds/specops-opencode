@@ -2,7 +2,7 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import { PLANNER_AGENT_ID } from "../../src/agents/planner.js";
-import { registerPlannerAgent } from "../../src/host/agents.js";
+import { registerWorkflowSubagents } from "../../src/host/agents.js";
 import { PLANNER_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import {
@@ -24,10 +24,10 @@ function makeConfig(overrides: Partial<SpecOpsConfig["agents"]> = {}): SpecOpsCo
     };
 }
 
-describe("registerPlannerAgent", () => {
+describe("planner agent registration", () => {
     test("registers the SpecOps planner subagent with the planner prompt", () => {
         const config: Config = {};
-        registerPlannerAgent(config, makeConfig());
+        registerWorkflowSubagents(config, makeConfig());
 
         expect(config.agent?.[PLANNER_AGENT_ID] as Record<string, unknown>).toEqual({
             description:
@@ -158,7 +158,7 @@ describe("registerPlannerAgent", () => {
 
     test("applies configured planner model and variant", () => {
         const config: Config = {};
-        registerPlannerAgent(
+        registerWorkflowSubagents(
             config,
             makeConfig({
                 [AGENT_IDS.planner]: {
@@ -176,7 +176,7 @@ describe("registerPlannerAgent", () => {
 
     test("applies model without variant when only model is configured", () => {
         const config: Config = {};
-        registerPlannerAgent(
+        registerWorkflowSubagents(
             config,
             makeConfig({ [AGENT_IDS.planner]: { model: "openai/gpt-5" } }),
         );
@@ -187,7 +187,7 @@ describe("registerPlannerAgent", () => {
 
     test("omits model and variant for blank model to preserve OpenCode fallback", () => {
         const config: Config = {};
-        registerPlannerAgent(
+        registerWorkflowSubagents(
             config,
             makeConfig({ [AGENT_IDS.planner]: { model: "   ", variant: "high" } }),
         );
@@ -196,7 +196,7 @@ describe("registerPlannerAgent", () => {
         expect("variant" in (config.agent?.[PLANNER_AGENT_ID] ?? {})).toBe(false);
     });
 
-    test("does not modify existing agents including the coordinator and explorer", () => {
+    test("does not modify existing unrelated agents", () => {
         const config: Config = {
             agent: {
                 build: { description: "Build", mode: "primary", prompt: "Build prompt" },
@@ -205,18 +205,18 @@ describe("registerPlannerAgent", () => {
                     mode: "primary",
                     prompt: "Coordinator prompt",
                 },
-                [AGENT_IDS.explorer]: {
-                    description: "Explorer",
+                "custom-agent": {
+                    description: "Custom",
                     mode: "subagent",
-                    prompt: "Explorer prompt",
+                    prompt: "Custom prompt",
                 },
             },
         };
-        registerPlannerAgent(config, makeConfig());
+        registerWorkflowSubagents(config, makeConfig());
 
         expect(config.agent?.build?.description).toBe("Build");
         expect(config.agent?.[AGENT_IDS.coordinator]?.description).toBe("Coordinator");
-        expect(config.agent?.[AGENT_IDS.explorer]?.description).toBe("Explorer");
+        expect(config.agent?.["custom-agent"]?.description).toBe("Custom");
     });
 
     test("planner prompt returns the standard handoff envelope and keeps special modes standalone", () => {

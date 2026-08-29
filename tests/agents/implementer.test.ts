@@ -2,7 +2,7 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import { IMPLEMENTER_AGENT_ID } from "../../src/agents/implementer.js";
-import { registerImplementerAgent } from "../../src/host/agents.js";
+import { registerWorkflowSubagents } from "../../src/host/agents.js";
 import { IMPLEMENTER_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import {
@@ -24,10 +24,10 @@ function makeConfig(overrides: Partial<SpecOpsConfig["agents"]> = {}): SpecOpsCo
     };
 }
 
-describe("registerImplementerAgent", () => {
+describe("implementer agent registration", () => {
     test("registers the SpecOps implementer subagent with the implementer prompt", () => {
         const config: Config = {};
-        registerImplementerAgent(config, makeConfig());
+        registerWorkflowSubagents(config, makeConfig());
 
         expect(config.agent?.[IMPLEMENTER_AGENT_ID] as Record<string, unknown>).toEqual({
             description:
@@ -41,7 +41,7 @@ describe("registerImplementerAgent", () => {
 
     test("implementer registration keeps native access within the active worktree", () => {
         const config: Config = {};
-        registerImplementerAgent(config, makeConfig());
+        registerWorkflowSubagents(config, makeConfig());
 
         const permission = config.agent?.[IMPLEMENTER_AGENT_ID]?.permission;
         expect(permission).toBeDefined();
@@ -142,7 +142,7 @@ describe("registerImplementerAgent", () => {
 
     test("applies configured implementer model and variant", () => {
         const config: Config = {};
-        registerImplementerAgent(
+        registerWorkflowSubagents(
             config,
             makeConfig({
                 [AGENT_IDS.implementer]: {
@@ -160,7 +160,7 @@ describe("registerImplementerAgent", () => {
 
     test("applies model without variant when only model is configured", () => {
         const config: Config = {};
-        registerImplementerAgent(
+        registerWorkflowSubagents(
             config,
             makeConfig({ [AGENT_IDS.implementer]: { model: "openai/gpt-5" } }),
         );
@@ -171,7 +171,7 @@ describe("registerImplementerAgent", () => {
 
     test("omits model and variant for blank model to preserve OpenCode fallback", () => {
         const config: Config = {};
-        registerImplementerAgent(
+        registerWorkflowSubagents(
             config,
             makeConfig({ [AGENT_IDS.implementer]: { model: "   ", variant: "high" } }),
         );
@@ -180,7 +180,7 @@ describe("registerImplementerAgent", () => {
         expect("variant" in (config.agent?.[IMPLEMENTER_AGENT_ID] ?? {})).toBe(false);
     });
 
-    test("does not modify existing agents including the planning specialists", () => {
+    test("does not modify existing unrelated agents", () => {
         const config: Config = {
             agent: {
                 build: { description: "Build", mode: "primary", prompt: "Build prompt" },
@@ -189,30 +189,30 @@ describe("registerImplementerAgent", () => {
                     mode: "primary",
                     prompt: "Coordinator prompt",
                 },
-                [AGENT_IDS.explorer]: {
-                    description: "Explorer",
+                "custom-research": {
+                    description: "Research",
                     mode: "subagent",
-                    prompt: "Explorer prompt",
+                    prompt: "Research prompt",
                 },
-                [AGENT_IDS.planner]: {
-                    description: "Planner",
+                "custom-planning": {
+                    description: "Planning",
                     mode: "subagent",
-                    prompt: "Planner prompt",
+                    prompt: "Planning prompt",
                 },
-                [AGENT_IDS.designer]: {
-                    description: "Designer",
+                "custom-tooling": {
+                    description: "Tooling",
                     mode: "subagent",
-                    prompt: "Designer prompt",
+                    prompt: "Tooling prompt",
                 },
             },
         };
-        registerImplementerAgent(config, makeConfig());
+        registerWorkflowSubagents(config, makeConfig());
 
         expect(config.agent?.build?.description).toBe("Build");
         expect(config.agent?.[AGENT_IDS.coordinator]?.description).toBe("Coordinator");
-        expect(config.agent?.[AGENT_IDS.explorer]?.description).toBe("Explorer");
-        expect(config.agent?.[AGENT_IDS.planner]?.description).toBe("Planner");
-        expect(config.agent?.[AGENT_IDS.designer]?.description).toBe("Designer");
+        expect(config.agent?.["custom-research"]?.description).toBe("Research");
+        expect(config.agent?.["custom-planning"]?.description).toBe("Planning");
+        expect(config.agent?.["custom-tooling"]?.description).toBe("Tooling");
     });
 
     test("implementer prompt returns the standard handoff envelope and keeps special modes standalone", () => {

@@ -5,15 +5,7 @@ import { setProcessConfig } from "./host/config-snapshot.js";
 import {
     registerAutoCoordinatorAgent,
     registerCoordinatorAgent,
-    registerDesignerAgent,
-    registerExplorerAgent,
-    registerFrontierAgent,
-    registerImplementerAgent,
-    registerPlannerAgent,
-    registerReviewCorrectnessAgent,
-    registerReviewQualityAgent,
-    registerReviewRiskAgent,
-    registerReviewerAgent,
+    registerWorkflowSubagents,
 } from "./host/agents.js";
 import { applyLifecycleBoundary, applyTaskBoundary } from "./host/permissions.js";
 import { TOOLS } from "./host/tools/index.js";
@@ -46,18 +38,7 @@ export const SpecOpsPlugin: Plugin = async () => ({
             setProcessConfig(specOpsConfig);
             registerCoordinatorAgent(config, specOpsConfig);
             registerAutoCoordinatorAgent(config, specOpsConfig);
-            registerExplorerAgent(config, specOpsConfig);
-            registerPlannerAgent(config, specOpsConfig);
-            registerDesignerAgent(config, specOpsConfig);
-            registerImplementerAgent(config, specOpsConfig);
-            registerReviewerAgent(config, specOpsConfig);
-            registerReviewCorrectnessAgent(config, specOpsConfig);
-            registerReviewRiskAgent(config, specOpsConfig);
-            registerReviewQualityAgent(config, specOpsConfig);
-
-            if (specOpsConfig.frontierEscalation) {
-                registerFrontierAgent(config, specOpsConfig);
-            }
+            registerWorkflowSubagents(config, specOpsConfig);
         } catch (error) {
             const reason = error instanceof Error ? error.message : String(error);
             console.warn(

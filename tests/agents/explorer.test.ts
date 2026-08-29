@@ -2,7 +2,7 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import { EXPLORER_AGENT_ID } from "../../src/agents/explorer.js";
-import { registerExplorerAgent } from "../../src/host/agents.js";
+import { registerWorkflowSubagents } from "../../src/host/agents.js";
 import { EXPLORER_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import {
@@ -24,10 +24,10 @@ function makeConfig(overrides: Partial<SpecOpsConfig["agents"]> = {}): SpecOpsCo
     };
 }
 
-describe("registerExplorerAgent", () => {
+describe("explorer agent registration", () => {
     test("registers the SpecOps explorer subagent with the explorer prompt", () => {
         const config: Config = {};
-        registerExplorerAgent(config, makeConfig());
+        registerWorkflowSubagents(config, makeConfig());
 
         expect(config.agent?.[EXPLORER_AGENT_ID] as Record<string, unknown>).toEqual({
             description:
@@ -97,7 +97,7 @@ describe("registerExplorerAgent", () => {
 
     test("applies configured explorer model and variant", () => {
         const config: Config = {};
-        registerExplorerAgent(
+        registerWorkflowSubagents(
             config,
             makeConfig({
                 [AGENT_IDS.explorer]: {
@@ -115,7 +115,7 @@ describe("registerExplorerAgent", () => {
 
     test("applies model without variant when only model is configured", () => {
         const config: Config = {};
-        registerExplorerAgent(
+        registerWorkflowSubagents(
             config,
             makeConfig({ [AGENT_IDS.explorer]: { model: "openai/gpt-5" } }),
         );
@@ -126,7 +126,7 @@ describe("registerExplorerAgent", () => {
 
     test("omits model and variant for blank model to preserve OpenCode fallback", () => {
         const config: Config = {};
-        registerExplorerAgent(
+        registerWorkflowSubagents(
             config,
             makeConfig({ [AGENT_IDS.explorer]: { model: "   ", variant: "medium" } }),
         );
@@ -146,7 +146,7 @@ describe("registerExplorerAgent", () => {
                 },
             },
         };
-        registerExplorerAgent(config, makeConfig());
+        registerWorkflowSubagents(config, makeConfig());
 
         expect(config.agent?.build?.description).toBe("Build");
         expect(config.agent?.[AGENT_IDS.coordinator]?.description).toBe("Coordinator");

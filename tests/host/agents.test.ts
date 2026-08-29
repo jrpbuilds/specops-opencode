@@ -30,12 +30,8 @@ import {
     REVIEWER_PERMISSION,
 } from "../../src/agents/permissions.js";
 import { DEFAULT_CONFIG, type SpecOpsConfig } from "../../src/config.js";
-import {
-    applyAgentDefinition,
-    registerReviewCorrectnessAgent,
-    registerReviewQualityAgent,
-    registerReviewRiskAgent,
-} from "../../src/host/agents.js";
+import { AGENT_IDS, ROLE_WORKFLOW_ORDER } from "../../src/agents/ids.js";
+import { applyAgentDefinition, registerWorkflowSubagents } from "../../src/host/agents.js";
 import { loadPrompt } from "../../src/prompts.js";
 
 function configWithRoleOverrides(
@@ -136,9 +132,7 @@ describe("applyAgentDefinition translation", () => {
             ["specops-reviewer"]: { model: "reviewer/model", variant: "high" },
         });
 
-        registerReviewCorrectnessAgent(config, specOpsConfig);
-        registerReviewRiskAgent(config, specOpsConfig);
-        registerReviewQualityAgent(config, specOpsConfig);
+        registerWorkflowSubagents(config, specOpsConfig);
 
         for (const id of [
             REVIEW_CORRECTNESS_AGENT_ID,
@@ -157,6 +151,29 @@ describe("applyAgentDefinition translation", () => {
             );
             expect(agent.prompt).toContain("specops-reviewer");
         }
+    });
+});
+
+describe("registerWorkflowSubagents table", () => {
+    test("registers every workflow role except the coordinator", () => {
+        const config: Config = {};
+        const specOpsConfig = structuredClone(DEFAULT_CONFIG);
+        specOpsConfig.frontierEscalation = true;
+        registerWorkflowSubagents(config, specOpsConfig);
+
+        // Guards against a new ROLE_WORKFLOW_ORDER role missing a registration
+        // table entry, which would silently drop it from the agent catalogue.
+        const expected = ROLE_WORKFLOW_ORDER.filter(id => id !== AGENT_IDS.coordinator);
+        expect(Object.keys(config.agent ?? {}).sort()).toEqual([...expected].sort());
+    });
+
+    test("omits the frontier role when frontier escalation is disabled", () => {
+        const config: Config = {};
+        const specOpsConfig = structuredClone(DEFAULT_CONFIG);
+        specOpsConfig.frontierEscalation = false;
+        registerWorkflowSubagents(config, specOpsConfig);
+
+        expect(Object.keys(config.agent ?? {})).not.toContain(AGENT_IDS.frontier);
     });
 });
 

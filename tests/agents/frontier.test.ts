@@ -2,7 +2,7 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import { FRONTIER_AGENT_ID } from "../../src/agents/frontier.js";
-import { registerFrontierAgent } from "../../src/host/agents.js";
+import { registerWorkflowSubagents } from "../../src/host/agents.js";
 import { FRONTIER_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import {
@@ -18,16 +18,18 @@ function makeConfig(overrides: Partial<SpecOpsConfig["agents"]> = {}): SpecOpsCo
     ) as SpecOpsConfig["agents"];
     return {
         agents: { ...defaults, ...overrides } as SpecOpsConfig["agents"],
-        frontierEscalation: false,
+        // Frontier registration is gated on this setting, so its definition
+        // tests exercise the enabled path through the shared table.
+        frontierEscalation: true,
         maxSubagentConcurrency: DEFAULT_SUBAGENT_CONCURRENCY,
         maxAutoReviewIterations: DEFAULT_AUTO_REVIEW_ITERATIONS,
     };
 }
 
-describe("registerFrontierAgent", () => {
+describe("frontier agent registration", () => {
     test("registers the SpecOps frontier subagent with the frontier prompt", () => {
         const config: Config = {};
-        registerFrontierAgent(config, makeConfig());
+        registerWorkflowSubagents(config, makeConfig());
 
         expect(config.agent?.[FRONTIER_AGENT_ID] as Record<string, unknown>).toEqual({
             description:
@@ -103,7 +105,7 @@ describe("registerFrontierAgent", () => {
 
     test("applies configured frontier model and variant", () => {
         const config: Config = {};
-        registerFrontierAgent(
+        registerWorkflowSubagents(
             config,
             makeConfig({
                 [AGENT_IDS.frontier]: {
@@ -121,7 +123,7 @@ describe("registerFrontierAgent", () => {
 
     test("applies model without variant when only model is configured", () => {
         const config: Config = {};
-        registerFrontierAgent(
+        registerWorkflowSubagents(
             config,
             makeConfig({ [AGENT_IDS.frontier]: { model: "openai/gpt-5" } }),
         );
@@ -132,7 +134,7 @@ describe("registerFrontierAgent", () => {
 
     test("omits model and variant for blank model to preserve OpenCode fallback", () => {
         const config: Config = {};
-        registerFrontierAgent(
+        registerWorkflowSubagents(
             config,
             makeConfig({ [AGENT_IDS.frontier]: { model: "   ", variant: "high" } }),
         );
@@ -152,7 +154,7 @@ describe("registerFrontierAgent", () => {
                 },
             },
         };
-        registerFrontierAgent(config, makeConfig());
+        registerWorkflowSubagents(config, makeConfig());
 
         expect(config.agent?.build?.description).toBe("Build");
         expect(config.agent?.[AGENT_IDS.coordinator]?.description).toBe("Coordinator");

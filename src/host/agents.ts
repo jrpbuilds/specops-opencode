@@ -13,12 +13,9 @@ import { designerAgentDefinition } from "../agents/designer.js";
 import { implementerAgentDefinition } from "../agents/implementer.js";
 import { reviewerAgentDefinition } from "../agents/reviewer.js";
 import { frontierAgentDefinition } from "../agents/frontier.js";
-import {
-    reviewCorrectnessAgentDefinition,
-    REVIEW_CORRECTNESS_AGENT_ID,
-} from "../agents/review-correctness.js";
-import { reviewRiskAgentDefinition, REVIEW_RISK_AGENT_ID } from "../agents/review-risk.js";
-import { reviewQualityAgentDefinition, REVIEW_QUALITY_AGENT_ID } from "../agents/review-quality.js";
+import { reviewCorrectnessAgentDefinition } from "../agents/review-correctness.js";
+import { reviewRiskAgentDefinition } from "../agents/review-risk.js";
+import { reviewQualityAgentDefinition } from "../agents/review-quality.js";
 
 /**
  * Apply one role definition with its shared effective model mapping.
@@ -88,123 +85,54 @@ export function registerAutoCoordinatorAgent(config: Config, specOpsConfig: Spec
 }
 
 /**
- * Register the SpecOps explorer subagent from its neutral definition.
+ * One workflow subagent entry in the registration table.
  *
- * @param config OpenCode configuration object mutated with the subagent.
- * @param specOpsConfig Validated persisted role-to-model configuration.
+ * `buildDefinition` receives the effective configuration so definitions can
+ * adapt their prompts; the host applies the role's model mapping uniformly.
  */
-export function registerExplorerAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyConfiguredAgent(
-        config,
-        specOpsConfig,
-        AGENT_IDS.explorer,
-        explorerAgentDefinition(specOpsConfig),
-    );
-}
+type SubagentRegistration = {
+    id: AgentId;
+    buildDefinition: (specOpsConfig: SpecOpsConfig) => SpecOpsAgentDefinition;
+    /** Registration gate; the entry registers unconditionally when omitted. */
+    when?: (specOpsConfig: SpecOpsConfig) => boolean;
+};
 
 /**
- * Register the SpecOps planner subagent from its neutral definition.
+ * Every workflow subagent registration, in workflow order.
  *
- * @param config OpenCode configuration object mutated with the subagent.
- * @param specOpsConfig Validated persisted role-to-model configuration.
+ * Adding a role means adding one entry here (plus its id in `AGENT_IDS` and its
+ * metadata in `ROLE_META`); `registerWorkflowSubagents` applies model mapping
+ * and host translation for every entry.
  */
-export function registerPlannerAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyConfiguredAgent(
-        config,
-        specOpsConfig,
-        AGENT_IDS.planner,
-        plannerAgentDefinition(specOpsConfig),
-    );
-}
+const SUBAGENT_REGISTRATIONS: readonly SubagentRegistration[] = [
+    { id: AGENT_IDS.explorer, buildDefinition: explorerAgentDefinition },
+    { id: AGENT_IDS.planner, buildDefinition: plannerAgentDefinition },
+    { id: AGENT_IDS.designer, buildDefinition: designerAgentDefinition },
+    { id: AGENT_IDS.implementer, buildDefinition: implementerAgentDefinition },
+    { id: AGENT_IDS.reviewer, buildDefinition: reviewerAgentDefinition },
+    { id: AGENT_IDS.reviewCorrectness, buildDefinition: reviewCorrectnessAgentDefinition },
+    { id: AGENT_IDS.reviewRisk, buildDefinition: reviewRiskAgentDefinition },
+    { id: AGENT_IDS.reviewQuality, buildDefinition: reviewQualityAgentDefinition },
+    {
+        id: AGENT_IDS.frontier,
+        buildDefinition: frontierAgentDefinition,
+        when: specOpsConfig => specOpsConfig.frontierEscalation,
+    },
+];
 
 /**
- * Register the SpecOps designer subagent from its neutral definition.
+ * Register every workflow subagent from the shared table.
  *
- * @param config OpenCode configuration object mutated with the subagent.
+ * Entries whose gate is false — today only the frontier role, gated on
+ * `frontierEscalation` — are skipped; the rest register through the same
+ * model-mapping resolver.
+ *
+ * @param config OpenCode configuration object mutated with the subagents.
  * @param specOpsConfig Validated persisted role-to-model configuration.
  */
-export function registerDesignerAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyConfiguredAgent(
-        config,
-        specOpsConfig,
-        AGENT_IDS.designer,
-        designerAgentDefinition(specOpsConfig),
-    );
-}
-
-/**
- * Register the SpecOps implementer subagent from its neutral definition.
- *
- * @param config OpenCode configuration object mutated with the subagent.
- * @param specOpsConfig Validated persisted role-to-model configuration.
- */
-export function registerImplementerAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyConfiguredAgent(
-        config,
-        specOpsConfig,
-        AGENT_IDS.implementer,
-        implementerAgentDefinition(specOpsConfig),
-    );
-}
-
-/**
- * Register the SpecOps reviewer subagent from its neutral definition.
- *
- * @param config OpenCode configuration object mutated with the subagent.
- * @param specOpsConfig Validated persisted role-to-model configuration.
- */
-export function registerReviewerAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyConfiguredAgent(
-        config,
-        specOpsConfig,
-        AGENT_IDS.reviewer,
-        reviewerAgentDefinition(specOpsConfig),
-    );
-}
-
-/** Register the hidden correctness review specialist. */
-export function registerReviewCorrectnessAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyConfiguredAgent(
-        config,
-        specOpsConfig,
-        REVIEW_CORRECTNESS_AGENT_ID,
-        reviewCorrectnessAgentDefinition(specOpsConfig),
-    );
-}
-
-/** Register the hidden risk review specialist. */
-export function registerReviewRiskAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyConfiguredAgent(
-        config,
-        specOpsConfig,
-        REVIEW_RISK_AGENT_ID,
-        reviewRiskAgentDefinition(specOpsConfig),
-    );
-}
-
-/** Register the hidden quality review specialist. */
-export function registerReviewQualityAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyConfiguredAgent(
-        config,
-        specOpsConfig,
-        REVIEW_QUALITY_AGENT_ID,
-        reviewQualityAgentDefinition(specOpsConfig),
-    );
-}
-
-/**
- * Register the SpecOps frontier subagent from its neutral definition.
- *
- * Only called when the frontier escalation capability is enabled.
- *
- * @param config OpenCode configuration object mutated with the subagent.
- * @param specOpsConfig Validated persisted role-to-model configuration.
- */
-export function registerFrontierAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyConfiguredAgent(
-        config,
-        specOpsConfig,
-        AGENT_IDS.frontier,
-        frontierAgentDefinition(specOpsConfig),
-    );
+export function registerWorkflowSubagents(config: Config, specOpsConfig: SpecOpsConfig): void {
+    for (const { id, buildDefinition, when } of SUBAGENT_REGISTRATIONS) {
+        if (when && !when(specOpsConfig)) continue;
+        applyConfiguredAgent(config, specOpsConfig, id, buildDefinition(specOpsConfig));
+    }
 }

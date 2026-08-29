@@ -2,7 +2,7 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import { DESIGNER_AGENT_ID } from "../../src/agents/designer.js";
-import { registerDesignerAgent } from "../../src/host/agents.js";
+import { registerWorkflowSubagents } from "../../src/host/agents.js";
 import { DESIGNER_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import {
@@ -24,10 +24,10 @@ function makeConfig(overrides: Partial<SpecOpsConfig["agents"]> = {}): SpecOpsCo
     };
 }
 
-describe("registerDesignerAgent", () => {
+describe("designer agent registration", () => {
     test("registers the SpecOps designer subagent with the designer prompt", () => {
         const config: Config = {};
-        registerDesignerAgent(config, makeConfig());
+        registerWorkflowSubagents(config, makeConfig());
 
         expect(config.agent?.[DESIGNER_AGENT_ID] as Record<string, unknown>).toEqual({
             description:
@@ -119,7 +119,7 @@ describe("registerDesignerAgent", () => {
 
     test("applies configured designer model and variant", () => {
         const config: Config = {};
-        registerDesignerAgent(
+        registerWorkflowSubagents(
             config,
             makeConfig({
                 [AGENT_IDS.designer]: {
@@ -137,7 +137,7 @@ describe("registerDesignerAgent", () => {
 
     test("applies model without variant when only model is configured", () => {
         const config: Config = {};
-        registerDesignerAgent(
+        registerWorkflowSubagents(
             config,
             makeConfig({ [AGENT_IDS.designer]: { model: "openai/gpt-5" } }),
         );
@@ -148,7 +148,7 @@ describe("registerDesignerAgent", () => {
 
     test("omits model and variant for blank model to preserve OpenCode fallback", () => {
         const config: Config = {};
-        registerDesignerAgent(
+        registerWorkflowSubagents(
             config,
             makeConfig({ [AGENT_IDS.designer]: { model: "   ", variant: "high" } }),
         );
@@ -157,7 +157,7 @@ describe("registerDesignerAgent", () => {
         expect("variant" in (config.agent?.[DESIGNER_AGENT_ID] ?? {})).toBe(false);
     });
 
-    test("does not modify existing agents including the coordinator, explorer, and planner", () => {
+    test("does not modify existing unrelated agents", () => {
         const config: Config = {
             agent: {
                 build: { description: "Build", mode: "primary", prompt: "Build prompt" },
@@ -166,24 +166,24 @@ describe("registerDesignerAgent", () => {
                     mode: "primary",
                     prompt: "Coordinator prompt",
                 },
-                [AGENT_IDS.explorer]: {
-                    description: "Explorer",
+                "custom-research": {
+                    description: "Research",
                     mode: "subagent",
-                    prompt: "Explorer prompt",
+                    prompt: "Research prompt",
                 },
-                [AGENT_IDS.planner]: {
-                    description: "Planner",
+                "custom-planning": {
+                    description: "Planning",
                     mode: "subagent",
-                    prompt: "Planner prompt",
+                    prompt: "Planning prompt",
                 },
             },
         };
-        registerDesignerAgent(config, makeConfig());
+        registerWorkflowSubagents(config, makeConfig());
 
         expect(config.agent?.build?.description).toBe("Build");
         expect(config.agent?.[AGENT_IDS.coordinator]?.description).toBe("Coordinator");
-        expect(config.agent?.[AGENT_IDS.explorer]?.description).toBe("Explorer");
-        expect(config.agent?.[AGENT_IDS.planner]?.description).toBe("Planner");
+        expect(config.agent?.["custom-research"]?.description).toBe("Research");
+        expect(config.agent?.["custom-planning"]?.description).toBe("Planning");
     });
 
     test("designer prompt returns the standard handoff envelope and keeps special modes standalone", () => {

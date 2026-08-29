@@ -2,7 +2,7 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import { REVIEWER_AGENT_ID } from "../../src/agents/reviewer.js";
-import { registerReviewerAgent } from "../../src/host/agents.js";
+import { registerWorkflowSubagents } from "../../src/host/agents.js";
 import { REVIEWER_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import {
@@ -24,10 +24,10 @@ function makeConfig(overrides: Partial<SpecOpsConfig["agents"]> = {}): SpecOpsCo
     };
 }
 
-describe("registerReviewerAgent", () => {
+describe("reviewer agent registration", () => {
     test("registers the SpecOps reviewer subagent with the reviewer prompt", () => {
         const config: Config = {};
-        registerReviewerAgent(config, makeConfig());
+        registerWorkflowSubagents(config, makeConfig());
 
         expect(config.agent?.[REVIEWER_AGENT_ID] as Record<string, unknown>).toEqual({
             description:
@@ -216,7 +216,7 @@ describe("registerReviewerAgent", () => {
 
     test("applies configured reviewer model and variant", () => {
         const config: Config = {};
-        registerReviewerAgent(
+        registerWorkflowSubagents(
             config,
             makeConfig({
                 [AGENT_IDS.reviewer]: {
@@ -234,7 +234,7 @@ describe("registerReviewerAgent", () => {
 
     test("applies model without variant when only model is configured", () => {
         const config: Config = {};
-        registerReviewerAgent(
+        registerWorkflowSubagents(
             config,
             makeConfig({ [AGENT_IDS.reviewer]: { model: "openai/gpt-5" } }),
         );
@@ -245,7 +245,7 @@ describe("registerReviewerAgent", () => {
 
     test("omits model and variant for blank model to preserve OpenCode fallback", () => {
         const config: Config = {};
-        registerReviewerAgent(
+        registerWorkflowSubagents(
             config,
             makeConfig({ [AGENT_IDS.reviewer]: { model: "   ", variant: "high" } }),
         );
@@ -258,17 +258,17 @@ describe("registerReviewerAgent", () => {
         const config: Config = {
             agent: {
                 build: { description: "Build", mode: "primary", prompt: "Build prompt" },
-                [AGENT_IDS.implementer]: {
-                    description: "Implementer",
+                "custom-agent": {
+                    description: "Custom",
                     mode: "subagent",
-                    prompt: "Implementer prompt",
+                    prompt: "Custom prompt",
                 },
             },
         };
-        registerReviewerAgent(config, makeConfig());
+        registerWorkflowSubagents(config, makeConfig());
 
         expect(config.agent?.build?.description).toBe("Build");
-        expect(config.agent?.[AGENT_IDS.implementer]?.description).toBe("Implementer");
+        expect(config.agent?.["custom-agent"]?.description).toBe("Custom");
     });
 
     test("reviewer prompt does not use the specialist handoff envelope", () => {
