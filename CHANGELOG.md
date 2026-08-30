@@ -12,9 +12,10 @@ All notable changes to SpecOps are documented in this file.
 
 ### Changed
 
+- Implementation now defaults to one implementer and runs tasks in parallel only when they are genuinely segregated, so parallel work finishes sooner instead of splitting related changes.
 - Implementation stays serial at the default limit of 1 and whenever task independence is uncertain.
 - Parallel implementation suspends new work when tasks turn out to be dependent or overlapping, keeping completed work safe while the remainder continues serially.
-- Planning now favors coherent, independently verifiable task units, so more implementation work can safely run in parallel.
+- Planning now groups related work into coherent implementation lanes, keeping producer→consumer chains and shared types together instead of splitting work for parallel execution.
 
 ## [v1.5.0] - 2026-08-28
 

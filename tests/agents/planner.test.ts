@@ -94,6 +94,49 @@ describe("planner agent registration", () => {
         expect(prompt).toContain("Do not prescribe internal mechanics");
     });
 
+    test("planner task planning prefers coherent implementation lanes over parallel splitting", () => {
+        const prompt = loadPrompt(AGENT_IDS.planner);
+
+        // Tightly related work stays in one lane: producer→consumer chains,
+        // neighbouring-layer builds, and shared types or test setup.
+        expect(prompt).toContain("Prefer coherent implementation lanes");
+        expect(prompt).toContain(
+            "keep producer→consumer chains, neighbouring-layer builds within one subsystem",
+        );
+        expect(prompt).toContain(
+            "work sharing types, abstractions, registrations, contract tests, or test setup together in one lane",
+        );
+        expect(prompt).toContain("one task or adjacent ordered tasks");
+
+        // Lanes split only on genuine implementation segregation, with the
+        // full per-lane size and verification criteria.
+        expect(prompt).toContain(
+            "Split into separate lanes only on genuine implementation segregation",
+        );
+        expect(prompt).toContain("a meaningfully separate subsystem or write surface");
+        expect(prompt).toContain(
+            "low overlap in source files, shared types, integration points, and test setup",
+        );
+        expect(prompt).toContain("little need to understand partially completed sibling work");
+        expect(prompt).toContain("independent implementation and verification");
+        expect(prompt).toContain(
+            "enough substantive work per lane to justify another implementer's context and bootstrap cost",
+        );
+
+        // Dependency-permitted splits and too-small lanes never justify a split.
+        expect(prompt).toContain(
+            "Never split merely because the dependency graph permits parallel execution",
+        );
+        expect(prompt).toContain(
+            "work too small to repay another implementer's context and bootstrap cost stays in the lane it relates to",
+        );
+
+        // The old parallelism preference is removed.
+        expect(prompt).not.toContain(
+            "when work can safely proceed in parallel, keep it as separate, clearly ordered tasks",
+        );
+    });
+
     test("planner prompt distinguishes resolvable conflicts from user-scope conflicts", () => {
         const prompt = loadPrompt(AGENT_IDS.planner);
 

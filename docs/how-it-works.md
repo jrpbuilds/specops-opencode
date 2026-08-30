@@ -64,7 +64,7 @@ Before any planning artifact is written, and again before review can pass, SpecO
 
 After implementation, the coordinator sends the work to three independent review specialists — **correctness**, **risk**, and **quality** — running in parallel up to your concurrency limit. Each returns a complete critique, and none of them sees the others' reports. Blocking findings are numbered (`F1`, `F2`, …) so they can be traced through remediation.
 
-The same parallelism covers planning and implementation: independent planning artifacts author concurrently, and independent implementation tasks build at the same time. Launch OpenCode with `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true` for the best experience — parallel specialists then run as background tasks and each finished slot is refilled immediately, instead of waiting for every in-flight specialist to finish before the next batch starts.
+The same parallelism covers planning and implementation: independent planning artifacts author concurrently, and implementation parallelizes only when planned work is genuinely segregated so concurrent lanes actually finish sooner — otherwise one implementer builds the change serially. Launch OpenCode with `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true` for the best experience — parallel specialists then run as background tasks and each finished slot is refilled immediately, instead of waiting for every in-flight specialist to finish before the next batch starts.
 
 The final `specops-reviewer` receives all three reports verbatim as evidence and owns the only PASS/FAIL decision. The critics don't vote and can't overrule it.
 

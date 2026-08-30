@@ -410,6 +410,99 @@ describe("implementation-phase contract (scoped parallel implementer)", () => {
         expect(section).toContain("Suspension");
         expect(section).toContain("checkbox regression");
         expect(section).toContain("Never reconstruct or persist batch state");
+
+        // Serial is framed as the default; parallel dispatch is the exception.
+        expect(section).toContain("Serial implementation is the normal choice");
+        expect(section).toContain("scoped parallel dispatch is the exception");
+        expect(section).toContain(
+            "positive evidence that multiple lanes will reduce total wall-clock time",
+        );
+
+        // The final serial trigger requires genuine segregation plus
+        // expected wall-clock benefit, not mere independence.
+        expect(section).toContain(
+            "genuinely segregated groups whose concurrent implementation is likely to reduce total wall-clock time",
+        );
+        expect(section).not.toContain("at least two clearly independent groups");
+    });
+
+    test("keeps coherent, tightly related work with a single serial implementer", () => {
+        const section = delimitedSection("## Implementation phase", "## Review phase");
+
+        expect(section).toContain(
+            "the remaining unchecked tasks are dependency-independent but form coherent, tightly related work",
+        );
+        expect(section).toContain(
+            "same code surface, shared types, integration points, or test setup",
+        );
+    });
+
+    test("treats dependency-independence alone as insufficient for parallel dispatch", () => {
+        const section = delimitedSection("## Implementation phase", "## Review phase");
+
+        expect(section).toContain("Dependency-independence alone is not sufficient");
+        expect(section).toContain(
+            "positive evidence that concurrent lanes will reduce total wall-clock time",
+        );
+    });
+
+    test("gates scoped parallel dispatch on the full implementation-segregation criteria", () => {
+        const section = delimitedSection("## Implementation phase", "## Review phase");
+
+        expect(section).toContain("genuinely segregated for implementation");
+        expect(section).toContain("a meaningfully separate subsystem or write surface");
+        expect(section).toContain(
+            "low overlap in source files, shared types, integration points, and test setup",
+        );
+        expect(section).toContain("little need to understand partially completed sibling work");
+        expect(section).toContain("independent implementation and verification");
+        expect(section).toContain(
+            "enough substantive work per lane to justify another implementer's context and bootstrap cost",
+        );
+    });
+
+    test("treats the concurrency cap as a ceiling, never a slot-filling target", () => {
+        const section = delimitedSection("## Implementation phase", "## Review phase");
+
+        expect(section).toContain(
+            "strict ceiling on available capacity, never a utilisation target",
+        );
+        expect(section).toContain(
+            "do not dispatch implementers merely because slots are available",
+        );
+        expect(section).toContain(
+            "having fewer active implementers than the cap allows is the expected, correct state",
+        );
+    });
+
+    test("may consolidate related task groups into one implementer", () => {
+        const section = delimitedSection("## Implementation phase", "## Review phase");
+
+        expect(section).toContain("multiple related task groups to a single implementer");
+        expect(section).toContain("one assignment naming the consolidated task IDs");
+        expect(section).toContain("sequential assignments to the same implementer");
+        expect(section).toContain(
+            "when shared context in one worker is more efficient than separate implementers",
+        );
+        expect(section).toContain("without exceeding the cap");
+    });
+
+    test("refill re-applies the dispatch gate and leaves unjustified slots empty", () => {
+        const section = delimitedSection("## Implementation phase", "## Review phase");
+
+        expect(section).toContain(
+            "Re-apply the same segregation and wall-clock-benefit gate on every refill",
+        );
+        expect(section).toContain("leave the slot empty and let the active siblings finish");
+    });
+
+    test("falls back to serial whenever any part of the dispatch gate is uncertain", () => {
+        const section = delimitedSection("## Implementation phase", "## Review phase");
+
+        expect(section).toContain("Uncertainty always means serial");
+        expect(section).toContain(
+            "you cannot confidently establish at least two genuinely segregated groups",
+        );
     });
 
     test("preserves the serial fallback at the default concurrency cap", () => {

@@ -442,6 +442,35 @@ describe("coordinator implementation-phase contract (scoped parallel implementer
             );
             expect(section).toContain("Uncertainty always means serial");
 
+            // Serial-default framing precedes the trigger list, and the final
+            // serial trigger requires segregation plus wall-clock benefit.
+            expect(section).toContain("Serial implementation is the normal choice");
+            expect(section).toContain(
+                "genuinely segregated groups whose concurrent implementation is likely to reduce total wall-clock time",
+            );
+
+            // The scoped-parallel branch carries the full segregation gate,
+            // the ceiling-not-target statement, and MAY-consolidate.
+            expect(section).toContain("genuinely segregated for implementation");
+            expect(section).toContain("a meaningfully separate subsystem or write surface");
+            expect(section).toContain(
+                "positive evidence that concurrent lanes will reduce total wall-clock time",
+            );
+            expect(section).toContain("Dependency-independence alone is not sufficient");
+            expect(section).toContain(
+                "strict ceiling on available capacity, never a utilisation target",
+            );
+            expect(section).toContain("multiple related task groups to a single implementer");
+
+            // Refill re-applies the same gate and leaves unjustified slots empty.
+            expect(section).toContain(
+                "Re-apply the same segregation and wall-clock-benefit gate on every refill",
+            );
+            expect(section).toContain("leave the slot empty and let the active siblings finish");
+
+            // The old dependency-independence-only bar is removed.
+            expect(section).not.toContain("only clearly independent, coherent task groups");
+
             // The routing bullet now points approval at the new section.
             expect(prompt).toContain("6. Approval → `## Implementation phase`");
         },
