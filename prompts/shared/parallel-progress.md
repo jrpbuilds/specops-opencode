@@ -2,4 +2,6 @@
 
 Pass the state you currently hold, never stale remembered state from an earlier checkpoint: the current fan-out snapshot (`pending`, `inFlight`, `completed`, and `failed` critic-id lists read from the in-memory fanout object) and/or the in-flight implementer assignments (`dispatchId` plus `taskIds` per dispatch, using the recorded background Task id as the `dispatchId`). Render one concise line per view from the report's counts and non-terminal items (for example, `Review: correctness done, risk in flight, quality pending`; `Implementation: impl-1 in flight (T1,T2), impl-2 durably complete (T3,T4)`), plus a short in-flight/completed summary in the checkpoint report itself.
 
+In-flight accounting and sibling `assignedTaskIds` disjointness apply identically to resumed dispatches.
+
 `specops_progress` is an ephemeral reporting aid, never a routing, gating, approval, or archival authority; durable OpenSpec state remains the source of truth. `missingFromDurable` classifications and apply-read failures feed the existing suspension and durable-verification rules in `## Implementation phase` — apply those rules by their own anchors; this fragment does not restate them.

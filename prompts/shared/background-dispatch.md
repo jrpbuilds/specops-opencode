@@ -2,4 +2,6 @@
 
 Each completion is injected into this session automatically as one `<task id=... state="completed">` message whose `<task_result>` carries that specialist's complete final return (or `state="error"` with `<task_error>` when it failed). Process exactly one injected completion per arrival: run that dispatch's handoff or failure gate, then refill only the freed slot from fresh durable state, re-establishing independence and disjointness against still-active siblings before the refill dispatch. Never wait for remaining siblings before processing or refilling.
 
+A resumed dispatch (`task_id` = prior session id) is an ordinary background Task call, recorded and completed like any other.
+
 Serial dispatches under a concurrency cap of 1 always use ordinary foreground Task calls. If the host rejects a `background: true` dispatch, retry that same dispatch as an ordinary foreground call and refill per-wave instead — never treat the rejection as a blocker.

@@ -7,6 +7,7 @@ const gettingStarted = readme.slice(
     readme.indexOf("## Getting started"),
     readme.indexOf("## Model configuration"),
 );
+const howItWorks = readFileSync(path.join(process.cwd(), "docs/how-it-works.md"), "utf8");
 
 describe("README", () => {
     test("documents Engram as an optional companion and not an artifact store", () => {
@@ -30,5 +31,17 @@ describe("README", () => {
         expect(gettingStarted).not.toContain(
             "This initialises the project for OpenSpec without installing OpenSpec's own OpenCode commands or skills.",
         );
+    });
+
+    test("documents lane-continuation reuse with fresh state and a fresh fallback", () => {
+        for (const content of [readme, howItWorks]) {
+            expect(content).toContain("reuse");
+            expect(content).toContain("preserve useful context");
+            expect(content).toContain("fresh canonical state");
+            expect(content).toContain("fresh implementer dispatch is always a valid fallback");
+        }
+        expect(readme).toContain("no persistent workflow state of its own");
+        expect(howItWorks).toContain("all durable workflow state");
+        expect(howItWorks).toContain("temporary lane/session affinity is discarded");
     });
 });

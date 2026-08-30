@@ -56,7 +56,7 @@ openspec/changes/<change>/
 └── tasks.md
 ```
 
-Custom schemas with different or fewer artifacts work the same way. The coordinator plans from the declared graph, sends each artifact to the role that owns it (design work to the Designer, everything else to the Planner), and skips nothing you didn't declare. And because all state is these files plus task checkboxes, an interrupted change just picks up where it left off: run `/specops` again and the coordinator re-reads the saved status instead of guessing.
+Custom schemas with different or fewer artifacts work the same way. The coordinator plans from the declared graph, sends each artifact to the role that owns it (design work to the Designer, everything else to the Planner), and skips nothing you didn't declare. And because all durable workflow state is these files plus task checkboxes, an interrupted change just picks up where it left off: run `/specops` again and the coordinator re-reads the saved status instead of guessing; temporary lane/session affinity is discarded when the coordinator run ends.
 
 Before any planning artifact is written, and again before review can pass, SpecOps validates the change with OpenSpec's own validator (`--strict`). A change that doesn't validate doesn't move forward.
 
@@ -64,7 +64,7 @@ Before any planning artifact is written, and again before review can pass, SpecO
 
 After implementation, the coordinator sends the work to three independent review specialists — **correctness**, **risk**, and **quality** — running in parallel up to your concurrency limit. Each returns a complete critique, and none of them sees the others' reports. Blocking findings are numbered (`F1`, `F2`, …) so they can be traced through remediation.
 
-The same parallelism covers planning and implementation: independent planning artifacts author concurrently, and implementation parallelizes only when planned work is genuinely segregated so concurrent lanes actually finish sooner — otherwise one implementer builds the change serially. Launch OpenCode with `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true` for the best experience — parallel specialists then run as background tasks and each finished slot is refilled immediately, instead of waiting for every in-flight specialist to finish before the next batch starts.
+The same parallelism covers planning and implementation: independent planning artifacts author concurrently, and implementation parallelizes only when planned work is genuinely segregated so concurrent lanes actually finish sooner — otherwise one implementer builds the change serially. When one lane receives staged assignments, its implementer session may be reused to preserve useful context, but every dispatch receives fresh canonical state; a fresh implementer dispatch is always a valid fallback. Launch OpenCode with `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true` for the best experience — parallel specialists then run as background tasks and each finished slot is refilled immediately, instead of waiting for every in-flight specialist to finish before the next batch starts.
 
 The final `specops-reviewer` receives all three reports verbatim as evidence and owns the only PASS/FAIL decision. The critics don't vote and can't overrule it.
 

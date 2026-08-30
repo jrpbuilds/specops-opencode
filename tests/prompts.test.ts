@@ -579,6 +579,119 @@ describe("coordinator implementation-phase contract (scoped parallel implementer
         },
     );
 
+    test.each(["interactive", "auto"] as const)(
+        "%s coordinator documents optional lane-continuation affinity",
+        mode => {
+            const section = delimitedSection(
+                buildCoordinatorPrompt(mode, false),
+                "## Implementation phase",
+                "## Review phase",
+            );
+
+            expect(section).toContain("Lane-continuation session reuse");
+            expect(section).toContain(
+                "affinity judgement finds a clear continuation of the same coherent lane under existing locality rules",
+            );
+            expect(section).toContain(
+                "same subsystem/write surface, shared types/tests, low sibling overlap",
+            );
+            expect(section).toContain("Resume only after verified success");
+            expect(section).toContain("genuinely different-lane work gets a fresh implementer");
+            expect(section).toContain("Reuse is optional: fresh dispatch is always valid");
+        },
+    );
+
+    test("resumed assignments require fresh canonical state and explicit task ids", () => {
+        const section = delimitedSection(
+            buildCoordinatorPrompt("interactive", false),
+            "## Implementation phase",
+            "## Review phase",
+        );
+
+        expect(section).toContain(
+            "refresh `specops_apply_instructions` and fresh canonical status/task state",
+        );
+        expect(section).toContain("fresh apply-instruction context and fresh task state");
+        expect(section).toContain(
+            "a new explicit `assignedTaskIds` list containing only newly assigned unchecked tasks",
+        );
+        expect(section).toContain("`task_id` = latest recorded task id");
+        expect(section).toContain("`background: true`");
+        expect(section).toContain("a verified-successful return replaces the id");
+    });
+
+    test("enumerates every no-reuse safety boundary and refreshes state regardless of reuse", () => {
+        const section = delimitedSection(
+            buildCoordinatorPrompt("interactive", false),
+            "## Implementation phase",
+            "## Review phase",
+        );
+
+        for (const boundary of [
+            "planning/design revision changing the lane's approved implementation",
+            "material reconciliation affecting the lane",
+            "unresolved overlap/dependency conflict involving the lane",
+            "unrecovered malformed return (see the bounded `### Malformed or missing handoff return` recovery only)",
+            "failed, errored, or incomplete prior session",
+            "active change/run switch",
+        ]) {
+            expect(section).toContain(boundary);
+        }
+        expect(section).toContain(
+            "on every dispatch regardless of reuse intent, refresh `specops_apply_instructions` and fresh canonical status/task state",
+        );
+        expect(section).toContain(
+            "the bounded `### Malformed or missing handoff return` recovery only",
+        );
+        expect(section).toContain(
+            "At initial scoped dispatch and each rolling refill, apply this six-step procedure",
+        );
+        for (const step of [
+            "1. **Fresh canonical reads.**",
+            "2. **Partition lanes.**",
+            "3. **Validate scoped assignments.**",
+            "4. **Apply the no-reuse gate.**",
+            "5. **Make the affinity judgement.**",
+            "6. **Dispatch.**",
+        ]) {
+            expect(section).toContain(step);
+        }
+    });
+
+    test("documents single-attempt fallback, normal slot accounting, and no keep-alive work", () => {
+        const section = delimitedSection(
+            buildCoordinatorPrompt("interactive", false),
+            "## Implementation phase",
+            "## Review phase",
+        );
+
+        expect(section).toContain(
+            "Attempt once; if unavailable or failing, immediately dispatch fresh for that assignment — no retry loop or blocking",
+        );
+        expect(section).toContain("drop the entry");
+        expect(section).toContain("One normal in-flight slot");
+        expect(section).toContain("max is a strict ceiling, not a target");
+        expect(section).toContain("inactive entries cost no capacity or keep-alive work");
+    });
+
+    test("keeps affinity ephemeral and all existing gates and permissions binding", () => {
+        const coordinator = buildCoordinatorPrompt("interactive", false);
+        const section = delimitedSection(coordinator, "## Implementation phase", "## Review phase");
+
+        expect(section).toContain("No lane/session ownership survives the run");
+        expect(section).toContain(
+            "never persisted, never recorded in memory/Engram as workflow or assignment state, and never surfaced through progress",
+        );
+        expect(section).toContain("The ledger dies with the coordinator run");
+        expect(section).toContain(
+            "Returns face the same durable checkbox verification, suspension/recovery, and independent review gates",
+        );
+        expect(section).toContain("no continuity shortcut");
+        expect(coordinator).toContain(
+            "Review agents are denied `specops_*` and `specops_lifecycle`, so they cannot capture or verify for you",
+        );
+    });
+
     test("delegation contract sends assignedTaskIds only to implementation dispatches", () => {
         const prompt = buildCoordinatorPrompt("interactive", false);
         const section = delimitedSection(prompt, "## Delegation contract", "## Handoff gate");
@@ -630,5 +743,21 @@ describe("implementer scoped task assignment contract", () => {
         expect(prompt).toContain(
             "Work through the unchecked tasks — or, under a scoped assignment, your assigned tasks — in dependency order.",
         );
+
+        const revalidation = prompt.slice(
+            prompt.indexOf("\n## Scoped task assignment\n") + 1,
+            prompt.indexOf("Work through the unchecked tasks"),
+        );
+        for (const anchor of [
+            "before any edit revalidate every `assignedTaskIds` entry",
+            "The current repository and canonical state are authoritative over retained session context",
+            "a missing or already-checked assigned ID is a stale assignment",
+            "do not edit, return immediately reporting the mismatch",
+            "regression as a material anomaly",
+            "suspend and report it rather than silently re-executing the task",
+            "disqualifies the session from further reuse until the anomaly is reconciled",
+        ]) {
+            expect(revalidation).toContain(anchor);
+        }
     });
 });

@@ -6,7 +6,7 @@ const SPECIALIST_PROMPT_BUDGETS = [
     ["explorer", AGENT_IDS.explorer, 7_000],
     ["planner", AGENT_IDS.planner, 17_000],
     ["designer", AGENT_IDS.designer, 13_000],
-    ["implementer", AGENT_IDS.implementer, 15_000],
+    ["implementer", AGENT_IDS.implementer, 16_000],
     ["reviewer", AGENT_IDS.reviewer, 20_000],
     ["review-correctness", AGENT_IDS.reviewCorrectness, 6_000],
     ["review-risk", AGENT_IDS.reviewRisk, 6_000],

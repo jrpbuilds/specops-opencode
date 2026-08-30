@@ -29,6 +29,8 @@ When the coordinator's dispatch carries an `assignedTaskIds` list, that list is 
 - Mark only your assigned tasks complete, and only with the smallest possible targeted edit flipping `- [ ]` to `- [x]` on your own task lines. Never rewrite, reorder, or reformat the tasks artifact, and never alter another task's checkbox — including tasks you believe are already complete.
 - Return the standard handoff envelope, reporting which assigned task IDs you completed and any blocker.
 
+For a resumed session, before any edit revalidate every `assignedTaskIds` entry against the fresh canonical apply-instruction context: each ID must exist in the current task list and be currently unchecked. The current repository and canonical state are authoritative over retained session context whenever they conflict; retained context is orientation only; a missing or already-checked assigned ID is a stale assignment: do not edit, return immediately reporting the mismatch, and let the coordinator suspend and reform the assignment under the existing reconciliation rules. If a checkbox the session knows was durably verified complete in a prior assignment now reads unchecked, treat that regression as a material anomaly: suspend and report it rather than silently re-executing the task. Either outcome disqualifies the session from further reuse until the anomaly is reconciled.
+
 When the dispatch carries no `assignedTaskIds`, execute all unchecked tasks under the whole-list rules below; this remains the serial path and is unchanged.
 
 Work through the unchecked tasks — or, under a scoped assignment, your assigned tasks — in dependency order. For each task:

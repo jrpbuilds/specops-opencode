@@ -67,7 +67,7 @@ You approve the plan before implementation starts, and you decide what happens a
 
 ## How it works
 
-The coordinator routes your change through specialist agents, then has the finished work reviewed from three independent perspectives before a final verdict:
+The coordinator routes your change through specialist agents, then has the finished work reviewed from three independent perspectives before a final verdict. When implementation in one lane is staged across several assignments, SpecOps may reuse that lane's implementer session to preserve useful context while refreshing with fresh canonical state for every dispatch; a fresh implementer dispatch is always a valid fallback:
 
 ```mermaid
 flowchart TD
@@ -94,7 +94,7 @@ flowchart TD
 
 When the Reviewer fails the work, the coordinator finds the earliest incorrect layer (implementation, design, or requirements), gets it corrected there, and runs the whole review pipeline again. [How it works](docs/how-it-works.md) covers the details.
 
-SpecOps keeps no state of its own: everything lives in OpenSpec artifacts under `openspec/changes/<change>/`. That's why custom schemas work, and why an interrupted change picks up where it left off.
+SpecOps keeps no persistent workflow state of its own: durable state lives in OpenSpec artifacts under `openspec/changes/<change>/`, while temporary session affinity ends with the coordinator run. That's why custom schemas work, and why an interrupted change picks up where it left off.
 
 The specialist agents (`specops-explorer`, `specops-planner`, `specops-designer`, `specops-implementer`, `specops-reviewer`, the three review specialists, and optionally `specops-frontier`) are internal to SpecOps. Only its coordinators can dispatch them, they don't show up in OpenCode's `@` menu, and the coordinators themselves never edit files.
 

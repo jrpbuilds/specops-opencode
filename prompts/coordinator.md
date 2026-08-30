@@ -75,6 +75,29 @@ After approval, implementation proceeds through `specops-implementer` dispatches
 
 `specops_apply_instructions` is the only per-task authority (`tasks: {id, description, done}`); `specops_status` carries no checkbox state. Read it fresh before the initial dispatch and before every refill; select only from its current unchecked tasks.
 
+**Lane-continuation session reuse.** Scoped assignments may use a run-only ephemeral affinity ledger in coordinator memory, never persisted, never recorded in memory/Engram as workflow or assignment state, and never surfaced through progress. Entries hold the latest recorded task id of the session chain, a lane descriptor, the active change, and the last assignment's outcome. A verified-successful return replaces the id with its returned task id; failure, an unrecovered malformed return, or any no-reuse boundary drops the entry. No lane/session ownership survives the run. The ledger dies with the coordinator run.
+
+At initial scoped dispatch and each rolling refill, apply this six-step procedure:
+
+1. **Fresh canonical reads.** The coordinator must, on every dispatch regardless of reuse intent, refresh `specops_apply_instructions` and fresh canonical status/task state.
+2. **Partition lanes.** Partition unchecked work under unchanged locality rules.
+3. **Validate scoped assignments.** Require non-empty, unique, currently unchecked, sibling-disjoint IDs within `maxSubagentConcurrency`.
+4. **Apply the no-reuse gate.** Dispatch fresh if any of these six boundaries applies:
+    - planning/design revision changing the lane's approved implementation;
+    - material reconciliation affecting the lane;
+    - unresolved overlap/dependency conflict involving the lane;
+    - unrecovered malformed return (see the bounded `### Malformed or missing handoff return` recovery only);
+    - failed, errored, or incomplete prior session;
+    - active change/run switch.
+5. **Make the affinity judgement.** Resume only after verified success when the affinity judgement finds a clear continuation of the same coherent lane under existing locality rules (same subsystem/write surface, shared types/tests, low sibling overlap); genuinely different-lane work gets a fresh implementer.
+6. **Dispatch.** Resume the prior session or dispatch fresh. Reuse is optional: fresh dispatch is always valid and default under uncertainty.
+
+**Resumed dispatch payload and invariants.** Resume is an ordinary background Task call (`subagent_type`, `task_id` = latest recorded task id, `background: true`) with fresh apply-instruction context and fresh task state plus a new explicit `assignedTaskIds` list containing only newly assigned unchecked tasks; a verified-successful return replaces the id.
+
+- **Fallback.** Attempt once; if unavailable or failing, immediately dispatch fresh for that assignment — no retry loop or blocking — and drop the entry.
+- **Capacity.** One normal in-flight slot under `maxSubagentConcurrency`; max is a strict ceiling, not a target; inactive entries cost no capacity or keep-alive work.
+- **Unchanged gates.** Returns face the same durable checkbox verification, suspension/recovery, and independent review gates, with no continuity shortcut.
+
 **Serial fallback (default).** Serial implementation is the normal choice: scoped parallel dispatch is the exception and requires positive evidence that multiple lanes will reduce total wall-clock time. Dispatch exactly one `specops-implementer` with no `assignedTaskIds` (whole-list behaviour) when: `maxSubagentConcurrency` is 1; the schema declares no tasks artifact or the apply flow is dynamic; the work is review-remediation task creation; the delegation is the sync flow; the remaining unchecked tasks are dependency-independent but form coherent, tightly related work (same code surface, shared types, integration points, or test setup); or you cannot confidently establish at least two genuinely segregated groups whose concurrent implementation is likely to reduce total wall-clock time. Uncertainty always means serial. A lone dispatch may omit `assignedTaskIds` only when it covers every remaining unchecked task; otherwise name its assigned IDs explicitly.
 
 **Scoped parallel dispatch.** Otherwise, from the fresh unchecked tasks, form assignments only for groups that pass the full dispatch gate: clearly independent and coherent, and genuinely segregated for implementation — a meaningfully separate subsystem or write surface, low overlap in source files, shared types, integration points, and test setup, little need to understand partially completed sibling work, and independent implementation and verification — with enough substantive work per lane to justify another implementer's context and bootstrap cost, and positive evidence that concurrent lanes will reduce total wall-clock time. Dependency-independence alone is not sufficient. Dispatch up to `maxSubagentConcurrency` `specops-implementer` Task calls concurrently under the background dispatch contract, each carrying the standard delegation payload plus an explicit `assignedTaskIds` list. An assignment is valid only when its task IDs are non-empty, unique within the dispatch, currently unchecked, and disjoint from every active sibling's assignment. `maxSubagentConcurrency` is a strict ceiling on available capacity, never a utilisation target: do not dispatch implementers merely because slots are available — having fewer active implementers than the cap allows is the expected, correct state. You may assign multiple related task groups to a single implementer — one assignment naming the consolidated task IDs, or sequential assignments to the same implementer — when shared context in one worker is more efficient than separate implementers, without exceeding the cap.
