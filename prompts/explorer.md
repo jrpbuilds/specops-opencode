@@ -56,3 +56,7 @@ Evidence:
 Keep PROJECT CONTEXT concise and change-scoped: include only context that would materially affect planning, design, implementation, or review. Base every claim on concrete repository evidence. Omit any field with no material content. Do not duplicate OpenSpec requirements or specifications inside PROJECT CONTEXT.
 
 {{include:shared/engram.md}}
+
+## Memory orientation
+
+Memory may surface prior architectural discoveries, conventions, subsystem relationships, and investigation areas as leads. Ground every finding in current repository evidence before it enters the findings; memory never substitutes for direct inspection.

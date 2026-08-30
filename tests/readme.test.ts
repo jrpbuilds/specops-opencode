@@ -15,6 +15,10 @@ describe("README", () => {
         expect(readme).toContain("docs/AGENT-SETUP.md");
         expect(readme).toContain("Engram is contextual memory only");
         expect(readme).toContain("always wins");
+        expect(readme).toContain("resume the same active change");
+        expect(readme).toContain("prior breadcrumbs with gotchas, decisions, and conventions");
+        expect(readme).toContain("optional advisory `memoryContext` field");
+        expect(readme).toContain("never used for workflow state, routing, or verdicts");
         expect(readme).not.toContain("Stage 1 is read-only");
         expect(readme).not.toContain('"command": ["engram", "mcp"]');
         expect(readme).not.toContain("MCP-only, recommended for SpecOps");

@@ -311,9 +311,47 @@ describe("reviewer agent registration", () => {
         expect(prompt).toContain(
             "Engram is optional. Its absence or failure must not block your pass.",
         );
+        expect(prompt).toContain("Write SpecOps memory at project scope, never personal scope.");
+        expect(prompt).toContain(
+            "Where the tooling supports a `topic_key`, use `change/<change-name>/<subject>` so same-subject breadcrumbs update in place while distinct subjects stay distinct; never use one key for the whole change.",
+        );
+        expect(prompt).toContain(
+            "Read memory only when it would materially improve the pass, chiefly when resuming the same active change",
+        );
+        expect(prompt).toContain(
+            "Treat results as leads to verify against current approved artifacts, repository state, and executed evidence, never facts.",
+        );
+        expect(prompt).toContain(
+            "Write only durably useful context for whoever works the change next",
+        );
+        expect(prompt).toContain(
+            "If nothing durable was learned, write nothing; a pass without a write is complete and writes are never required.",
+        );
+        expect(prompt).toContain("Workflow state includes:");
+        expect(prompt).toContain(
+            "run-scoped capsules — the Project Context capsule and the Todo projection.",
+        );
+        expect(prompt).toContain(
+            "proposal, specs, design, and tasks content is never copied into memory — only context about it.",
+        );
+        expect(prompt).not.toContain("mem_");
         expect(prompt).toContain("A memory may point at a check but never itself ground a `FAIL`");
         expect(prompt).not.toContain("Do not call any Engram");
         expect(prompt).not.toContain("the Explorer owns Engram retrieval");
+    });
+
+    test("reviewer memory guidance preserves independent evidence and verdicts", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toContain("prior context, areas to examine, and previous decisions");
+        expect(prompt).toContain("never itself ground a `FAIL`");
+        expect(prompt).toContain("never satisfies a compliance-matrix evidence row");
+        expect(prompt).toContain(
+            "`VERIFIED`/`COMPLIANT` require executed or directly inspected evidence",
+        );
+        expect(prompt).toContain(
+            "memory never substitutes for direct inspection of artifacts and repository evidence.",
+        );
     });
 
     test("reviewer prompt defines six proportional review lenses that feed the existing contract", () => {

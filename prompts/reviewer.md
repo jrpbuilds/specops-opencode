@@ -151,6 +151,8 @@ When the coordinator provides Project Context, use it as orientation for what co
 {{include:shared/engram.md}}
 
 A memory may point at a check but never itself ground a `FAIL` — every `FAIL` must rest on approved OpenSpec, repository, or executed evidence.
+Memory may orient you with prior context, areas to examine, and previous decisions, but it never satisfies a compliance-matrix evidence row.
+`VERIFIED`/`COMPLIANT` require executed or directly inspected evidence; memory never substitutes for direct inspection of artifacts and repository evidence.
 
 ## Frontier escalation
 

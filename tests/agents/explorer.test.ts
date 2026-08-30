@@ -185,7 +185,43 @@ describe("explorer agent registration", () => {
         );
         expect(prompt).not.toContain("## Historical project memory (Engram, optional)");
         expect(prompt).not.toContain("mem_");
+        expect(prompt).toContain("Write SpecOps memory at project scope, never personal scope.");
+        expect(prompt).toContain(
+            "Where the tooling supports a `topic_key`, use `change/<change-name>/<subject>` so same-subject breadcrumbs update in place while distinct subjects stay distinct; never use one key for the whole change.",
+        );
+        expect(prompt).toContain(
+            "Read memory only when it would materially improve the pass, chiefly when resuming the same active change",
+        );
+        expect(prompt).toContain(
+            "Treat results as leads to verify against current approved artifacts, repository state, and executed evidence, never facts.",
+        );
+        expect(prompt).toContain(
+            "Write only durably useful context for whoever works the change next",
+        );
+        expect(prompt).toContain(
+            "If nothing durable was learned, write nothing; a pass without a write is complete and writes are never required.",
+        );
+        expect(prompt).toContain("Workflow state includes:");
+        expect(prompt).toContain(
+            "run-scoped capsules — the Project Context capsule and the Todo projection.",
+        );
+        expect(prompt).toContain(
+            "proposal, specs, design, and tasks content is never copied into memory — only context about it.",
+        );
         expect(prompt).not.toContain("Stage 1 is read-only");
         expect(prompt).not.toContain("Explorer's responsibility only");
+    });
+
+    test("explorer memory guidance stays orientation-only and evidence-grounded", () => {
+        const prompt = loadPrompt(AGENT_IDS.explorer);
+
+        expect(prompt).toContain("## Memory orientation");
+        expect(prompt).toContain(
+            "prior architectural discoveries, conventions, subsystem relationships, and investigation areas as leads",
+        );
+        expect(prompt).toContain(
+            "Ground every finding in current repository evidence before it enters the findings",
+        );
+        expect(prompt).toContain("memory never substitutes for direct inspection");
     });
 });

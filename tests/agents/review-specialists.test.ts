@@ -26,6 +26,15 @@ describe("review specialist prompt contracts", () => {
         },
     );
 
+    test.each(SPECIALISTS)("%s critic carries no memory guidance", (_name, id) => {
+        const prompt = loadPrompt(id);
+
+        expect(prompt).not.toContain("## Engram");
+        expect(prompt).not.toContain("memory");
+        expect(prompt).not.toContain("topic_key");
+        expect(prompt).not.toContain("change/<change-name>");
+    });
+
     test("correctness critic uses a falsification and behaviour-tracing method", () => {
         const prompt = loadPrompt(AGENT_IDS.reviewCorrectness);
 

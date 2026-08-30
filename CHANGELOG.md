@@ -6,6 +6,7 @@ All notable changes to SpecOps are documented in this file.
 
 ### Added
 
+- Agents can carry useful change context across sessions, making resumed work more consistent without requiring memory.
 - Added scoped parallel implementation, so independent tasks build simultaneously (bounded by the concurrent subagents setting) with each implementer working only its assigned tasks.
 - Parallel specialists now run as background tasks, so a finished specialist's slot is refilled immediately instead of waiting for the whole batch. Launch OpenCode with `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true` for this behaviour; without it, parallel work still runs concurrently but refills in waves.
 - Added parallel progress reporting, so a running workflow can show which review specialists and implementer dispatches are in flight or finished, including how each dispatch's assigned tasks compare against the checked task list. To-do lists reflect the same in-flight and completed work.

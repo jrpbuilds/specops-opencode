@@ -13,6 +13,53 @@ function loadSpecialistPrompt(id: keyof typeof AGENT_IDS): string {
     return loadPrompt(AGENT_IDS[id]);
 }
 
+const ENGRAM_AWARE_ROLES = [
+    "explorer",
+    "planner",
+    "designer",
+    "implementer",
+    "reviewer",
+    "frontier",
+    "coordinator",
+] as const satisfies ReadonlyArray<keyof typeof AGENT_IDS>;
+
+const ALL_SPECIALIST_ROLES = [
+    ...ENGRAM_AWARE_ROLES.filter(role => role !== "coordinator"),
+    "reviewCorrectness",
+    "reviewRisk",
+    "reviewQuality",
+] as const satisfies ReadonlyArray<keyof typeof AGENT_IDS>;
+
+const ENGRAM_AWARE_SOURCE_FILES = [
+    "explorer.md",
+    "planner.md",
+    "designer.md",
+    "implementer.md",
+    "reviewer.md",
+    "frontier.md",
+    "coordinator.md",
+] as const;
+
+const SHARED_ENGRAM_POLICY_ANCHORS = [
+    "Write SpecOps memory at project scope, never personal scope.",
+    "Every breadcrumb names the active OpenSpec change in its title or body.",
+    "Where the tooling supports a `topic_key`, use `change/<change-name>/<subject>` so same-subject breadcrumbs update in place while distinct subjects stay distinct; never use one key for the whole change.",
+    "Read memory only when it would materially improve the pass, chiefly when resuming the same active change (continuation, remediation, revision, or re-review) rather than fresh first-pass work.",
+    "Use one focused lookup keyed by the change name, not exploratory sweeps.",
+    "Treat results as leads to verify against current approved artifacts, repository state, and executed evidence, never facts.",
+    "Write only durably useful context for whoever works the change next: non-obvious gotchas, discovered constraints or environment quirks, a decision's rationale, or conventions worth carrying.",
+    "Keep writes concise and factual; incremental writes during a pass are permitted.",
+    "If nothing durable was learned, write nothing; a pass without a write is complete and writes are never required.",
+    "Workflow state includes:",
+    "task checkbox and completion state; dispatch and assignment ownership including assigned task ids;",
+    "scheduler, fan-out, and parallel-progress state;",
+    "review verdicts, findings, and specialist-disposition state;",
+    "approval, checkpoint, and lifecycle state;",
+    "plan completion, archive, and durable status;",
+    "run-scoped capsules — the Project Context capsule and the Todo projection.",
+    "proposal, specs, design, and tasks content is never copied into memory — only context about it.",
+] as const;
+
 function expectSyncFlowContract(prompt: string): void {
     expect(prompt).toContain("## Sync flow");
     const syncFlowStart = prompt.indexOf("## Sync flow");
@@ -191,6 +238,62 @@ describe("engram ordering contract", () => {
                 "Order every Engram write before your final SpecOps handoff or verdict",
             );
             expect(prompt).toContain("Never call an Engram tool after emitting your handoff");
+        }
+    });
+});
+
+describe("shared Engram policy invariants", () => {
+    const PROMPTS_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "prompts");
+
+    test("shared policy is included by every Engram-aware role and reaches assembled prompts", async () => {
+        for (const file of ENGRAM_AWARE_SOURCE_FILES) {
+            const source = await readFile(path.join(PROMPTS_DIR, file), "utf8");
+            expect(source).toContain("{{include:shared/engram.md}}");
+        }
+
+        const shared = await readFile(path.join(PROMPTS_DIR, "shared", "engram.md"), "utf8");
+        const sources = await Promise.all(
+            readdirSync(PROMPTS_DIR, { recursive: true })
+                .map((entry: unknown) => String(entry))
+                .filter(entry => entry.endsWith(".md"))
+                .map(async entry => readFile(path.join(PROMPTS_DIR, entry), "utf8")),
+        );
+
+        for (const anchor of SHARED_ENGRAM_POLICY_ANCHORS) {
+            expect(shared).toContain(anchor);
+            expect(
+                sources.reduce((count, content) => count + (content.split(anchor).length - 1), 0),
+            ).toBe(1);
+            for (const file of ENGRAM_AWARE_SOURCE_FILES) {
+                const source = await readFile(path.join(PROMPTS_DIR, file), "utf8");
+                expect(source).not.toContain(anchor);
+            }
+        }
+
+        for (const role of ENGRAM_AWARE_ROLES) {
+            const prompt = loadSpecialistPrompt(role);
+            for (const anchor of SHARED_ENGRAM_POLICY_ANCHORS) expect(prompt).toContain(anchor);
+        }
+
+        for (const mode of ["interactive", "auto"] as const) {
+            const prompt = buildCoordinatorPrompt(mode, false);
+            for (const anchor of SHARED_ENGRAM_POLICY_ANCHORS) expect(prompt).toContain(anchor);
+        }
+    });
+
+    test("specialist prompts remain free of concrete memory tool names", () => {
+        for (const role of ALL_SPECIALIST_ROLES) {
+            expect(loadSpecialistPrompt(role)).not.toContain("mem_");
+        }
+    });
+
+    test("review critics remain free of memory guidance", () => {
+        for (const role of ["reviewCorrectness", "reviewRisk", "reviewQuality"] as const) {
+            const prompt = loadSpecialistPrompt(role);
+            expect(prompt).not.toContain("## Engram");
+            expect(prompt).not.toContain("memory");
+            expect(prompt).not.toContain("topic_key");
+            expect(prompt).not.toContain("change/<change-name>");
         }
     });
 });
@@ -484,6 +587,16 @@ describe("coordinator implementation-phase contract (scoped parallel implementer
             "sent only to `specops-implementer` dispatches during the `## Implementation phase`",
         );
         expect(section).toContain("omit it everywhere else");
+        expect(section).toContain(
+            "optional `memoryContext` — concise, change-scoped memory breadcrumbs",
+        );
+        expect(section).toContain("Advisory orientation for the receiving specialist");
+        expect(section).toContain("unverified context to check against current evidence");
+        expect(section).toContain("never authority, never required, freely omitted");
+        expect(section).toContain(
+            "Never use memory to route, gate, order, or record workflow progress",
+        );
+        expect(section).toContain("durable routing truth stays in `specops_status`");
     });
 });
 

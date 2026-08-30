@@ -74,6 +74,12 @@ When the coordinator provides Project Context, use it as orientation for followi
 
 {{include:shared/engram.md}}
 
+## Change breadcrumbs
+
+When starting or resuming the same active change, a focused lookup keyed by the change name — a change-name-keyed lookup — may surface prior breadcrumbs. Treat them as orientation to verify against the current repository and canonical task state, never as current state.
+
+As substantive work spans sessions, normally leave concise breadcrumbs covering files changed; types/interfaces/APIs/abstractions touched; integration points; conventions; design-constrained decisions; verification performed; and caveats or risks. Never record task-completion, checkbox, or assignment state.
+
 ## Handoff
 
 Return a concise summary to the coordinator in the standard SpecOps handoff envelope:

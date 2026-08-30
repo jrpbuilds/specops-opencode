@@ -3,10 +3,10 @@ import { AGENT_IDS } from "../../src/agents/ids.js";
 import { loadPrompt } from "../../src/prompts.js";
 
 const SPECIALIST_PROMPT_BUDGETS = [
-    ["explorer", AGENT_IDS.explorer, 5_000],
-    ["planner", AGENT_IDS.planner, 14_000],
-    ["designer", AGENT_IDS.designer, 12_000],
-    ["implementer", AGENT_IDS.implementer, 12_000],
+    ["explorer", AGENT_IDS.explorer, 7_000],
+    ["planner", AGENT_IDS.planner, 17_000],
+    ["designer", AGENT_IDS.designer, 13_000],
+    ["implementer", AGENT_IDS.implementer, 15_000],
     ["reviewer", AGENT_IDS.reviewer, 20_000],
     ["review-correctness", AGENT_IDS.reviewCorrectness, 6_000],
     ["review-risk", AGENT_IDS.reviewRisk, 6_000],

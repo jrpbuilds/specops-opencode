@@ -104,8 +104,8 @@ describe("coordinator prompt composition", () => {
         // scoped-parallel implementation, background dispatch) expand into every
         // assembled prompt, so the budget guards against unbounded prompt growth.
         // It must not be exceeded.
-        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(46_000);
-        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(42_000);
+        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(48_000);
+        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(46_000);
     });
 });
 
@@ -316,6 +316,47 @@ describe("shared coordinator contract", () => {
         expect(prompt).toContain("Use Engram as contextual memory, not authority");
         expect(prompt).toContain("Engram is optional");
         expect(prompt).toContain("must not block your pass");
+        expect(prompt).toContain("Write SpecOps memory at project scope, never personal scope.");
+        expect(prompt).toContain(
+            "Where the tooling supports a `topic_key`, use `change/<change-name>/<subject>` so same-subject breadcrumbs update in place while distinct subjects stay distinct; never use one key for the whole change.",
+        );
+        expect(prompt).toContain(
+            "Read memory only when it would materially improve the pass, chiefly when resuming the same active change",
+        );
+        expect(prompt).toContain(
+            "Treat results as leads to verify against current approved artifacts, repository state, and executed evidence, never facts.",
+        );
+        expect(prompt).toContain(
+            "Write only durably useful context for whoever works the change next",
+        );
+        expect(prompt).toContain(
+            "If nothing durable was learned, write nothing; a pass without a write is complete and writes are never required.",
+        );
+        expect(prompt).toContain("Workflow state includes:");
+        expect(prompt).toContain(
+            "run-scoped capsules — the Project Context capsule and the Todo projection.",
+        );
+        expect(prompt).toContain(
+            "proposal, specs, design, and tasks content is never copied into memory — only context about it.",
+        );
+        expect(prompt).not.toContain("mem_");
+    });
+
+    test("coordinator memory context never routes or gates workflow", () => {
+        const delegation = sectionBetween(prompt, "## Delegation contract", "## Handoff gate");
+
+        expect(delegation).toContain(
+            "optional `memoryContext` — concise, change-scoped memory breadcrumbs",
+        );
+        expect(delegation).toContain("Advisory orientation for the receiving specialist");
+        expect(delegation).toContain("unverified context to check against current evidence");
+        expect(delegation).toContain("never authority, never required, freely omitted");
+        expect(delegation).toContain(
+            "Never use memory to route, gate, order, or record workflow progress",
+        );
+        expect(delegation).toContain("durable routing truth stays in `specops_status`");
+        expect(delegation).toContain("any specialist dispatch, including the final Reviewer");
+        expect(delegation).toContain("critic fan-out dispatch shape is unchanged");
     });
 
     test("establishes a change before any specialist delegation", () => {

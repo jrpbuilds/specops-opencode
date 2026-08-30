@@ -139,6 +139,7 @@ Headless example: `opencode run --auto --command specops-auto "<goal>"`. Details
 SpecOps works fine without Engram. If you want agents to remember decisions and conventions across sessions, you can run the [Engram](https://github.com/Gentleman-Programming/engram) MCP server alongside it.
 
 Engram is contextual memory only. What's in front of the agents always wins: your current instructions, the OpenSpec artifacts, the state of the repository, and evidence from commands that actually ran. See Engram's [installation guide](https://github.com/Gentleman-Programming/engram/blob/main/docs/INSTALLATION.md) and [OpenCode setup](https://github.com/Gentleman-Programming/engram/blob/main/docs/AGENT-SETUP.md).
+When specialists resume the same active change, they can find prior breadcrumbs with gotchas, decisions, and conventions from earlier sessions. The coordinator may also pass concise, change-scoped breadcrumbs through the optional advisory `memoryContext` field. Memory is never used for workflow state, routing, or verdicts.
 
 ## Development
 

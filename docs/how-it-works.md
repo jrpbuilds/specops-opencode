@@ -98,3 +98,4 @@ Auto ends every run with either `COMPLETED` (including verification and archive 
 ## Memory across sessions (optional)
 
 SpecOps works without any memory server. If you run the optional [Engram](https://github.com/Gentleman-Programming/engram) MCP server, agents can also look up decisions and conventions from earlier sessions. Engram is contextual memory only — current instructions, OpenSpec artifacts, repository state, and executed evidence always win. Install it via its [installation guide](https://github.com/Gentleman-Programming/engram/blob/main/docs/INSTALLATION.md) and [OpenCode setup](https://github.com/Gentleman-Programming/engram/blob/main/docs/AGENT-SETUP.md).
+When specialists resume the same active change, change-scoped breadcrumbs can surface prior gotchas and decisions as leads to verify. The coordinator may optionally pass useful breadcrumbs to the next specialist as advisory memory context; it is never required.

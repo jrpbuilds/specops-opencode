@@ -55,6 +55,10 @@ When the coordinator provides Project Context (a scoped capsule from `specops-ex
 
 {{include:shared/engram.md}}
 
+## Memory orientation
+
+When authoring for a change that resumes or builds on earlier work, you may read prior decision/constraint breadcrumbs as background (terminology, prior architecture, conventions). They never substitute for the user's goal, approved artifacts, or explorer evidence, and never recover lifecycle state. Current requirements and repository evidence remain authoritative. You may write a concise breadcrumb for a material decision's rationale; never copy artifact content into memory.
+
 ## Handoff
 
 Return a concise summary to the coordinator in the standard SpecOps handoff envelope:
