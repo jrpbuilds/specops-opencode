@@ -302,6 +302,11 @@ describe("shared coordinator contract fragments (issue #34)", () => {
             anchor: "Process exactly one injected completion per arrival",
             includers: ["coordinator.md"],
         },
+        {
+            fragment: "parallel-progress.md",
+            anchor: "ephemeral reporting aid, never a routing, gating, approval, or archival authority",
+            includers: ["coordinator.md"],
+        },
     ] as const;
 
     function listPromptFiles(directory: string = PROMPTS_DIR): string[] {
@@ -361,6 +366,15 @@ describe("shared coordinator contract fragments (issue #34)", () => {
         // The contract reaches every assembled prompt through the coordinator
         // base; re-including it here would duplicate the contract text.
         expect(content).not.toContain("{{include:shared/background-dispatch.md}}");
+    });
+
+    test("parallel progress guidance names the read-only specops_progress tool", async () => {
+        const content = await readFile(
+            path.join(PROMPTS_DIR, "shared", "parallel-progress.md"),
+            "utf8",
+        );
+        expect(content).toContain("specops_progress");
+        expect(content).toContain("read-only");
     });
 });
 

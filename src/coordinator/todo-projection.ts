@@ -1,5 +1,6 @@
 import { AGENT_IDS } from "../agents/ids.js";
 import type { NormalizedArtifact, NormalizedStatus } from "../openspec/status.js";
+import type { ReviewFanoutProgress } from "./review-fanout.js";
 import { requiredClosure, transitiveRequires } from "./artifact-graph.js";
 
 /** Native Todo state projected from durable OpenSpec workflow state. */
@@ -23,6 +24,17 @@ export type TodoProjectionEntry = {
 
 /** Coordinator mode used when deciding whether to show the approval checkpoint. */
 export type TodoProjectionMode = "interactive" | "auto";
+
+/** Ephemeral parallel work reflected in the Todo projection. */
+export type ParallelProgressInput = {
+    /** Canonical fan-out progress computed once via `summarizeReviewFanout`. */
+    readonly reviewFanout?: ReviewFanoutProgress;
+    /** Implementer dispatches currently in flight or durably verified complete. */
+    readonly implementerDispatches?: readonly {
+        readonly dispatchId?: string;
+        readonly state: "inFlight" | "completed";
+    }[];
+};
 
 /** Workflow stages appended once every planning artifact is complete. */
 const FIXED_STAGES = [
@@ -52,13 +64,16 @@ const REPOSITORY_EVIDENCE_STAGE = {
  *
  * The optional mode only controls the interactive approval checkpoint. The
  * Explorer entry is included by default and can be omitted when the
- * conditional-Explorer rule skips the pass. Every other entry and state is
- * derived from the supplied status without I/O or retained state.
+ * conditional-Explorer rule skips the pass. The optional parallel input
+ * appends ephemeral fan-out and implementer-dispatch entries after the serial
+ * stages. Every other entry and state is derived from the supplied status
+ * without I/O or retained state.
  */
 export function buildTodoProjection(
     status: NormalizedStatus,
     mode: TodoProjectionMode = "interactive",
     includeExplorer = true,
+    parallel?: ParallelProgressInput,
 ): TodoProjectionEntry[] {
     const artifactsById = new Map(status.artifacts.map(artifact => [artifact.id, artifact]));
     const closure = requiredClosure(status.applyRequires, artifactsById);
@@ -106,6 +121,36 @@ export function buildTodoProjection(
     );
     if (firstIncomplete >= 0) entries[firstIncomplete].status = "in_progress";
 
+    if (parallel) entries.push(...parallelEntries(parallel));
+
+    return entries;
+}
+
+/**
+ * Project supplied parallel work onto entries appended after the serial
+ * stages. Only in-flight and completed items are emitted — pending and failed
+ * critics surface through coordinator reporting, not Todo state — and the
+ * entries keep their explicit statuses because the firstIncomplete fixup ran
+ * before they existed.
+ */
+function parallelEntries(parallel: ParallelProgressInput): TodoProjectionEntry[] {
+    const entries: TodoProjectionEntry[] = [];
+    for (const critic of parallel.reviewFanout?.critics ?? []) {
+        if (critic.status !== "inFlight" && critic.status !== "completed") continue;
+        entries.push({
+            id: `review-critic:${critic.id}`,
+            content: `Review critic: ${critic.id}`,
+            status: critic.status === "inFlight" ? "in_progress" : "complete",
+        });
+    }
+    (parallel.implementerDispatches ?? []).forEach((dispatch, index) => {
+        const label = dispatch.dispatchId ?? `#${index + 1}`;
+        entries.push({
+            id: `implementer:${label}`,
+            content: `Implementer dispatch ${label}`,
+            status: dispatch.state === "completed" ? "complete" : "in_progress",
+        });
+    });
     return entries;
 }
 

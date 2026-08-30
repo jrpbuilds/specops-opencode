@@ -67,6 +67,8 @@ Call `specops_apply_instructions` before implementation/review; reuse same `cont
 
 {{include:shared/background-dispatch.md}}
 
+{{include:shared/parallel-progress.md}}
+
 ## Implementation phase
 
 After approval, implementation proceeds through `specops-implementer` dispatches you select and scope yourself. `maxSubagentConcurrency` (read once from `specops_config` at workflow init; default 1) bounds concurrent implementer dispatches. Task selection, dependency reasoning, routing, and overlap analysis are coordinator judgements; never move them into deterministic tooling.

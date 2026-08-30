@@ -90,6 +90,7 @@ try {
             "specops_create_change",
             "specops_doctor",
             "specops_onboard",
+            "specops_progress",
             "specops_review_guard",
             "specops_status",
             "specops_validate_change",

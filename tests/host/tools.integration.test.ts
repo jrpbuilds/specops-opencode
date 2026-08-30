@@ -8,6 +8,7 @@ import { contextTool } from "../../src/host/tools/context.js";
 import { createChangeTool } from "../../src/host/tools/create-change.js";
 import { doctorTool } from "../../src/host/tools/doctor.js";
 import { onboardTool } from "../../src/host/tools/onboard.js";
+import { progressTool } from "../../src/host/tools/progress.js";
 import { reviewGuardTool } from "../../src/host/tools/review-guard.js";
 import { statusTool } from "../../src/host/tools/status.js";
 import { validateChangeTool } from "../../src/host/tools/validate-change.js";
@@ -75,6 +76,12 @@ const LIFECYCLE_TOOLS: Array<{
         definition: onboardTool,
         args: {},
         metadataTitle: "Onboarding project for OpenSpec…",
+    },
+    {
+        id: "specops_progress",
+        definition: progressTool,
+        args: { change: "example" },
+        metadataTitle: "Reading parallel progress…",
     },
     {
         id: "specops_review_guard",
@@ -202,6 +209,7 @@ describe("lifecycle tool integration", () => {
                 "specops_create_change",
                 "specops_doctor",
                 "specops_onboard",
+                "specops_progress",
                 "specops_review_guard",
                 "specops_status",
                 "specops_validate_change",

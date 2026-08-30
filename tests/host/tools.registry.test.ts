@@ -52,6 +52,13 @@ const EXPECTED_TOOLS = [
         args: [],
     },
     {
+        id: "specops_progress",
+        description:
+            "Report in-flight parallel progress for a named change: review critic fan-out " +
+            "status and implementer assignment progress against durable task checkboxes.",
+        args: ["change", "implementerAssignments", "reviewFanout"],
+    },
+    {
         id: "specops_review_guard",
         description:
             "Capture or verify the review worktree-mutation guard for a named change: snapshot " +

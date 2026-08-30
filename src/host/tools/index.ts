@@ -7,6 +7,7 @@ import { contextTool } from "./context.js";
 import { createChangeTool } from "./create-change.js";
 import { doctorTool } from "./doctor.js";
 import { onboardTool } from "./onboard.js";
+import { progressTool } from "./progress.js";
 import { reviewGuardTool } from "./review-guard.js";
 import { statusTool } from "./status.js";
 import { validateChangeTool } from "./validate-change.js";
@@ -25,6 +26,7 @@ export const TOOLS: Record<string, ToolDefinition> = {
     specops_create_change: createChangeTool,
     specops_doctor: doctorTool,
     specops_onboard: onboardTool,
+    specops_progress: progressTool,
     specops_review_guard: reviewGuardTool,
     specops_status: statusTool,
     specops_validate_change: validateChangeTool,
