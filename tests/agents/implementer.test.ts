@@ -390,4 +390,100 @@ describe("scoped task assignment contract", () => {
     ])("preserves the serial whole-list path: %s", clause => {
         expect(scopedAssignmentSection()).toContain(clause);
     });
+
+    test("prefers focused lane verification while siblings are active", () => {
+        const section = scopedAssignmentSection();
+
+        expect(section).toContain(
+            "verify your assigned work with focused checks: run the tests and repository checks that directly exercise your assigned tasks",
+        );
+        expect(section).toContain(
+            "prefer lane-local or targeted verification where the repository supports it",
+        );
+        expect(section).toContain(
+            "Do not run expensive whole-repository checks as ceremony while siblings are still editing unrelated parts",
+        );
+    });
+
+    test("keeps broad checks available when the assignment genuinely requires them", () => {
+        expect(scopedAssignmentSection()).toContain(
+            "broad checks remain available when the assignment genuinely requires them or the repository offers no meaningful focused alternative",
+        );
+    });
+
+    test("routes unrelated moving-worktree failures to the coordinator without touching sibling work", () => {
+        const section = scopedAssignmentSection();
+
+        expect(section).toContain(
+            "do not modify sibling-owned work and do not report the unrelated failure as an assigned-task defect without evidence",
+        );
+        expect(section).toContain("potentially affected by concurrent work");
+        expect(section).toContain(
+            "The existing overlap, dependency, and suspension rules still apply when a failure reveals a genuine shared integration point",
+        );
+    });
+
+    test("keeps task-level verification intact and defers broad checks to the settled pass", () => {
+        const section = scopedAssignmentSection();
+
+        expect(section).toContain(
+            "Focused verification never waives verifying the work you mark complete",
+        );
+        expect(section).toContain(
+            "whole-repository checks and the full suite belong to the coordinator's settled integrated verification pass after all lanes settle",
+        );
+    });
+});
+
+describe("settled integrated verification contract", () => {
+    function settledVerificationSection(): string {
+        const prompt = loadPrompt(AGENT_IDS.implementer);
+        const start = prompt.indexOf("## Settled integrated verification");
+        const end = prompt.indexOf("## Review remediation", start);
+        return prompt.slice(start, end);
+    }
+
+    test("activates only on explicit coordinator instruction and verifies the settled state", () => {
+        const section = settledVerificationSection();
+
+        expect(section).toContain(
+            "When the coordinator explicitly instructs you to perform the settled integrated verification pass",
+        );
+        expect(section).toContain("verification is your entire assignment");
+        expect(section).toContain(
+            "verify the settled state as it exists now, from the current repository and the coordinator-supplied canonical apply-instruction context — never from prior implementer summaries",
+        );
+    });
+
+    test("runs repository-appropriate broad checks and change validation", () => {
+        const section = settledVerificationSection();
+
+        expect(section).toContain(
+            "the full relevant test suite where appropriate, plus the typecheck, build, lint, and format checks the repository requires",
+        );
+        expect(section).toContain("Run `openspec validate <change>`");
+    });
+
+    test("reports checks that could not be performed", () => {
+        expect(settledVerificationSection()).toContain(
+            "including any check you could not perform and why",
+        );
+    });
+
+    test("is report-only: failures route back and nothing is edited", () => {
+        const section = settledVerificationSection();
+
+        expect(section).toContain(
+            "report the failures as findings in your handoff for the coordinator to route back through normal implementation handling",
+        );
+        expect(section).toContain(
+            "Do not fix them, do not edit source or tests, and do not modify any task checkbox — reporting is your whole job in this pass",
+        );
+    });
+
+    test("returns the outcome in the standard handoff envelope", () => {
+        expect(settledVerificationSection()).toContain(
+            "which checks ran, which passed, which failed, and which could not be performed",
+        );
+    });
 });

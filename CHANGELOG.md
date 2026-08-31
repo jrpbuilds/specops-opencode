@@ -14,6 +14,7 @@ All notable changes to SpecOps are documented in this file.
 
 ### Changed
 
+- Parallel implementers now run focused checks on their own tasks while siblings are still working, followed by one full verification pass over the settled implementation before review, instead of repeated whole-repository checks against a moving worktree.
 - Implementation now defaults to one implementer and runs tasks in parallel only when they are genuinely segregated, so parallel work finishes sooner instead of splitting related changes.
 - Implementation stays serial at the default limit of 1 and whenever task independence is uncertain.
 - Parallel implementation suspends new work when tasks turn out to be dependent or overlapping, keeping completed work safe while the remainder continues serially.

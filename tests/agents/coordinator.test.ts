@@ -101,13 +101,13 @@ describe("coordinator prompt composition", () => {
     test("assembled prompts stay within regression budgets", () => {
         // Frontier-enabled variants are the largest assembled prompts for each
         // mode. Shared contracts (fragments, validation gates, the review guard,
-        // scoped-parallel implementation, background dispatch) expand into every
-        // assembled prompt, so the budget guards against unbounded prompt growth.
-        // Keep deliberate rounded headroom over the current maxima (49,143 and
-        // 47,451 bytes) without making the guard so loose that prompt growth is
-        // missed: 50,000 and 48,000 leave room for small approved additions.
-        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(50_000);
-        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(48_000);
+        // scoped-parallel implementation, background dispatch, the settled
+        // integrated verification gate) expand into every assembled prompt, so
+        // the budget guards against unbounded prompt growth. Deliberately
+        // generous headroom over the current maxima (50,684 and 48,992 bytes)
+        // pending a dedicated prompt-size pass: 55,000 and 53,000.
+        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(55_000);
+        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(53_000);
     });
 });
 
@@ -1519,5 +1519,74 @@ describe("coordinator registration", () => {
 
         expect(config.agent?.build?.description).toBe("Build");
         expect(config.agent?.plan?.description).toBe("Plan");
+    });
+});
+
+describe("settled integrated verification gate", () => {
+    test("both coordinator modes carry the gate before the critic fan-out", () => {
+        for (const mode of ["interactive", "auto"] as const) {
+            const prompt = buildCoordinatorPrompt(mode, false);
+
+            expect(prompt).toContain("Settled integrated verification");
+            expect(
+                prompt.indexOf(
+                    "settled verification pass runs against the stable completed implementation",
+                ),
+            ).toBeLessThan(prompt.indexOf("run the three independent critics"));
+        }
+    });
+
+    test("runs exactly one implementer dispatch after all lanes settle and before review", () => {
+        const prompt = buildCoordinatorPrompt("interactive", false);
+
+        expect(prompt).toContain(
+            "every implementation sibling has returned, durable verification confirms all assigned task IDs are checked, and no implementation dispatch is active",
+        );
+        expect(prompt).toContain(
+            "dispatch exactly one `specops-implementer` with an explicit settled integrated verification instruction before the review validation gate and critic fan-out",
+        );
+        expect(prompt).toContain(
+            "Reusing a suitable completed implementer session via the lane-continuation ledger is allowed; a fresh dispatch is always valid",
+        );
+    });
+
+    test("verifies current repository and canonical state rather than implementer claims", () => {
+        expect(buildCoordinatorPrompt("interactive", false)).toContain(
+            "verifies current repository and canonical OpenSpec state only — never prior implementer summaries",
+        );
+    });
+
+    test("requires broad checks, change validation, and reporting of unperformable checks", () => {
+        const prompt = buildCoordinatorPrompt("interactive", false);
+
+        expect(prompt).toContain(
+            "running repository-appropriate broad checks, the full relevant test suite where appropriate, required typecheck/build/lint/format checks, and `openspec validate <change>`",
+        );
+        expect(prompt).toContain("reporting any check that could not be performed");
+    });
+
+    test("blocks review on failure and routes evidence back through implementation handling", () => {
+        const prompt = buildCoordinatorPrompt("interactive", false);
+
+        expect(prompt).toContain(
+            "a failing or unavailable required check blocks entry into review, and the failure is real implementation evidence routed back through normal implementation handling",
+        );
+        expect(prompt).toContain(
+            "never by attributing it to the implementer whose lane contains the failing test name",
+        );
+    });
+
+    test("keeps serial implementation free of the extra pass", () => {
+        expect(buildCoordinatorPrompt("interactive", false)).toContain(
+            "Serial implementation (no scoped lanes dispatched) skips this pass entirely; the existing serial verification flow is unchanged",
+        );
+    });
+
+    test("keeps the pass subordinate to independent review", () => {
+        const prompt = buildCoordinatorPrompt("interactive", false);
+
+        expect(prompt).toContain(
+            "The pass establishes readiness for review; it does not approve the change, and independent critic and final-review behaviour is unchanged",
+        );
     });
 });

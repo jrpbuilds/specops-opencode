@@ -110,6 +110,8 @@ At initial scoped dispatch and each rolling refill, apply this six-step procedur
 
 ## Review phase
 
+{{include:shared/settled-integrated-verification.md}}
+
 After implementation and validation, run the three independent critics before the final Reviewer. Track this with tested `createReviewFanout(maxSubagentConcurrency)`; do not persist fan-out state. Read its effective value from `specops_config` at workflow init and pass that number to `createReviewFanout`.
 
 The review worktree-mutation guard is coordinator-owned: only you can call `specops_review_guard`. Review agents are denied `specops_*` and `specops_lifecycle`, so they cannot capture or verify for you; never ask one to.

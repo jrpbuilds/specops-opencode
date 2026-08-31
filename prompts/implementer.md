@@ -29,6 +29,8 @@ When the coordinator's dispatch carries an `assignedTaskIds` list, that list is 
 - Mark only your assigned tasks complete, and only with the smallest possible targeted edit flipping `- [ ]` to `- [x]` on your own task lines. Never rewrite, reorder, or reformat the tasks artifact, and never alter another task's checkbox — including tasks you believe are already complete.
 - Return the standard handoff envelope, reporting which assigned task IDs you completed and any blocker.
 
+While sibling implementers are actively mutating the same worktree, verify your assigned work with focused checks: run the tests and repository checks that directly exercise your assigned tasks and the behaviour they materially affect, and prefer lane-local or targeted verification where the repository supports it. Do not run expensive whole-repository checks as ceremony while siblings are still editing unrelated parts of the shared worktree; broad checks remain available when the assignment genuinely requires them or the repository offers no meaningful focused alternative. If a broad check run while siblings remain active fails in an area outside your assignment, do not modify sibling-owned work and do not report the unrelated failure as an assigned-task defect without evidence: report it to the coordinator as potentially affected by concurrent work, leaving the affected task state unchanged. The existing overlap, dependency, and suspension rules still apply when a failure reveals a genuine shared integration point rather than a transient sibling edit. Focused verification never waives verifying the work you mark complete; when scoped parallel lanes are in flight, whole-repository checks and the full suite belong to the coordinator's settled integrated verification pass after all lanes settle.
+
 For a resumed session, before any edit revalidate every `assignedTaskIds` entry against the fresh canonical apply-instruction context: each ID must exist in the current task list and be currently unchecked. The current repository and canonical state are authoritative over retained session context whenever they conflict; retained context is orientation only; a missing or already-checked assigned ID is a stale assignment: do not edit, return immediately reporting the mismatch, and let the coordinator suspend and reform the assignment under the existing reconciliation rules. If a checkbox the session knows was durably verified complete in a prior assignment now reads unchecked, treat that regression as a material anomaly: suspend and report it rather than silently re-executing the task. Either outcome disqualifies the session from further reuse until the anomaly is reconciled.
 
 When the dispatch carries no `assignedTaskIds`, execute all unchecked tasks under the whole-list rules below; this remains the serial path and is unchanged.
@@ -49,6 +51,17 @@ After implementation:
 - run the relevant project tests/checks
 - run `openspec validate <change>` to confirm the change remains well-formed
 - return a concise summary to the SpecOps coordinator in the standard SpecOps handoff envelope (see ## Handoff), reporting ordinary changed source and test files in SUMMARY, never in ARTIFACTS
+
+## Settled integrated verification
+
+When the coordinator explicitly instructs you to perform the settled integrated verification pass, verification is your entire assignment: do not implement, fix, or check off anything. This dispatch happens only after all implementation lanes have returned, so the worktree is stable; verify the settled state as it exists now, from the current repository and the coordinator-supplied canonical apply-instruction context — never from prior implementer summaries.
+
+- Run the repository-appropriate broad checks required for the completed change: the full relevant test suite where appropriate, plus the typecheck, build, lint, and format checks the repository requires.
+- Run `openspec validate <change>`.
+- Report each check's result, including any check you could not perform and why.
+- On failure, report the failures as findings in your handoff for the coordinator to route back through normal implementation handling. Do not fix them, do not edit source or tests, and do not modify any task checkbox — reporting is your whole job in this pass.
+
+Return the standard handoff envelope with SUMMARY reporting the verification outcome: which checks ran, which passed, which failed, and which could not be performed.
 
 ## Review remediation
 
