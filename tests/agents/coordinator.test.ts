@@ -539,6 +539,60 @@ describe("implementation-phase contract (scoped parallel implementer)", () => {
         expect(section).toContain("leave the slot empty and let the active siblings finish");
     });
 
+    test("prefers critical-path lanes when eligible lanes exceed concurrency slots (issue #45)", () => {
+        const section = delimitedSection("## Implementation phase", "## Review phase");
+
+        expect(section).toContain(
+            "choose the lanes most likely to determine total completion time",
+        );
+        // Downstream-unblocking work is the strongest priority signal.
+        expect(section).toContain(
+            "a lane that gates or unlocks substantial downstream implementation",
+        );
+        expect(section).toContain(
+            "likely to dominate the critical path because of its scope or complexity",
+        );
+        expect(section).toContain("a substantial lane over a trivial lane");
+        expect(section).toContain("Do not simply select the first N lanes by task ID");
+        expect(section).toContain("do not prefer small work merely because it is easy to dispatch");
+    });
+
+    test("critical-path priority uses existing task order as the stable tie-breaker", () => {
+        const section = delimitedSection("## Implementation phase", "## Review phase");
+
+        expect(section).toContain(
+            "existing stable task/plan order as the tie-breaker when no meaningful difference can be established",
+        );
+    });
+
+    test("critical-path priority relies on qualitative evidence without fabricated estimates", () => {
+        const section = delimitedSection("## Implementation phase", "## Review phase");
+
+        expect(section).toContain(
+            "Judge from the qualitative evidence in the approved tasks and design",
+        );
+        expect(section).toContain("never fabricate or require numeric duration estimates");
+    });
+
+    test("critical-path priority never bypasses the segregation and benefit gate", () => {
+        const section = delimitedSection("## Implementation phase", "## Review phase");
+
+        expect(section).toContain(
+            "Priority only ever orders lanes that already passed the full dispatch gate; it never makes an unqualified lane eligible for parallel execution",
+        );
+        // Priority orders valid lanes; the gate itself stays authoritative.
+        expect(section.indexOf("full dispatch gate")).toBeGreaterThan(-1);
+    });
+
+    test("rolling refill applies the same critical-path priority rule", () => {
+        const section = delimitedSection("## Implementation phase", "## Review phase");
+
+        expect(section).toContain(
+            "apply the same critical-path priority to choose which remaining eligible lane dispatches",
+        );
+        expect(section).toContain("a free slot still does not require a dispatch");
+    });
+
     test("falls back to serial whenever any part of the dispatch gate is uncertain", () => {
         const section = delimitedSection("## Implementation phase", "## Review phase");
 
@@ -558,6 +612,17 @@ describe("implementation-phase contract (scoped parallel implementer)", () => {
             "Dispatch exactly one `specops-implementer` with no `assignedTaskIds` (whole-list behaviour) when: `maxSubagentConcurrency` is 1",
         );
         expect(section).toContain("Uncertainty always means serial");
+        // At a concurrency cap of 1 the whole unchecked list stays with one
+        // whole-list implementer; remaining work continues through the same
+        // whole-list flow, never as sequential scoped shards.
+        expect(section).toContain(
+            "the whole unchecked list belongs to exactly one whole-list implementer",
+        );
+        expect(section).toContain("implementation is never split across multiple implementers");
+        expect(section).toContain("rather than sequential scoped shards");
+        expect(section).toContain(
+            "re-dispatching whole-list remains available only for the documented failure and recovery boundaries",
+        );
     });
 
     test("requires explicitly scoped, bounded parallel ownership", () => {

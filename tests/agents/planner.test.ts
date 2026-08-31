@@ -131,6 +131,16 @@ describe("planner agent registration", () => {
             "work too small to repay another implementer's context and bootstrap cost stays in the lane it relates to",
         );
 
+        // Downstream-gating lanes stay legible for the coordinator's
+        // critical-path dispatch judgement (issue #45); without numeric
+        // duration estimates or scheduling metadata.
+        expect(prompt).toContain(
+            "Where one lane naturally gates substantial downstream work, keep that gating legible in the dependency ordering and task descriptions",
+        );
+        expect(prompt).toContain(
+            "do not add numeric duration estimates or new scheduling metadata",
+        );
+
         // The old parallelism preference is removed.
         expect(prompt).not.toContain(
             "when work can safely proceed in parallel, keep it as separate, clearly ordered tasks",

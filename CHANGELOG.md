@@ -19,6 +19,8 @@ All notable changes to SpecOps are documented in this file.
 - Implementation stays serial at the default limit of 1 and whenever task independence is uncertain.
 - Parallel implementation suspends new work when tasks turn out to be dependent or overlapping, keeping completed work safe while the remainder continues serially.
 - Planning now groups related work into coherent implementation lanes, keeping producer→consumer chains and shared types together instead of splitting work for parallel execution.
+- When more independent work lanes exist than the concurrency limit allows, the work that gates or dominates the rest now starts first, so changes finish sooner.
+- At the default limit of 1, all implementation runs through a single implementer from start to finish instead of being handed off between implementers.
 
 ## [v1.5.0] - 2026-08-28
 
