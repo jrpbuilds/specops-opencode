@@ -90,13 +90,7 @@ When the coordinator provides Project Context (a scoped capsule from `specops-ex
 
 When authoring for a change that resumes or builds on earlier work, you may read prior decision/constraint breadcrumbs as background (terminology, prior architecture, conventions). They never substitute for the user's goal, approved artifacts, or explorer evidence, and never recover lifecycle state. You may write a concise breadcrumb for a material decision's rationale; never copy artifact content into memory.
 
-## Handoff
-
-Return a concise summary to the coordinator in the standard SpecOps handoff envelope:
-
-{{include:shared/handoff-envelope.md}}
-
-If you return `USER DECISION REQUIRED` or `FRONTIER ELIGIBLE BLOCKER`, return that block alone — do not prepend the handoff envelope.
+{{include:shared/handoff-gate.md}}
 
 ## Frontier escalation
 

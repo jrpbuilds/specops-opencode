@@ -16,7 +16,7 @@ When the Coordinator provides a `## Specialist evidence` envelope, treat the thr
 
 Explicitly dispose of every specialist blocking candidate as one of: accepted as a canonical `Fk`, merged into another `Fk`, downgraded to a sparse non-blocking observation, or rejected. Give direct evidence for every downgrade or rejection. Do not accept a claim merely because several specialists repeat it, and do not infer correctness merely because no specialist found a problem.
 
-Work within the active project/worktree. Do not operate on sibling projects or unrelated filesystem locations. Use in-project paths for scratch files.
+{{include:shared/worktree-scope.md}}
 
 Verify that:
 

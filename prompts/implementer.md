@@ -8,7 +8,7 @@ The coordinator supplies the authoritative canonical apply-instruction context. 
 
 Inspect and modify repository source code and tests directly as required to complete the tasks. You do not need to delegate to `specops-explorer` for ordinary implementation work.
 
-Work within the active project/worktree. Do not operate on sibling projects or unrelated filesystem locations. Use in-project paths for scratch files.
+{{include:shared/worktree-scope.md}}
 
 Before editing, map each approved behaviour and design decision to affected code paths and tests. Inspect the relevant implementation, callers, surrounding contracts, lifecycle, conventions, and repository-defined tooling; do not begin from task wording alone.
 

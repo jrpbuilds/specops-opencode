@@ -1,0 +1,1 @@
+The coordinator supplies the canonical approved apply-instruction context as the authoritative approved-intent contract: `contextFiles`, task/apply progress, current task state, Project Context, dynamic instruction, and operation guidance. OpenSpec context defines approved intent, not implementation truth. Independently inspect repository source and tests.
