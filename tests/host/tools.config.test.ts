@@ -2,6 +2,8 @@ import type { ToolContext } from "@opencode-ai/plugin/tool";
 import { afterAll, describe, expect, test } from "bun:test";
 import {
     DEFAULT_AUTO_REVIEW_ITERATIONS,
+    DEFAULT_IMPLEMENTER_FANOUT,
+    DEFAULT_REVIEW_FANOUT,
     DEFAULT_SUBAGENT_CONCURRENCY,
     type SpecOpsConfig,
 } from "../../src/config.js";
@@ -28,6 +30,8 @@ function makeConfig(overrides: Partial<SpecOpsConfig> = {}): SpecOpsConfig {
         frontierEscalation: false,
         maxSubagentConcurrency: DEFAULT_SUBAGENT_CONCURRENCY,
         maxAutoReviewIterations: DEFAULT_AUTO_REVIEW_ITERATIONS,
+        implementerFanout: DEFAULT_IMPLEMENTER_FANOUT,
+        reviewFanout: DEFAULT_REVIEW_FANOUT,
         ...overrides,
     };
 }
@@ -56,6 +60,8 @@ describe("specops_config host wrapper", () => {
                 frontierEscalation: true,
                 maxSubagentConcurrency: 8,
                 maxAutoReviewIterations: 2,
+                implementerFanout: "always",
+                reviewFanout: "never",
             }),
         );
         const requests: unknown[] = [];
@@ -80,6 +86,8 @@ describe("specops_config host wrapper", () => {
             maxSubagentConcurrency: 8,
             maxAutoReviewIterations: 2,
             frontierEscalation: true,
+            implementerFanout: "always",
+            reviewFanout: "never",
         });
     });
 

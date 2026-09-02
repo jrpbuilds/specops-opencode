@@ -10,11 +10,13 @@ Open OpenCode's command palette with `Ctrl+P` and select:
 SpecOps Configure
 ```
 
-The screen lists every role with its current model selection, plus three workflow options:
+The screen lists every role with its current model selection, plus five workflow options:
 
 - **Frontier escalation** — on/off toggle
 - **Concurrent subagents** — 1 to 8
 - **Auto review iterations** — 1 to 3
+- **Implementer fan-out** — auto, always, or never
+- **Review fan-out** — auto, always, or never
 
 Pick a role to choose its model and reasoning variant; pick an option to change its value. Save when done. If a saved model is no longer available in your current OpenCode catalogue, the editor flags it so you can repair it.
 
@@ -33,6 +35,8 @@ A complete example:
     "frontierEscalation": true,
     "maxSubagentConcurrency": 3,
     "maxAutoReviewIterations": 1,
+    "implementerFanout": "auto",
+    "reviewFanout": "auto",
     "agents": {
         "specops-coordinator": {
             "model": "opencode-go/deepseek-v4-flash",
@@ -119,9 +123,25 @@ How many correction/re-review cycles SpecOps Auto may run after its initial revi
 - Manually configured values above 3 are preserved by Configure unless you explicitly change the setting.
 - When the budget runs out without a PASS, Auto stops with a terminal `BLOCKED` report containing the latest findings — it never loops forever.
 
+### `implementerFanout` (default: `auto`)
+
+Controls when implementation splits across parallel implementer lanes (requires `maxSubagentConcurrency` above 1 to run anything concurrently).
+
+- **`auto` (default):** one implementer handles the whole task list unless the change is large enough to genuinely benefit — small changes (roughly three or fewer files, one coherent area) and tightly related work always stay on a single dispatch.
+- **`always`:** prefer scoped parallel lanes whenever planned work is safely segregated, without the small-change floor.
+- **`never`:** always one whole-list implementer, even when concurrency allows more.
+
+### `reviewFanout` (default: `auto`)
+
+Controls whether review runs the three independent critics (correctness, risk, quality) before the final Reviewer.
+
+- **`auto` (default):** the coordinator fans out for changes that span a large surface (multiple subsystems, many tasks) or carry elevated risk (security, data, compatibility) — and reviews a small, simple change with the final Reviewer alone.
+- **`always`:** the previous behaviour — every change gets all three critics.
+- **`never`:** never run critics; the final Reviewer always reviews alone.
+
 ## Upgrading from older versions
 
-Configuration files written before these fields existed are filled in automatically on load: missing concurrency becomes `1`, missing Auto iterations become `3`, and missing roles become empty entries. Nothing to migrate by hand.
+Configuration files written before these fields existed are filled in automatically on load: missing concurrency becomes `1`, missing Auto iterations become `3`, missing fan-out modes become `auto`, and missing roles become empty entries. Nothing to migrate by hand. Note that `auto` fan-out is a behaviour change from earlier releases, which always ran the critic fan-out; set `reviewFanout: "always"` (and `implementerFanout: "always"`) to keep the old parallel behaviour.
 
 ## Related pages
 

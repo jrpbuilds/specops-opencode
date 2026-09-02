@@ -76,6 +76,8 @@ describe("registerModelSettings", () => {
                     "__frontier_escalation__",
                     "__concurrent_subagents__",
                     "__auto_review_iterations__",
+                    "__implementer_fanout__",
+                    "__review_fanout__",
                     "__save__",
                     "__cancel__",
                 ]);

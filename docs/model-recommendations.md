@@ -77,11 +77,13 @@ This is the only complete example in this guide. It uses low-cost models for rou
     },
     "frontierEscalation": true,
     "maxSubagentConcurrency": 3,
-    "maxAutoReviewIterations": 1
+    "maxAutoReviewIterations": 1,
+    "implementerFanout": "always",
+    "reviewFanout": "always"
 }
 ```
 
-Concurrency changes speed, not the number of model calls. Auto review iterations repeat the critic fan-out and final review, so start at one iteration and only increase it when the extra review cycle is earning its cost.
+Concurrency changes speed, not the number of model calls. Auto review iterations repeat the selected review route and final review, so start at one iteration and only increase it when the extra review cycle is earning its cost.
 
 ## Model-family diversity is a feature
 

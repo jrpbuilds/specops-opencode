@@ -109,6 +109,8 @@ Configuration lives at `~/.config/opencode/specops.json` and looks like this:
     "frontierEscalation": false,
     "maxSubagentConcurrency": 1,
     "maxAutoReviewIterations": 3,
+    "implementerFanout": "auto",
+    "reviewFanout": "auto",
     "agents": {
         "specops-coordinator": { "model": "opencode-go/deepseek-v4-flash", "variant": "high" },
         "specops-planner": { "model": "openai/gpt-5.6-terra", "variant": "high" },
@@ -117,7 +119,7 @@ Configuration lives at `~/.config/opencode/specops.json` and looks like this:
 }
 ```
 
-Any role you leave out inherits OpenCode's default model. Review specialists without their own entry inherit the Reviewer's. Specialists run one at a time by default; raise `maxSubagentConcurrency` (Configure offers 1–8) to parallelise planning routes and the review fan-out. Auto's correction budget defaults to 3 cycles, and both settings accept larger finite values if you set them directly in the file. For the best parallel experience, launch OpenCode with `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true` so a new specialist starts the moment one finishes.
+Any role you leave out inherits OpenCode's default model. Review specialists without their own entry inherit the Reviewer's. Specialists run one at a time by default; raise `maxSubagentConcurrency` (Configure offers 1–8) to parallelise planning routes, and parallel stages stay proportional to the work: `implementerFanout` gates implementer lanes behind change size, and `reviewFanout` gates the three-critic review fan-out behind change size and elevated risk (both default `auto`), so small changes stick to a single dispatch and one final reviewer. Set either to `always` for the old always-parallel behaviour or `never` to force a single worker. Auto's correction budget defaults to 3 cycles, and both settings accept larger finite values if you set them directly in the file. For the best parallel experience, launch OpenCode with `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true` so a new specialist starts the moment one finishes.
 
 For the full `specops.json` with all ten roles mapped, see [Configuration](docs/configuration.md#where-configuration-lives). For advice on which models go where, see [Model recommendations](docs/model-recommendations.md).
 

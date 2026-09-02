@@ -14,6 +14,7 @@ import { createCloseGuard, type EditorNavigator, type EditorSession } from "./ed
 import { configuredModels, createConfigDraft } from "../models.js";
 import { openAutoReviewIterationsPicker } from "./screens/auto-review-iterations-picker.js";
 import { openConcurrencyPicker } from "./screens/concurrency-picker.js";
+import { openFanoutModePicker } from "./screens/fanout-mode-picker.js";
 import { openModelPicker, openVariantPicker } from "./screens/model-picker.js";
 import { openReview } from "./screens/review-flow.js";
 import { openRoleList } from "./screens/role-list.js";
@@ -58,6 +59,8 @@ export async function showModelEditor(api: TuiPluginApi, onClose: () => void): P
         showVariantPicker: (id, model) => openVariantPicker(session, nav, id, model),
         showConcurrencyPicker: () => openConcurrencyPicker(session, nav),
         showAutoReviewIterationsPicker: () => openAutoReviewIterationsPicker(session, nav),
+        showImplementerFanoutPicker: () => openFanoutModePicker(session, nav, "implementer"),
+        showReviewFanoutPicker: () => openFanoutModePicker(session, nav, "review"),
         showReview: () => openReview(session, nav),
     };
 

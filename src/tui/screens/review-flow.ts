@@ -85,6 +85,8 @@ export function openReview(session: EditorSession, nav: EditorNavigator): void {
                 `Frontier escalation: ${staged.frontierEscalation ? "Enabled" : "Disabled"}.`,
                 `Concurrent subagents: ${staged.maxSubagentConcurrency}.`,
                 `Auto review iterations: ${staged.maxAutoReviewIterations}.`,
+                `Implementer fan-out: ${staged.implementerFanout}.`,
+                `Review fan-out: ${staged.reviewFanout}.`,
                 "Only model mappings and these options are stored.",
             ].join("\n"),
             onConfirm: () => saveStagedConfig(session, nav),

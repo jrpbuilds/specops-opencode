@@ -116,6 +116,8 @@ describe("SpecOps Configure save flow", () => {
                     "__frontier_escalation__",
                     "__concurrent_subagents__",
                     "__auto_review_iterations__",
+                    "__implementer_fanout__",
+                    "__review_fanout__",
                     "__save__",
                     "__cancel__",
                 ]);
@@ -274,6 +276,64 @@ describe("SpecOps Configure save flow", () => {
 
                 const saved = await loadConfig(path.join(home, "opencode", "specops.json"));
                 expect(saved.maxAutoReviewIterations).toBe(2);
+            }),
+        );
+    });
+
+    test("persists the selected fan-out modes and shows them in the save review", async () => {
+        await withTempDir(async home =>
+            withConfigHome(home, async () => {
+                const fake = fakeTuiApi(allProviders);
+                registerModelSettings(fake.api);
+                await fake.runCommand();
+
+                fake.selectByValue("__implementer_fanout__");
+                expect(fake.currentDialog()?.title).toBe("Implementer fan-out");
+                expect(fake.currentDialog()?.current).toBe("auto");
+                expect(fake.currentDialog()?.options?.map(option => option.value)).toEqual([
+                    "auto",
+                    "always",
+                    "never",
+                ]);
+                expect(fake.currentDialog()?.options?.map(option => option.description)).toEqual([
+                    "Parallel lanes only for larger, segregated work",
+                    "Prefer parallel lanes whenever work is safely segregated",
+                    "Always one whole-list implementer",
+                ]);
+                fake.selectByValue("never");
+                expect(
+                    fake
+                        .currentDialog()
+                        ?.options?.find(option => option.value === "__implementer_fanout__"),
+                ).toMatchObject({
+                    title: "* Implementer fan-out",
+                    category: "Options",
+                    footer: "never",
+                });
+
+                fake.selectByValue("__review_fanout__");
+                expect(fake.currentDialog()?.title).toBe("Review fan-out");
+                expect(fake.currentDialog()?.current).toBe("auto");
+                expect(fake.currentDialog()?.options?.map(option => option.value)).toEqual([
+                    "auto",
+                    "always",
+                    "never",
+                ]);
+                expect(fake.currentDialog()?.options?.map(option => option.description)).toEqual([
+                    "Three critics for larger or riskier changes",
+                    "Always run all three review critics",
+                    "Always a single final reviewer",
+                ]);
+                fake.selectByValue("always");
+
+                fake.selectByValue("__save__");
+                expect(fake.currentDialog()?.message).toContain("Implementer fan-out: never.");
+                expect(fake.currentDialog()?.message).toContain("Review fan-out: always.");
+                await fake.confirm();
+
+                const saved = await loadConfig(path.join(home, "opencode", "specops.json"));
+                expect(saved.implementerFanout).toBe("never");
+                expect(saved.reviewFanout).toBe("always");
             }),
         );
     });

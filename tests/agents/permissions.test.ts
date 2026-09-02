@@ -21,6 +21,8 @@ import { reviewQualityAgentDefinition } from "../../src/agents/review-quality.js
 import { reviewRiskAgentDefinition } from "../../src/agents/review-risk.js";
 import {
     DEFAULT_AUTO_REVIEW_ITERATIONS,
+    DEFAULT_IMPLEMENTER_FANOUT,
+    DEFAULT_REVIEW_FANOUT,
     DEFAULT_SUBAGENT_CONCURRENCY,
     type SpecOpsConfig,
 } from "../../src/config.js";
@@ -35,6 +37,8 @@ function makeConfig(): SpecOpsConfig {
         frontierEscalation: false,
         maxSubagentConcurrency: DEFAULT_SUBAGENT_CONCURRENCY,
         maxAutoReviewIterations: DEFAULT_AUTO_REVIEW_ITERATIONS,
+        implementerFanout: DEFAULT_IMPLEMENTER_FANOUT,
+        reviewFanout: DEFAULT_REVIEW_FANOUT,
     };
 }
 

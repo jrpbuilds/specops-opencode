@@ -55,7 +55,7 @@ Reviewer PASS/FAIL remains authoritative.
 - PASS → call `specops_archive` once per the shared archive-safety rule; read `specops_status` afterward to confirm/report terminal state; no confirmation/retry.
 - FAIL → automatically begin remediation via shared `## Schema-aware remediation routing`, carrying every `F1..Fn` verbatim. Planner/Designer returns follow `## Autonomous specialist decisions`.
 
-Each bounded round: root-cause-oriented remediation → fresh independent specialist critics → authoritative full re-review. One fix may address several findings, but each canonical finding remains independently verified; inspect the whole approved change for regressions.
+Each bounded round: root-cause-oriented remediation → the review route selected by re-applying the review dispatch gate (complete critic fan-out or direct review) → authoritative full re-review. One fix may address several findings, but each canonical finding remains independently verified; inspect the whole approved change for regressions.
 
 {{include:shared/remediation-re-review.md}}
 
@@ -67,7 +67,7 @@ Read `maxAutoReviewIterations` from `specops_config` at workflow init.
 Allow at most **that many remediation rounds total**. The initial review does not consume an iteration. For each remaining iteration:
 
 - Begin shared schema-aware remediation with every canonical finding, including planning reconciliation when a finding targets a planning artifact.
-- After implementation, the shared re-review contract above resets review state, runs the complete fresh critic fan-out, and performs an authoritative full re-review.
+- After implementation, the shared re-review contract above resets review state, re-applies the review dispatch gate, and performs an authoritative full re-review through the selected route.
 - PASS at any review follows the normal PASS → archive path.
 
 When a FAIL leaves no iterations remaining, return `BLOCKED` with the latest canonical findings. Never start remediation without a remaining iteration and never exceed the configured finite budget. Keep the round counter only in current working context.

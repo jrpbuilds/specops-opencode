@@ -164,6 +164,8 @@ export function createConfigDraft(
             frontierEscalation: source.frontierEscalation,
             maxSubagentConcurrency: source.maxSubagentConcurrency,
             maxAutoReviewIterations: source.maxAutoReviewIterations,
+            implementerFanout: source.implementerFanout,
+            reviewFanout: source.reviewFanout,
         },
         unresolved,
     };

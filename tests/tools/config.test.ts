@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
     DEFAULT_AUTO_REVIEW_ITERATIONS,
+    DEFAULT_IMPLEMENTER_FANOUT,
+    DEFAULT_REVIEW_FANOUT,
     DEFAULT_SUBAGENT_CONCURRENCY,
     type SpecOpsConfig,
 } from "../../src/config.js";
@@ -17,6 +19,8 @@ function makeConfig(overrides: Partial<SpecOpsConfig> = {}): SpecOpsConfig {
         frontierEscalation: false,
         maxSubagentConcurrency: DEFAULT_SUBAGENT_CONCURRENCY,
         maxAutoReviewIterations: DEFAULT_AUTO_REVIEW_ITERATIONS,
+        implementerFanout: DEFAULT_IMPLEMENTER_FANOUT,
+        reviewFanout: DEFAULT_REVIEW_FANOUT,
         ...overrides,
     };
 }
@@ -38,6 +42,8 @@ describe("configView", () => {
             maxSubagentConcurrency: DEFAULT_SUBAGENT_CONCURRENCY,
             maxAutoReviewIterations: DEFAULT_AUTO_REVIEW_ITERATIONS,
             frontierEscalation: false,
+            implementerFanout: "auto",
+            reviewFanout: "auto",
         });
     });
 
@@ -48,6 +54,8 @@ describe("configView", () => {
                     frontierEscalation: true,
                     maxSubagentConcurrency: 8,
                     maxAutoReviewIterations: 2,
+                    implementerFanout: "never",
+                    reviewFanout: "always",
                 }),
             ),
         );
@@ -56,6 +64,8 @@ describe("configView", () => {
             maxSubagentConcurrency: 8,
             maxAutoReviewIterations: 2,
             frontierEscalation: true,
+            implementerFanout: "never",
+            reviewFanout: "always",
         });
     });
 
@@ -93,6 +103,8 @@ describe("configView", () => {
             "maxSubagentConcurrency",
             "maxAutoReviewIterations",
             "frontierEscalation",
+            "implementerFanout",
+            "reviewFanout",
         ]);
         expect(calls).toEqual([1]);
     });

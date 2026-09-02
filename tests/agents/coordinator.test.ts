@@ -14,6 +14,8 @@ import {
 } from "../../src/agents/permissions.js";
 import {
     DEFAULT_AUTO_REVIEW_ITERATIONS,
+    DEFAULT_IMPLEMENTER_FANOUT,
+    DEFAULT_REVIEW_FANOUT,
     DEFAULT_SUBAGENT_CONCURRENCY,
     type SpecOpsConfig,
 } from "../../src/config.js";
@@ -31,6 +33,8 @@ function makeConfig(
         frontierEscalation,
         maxSubagentConcurrency: DEFAULT_SUBAGENT_CONCURRENCY,
         maxAutoReviewIterations: DEFAULT_AUTO_REVIEW_ITERATIONS,
+        implementerFanout: DEFAULT_IMPLEMENTER_FANOUT,
+        reviewFanout: DEFAULT_REVIEW_FANOUT,
     };
 }
 
@@ -104,10 +108,10 @@ describe("coordinator prompt composition", () => {
         // scoped-parallel implementation, background dispatch, the settled
         // integrated verification gate) expand into every assembled prompt, so
         // the budget guards against unbounded prompt growth. Deliberately
-        // generous headroom over the current maxima (50,684 and 48,992 bytes)
-        // pending a dedicated prompt-size pass: 55,000 and 53,000.
-        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(55_000);
-        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(53_000);
+        // generous headroom over the current maxima (55,180 and 53,584 bytes)
+        // pending a dedicated prompt-size pass: 56,500 and 54,500.
+        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(56_500);
+        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(54_500);
     });
 });
 
@@ -1013,9 +1017,11 @@ describe("interactive coordinator contract", () => {
             "## Interactive update flow",
         );
 
-        expect(remediation).toContain("complete critic fan-out again under `## Review phase`");
+        expect(remediation).toContain("re-apply the review dispatch gate under `## Review phase`");
+        expect(remediation).toContain("never a partial subset");
+        expect(remediation).toContain("re-dispatch `specops-reviewer` directly");
         expect(remediation).toContain("re-dispatch `specops-reviewer`");
-        expect(remediation).toContain("new reports");
+        expect(remediation).toContain("new reports (fan-out route)");
         expect(remediation).toContain("remediation summary");
         expect(remediation).toContain("prior findings verbatim");
         expect(remediation).toContain("explicit re-review");
@@ -1246,7 +1252,8 @@ describe("Auto coordinator contract", () => {
         );
         expect(section).toContain("complete critic fan-out again");
         expect(section).toContain("root-cause-oriented remediation");
-        expect(section).toContain("fresh independent specialist critics");
+        expect(section).toContain("re-applying the review dispatch gate");
+        expect(section).toContain("complete critic fan-out or direct review");
         expect(section).toContain("authoritative full re-review");
         expect(section).toContain("each canonical finding remains independently verified");
         expect(section).toContain("inspect the whole approved change for regressions");
@@ -1588,7 +1595,7 @@ describe("coordinator registration", () => {
 });
 
 describe("settled integrated verification gate", () => {
-    test("both coordinator modes carry the gate before the critic fan-out", () => {
+    test("both coordinator modes carry the gate before the review dispatch gate", () => {
         for (const mode of ["interactive", "auto"] as const) {
             const prompt = buildCoordinatorPrompt(mode, false);
 
@@ -1597,7 +1604,9 @@ describe("settled integrated verification gate", () => {
                 prompt.indexOf(
                     "settled verification pass runs against the stable completed implementation",
                 ),
-            ).toBeLessThan(prompt.indexOf("run the three independent critics"));
+            ).toBeLessThan(
+                prompt.indexOf("select the review route with the **review dispatch gate**"),
+            );
         }
     });
 
@@ -1608,7 +1617,7 @@ describe("settled integrated verification gate", () => {
             "every implementation sibling has returned, durable verification confirms all assigned task IDs are checked, and no implementation dispatch is active",
         );
         expect(prompt).toContain(
-            "dispatch exactly one `specops-implementer` with an explicit settled integrated verification instruction before the review validation gate and critic fan-out",
+            "dispatch exactly one `specops-implementer` with an explicit settled integrated verification instruction before the review validation gate and the review dispatch",
         );
         expect(prompt).toContain(
             "Reusing a suitable completed implementer session via the lane-continuation ledger is allowed; a fresh dispatch is always valid",
@@ -1651,7 +1660,7 @@ describe("settled integrated verification gate", () => {
         const prompt = buildCoordinatorPrompt("interactive", false);
 
         expect(prompt).toContain(
-            "The pass establishes readiness for review; it does not approve the change, and independent critic and final-review behaviour is unchanged",
+            "The pass establishes readiness for review; it does not approve the change, and the selected review route and final-review behaviour are unchanged",
         );
     });
 });

@@ -54,6 +54,8 @@ function fullyPopulated() {
         frontierEscalation: true,
         maxSubagentConcurrency: 12,
         maxAutoReviewIterations: 14,
+        implementerFanout: "always" as const,
+        reviewFanout: "never" as const,
     };
 }
 
@@ -136,6 +138,20 @@ describe("loadConfig", () => {
             );
             expect((await loadConfig(destination)).maxSubagentConcurrency).toBe(1);
             expect((await loadConfig(destination)).maxAutoReviewIterations).toBe(3);
+        });
+    });
+
+    test("loads an older config without fan-out modes as size-gated auto", async () => {
+        await withTempDir(async dir => {
+            const destination = configPath(dir);
+            await writeFile(
+                destination,
+                JSON.stringify({ agents: DEFAULT_CONFIG.agents, frontierEscalation: false }),
+                "utf8",
+            );
+            const loaded = await loadConfig(destination);
+            expect(loaded.implementerFanout).toBe("auto");
+            expect(loaded.reviewFanout).toBe("auto");
         });
     });
 });

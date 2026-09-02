@@ -66,6 +66,26 @@ describe("validateConfig - valid shapes", () => {
             expect(validateConfig(value).maxAutoReviewIterations).toBe(maxAutoReviewIterations);
         });
     }
+
+    for (const implementerFanout of ["auto", "always", "never"] as const) {
+        test(`accepts implementer fan-out mode ${implementerFanout}`, () => {
+            const value = { agents: allRoles(), implementerFanout };
+            expect(validateConfig(value).implementerFanout).toBe(implementerFanout);
+        });
+    }
+
+    for (const reviewFanout of ["auto", "always", "never"] as const) {
+        test(`accepts review fan-out mode ${reviewFanout}`, () => {
+            const value = { agents: allRoles(), reviewFanout };
+            expect(validateConfig(value).reviewFanout).toBe(reviewFanout);
+        });
+    }
+
+    test("defaults both fan-out modes to auto when omitted", () => {
+        const result = validateConfig({ agents: allRoles() });
+        expect(result.implementerFanout).toBe("auto");
+        expect(result.reviewFanout).toBe("auto");
+    });
 });
 
 describe("validateConfig - top-level structure", () => {
@@ -139,6 +159,28 @@ describe("validateConfig - top-level structure", () => {
         test(`rejects an invalid Auto review iteration budget: ${label}`, () => {
             expect(() => validateConfig({ agents: allRoles(), maxAutoReviewIterations })).toThrow(
                 "maxAutoReviewIterations must be a positive integer",
+            );
+        });
+    }
+
+    for (const [label, fanout] of [
+        ["string", "2"],
+        ["boolean", true],
+        ["object", {}],
+        ["array", []],
+        ["null", null],
+        ["empty string", ""],
+        ["unknown mode", "sometimes"],
+        ["uppercase mode", "Auto"],
+    ] as const) {
+        test(`rejects an invalid implementer fan-out mode: ${label}`, () => {
+            expect(() => validateConfig({ agents: allRoles(), implementerFanout: fanout })).toThrow(
+                "implementerFanout must be one of: auto, always, never",
+            );
+        });
+        test(`rejects an invalid review fan-out mode: ${label}`, () => {
+            expect(() => validateConfig({ agents: allRoles(), reviewFanout: fanout })).toThrow(
+                "reviewFanout must be one of: auto, always, never",
             );
         });
     }

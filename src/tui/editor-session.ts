@@ -36,6 +36,8 @@ export type EditorNavigator = {
     showVariantPicker(id: AgentId, model: ConfiguredModel): void;
     showConcurrencyPicker(): void;
     showAutoReviewIterationsPicker(): void;
+    showImplementerFanoutPicker(): void;
+    showReviewFanoutPicker(): void;
     showReview(): void;
 };
 

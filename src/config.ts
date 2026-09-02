@@ -23,14 +23,34 @@ export type AgentConfig = { model?: string; variant?: string };
  * global default. `frontierEscalation`, `maxSubagentConcurrency`, and
  * `maxAutoReviewIterations` are always present after validation, normalized to
  * `false`, `1`, and `3` respectively when loading an older configuration
- * without those fields.
+ * without those fields. `implementerFanout` and `reviewFanout` normalize to
+ * `auto` when loading an older configuration without those fields.
  */
 export type SpecOpsConfig = {
     agents: Record<AgentId, AgentConfig>;
     frontierEscalation: boolean;
     maxSubagentConcurrency: number;
     maxAutoReviewIterations: number;
+    implementerFanout: FanoutMode;
+    reviewFanout: FanoutMode;
 };
+
+/**
+ * Fan-out policy for one parallel stage.
+ *
+ * `auto` applies size-based gating: small changes stay on a single dispatch or
+ * the direct reviewer. `always` fans out whenever the stage's safety gates
+ * allow it. `never` forces the serial/direct route regardless of change size.
+ */
+export type FanoutMode = "auto" | "always" | "never";
+
+/** Fan-out modes accepted in a persisted configuration. */
+export const FANOUT_MODES: readonly FanoutMode[] = ["auto", "always", "never"];
+
+/** Default value used when `implementerFanout` is omitted from a config. */
+export const DEFAULT_IMPLEMENTER_FANOUT: FanoutMode = "auto";
+/** Default value used when `reviewFanout` is omitted from a config. */
+export const DEFAULT_REVIEW_FANOUT: FanoutMode = "auto";
 
 /** Default value used when `maxSubagentConcurrency` is omitted from a config. */
 export const DEFAULT_SUBAGENT_CONCURRENCY = 1;
@@ -48,6 +68,8 @@ export const DEFAULT_CONFIG: SpecOpsConfig = {
     frontierEscalation: false,
     maxSubagentConcurrency: DEFAULT_SUBAGENT_CONCURRENCY,
     maxAutoReviewIterations: DEFAULT_AUTO_REVIEW_ITERATIONS,
+    implementerFanout: DEFAULT_IMPLEMENTER_FANOUT,
+    reviewFanout: DEFAULT_REVIEW_FANOUT,
 };
 
 /** Minimum persisted value for the global concurrent subagent limit. */
@@ -139,6 +161,8 @@ export function validateConfig(value: unknown): SpecOpsConfig {
             "frontierEscalation",
             "maxSubagentConcurrency",
             "maxAutoReviewIterations",
+            "implementerFanout",
+            "reviewFanout",
         ]) ||
         !isRecord(value.agents)
     ) {
@@ -162,6 +186,11 @@ export function validateConfig(value: unknown): SpecOpsConfig {
             maxAutoReviewIterations < MIN_AUTO_REVIEW_ITERATIONS)
     ) {
         throw new Error("maxAutoReviewIterations must be a positive integer");
+    }
+    for (const field of ["implementerFanout", "reviewFanout"] as const) {
+        if (field in value && !isFanoutMode(value[field])) {
+            throw new Error(`${field} must be one of: auto, always, never`);
+        }
     }
 
     // Unknown role ids stay a hard error because they almost certainly name a
@@ -197,6 +226,8 @@ export function validateConfig(value: unknown): SpecOpsConfig {
         frontierEscalation: value.frontierEscalation ?? false,
         maxSubagentConcurrency: value.maxSubagentConcurrency ?? DEFAULT_SUBAGENT_CONCURRENCY,
         maxAutoReviewIterations: value.maxAutoReviewIterations ?? DEFAULT_AUTO_REVIEW_ITERATIONS,
+        implementerFanout: value.implementerFanout ?? DEFAULT_IMPLEMENTER_FANOUT,
+        reviewFanout: value.reviewFanout ?? DEFAULT_REVIEW_FANOUT,
     } as SpecOpsConfig;
 
     for (const id of ALL_AGENT_IDS) {
@@ -262,4 +293,14 @@ export async function writeFileAtomic(destination: string, content: string): Pro
  */
 function hasOnlyKeys(value: Record<string, unknown>, allowed: readonly string[]): boolean {
     return Object.keys(value).every(key => allowed.includes(key));
+}
+
+/**
+ * Check that a fan-out field carries one of the accepted mode strings.
+ *
+ * @param value Unknown field value from a parsed configuration.
+ * @returns Whether the value is a valid {@link FanoutMode}.
+ */
+function isFanoutMode(value: unknown): value is FanoutMode {
+    return typeof value === "string" && (FANOUT_MODES as readonly string[]).includes(value);
 }

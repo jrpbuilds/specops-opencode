@@ -580,6 +580,97 @@ describe("coordinator implementation-phase contract (scoped parallel implementer
     );
 
     test.each(["interactive", "auto"] as const)(
+        "%s coordinator gates parallel dispatch behind the change-size floor",
+        mode => {
+            const prompt = buildCoordinatorPrompt(mode, false);
+            const section = delimitedSection(prompt, "## Implementation phase", "## Review phase");
+
+            // The parallel-dispatch policy is read from config at workflow init.
+            expect(section).toContain(
+                "`implementerFanout` (read once from `specops_config` at workflow init; default `auto`)",
+            );
+
+            // Small changes — a handful of files or one coherent write surface —
+            // always dispatch a single whole-list implementer, and `never` forces
+            // the whole-list flow at any concurrency.
+            expect(section).toContain("`implementerFanout` is `never`");
+            expect(section).toContain(
+                "the change is small — its approved work is expected to touch only a handful of files (roughly three or fewer) or is confined to one coherent module or write surface, or its tasks do not genuinely lend themselves to segregated lanes",
+            );
+            expect(section).toContain(
+                "When `maxSubagentConcurrency` is 1 or `implementerFanout` is `never`, implementation is never split across multiple implementers",
+            );
+
+            // Scoped parallel requires a write surface larger than one small
+            // module; `always` skips the floor but keeps the safety gates.
+            expect(section).toContain(
+                "the change is large enough to host lanes and `implementerFanout` is not `never`",
+            );
+            expect(section).toContain(
+                "a combined write surface genuinely larger than one small module (a change expected to touch only a handful of files in one coherent area cannot pass the gate)",
+            );
+            expect(section).toContain(
+                "When `implementerFanout` is `always`, skip the small-change floor and treat scoped parallel dispatch as the default preference whenever the safety gates (segregation, disjointness, no-reuse boundaries) can still be satisfied",
+            );
+        },
+    );
+
+    test.each(["interactive", "auto"] as const)(
+        "%s coordinator composes the review dispatch gate before the fan-out",
+        mode => {
+            const prompt = buildCoordinatorPrompt(mode, false);
+            const section = delimitedSection(
+                prompt,
+                "## Review phase",
+                "## Schema-aware remediation routing",
+            );
+
+            expect(section).toContain("review dispatch gate");
+            expect(section).toContain(
+                "Read `reviewFanout` (default `auto`) and `maxSubagentConcurrency` from `specops_config` at workflow init",
+            );
+
+            // Three explicit routes with the gate's fail-safe direction.
+            expect(section).toContain(
+                '`reviewFanout: "never"` → **Direct review:** exactly one `specops-reviewer`, no critic fan-out, no `## Specialist evidence` envelope',
+            );
+            expect(section).toContain(
+                '`reviewFanout: "always"` → **Fan-out route:** the complete three-critic fan-out below before the final Reviewer',
+            );
+            expect(section).toContain(
+                "or carries elevated risk regardless of size (security, data or migration handling, compatibility or cross-cutting behaviour, concurrency)",
+            );
+            expect(section).toContain("choose direct review only for a small, simple change");
+            expect(section).toContain(
+                "When you cannot confidently establish small-and-simple, fan out",
+            );
+
+            // Fan-out state tracking stays on the fan-out route only.
+            expect(section).toContain(
+                "On the fan-out route, track it with tested `createReviewFanout(maxSubagentConcurrency)`",
+            );
+
+            // The worktree guard covers both routes: capture before the first
+            // review dispatch, verify after the Reviewer returns either way.
+            expect(section).toContain(
+                "before the first review dispatch — the critic fan-out when the gate selected it, otherwise the direct `specops-reviewer` dispatch",
+            );
+            expect(section).toContain(
+                "After `specops-reviewer` returns on either review route and before proceeding to archive/lifecycle",
+            );
+
+            // Remediation re-review re-applies the gate and may escalate.
+            expect(section).toContain(
+                "re-apply the review dispatch gate: remediation that grew the change may escalate direct review to the fan-out",
+            );
+            expect(section).toContain("never a subset");
+
+            // Direct review dispatches the Reviewer without a specialist envelope.
+            expect(section).toContain("## Specialist evidence");
+        },
+    );
+
+    test.each(["interactive", "auto"] as const)(
         "%s coordinator documents optional lane-continuation affinity",
         mode => {
             const section = delimitedSection(

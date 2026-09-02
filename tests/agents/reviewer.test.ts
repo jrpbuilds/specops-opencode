@@ -7,6 +7,8 @@ import { REVIEWER_PERMISSION } from "../../src/agents/permissions.js";
 import { loadPrompt } from "../../src/prompts.js";
 import {
     DEFAULT_AUTO_REVIEW_ITERATIONS,
+    DEFAULT_IMPLEMENTER_FANOUT,
+    DEFAULT_REVIEW_FANOUT,
     DEFAULT_SUBAGENT_CONCURRENCY,
     type SpecOpsConfig,
 } from "../../src/config.js";
@@ -21,6 +23,8 @@ function makeConfig(overrides: Partial<SpecOpsConfig["agents"]> = {}): SpecOpsCo
         frontierEscalation: false,
         maxSubagentConcurrency: DEFAULT_SUBAGENT_CONCURRENCY,
         maxAutoReviewIterations: DEFAULT_AUTO_REVIEW_ITERATIONS,
+        implementerFanout: DEFAULT_IMPLEMENTER_FANOUT,
+        reviewFanout: DEFAULT_REVIEW_FANOUT,
     };
 }
 

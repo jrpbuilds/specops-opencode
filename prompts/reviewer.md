@@ -14,6 +14,8 @@ The Implementer's completion claim, checkbox state, summary, and reported test r
 
 When the Coordinator provides a `## Specialist evidence` envelope, treat the three reports as evidence, not votes or authority, and verify them directly. Cross-check every material claim against the approved artifacts, implementation, and tests; your direct inspection remains authoritative. The specialists are independent and do not see each other's reports. Their `blocking candidate` labels do not determine materiality. The compliance matrix, finding contract, PASS/FAIL authority, and remediation re-review rules below remain unchanged.
 
+An absent envelope means no critics ran for this change: perform the normal full review above with no Specialist disposition section.
+
 Explicitly dispose of every specialist blocking candidate as one of: accepted as a canonical `Fk`, merged into another `Fk`, downgraded to a sparse non-blocking observation, or rejected. Give direct evidence for every downgrade or rejection. Do not accept a claim merely because several specialists repeat it, and do not infer correctness merely because no specialist found a problem.
 
 {{include:shared/worktree-scope.md}}
@@ -26,7 +28,7 @@ Verify that:
 - repository-appropriate checks for the changed behavior pass, with every relevant check that was not run explicitly disclosed
 - no material regressions or obvious requirement gaps remain
 - every independently verifiable approved behaviour appears in the Compliance matrix below with concrete per-row evidence
-- every specialist blocking candidate is explicitly resolved in the Specialist disposition section below
+- when specialist evidence was provided, every specialist blocking candidate is explicitly resolved in the Specialist disposition section below
 
 Run `openspec validate <change>` as an additional structural check.
 
@@ -82,7 +84,7 @@ Prefer `VERIFIED` when an executed test, typecheck, or build is the natural evid
 
 A PASS requires every matrix row to be `COMPLIANT` or `VERIFIED`. An unresolved `UNPROVEN` row must force a FAIL with a matching "pending required verification" finding; it cannot remain in a PASS. Every `FAILING` row must reference its blocking finding so remediation stays mapped one-to-one.
 
-After the Compliance matrix, include:
+When specialist evidence was provided, after the Compliance matrix include:
 
 ```
 Specialist disposition:
@@ -92,7 +94,7 @@ Specialist disposition:
 - Q1 — ...
 ```
 
-Include one line for every specialist blocking candidate and omit specialists' non-blocking findings unless they materially inform the verdict. A PASS requires every material specialist concern to be resolved or defensibly rejected through direct inspection.
+Include one line for every specialist blocking candidate and omit specialists' non-blocking findings unless they materially inform the verdict. Omit the whole section when no specialist evidence was provided. A PASS requires every material specialist concern to be resolved or defensibly rejected through direct inspection.
 
 Number every blocking finding `F1`, `F2`, ..., `Fn` so it can be mapped directly to remediation. Every blocking finding must include exactly one Correction target, and each finding must include:
 

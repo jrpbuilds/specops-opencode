@@ -10,6 +10,8 @@ import type { EditorNavigator, EditorSession } from "../editor-session.js";
 const FRONTIER_ESCALATION = "__frontier_escalation__";
 const CONCURRENT_SUBAGENTS = "__concurrent_subagents__";
 const AUTO_REVIEW_ITERATIONS = "__auto_review_iterations__";
+const IMPLEMENTER_FANOUT = "__implementer_fanout__";
+const REVIEW_FANOUT = "__review_fanout__";
 
 /**
  * Render the role/options list that drives the editor state machine.
@@ -33,6 +35,8 @@ export function openRoleList(session: EditorSession, nav: EditorNavigator): void
     const concurrencyChanged = staged.maxSubagentConcurrency !== initial.maxSubagentConcurrency;
     const autoReviewIterationsChanged =
         staged.maxAutoReviewIterations !== initial.maxAutoReviewIterations;
+    const implementerFanoutChanged = staged.implementerFanout !== initial.implementerFanout;
+    const reviewFanoutChanged = staged.reviewFanout !== initial.reviewFanout;
     const roleOptions = ROLE_WORKFLOW_ORDER.map(id => ({
         // "!" = saved model unavailable in the current catalogue; "*" = staged change.
         title: `${unresolved.has(id) ? "! " : ""}${changed.has(id) ? "* " : ""}${agentDisplayName(id)}`,
@@ -73,10 +77,22 @@ export function openRoleList(session: EditorSession, nav: EditorNavigator): void
                         ),
                     },
                     {
+                        value: IMPLEMENTER_FANOUT,
+                        category: "Options",
+                        title: `${implementerFanoutChanged ? "* " : ""}Implementer fan-out`,
+                        footer: staged.implementerFanout,
+                    },
+                    {
+                        value: REVIEW_FANOUT,
+                        category: "Options",
+                        title: `${reviewFanoutChanged ? "* " : ""}Review fan-out`,
+                        footer: staged.reviewFanout,
+                    },
+                    {
                         title: "Review and save",
                         value: "__save__",
                         category: "Actions",
-                        footer: `${changed.size + (frontierEscalationChanged ? 1 : 0) + (concurrencyChanged ? 1 : 0) + (autoReviewIterationsChanged ? 1 : 0)} changed`,
+                        footer: `${changed.size + (frontierEscalationChanged ? 1 : 0) + (concurrencyChanged ? 1 : 0) + (autoReviewIterationsChanged ? 1 : 0) + (implementerFanoutChanged ? 1 : 0) + (reviewFanoutChanged ? 1 : 0)} changed`,
                     },
                     {
                         title: "Cancel",
@@ -92,6 +108,10 @@ export function openRoleList(session: EditorSession, nav: EditorNavigator): void
                         nav.showConcurrencyPicker();
                     } else if (option.value === AUTO_REVIEW_ITERATIONS) {
                         nav.showAutoReviewIterationsPicker();
+                    } else if (option.value === IMPLEMENTER_FANOUT) {
+                        nav.showImplementerFanoutPicker();
+                    } else if (option.value === REVIEW_FANOUT) {
+                        nav.showReviewFanoutPicker();
                     } else if (option.value === "__save__") {
                         nav.showReview();
                     } else if (option.value === "__cancel__") {

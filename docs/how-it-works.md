@@ -31,16 +31,16 @@ flowchart TD
 
 ## The roles
 
-| Role                                | What it does                                                                                |
-| ----------------------------------- | ------------------------------------------------------------------------------------------- |
-| Coordinator                         | Owns routing, checkpoints, and the OpenSpec lifecycle. Never writes code itself.            |
-| Explorer                            | Investigates the repository and produces evidence-backed context for planning.              |
-| Planner                             | Authors the proposal, specifications, and implementation tasks.                             |
-| Designer                            | Authors the technical design artifact when the schema calls for one.                        |
-| Implementer                         | Writes the source code and tests.                                                           |
-| Review correctness / risk / quality | Three independent critics that review the finished work from different angles in parallel.  |
-| Reviewer                            | The final authority. Combines the three critiques into one PASS/FAIL verdict.               |
-| Frontier (optional)                 | A stronger escalation model consulted only for blockers that cheaper routes cannot resolve. |
+| Role                                | What it does                                                                                             |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Coordinator                         | Owns routing, checkpoints, and the OpenSpec lifecycle. Never writes code itself.                         |
+| Explorer                            | Investigates the repository and produces evidence-backed context for planning.                           |
+| Planner                             | Authors the proposal, specifications, and implementation tasks.                                          |
+| Designer                            | Authors the technical design artifact when the schema calls for one.                                     |
+| Implementer                         | Writes the source code and tests.                                                                        |
+| Review correctness / risk / quality | Three independent critics that review larger or riskier changes from different angles in parallel.       |
+| Reviewer                            | The final authority. Combines the critiques into one PASS/FAIL verdict, or reviews a small change alone. |
+| Frontier (optional)                 | A stronger escalation model consulted only for blockers that cheaper routes cannot resolve.              |
 
 The specialist agents are internal. Only SpecOps coordinators can dispatch them, they don't appear in OpenCode's `@` menu, and the coordinator itself can't edit files — it orchestrates.
 
@@ -62,11 +62,13 @@ Before any planning artifact is written, and again before review can pass, SpecO
 
 ## Review: three perspectives, one verdict
 
-After implementation, the coordinator sends the work to three independent review specialists — **correctness**, **risk**, and **quality** — running in parallel up to your concurrency limit. Each returns a complete critique, and none of them sees the others' reports. Blocking findings are numbered (`F1`, `F2`, …) so they can be traced through remediation.
+## Review: three perspectives, one verdict
 
-The same parallelism covers planning and implementation: independent planning artifacts author concurrently, and implementation parallelizes only when planned work is genuinely segregated so concurrent lanes actually finish sooner — otherwise one implementer builds the change serially. When one lane receives staged assignments, its implementer session may be reused to preserve useful context, but every dispatch receives fresh canonical state; a fresh implementer dispatch is always a valid fallback. Launch OpenCode with `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true` for the best experience — parallel specialists then run as background tasks and each finished slot is refilled immediately, instead of waiting for every in-flight specialist to finish before the next batch starts.
+After implementation, the coordinator picks a review route with the **review dispatch gate** before dispatching any reviewer. Changes that span a meaningfully large surface (multiple subsystems or capabilities, substantial or numerous tasks) or carry elevated risk regardless of size (security, data or migration handling, compatibility or cross-cutting behaviour, concurrency) run the complete three-critic fan-out below — **correctness**, **risk**, and **quality** — in parallel up to your concurrency limit; each returns a complete critique and none sees the others' reports. A small, simple change goes to a single `specops-reviewer` directly. Blocking findings are numbered (`F1`, `F2`, …) so they can be traced through remediation.
 
-The final `specops-reviewer` receives all three reports verbatim as evidence and owns the only PASS/FAIL decision. The critics don't vote and can't overrule it.
+The same parallelism covers planning and implementation: independent planning artifacts author concurrently, and implementation parallelizes only when the change is large enough and planned work is genuinely segregated so concurrent lanes actually finish sooner — small changes (roughly three or fewer files in one coherent area) and tightly related work always build on a single implementer. When one lane receives staged assignments, its implementer session may be reused to preserve useful context, but every dispatch receives fresh canonical state; a fresh implementer dispatch is always a valid fallback. Launch OpenCode with `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true` for the best experience — parallel specialists then run as background tasks and each finished slot is refilled immediately, instead of waiting for every in-flight specialist to finish before the next batch starts.
+
+The final `specops-reviewer` receives all three reports verbatim as evidence on the fan-out route and owns the only PASS/FAIL decision either way. The critics don't vote and can't overrule it.
 
 During the review window, review agents can't change tracked repository files or the `openspec/` tree. If protected state changes mid-review, the run stops rather than pass a review that no longer matches the work — so a PASS means the review looked at exactly what shipped.
 
@@ -79,7 +81,7 @@ A FAIL doesn't automatically go back to the Implementer. The coordinator classif
 - Findings about requirements or tasks → the Planner revises those artifacts first.
 - Mixed findings → one coherent pass, earliest roots first, keeping completed work.
 
-After correction, the full three-specialist fan-out runs again — never a partial subset — followed by a fresh Reviewer verdict.
+After correction, the review dispatch gate runs again — the full three-specialist fan-out when it applies, never a partial subset — followed by a fresh Reviewer verdict.
 
 ## Standard vs Auto
 

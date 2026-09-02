@@ -38,6 +38,14 @@ describe("DEFAULT_CONFIG", () => {
         expect(DEFAULT_CONFIG.maxAutoReviewIterations).toBe(3);
     });
 
+    test("gates implementer fan-out by change size by default", () => {
+        expect(DEFAULT_CONFIG.implementerFanout).toBe("auto");
+    });
+
+    test("gates review fan-out by change size and risk by default", () => {
+        expect(DEFAULT_CONFIG.reviewFanout).toBe("auto");
+    });
+
     test("structuredClone is independent of the original", () => {
         const copy = structuredClone(DEFAULT_CONFIG);
         copy.agents["specops-coordinator"].model = "openference/GLM-5.2";

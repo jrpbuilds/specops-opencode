@@ -2,25 +2,20 @@
 
 All notable changes to SpecOps are documented in this file.
 
-## [v1.6.0] - unreleased
+## [v1.6.0] - 2026-09-02
 
 ### Added
 
-- Agents can carry useful change context across sessions, making resumed work more consistent without requiring memory.
-- Added scoped parallel implementation, so independent tasks build simultaneously (bounded by the concurrent subagents setting) with each implementer working only its assigned tasks.
+- Added parallel implementation: when a change contains genuinely independent work, its tasks build simultaneously (bounded by the concurrent subagents setting), each implementer working only its assigned tasks. Related work stays grouped in one lane, work that unblocks the rest starts first, and parallel work pauses safely if tasks turn out to overlap — small or tightly related changes always stay on a single implementer.
 - Parallel specialists now run as background tasks, so a finished specialist's slot is refilled immediately instead of waiting for the whole batch. Launch OpenCode with `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true` for this behaviour; without it, parallel work still runs concurrently but refills in waves.
 - Added parallel progress reporting, so a running workflow can show which review specialists and implementer dispatches are in flight or finished, including how each dispatch's assigned tasks compare against the checked task list. To-do lists reflect the same in-flight and completed work.
 - Sequential assignments in the same implementation lane now reuse the same implementer session, preserving useful context while every dispatch still receives fresh task state; a fresh implementer dispatch remains an always-valid fallback.
+- Agents can carry useful change context across sessions, making resumed work more consistent without requiring memory.
+- Added Implementer fan-out and Review fan-out settings (both default `auto`) controlling when parallel implementation lanes and the three-critic review run.
 
 ### Changed
 
-- Parallel implementers now run focused checks on their own tasks while siblings are still working, followed by one full verification pass over the settled implementation before review, instead of repeated whole-repository checks against a moving worktree.
-- Implementation now defaults to one implementer and runs tasks in parallel only when they are genuinely segregated, so parallel work finishes sooner instead of splitting related changes.
-- Implementation stays serial at the default limit of 1 and whenever task independence is uncertain.
-- Parallel implementation suspends new work when tasks turn out to be dependent or overlapping, keeping completed work safe while the remainder continues serially.
-- Planning now groups related work into coherent implementation lanes, keeping producer→consumer chains and shared types together instead of splitting work for parallel execution.
-- When more independent work lanes exist than the concurrency limit allows, the work that gates or dominates the rest now starts first, so changes finish sooner.
-- At the default limit of 1, all implementation runs through a single implementer from start to finish instead of being handed off between implementers.
+- Review now matches its effort to the change: small, simple changes are verified by the final Reviewer alone, while larger or riskier changes still run the three independent critics first. Set Review fan-out to `always` to keep critics on every change, or `never` to always review directly.
 
 ## [v1.5.0] - 2026-08-28
 

@@ -1,4 +1,4 @@
-import type { SpecOpsConfig } from "../config.js";
+import type { FanoutMode, SpecOpsConfig } from "../config.js";
 
 /**
  * Allow-listed, coordinator-relevant view of the effective SpecOps configuration.
@@ -16,6 +16,8 @@ export type CoordinatorConfigView = {
     maxSubagentConcurrency: number;
     maxAutoReviewIterations: number;
     frontierEscalation: boolean;
+    implementerFanout: FanoutMode;
+    reviewFanout: FanoutMode;
 };
 
 /**
@@ -47,5 +49,7 @@ export function configView(deps: ConfigViewDeps): CoordinatorConfigView {
         maxSubagentConcurrency: config.maxSubagentConcurrency,
         maxAutoReviewIterations: config.maxAutoReviewIterations,
         frontierEscalation: config.frontierEscalation,
+        implementerFanout: config.implementerFanout,
+        reviewFanout: config.reviewFanout,
     };
 }
