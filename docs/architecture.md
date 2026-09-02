@@ -32,7 +32,7 @@ Today these live in:
 
 | Decision                              | Where it lives                                                        |
 | ------------------------------------- | --------------------------------------------------------------------- |
-| Lifecycle and phase state             | `src/openspec/status.ts`                                              |
+| Lifecycle and phase state             | `src/openspec/status.ts`, `src/coordinator/workflow-state.ts`         |
 | Artifact existence and dependencies   | `src/coordinator/artifact-graph.ts`                                   |
 | Artifact eligibility, planning routes | `src/coordinator/batching.ts`, `src/coordinator/rolling-scheduler.ts` |
 | Task existence and completion         | `src/openspec/apply-instructions.ts`                                  |

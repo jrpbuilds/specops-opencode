@@ -7,6 +7,7 @@ All notable changes to SpecOps are documented in this file.
 ### Added
 
 - Added an architecture contract in the documentation that defines what SpecOps tooling decides deterministically and what stays with agent judgement.
+- `specops_status` now reports the change's current workflow phase and whether implementation and review are legally available, including a stable machine-readable reason when they are not.
 
 ## [v1.6.0] - 2026-09-02
 

@@ -107,7 +107,7 @@ export function nextBatch(status: NormalizedStatus, maxConcurrency: number): Pla
  * @param artifactsById Artifact lookup used to identify unknown references.
  * @returns Unknown ids in first-seen order without duplicates.
  */
-function collectUnknownRequired(
+export function collectUnknownRequired(
     status: NormalizedStatus,
     artifactsById: ReadonlyMap<string, NormalizedArtifact>,
 ): string[] {
