@@ -1,5 +1,14 @@
 # AGENTS.md
 
+## Architecture Boundary
+
+- SpecOps separates deterministic mechanics (TypeScript) from orchestration
+  judgement (models). [`docs/architecture.md`](docs/architecture.md) is the
+  binding contract for that split.
+- Workflow, tooling, prompt, and projection changes must preserve the boundary.
+  TypeScript may determine whether a choice is valid; it must not determine
+  which valid choice to make without explicit architectural justification.
+
 ## Code
 
 - Keep changes small, readable, and easy to follow.

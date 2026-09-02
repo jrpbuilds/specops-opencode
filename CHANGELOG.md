@@ -2,6 +2,12 @@
 
 All notable changes to SpecOps are documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- Added an architecture contract in the documentation that defines what SpecOps tooling decides deterministically and what stays with agent judgement.
+
 ## [v1.6.0] - 2026-09-02
 
 ### Added

@@ -152,6 +152,8 @@ bun run check
 
 `bun run build` builds the plugin. SpecOps uses Bun and TypeScript throughout.
 
+Workflow and prompt changes must preserve the orchestration boundary between deterministic mechanics and model judgement — see [Architecture](docs/architecture.md).
+
 ## Status
 
 SpecOps is actively developed, and I dogfood it on real software changes. Roadmap and open work live in the [issue tracker](https://github.com/jrpbuilds/specops-opencode/issues).
