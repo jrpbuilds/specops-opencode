@@ -3,11 +3,11 @@
  *
  * This module owns the planning-batch output vocabulary and scheduling
  * helpers used by the coordinator to dispatch specialist subagents
- * concurrently. Its exports are `SpecialistPass`, `PlanningRoute`, and
- * `nextBatch()`.
+ * concurrently. Its exports are `SpecialistPass`, `PlanningRoute`,
+ * `nextBatch()`, `feasiblePlanningArtifacts()`, and `ownerRoleIdFor()`.
  */
 import type { NormalizedArtifact, NormalizedStatus } from "../openspec/status.js";
-import { AGENT_IDS, ROLE_WORKFLOW_ORDER } from "../agents/ids.js";
+import { AGENT_IDS, ROLE_WORKFLOW_ORDER, type AgentId } from "../agents/ids.js";
 import { requiredClosure, transitiveRequires, type ArtifactsById } from "./artifact-graph.js";
 
 /** Specialist pass selected for a planning artifact. */
@@ -50,18 +50,9 @@ export function nextBatch(status: NormalizedStatus, maxConcurrency: number): Pla
     }
 
     const closure = requiredClosure(status.applyRequires, artifactsById);
-    const satisfied = new Set(
-        status.artifacts
-            .filter(artifact => artifact.status === "done" || artifact.status === "skipped")
-            .map(artifact => artifact.id),
-    );
-    const feasible = status.artifacts.filter(
-        artifact =>
-            closure.has(artifact.id) &&
-            !satisfied.has(artifact.id) &&
-            [...requiredClosure([artifact.id], artifactsById)].every(
-                requiredId => requiredId === artifact.id || satisfied.has(requiredId),
-            ),
+    const satisfied = satisfiedArtifacts(status);
+    const feasible = status.artifacts.filter(artifact =>
+        isAuthorEligible(artifact, closure, satisfied, artifactsById),
     );
 
     if (feasible.length > 0) {
@@ -94,6 +85,69 @@ export function nextBatch(status: NormalizedStatus, maxConcurrency: number): Pla
             reason: "No feasible artifact in the applyRequires dependency closure",
         },
     ];
+}
+
+/**
+ * List the planning artifacts eligible for authoring from one durable snapshot.
+ *
+ * Eligibility is the scheduler's authoring rule: an artifact sits in the
+ * `applyRequires` closure, remains unsatisfied, and has every transitive
+ * requirement satisfied. Any dependency edge referencing an unknown artifact
+ * id fails the whole derivation closed with an empty list, matching the
+ * scheduler's blocked route. The result is sorted deterministically by
+ * workflow role and then artifact id; the order is stable output, not a
+ * recommendation.
+ *
+ * @param status Normalized OpenSpec artifact and dependency state.
+ * @returns Eligible artifacts in deterministic order, empty when planning is blocked.
+ */
+export function feasiblePlanningArtifacts(status: NormalizedStatus): readonly NormalizedArtifact[] {
+    const artifactsById = new Map(status.artifacts.map(artifact => [artifact.id, artifact]));
+    if (collectUnknownRequired(status, artifactsById).length > 0) return [];
+
+    const closure = requiredClosure(status.applyRequires, artifactsById);
+    const satisfied = satisfiedArtifacts(status);
+    return status.artifacts
+        .filter(artifact => isAuthorEligible(artifact, closure, satisfied, artifactsById))
+        .sort(compareSchemaOrder);
+}
+
+/** Build the set of satisfied artifact ids (status done or skipped). */
+function satisfiedArtifacts(status: NormalizedStatus): Set<string> {
+    return new Set(
+        status.artifacts
+            .filter(artifact => artifact.status === "done" || artifact.status === "skipped")
+            .map(artifact => artifact.id),
+    );
+}
+
+/**
+ * Check whether one artifact is eligible for authoring right now.
+ *
+ * This predicate is the single source of planning-action legality: the
+ * artifact must sit in the required closure, remain unsatisfied, and have
+ * every transitive requirement satisfied. Both the batch scheduler and the
+ * eligible-action projection derive from it so they can never disagree.
+ *
+ * @param artifact Artifact whose authoring eligibility is being tested.
+ * @param closure Artifact ids in the required planning closure.
+ * @param satisfied Artifact ids already completed or skipped.
+ * @param artifactsById Artifact lookup used for reachability checks.
+ * @returns Whether the artifact can be authored now.
+ */
+function isAuthorEligible(
+    artifact: NormalizedArtifact,
+    closure: ReadonlySet<string>,
+    satisfied: ReadonlySet<string>,
+    artifactsById: ArtifactsById,
+): boolean {
+    return (
+        closure.has(artifact.id) &&
+        !satisfied.has(artifact.id) &&
+        [...requiredClosure([artifact.id], artifactsById)].every(
+            requiredId => requiredId === artifact.id || satisfied.has(requiredId),
+        )
+    );
 }
 
 /**
@@ -182,8 +236,7 @@ function compareSchemaOrder(left: NormalizedArtifact, right: NormalizedArtifact)
  * @returns The owning role's schema-order index.
  */
 function workflowRoleOrder(artifact: NormalizedArtifact): number {
-    const role = specialistFor(artifact) === "designer" ? AGENT_IDS.designer : AGENT_IDS.planner;
-    return ROLE_WORKFLOW_ORDER.indexOf(role);
+    return ROLE_WORKFLOW_ORDER.indexOf(ownerRoleIdFor(artifact));
 }
 
 /**
@@ -204,4 +257,18 @@ function toAuthorRoute(artifact: NormalizedArtifact): PlanningRoute {
 /** Return the specialist pass mapped to one artifact id. */
 function specialistFor(artifact: NormalizedArtifact): SpecialistPass {
     return artifact.id === "design" ? "designer" : "planner-generic";
+}
+
+/**
+ * Return the deterministic owning role id for one artifact's authoring pass.
+ *
+ * Ownership follows the existing dispatch rule: design work belongs to the
+ * designer role and every other artifact to the planner role. The projection
+ * exposes this only because it is already deterministic in SpecOps.
+ *
+ * @param artifact Artifact whose conventional specialist owner is needed.
+ * @returns The owning role's stable agent id.
+ */
+export function ownerRoleIdFor(artifact: NormalizedArtifact): AgentId {
+    return specialistFor(artifact) === "designer" ? AGENT_IDS.designer : AGENT_IDS.planner;
 }

@@ -69,7 +69,8 @@ const EXPECTED_TOOLS = [
         id: "specops_status",
         description:
             "Read normalized OpenSpec workflow status for a named change, including the current " +
-            "workflow phase and whether implementation and review are legally available.",
+            "workflow phase, whether implementation and review are legally available, and the " +
+            "actions that are legal right now.",
         args: ["change"],
     },
     {

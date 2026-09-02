@@ -9,12 +9,14 @@ import { requireLifecyclePermission } from "../lifecycle-permission.js";
  *
  * The session directory is supplied by OpenCode so status targets the current
  * project rather than the process working directory. Both durable reads feed
- * the deterministic phase/lifecycle derivation in the tool core.
+ * the deterministic phase, lifecycle, and eligible-action derivations in the
+ * tool core.
  */
 export const statusTool = tool({
     description:
         "Read normalized OpenSpec workflow status for a named change, including the current " +
-        "workflow phase and whether implementation and review are legally available.",
+        "workflow phase, whether implementation and review are legally available, and the " +
+        "actions that are legal right now.",
     args: {
         change: tool.schema.string(),
     },

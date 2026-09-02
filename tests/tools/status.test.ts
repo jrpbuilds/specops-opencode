@@ -78,7 +78,7 @@ describe("status", () => {
         expect(applyCalled).toBe(false);
     });
 
-    test("returns successful results with phase and lifecycle legality merged in", async () => {
+    test("returns successful results with phase, lifecycle, and eligible actions merged in", async () => {
         let received: string | undefined;
         const result = await status(
             "  example  ",
@@ -102,6 +102,7 @@ describe("status", () => {
                 implement: { allowed: true },
                 review: { allowed: false, reason: "implementation-incomplete" },
             },
+            eligibleActions: [{ type: "enter-implementation" }],
         });
         expect(result).not.toContain("recommend");
     });
@@ -126,6 +127,51 @@ describe("status", () => {
             ...normalizedStatus,
             phase: "review",
             lifecycle: { implement: { allowed: true }, review: { allowed: true } },
+            eligibleActions: [{ type: "remediate" }, { type: "enter-review" }],
+        });
+    });
+
+    test("derives author actions from the artifact graph while planning is incomplete", async () => {
+        const result = await status(
+            "example",
+            deps({
+                getOpenSpecStatus: async () => ({
+                    ok: true,
+                    status: {
+                        ...normalizedStatus,
+                        isPlanningComplete: false,
+                        artifacts: [
+                            {
+                                id: "proposal",
+                                outputPath: "openspec/changes/example/proposal.md",
+                                status: "ready" as const,
+                                requires: [],
+                            },
+                        ],
+                    },
+                }),
+            }),
+        );
+
+        expect(JSON.parse(result)).toEqual({
+            ...normalizedStatus,
+            isPlanningComplete: false,
+            artifacts: [
+                {
+                    id: "proposal",
+                    outputPath: "openspec/changes/example/proposal.md",
+                    status: "ready",
+                    requires: [],
+                },
+            ],
+            phase: "planning",
+            lifecycle: {
+                implement: { allowed: false, reason: "planning-incomplete" },
+                review: { allowed: false, reason: "planning-incomplete" },
+            },
+            eligibleActions: [
+                { type: "author-artifact", artifactId: "proposal", role: "specops-planner" },
+            ],
         });
     });
 

@@ -30,19 +30,19 @@ A deterministic helper answers _what is true_, _what is legal_, and _what follow
 
 Today these live in:
 
-| Decision                              | Where it lives                                                        |
-| ------------------------------------- | --------------------------------------------------------------------- |
-| Lifecycle and phase state             | `src/openspec/status.ts`, `src/coordinator/workflow-state.ts`         |
-| Artifact existence and dependencies   | `src/coordinator/artifact-graph.ts`                                   |
-| Artifact eligibility, planning routes | `src/coordinator/batching.ts`, `src/coordinator/rolling-scheduler.ts` |
-| Task existence and completion         | `src/openspec/apply-instructions.ts`                                  |
-| Assignment validity and overlap       | `src/coordinator/implementer-progress.ts`                             |
-| Concurrency and capacity accounting   | `src/coordinator/rolling-scheduler.ts`                                |
-| Review guard state                    | `src/coordinator/review-guard.ts`                                     |
-| Archive eligibility                   | `src/openspec/archive.ts`                                             |
-| Todo projection                       | `src/coordinator/todo-projection.ts`                                  |
-| Progress projection                   | `src/tools/progress.ts`, `src/coordinator/review-fanout.ts`           |
-| Role and tool permissions             | `src/agents/permission-policy.ts`, `src/host/lifecycle-permission.ts` |
+| Decision                               | Where it lives                                                        |
+| -------------------------------------- | --------------------------------------------------------------------- |
+| Lifecycle, phase, and eligible actions | `src/openspec/status.ts`, `src/coordinator/workflow-state.ts`         |
+| Artifact existence and dependencies    | `src/coordinator/artifact-graph.ts`                                   |
+| Artifact eligibility, planning routes  | `src/coordinator/batching.ts`, `src/coordinator/rolling-scheduler.ts` |
+| Task existence and completion          | `src/openspec/apply-instructions.ts`                                  |
+| Assignment validity and overlap        | `src/coordinator/implementer-progress.ts`                             |
+| Concurrency and capacity accounting    | `src/coordinator/rolling-scheduler.ts`                                |
+| Review guard state                     | `src/coordinator/review-guard.ts`                                     |
+| Archive eligibility                    | `src/openspec/archive.ts`                                             |
+| Todo projection                        | `src/coordinator/todo-projection.ts`                                  |
+| Progress projection                    | `src/tools/progress.ts`, `src/coordinator/review-fanout.ts`           |
+| Role and tool permissions              | `src/agents/permission-policy.ts`, `src/host/lifecycle-permission.ts` |
 
 Deterministic helpers may validate, derive, and project. Deterministic helpers must not judge.
 

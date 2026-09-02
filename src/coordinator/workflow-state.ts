@@ -1,21 +1,25 @@
 /**
- * Canonical deterministic derivation of workflow phase and lifecycle legality.
+ * Canonical deterministic derivation of workflow phase, lifecycle legality,
+ * and eligible actions.
  *
  * Consumes only the normalized OpenSpec facts already trusted by SpecOps —
  * `NormalizedStatus` from `openspec status` and the normalized apply-instruction
  * context from `openspec instructions apply` — and projects them onto one
- * workflow phase plus per-capability legality. The projection is pure: no I/O,
- * no timestamps, no inferred state; identical durable state yields identical
- * results. `allowed: true` means an action is legal now, never that it is
- * recommended; choosing among legal actions remains coordinator judgement.
+ * workflow phase, per-capability legality, and the mechanically legal actions.
+ * The projection is pure: no I/O, no timestamps, no inferred state; identical
+ * durable state yields identical results. `allowed: true` and a listed
+ * eligible action mean an action is legal now, never that it is recommended;
+ * choosing among legal actions remains coordinator judgement.
  *
  * Exports: `WorkflowPhase`, `LifecycleBlockReason`, `LifecycleCapability`,
- * `LifecycleCapabilities`, `WorkflowState`, `deriveWorkflowState`.
+ * `LifecycleCapabilities`, `WorkflowState`, `EligibleAction`,
+ * `deriveWorkflowState`, `deriveEligibleActions`.
  */
+import type { AgentId } from "../agents/ids.js";
 import type { NormalizedApplyInstructionContext } from "../openspec/apply-instructions.js";
 import type { NormalizedArtifact, NormalizedStatus } from "../openspec/status.js";
 import { requiredClosure } from "./artifact-graph.js";
-import { collectUnknownRequired } from "./batching.js";
+import { collectUnknownRequired, feasiblePlanningArtifacts, ownerRoleIdFor } from "./batching.js";
 
 /** Deterministic workflow phase derived from durable OpenSpec state. */
 export type WorkflowPhase = "planning" | "implementation" | "review";
@@ -49,6 +53,27 @@ export type WorkflowState = {
     phase: WorkflowPhase;
     lifecycle: LifecycleCapabilities;
 };
+
+/**
+ * One mechanically legal workflow action for the current durable state.
+ *
+ * Author actions are derived from the normalized OpenSpec artifact graph, so
+ * custom schemas, skipped artifacts, and reordered schemas stay supported,
+ * and each carries the artifact's deterministic owning role. Implementation
+ * and review actions mirror the lifecycle legality of `deriveWorkflowState`
+ * exactly; remediation is the review-phase form of legal implementation work.
+ *
+ * Archive is deliberately never emitted. SpecOps keeps no durable record of
+ * review success, so archive legality is not objectively derivable from
+ * current state; OpenSpec structural readiness alone must not stand in for a
+ * passed review. Adding an archive action requires a canonical legality
+ * source first.
+ */
+export type EligibleAction =
+    | { type: "author-artifact"; artifactId: string; role: AgentId }
+    | { type: "enter-implementation" }
+    | { type: "remediate" }
+    | { type: "enter-review" };
 
 /** An artifact satisfies the planning closure when OpenSpec marks it done or skipped. */
 function isSatisfied(artifact: NormalizedArtifact): boolean {
@@ -127,4 +152,44 @@ export function deriveWorkflowState(
             review: allDone || untracked ? allowed() : blocked("implementation-incomplete"),
         },
     };
+}
+
+/**
+ * Derive the mechanically legal workflow actions from one durable snapshot.
+ *
+ * Author actions reuse the planning scheduler's feasibility derivation, so
+ * they always agree with what the coordinator could dispatch, and they never
+ * appear alongside implementation or review actions: a feasible artifact
+ * means the planning closure is unsatisfied, which blocks both capabilities.
+ * The implementation action is legal whenever implementation work is, taking
+ * the remediation form while the change sits in the review phase, and the
+ * review action mirrors the review capability exactly.
+ *
+ * The result is ordered deterministically for stable output and tests —
+ * author actions in schema order, then the implementation-family action, then
+ * review — but the order is not a recommendation; when several actions are
+ * legal, choosing among them is coordinator judgement.
+ *
+ * @param status Normalized `openspec status` facts for the change.
+ * @param apply Normalized `openspec instructions apply` facts for the change.
+ * @returns Every currently legal action, in stable non-prescriptive order.
+ */
+export function deriveEligibleActions(
+    status: NormalizedStatus,
+    apply: NormalizedApplyInstructionContext,
+): EligibleAction[] {
+    const { phase, lifecycle } = deriveWorkflowState(status, apply);
+    const actions: EligibleAction[] = feasiblePlanningArtifacts(status).map(artifact => ({
+        type: "author-artifact",
+        artifactId: artifact.id,
+        role: ownerRoleIdFor(artifact),
+    }));
+
+    if (lifecycle.implement.allowed) {
+        actions.push(phase === "review" ? { type: "remediate" } : { type: "enter-implementation" });
+    }
+    if (lifecycle.review.allowed) {
+        actions.push({ type: "enter-review" });
+    }
+    return actions;
 }
