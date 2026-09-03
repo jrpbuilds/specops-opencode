@@ -88,6 +88,13 @@ export async function validateChange(
  * the failure is reported as expected mid-planning state. A broken or
  * malformed count must never soften a real violation, so any error here
  * keeps the blocking classification.
+ *
+ * This heuristic is deliberately separate from the canonical
+ * `derivePlanningCompletion` predicate: it answers a different question —
+ * "did OpenSpec strict validation fail only because no deltas exist yet?" —
+ * from different evidence (parsed delta counts, not the artifact graph), and
+ * runs without a workflow-status read. It classifies validation failures; it
+ * does not derive workflow legality.
  */
 async function isPlanningIncomplete(change: string, deps: ValidateChangeDeps): Promise<boolean> {
     try {

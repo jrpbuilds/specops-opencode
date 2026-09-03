@@ -17,9 +17,9 @@
  */
 import type { AgentId } from "../agents/ids.js";
 import type { NormalizedApplyInstructionContext } from "../openspec/apply-instructions.js";
-import type { NormalizedArtifact, NormalizedStatus } from "../openspec/status.js";
-import { requiredClosure } from "./artifact-graph.js";
-import { collectUnknownRequired, feasiblePlanningArtifacts, ownerRoleIdFor } from "./batching.js";
+import type { NormalizedStatus } from "../openspec/status.js";
+import { feasiblePlanningArtifacts, ownerRoleIdFor } from "./batching.js";
+import { derivePlanningCompletion } from "./planning-completion.js";
 
 /** Deterministic workflow phase derived from durable OpenSpec state. */
 export type WorkflowPhase = "planning" | "implementation" | "review";
@@ -67,18 +67,14 @@ export type WorkflowState = {
  * review success, so archive legality is not objectively derivable from
  * current state; OpenSpec structural readiness alone must not stand in for a
  * passed review. Adding an archive action requires a canonical legality
- * source first.
+ * source first; until then the passed-review-before-archive invariant stays
+ * coordinator-owned prompt guidance.
  */
 export type EligibleAction =
     | { type: "author-artifact"; artifactId: string; role: AgentId }
     | { type: "enter-implementation" }
     | { type: "remediate" }
     | { type: "enter-review" };
-
-/** An artifact satisfies the planning closure when OpenSpec marks it done or skipped. */
-function isSatisfied(artifact: NormalizedArtifact): boolean {
-    return artifact.status === "done" || artifact.status === "skipped";
-}
 
 /** Build the stable blocked capability for one unavailable lifecycle action. */
 function blocked(reason: LifecycleBlockReason): LifecycleCapability {
@@ -93,15 +89,15 @@ function allowed(): LifecycleCapability {
 /**
  * Derive the workflow phase and lifecycle legality from one durable snapshot.
  *
- * Planning authority follows the same rule as the planning scheduler: the
- * required closure is satisfied, no dependency edge references an unknown
- * artifact, and OpenSpec does not report `isPlanningComplete: false`. When
- * planning is complete but OpenSpec reports the apply flow as blocked, the
- * durable task state is unusable and both capabilities fail closed. A schema
- * with no task tracking never reports `all_done`; with nothing tracked
- * outstanding, review is legal as soon as planning is complete. Implementation
- * stays legal during review because remediation dispatches remain legal after
- * a failed review.
+ * Planning completion comes from the canonical `derivePlanningCompletion`
+ * predicate, shared with the planning scheduler and Todo projection, so these
+ * projections can never disagree with either surface about the same durable
+ * state. When planning is complete but OpenSpec reports the apply flow as
+ * blocked, the durable task state is unusable and both capabilities fail
+ * closed. A schema with no task tracking never reports `all_done`; with
+ * nothing tracked outstanding, review is legal as soon as planning is
+ * complete. Implementation stays legal during review because remediation
+ * dispatches remain legal after a failed review.
  *
  * @param status Normalized `openspec status` facts for the change.
  * @param apply Normalized `openspec instructions apply` facts for the change.
@@ -111,26 +107,15 @@ export function deriveWorkflowState(
     status: NormalizedStatus,
     apply: NormalizedApplyInstructionContext,
 ): WorkflowState {
-    const artifactsById = new Map(status.artifacts.map(artifact => [artifact.id, artifact]));
-    if (collectUnknownRequired(status, artifactsById).length > 0) {
+    const completion = derivePlanningCompletion(status);
+    if (!completion.complete) {
+        const reason =
+            completion.reason === "unknown-required" ? "planning-blocked" : "planning-incomplete";
         return {
             phase: "planning",
             lifecycle: {
-                implement: blocked("planning-blocked"),
-                review: blocked("planning-blocked"),
-            },
-        };
-    }
-
-    const closure = requiredClosure(status.applyRequires, artifactsById);
-    const satisfied = new Set(status.artifacts.filter(isSatisfied).map(artifact => artifact.id));
-    const closureSatisfied = [...closure].every(artifactId => satisfied.has(artifactId));
-    if (!closureSatisfied || status.isPlanningComplete === false) {
-        return {
-            phase: "planning",
-            lifecycle: {
-                implement: blocked("planning-incomplete"),
-                review: blocked("planning-incomplete"),
+                implement: blocked(reason),
+                review: blocked(reason),
             },
         };
     }

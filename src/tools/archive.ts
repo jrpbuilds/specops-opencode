@@ -17,7 +17,9 @@ export type ArchiveDeps = {
  * The name is trimmed and rejected when empty, then passed to the injected
  * OpenSpec operation. This function does not inspect review state, validate
  * tasks, retry failures, or add lifecycle state; those decisions belong to
- * the Coordinator and OpenSpec itself.
+ * the Coordinator and OpenSpec itself. Because a passed review is not durable
+ * OpenSpec state, this tool boundary can never prove archiving is legal —
+ * the passed-review-before-archive invariant stays coordinator-owned.
  *
  * @param change The active OpenSpec change name to archive.
  * @param deps The deterministic OpenSpec operation used to perform the archive.

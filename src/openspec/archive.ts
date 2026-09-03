@@ -4,6 +4,18 @@ import type { CaptureStdout } from "./helpers.js";
 import { runOpenSpecJson } from "./exec.js";
 import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
 
+/**
+ * Thin normalization of the native `openspec archive --json` CLI call.
+ *
+ * This module exposes OpenSpec's structural archive operation only. Archive
+ * legality is deliberately not derived here: SpecOps also requires a passed
+ * review, and that verdict is not durable OpenSpec state, so no trustworthy
+ * canonical source exists. Manufacture of an `archive.allowed` fact from
+ * structural readiness alone is forbidden; the passed-review-before-archive
+ * invariant stays coordinator-owned prompt guidance until durable review
+ * state is separately scoped.
+ */
+
 /** Validates the `openspec archive --json` response shape. */
 const archiveSchema: Schema = {
     archive: {
@@ -49,6 +61,12 @@ export type OpenSpecArchiveResult =
  * This wrapper deliberately delegates archive safety and spec synchronization
  * to OpenSpec. It does not inspect tasks or review state, retry failures, or
  * manually move change directories.
+ *
+ * Archive boundary: a successful result proves only what OpenSpec structurally
+ * reports. SpecOps policy also requires a passed review before archiving, and
+ * that verdict is not durable OpenSpec state, so this module must never be
+ * read as proof that archiving is legal. Archive legality stays a
+ * coordinator-owned invariant until review success is durably represented.
  *
  * @param change The active OpenSpec change name supplied to the CLI.
  * @param cwd The project directory in which OpenSpec resolves its root.

@@ -9,6 +9,11 @@
 import type { NormalizedArtifact, NormalizedStatus } from "../openspec/status.js";
 import { AGENT_IDS, ROLE_WORKFLOW_ORDER, type AgentId } from "../agents/ids.js";
 import { requiredClosure, transitiveRequires, type ArtifactsById } from "./artifact-graph.js";
+import {
+    collectUnknownRequired,
+    derivePlanningCompletion,
+    satisfiedArtifactIds,
+} from "./planning-completion.js";
 
 /** Specialist pass selected for a planning artifact. */
 export type SpecialistPass = "designer" | "planner-generic";
@@ -27,7 +32,10 @@ export type PlanningRoute =
 /**
  * Select the next planning batch from one normalized OpenSpec status snapshot.
  *
- * Feasibility is derived from the full required closure, while selection uses
+ * Planning completion follows the canonical `derivePlanningCompletion`
+ * verdict, so the scheduler's plan-ready and blocked routes can never
+ * disagree with status or Todo projections of the same state. Feasibility is
+ * derived from the full required closure, while selection uses
  * reverse-dependency reachability and deterministic workflow ordering. The
  * calculation is pure: it does not mutate the supplied status or retain state
  * between calls.
@@ -37,20 +45,28 @@ export type PlanningRoute =
  * @returns Author routes, a plan-ready route, or one blocked route.
  */
 export function nextBatch(status: NormalizedStatus, maxConcurrency: number): PlanningRoute[] {
-    const artifactsById = new Map(status.artifacts.map(artifact => [artifact.id, artifact]));
-    const unknownRequired = collectUnknownRequired(status, artifactsById);
-    if (unknownRequired.length > 0) {
+    const completion = derivePlanningCompletion(status);
+    if (completion.complete) {
+        return [{ kind: "plan-ready" }];
+    }
+
+    if (completion.reason === "unknown-required") {
         return [
             {
                 kind: "blocked",
-                reason: `Unknown required artifact id(s): ${unknownRequired.join(", ")}`,
-                unknownRequired,
+                reason: `Unknown required artifact id(s): ${completion.unknownRequired.join(", ")}`,
+                unknownRequired: completion.unknownRequired,
             },
         ];
     }
 
+    if (completion.reason === "flag-false") {
+        return [{ kind: "blocked", reason: "isPlanningComplete false with closure satisfied" }];
+    }
+
+    const artifactsById = new Map(status.artifacts.map(artifact => [artifact.id, artifact]));
     const closure = requiredClosure(status.applyRequires, artifactsById);
-    const satisfied = satisfiedArtifacts(status);
+    const satisfied = satisfiedArtifactIds(status);
     const feasible = status.artifacts.filter(artifact =>
         isAuthorEligible(artifact, closure, satisfied, artifactsById),
     );
@@ -68,15 +84,6 @@ export function nextBatch(status: NormalizedStatus, maxConcurrency: number): Pla
             );
         }
         return selected.map(toAuthorRoute);
-    }
-
-    const closureSatisfied = [...closure].every(artifactId => satisfied.has(artifactId));
-    if (closureSatisfied && status.isPlanningComplete !== false) {
-        return [{ kind: "plan-ready" }];
-    }
-
-    if (closureSatisfied && status.isPlanningComplete === false) {
-        return [{ kind: "blocked", reason: "isPlanningComplete false with closure satisfied" }];
     }
 
     return [
@@ -106,19 +113,10 @@ export function feasiblePlanningArtifacts(status: NormalizedStatus): readonly No
     if (collectUnknownRequired(status, artifactsById).length > 0) return [];
 
     const closure = requiredClosure(status.applyRequires, artifactsById);
-    const satisfied = satisfiedArtifacts(status);
+    const satisfied = satisfiedArtifactIds(status);
     return status.artifacts
         .filter(artifact => isAuthorEligible(artifact, closure, satisfied, artifactsById))
         .sort(compareSchemaOrder);
-}
-
-/** Build the set of satisfied artifact ids (status done or skipped). */
-function satisfiedArtifacts(status: NormalizedStatus): Set<string> {
-    return new Set(
-        status.artifacts
-            .filter(artifact => artifact.status === "done" || artifact.status === "skipped")
-            .map(artifact => artifact.id),
-    );
 }
 
 /**
@@ -148,33 +146,6 @@ function isAuthorEligible(
             requiredId => requiredId === artifact.id || satisfied.has(requiredId),
         )
     );
-}
-
-/**
- * Collect artifact ids referenced by `applyRequires` or artifact `requires`
- * edges that do not exist in the normalized graph.
- *
- * Unknown dependencies become a blocked route so the scheduler never
- * fabricates an artifact to satisfy an incomplete graph.
- *
- * @param status Normalized status containing the dependency references.
- * @param artifactsById Artifact lookup used to identify unknown references.
- * @returns Unknown ids in first-seen order without duplicates.
- */
-export function collectUnknownRequired(
-    status: NormalizedStatus,
-    artifactsById: ReadonlyMap<string, NormalizedArtifact>,
-): string[] {
-    const unknown = new Set<string>();
-    for (const requiredId of status.applyRequires) {
-        if (!artifactsById.has(requiredId)) unknown.add(requiredId);
-    }
-    for (const artifact of status.artifacts) {
-        for (const requiredId of artifact.requires) {
-            if (!artifactsById.has(requiredId)) unknown.add(requiredId);
-        }
-    }
-    return [...unknown];
 }
 
 /**

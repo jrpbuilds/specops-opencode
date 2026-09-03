@@ -9,6 +9,10 @@ All notable changes to SpecOps are documented in this file.
 - Added an architecture contract in the documentation that defines what SpecOps tooling decides deterministically and what stays with agent judgement.
 - `specops_status` now reports the change's current workflow phase, whether implementation and review are legally available (with a stable machine-readable reason when they are not), and every workflow action that is legal right now, such as authoring a planning artifact with its owning specialist, starting implementation, running review, or doing remediation work, so routing decisions start from durable facts instead of prose.
 
+### Changed
+
+- Workflow legality now comes from one shared derivation: status, planning dispatch, and the to-do list all answer "is planning complete?" from the same rule, so they can no longer contradict one another about the same change state.
+
 ## [v1.6.0] - 2026-09-02
 
 ### Added

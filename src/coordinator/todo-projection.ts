@@ -1,6 +1,7 @@
 import { AGENT_IDS } from "../agents/ids.js";
 import type { NormalizedArtifact, NormalizedStatus } from "../openspec/status.js";
 import type { ReviewFanoutProgress } from "./review-fanout.js";
+import { derivePlanningCompletion } from "./planning-completion.js";
 import { requiredClosure, transitiveRequires } from "./artifact-graph.js";
 
 /** Native Todo state projected from durable OpenSpec workflow state. */
@@ -82,13 +83,10 @@ export function buildTodoProjection(
         closure,
         artifactsById,
     );
-    const satisfied = new Set(
-        planningArtifacts.filter(artifact => isComplete(artifact)).map(artifact => artifact.id),
-    );
-    const planningComplete =
-        planningArtifacts.every(artifact => isComplete(artifact)) &&
-        [...closure].every(artifactId => satisfied.has(artifactId)) &&
-        status.isPlanningComplete !== false;
+    // The completion verdict is the canonical derivation shared with the
+    // planning scheduler and status lifecycle, so the projection can never
+    // disagree with either surface about the same durable state.
+    const planningComplete = derivePlanningCompletion(status).complete;
 
     const entries: TodoProjectionEntry[] = [
         ...(includeExplorer
