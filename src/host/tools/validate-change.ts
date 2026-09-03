@@ -3,6 +3,7 @@ import { countChangeDeltas } from "../../openspec/deltas.js";
 import { validateChange as runOpenSpecValidation } from "../../openspec/validate.js";
 import { validateChange } from "../../tools/validate-change.js";
 import { requireLifecyclePermission } from "../lifecycle-permission.js";
+import { recordSessionBinding } from "../session-bindings.js";
 
 /** Enforce the tool's exact `{ change }` argument contract. */
 function assertValidateChangeArgs(args: unknown): asserts args is { change: string } {
@@ -31,6 +32,7 @@ export const validateChangeTool = tool({
     async execute(args, context) {
         assertValidateChangeArgs(args);
         await requireLifecyclePermission(context, "specops_validate_change");
+        recordSessionBinding(context.sessionID, context.agent, args.change);
         context.metadata({ title: "Validating OpenSpec change…" });
         const result = await validateChange(args.change, {
             validateChange: change => runOpenSpecValidation(change, context.directory),

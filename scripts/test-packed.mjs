@@ -41,6 +41,7 @@ try {
     const config = {};
     await hooks.config(config);
 
+    assert(typeof hooks["tool.execute.before"] === "function", "packed todo sync hook is missing");
     assertEqual(
         Object.keys(config.command).sort(),
         [

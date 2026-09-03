@@ -2,6 +2,7 @@ import { tool } from "@opencode-ai/plugin/tool";
 import { archiveChange } from "../../openspec/archive.js";
 import { archive } from "../../tools/archive.js";
 import { requireLifecyclePermission } from "../lifecycle-permission.js";
+import { recordSessionBinding } from "../session-bindings.js";
 
 /**
  * Expose native OpenSpec archiving through the SpecOps tool surface.
@@ -16,6 +17,7 @@ export const archiveTool = tool({
     },
     async execute(args, context) {
         await requireLifecyclePermission(context, "specops_archive");
+        recordSessionBinding(context.sessionID, context.agent, args.change);
         context.metadata({ title: "Archiving OpenSpec change…" });
         return archive(args.change, {
             archiveChange: change => archiveChange(change, context.directory),

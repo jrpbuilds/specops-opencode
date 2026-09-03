@@ -8,6 +8,7 @@ import {
 } from "../../coordinator/review-guard.js";
 import { runCaptureStdout } from "../../helpers.js";
 import { requireLifecyclePermission } from "../lifecycle-permission.js";
+import { recordSessionBinding } from "../session-bindings.js";
 
 /** Valid operation names for the review guard tool. */
 type ReviewGuardOperation = "capture" | "verify";
@@ -54,6 +55,7 @@ export const reviewGuardTool = tool({
     async execute(args, context) {
         assertReviewGuardArgs(args);
         await requireLifecyclePermission(context, "specops_review_guard");
+        recordSessionBinding(context.sessionID, context.agent, args.change);
         context.metadata({
             title:
                 args.operation === "capture"

@@ -30,20 +30,20 @@ A deterministic helper answers _what is true_, _what is legal_, and _what follow
 
 Today these live in:
 
-| Decision                               | Where it lives                                                        |
-| -------------------------------------- | --------------------------------------------------------------------- |
-| Lifecycle, phase, and eligible actions | `src/openspec/status.ts`, `src/coordinator/workflow-state.ts`         |
-| Planning completion                    | `src/coordinator/planning-completion.ts`                              |
-| Artifact existence and dependencies    | `src/coordinator/artifact-graph.ts`                                   |
-| Artifact eligibility, planning routes  | `src/coordinator/batching.ts`, `src/coordinator/rolling-scheduler.ts` |
-| Task existence and completion          | `src/openspec/apply-instructions.ts`                                  |
-| Assignment validity and overlap        | `src/coordinator/implementer-progress.ts`                             |
-| Concurrency and capacity accounting    | `src/coordinator/rolling-scheduler.ts`                                |
-| Review guard state                     | `src/coordinator/review-guard.ts`                                     |
-| Archive operation (structural only)    | `src/openspec/archive.ts` — see the archive boundary below            |
-| Todo projection                        | `src/coordinator/todo-projection.ts`                                  |
-| Progress projection                    | `src/tools/progress.ts`, `src/coordinator/review-fanout.ts`           |
-| Role and tool permissions              | `src/agents/permission-policy.ts`, `src/host/lifecycle-permission.ts` |
+| Decision                               | Where it lives                                                                                       |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Lifecycle, phase, and eligible actions | `src/openspec/status.ts`, `src/coordinator/workflow-state.ts`                                        |
+| Planning completion                    | `src/coordinator/planning-completion.ts`                                                             |
+| Artifact existence and dependencies    | `src/coordinator/artifact-graph.ts`                                                                  |
+| Artifact eligibility, planning routes  | `src/coordinator/batching.ts`, `src/coordinator/rolling-scheduler.ts`                                |
+| Task existence and completion          | `src/openspec/apply-instructions.ts`                                                                 |
+| Assignment validity and overlap        | `src/coordinator/implementer-progress.ts`                                                            |
+| Concurrency and capacity accounting    | `src/coordinator/rolling-scheduler.ts`                                                               |
+| Review guard state                     | `src/coordinator/review-guard.ts`                                                                    |
+| Archive operation (structural only)    | `src/openspec/archive.ts` — see the archive boundary below                                           |
+| Todo projection and publication        | `src/coordinator/todo-projection.ts`, `src/coordinator/todo-publication.ts`, `src/host/todo-sync.ts` |
+| Progress projection                    | `src/tools/progress.ts`, `src/coordinator/review-fanout.ts`                                          |
+| Role and tool permissions              | `src/agents/permission-policy.ts`, `src/host/lifecycle-permission.ts`                                |
 
 Deterministic helpers may validate, derive, and project. Deterministic helpers must not judge.
 
@@ -112,6 +112,10 @@ The second rule is an escape hatch, not a ban. Behaviour that steers judgement c
 Todo and progress reports are **non-authoritative projections**: they derive from durable state and can be rebuilt from it at any time. A projection may be lossy, ephemeral, or discarded when a coordinator run ends; it must never become a second source of truth.
 
 OpenSpec remains the durable workflow source of truth. Change artifacts and task checkboxes under `openspec/changes/<change>/` are the only persisted workflow state; temporary session affinity, in-flight dispatch tracking, and projections end with the run.
+
+### Todo publication
+
+The native Todo list is runtime-published, not model-authored. Because OpenCode exposes no plugin write API for Todo state — the only writer is the builtin `todowrite` tool the model invokes — SpecOps intercepts that one tool through `tool.execute.before` and replaces the payload with the canonical projection derived from fresh durable state. Todo content is therefore runtime-owned; the model's call is only a flush trigger. The hook is session-scoped (only sessions that ran a SpecOps lifecycle tool are intercepted) and fails open by construction: any failure degrades to the model-authored list and never breaks the tool call, and Todo state is never read back as workflow authority. Presentation gaps — the Explorer evidence entry and ephemeral parallel entries — stay out of the projection until the runtime genuinely observes those dispatches, rather than implying required work from durable state alone.
 
 ## Classifying new behaviour
 

@@ -9,6 +9,8 @@ import {
 } from "./host/agents.js";
 import { applyLifecycleBoundary, applyTaskBoundary } from "./host/permissions.js";
 import { TOOLS } from "./host/tools/index.js";
+import { createTodoSyncHook } from "./host/todo-sync.js";
+import { getOpenSpecStatus } from "./openspec/status.js";
 
 export { COMMANDS } from "./host/commands.js";
 
@@ -19,7 +21,7 @@ export { COMMANDS } from "./host/commands.js";
  * persisted configuration; a configuration error is warned and isolated so it
  * does not prevent the host from loading the rest of the plugin surface.
  */
-export const SpecOpsPlugin: Plugin = async () => ({
+export const SpecOpsPlugin: Plugin = async input => ({
     config: async (config: Config) => {
         applyCommands(config);
 
@@ -48,6 +50,14 @@ export const SpecOpsPlugin: Plugin = async () => ({
         }
     },
     tool: TOOLS,
+    // Publish the runtime-owned Todo projection: the hook intercepts the
+    // builtin todowrite tool for sessions that ran a SpecOps lifecycle tool,
+    // replacing the model's payload with the canonical projection derived
+    // from fresh durable state.
+    "tool.execute.before": createTodoSyncHook({
+        directory: input.directory,
+        getOpenSpecStatus,
+    }),
 });
 
 /**

@@ -8,6 +8,7 @@ All notable changes to SpecOps are documented in this file.
 
 - Added an architecture contract in the documentation that defines what SpecOps tooling decides deterministically and what stays with agent judgement.
 - `specops_status` now reports the change's current workflow phase, whether implementation and review are legally available (with a stable machine-readable reason when they are not), and every workflow action that is legal right now, such as authoring a planning artifact with its owning specialist, starting implementation, running review, or doing remediation work, so routing decisions start from durable facts instead of prose.
+- The native to-do list is now published by SpecOps from the current OpenSpec state instead of hand-maintained by the coordinator: during a SpecOps run, the visible list always matches the real workflow, and a failed update falls back to the coordinator's own list.
 
 ### Changed
 

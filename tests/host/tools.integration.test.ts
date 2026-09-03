@@ -16,6 +16,10 @@ import {
     __resetProcessConfigForTesting,
     setProcessConfig,
 } from "../../src/host/config-snapshot.js";
+import {
+    __resetSessionBindingsForTesting,
+    getSessionBinding,
+} from "../../src/host/session-bindings.js";
 import { DEFAULT_CONFIG } from "../../src/config.js";
 import { SpecOpsPlugin } from "../../src/index.js";
 import { withTempDir } from "../helpers.js";
@@ -249,6 +253,49 @@ describe("lifecycle tool integration", () => {
                     metadata: { tool: id },
                 });
                 expect(metadataCalls).toBe(0);
+            }
+        });
+    });
+
+    test("an authorized SpecOps lifecycle call records the session binding", async () => {
+        await withTempDir(async directory => {
+            __resetSessionBindingsForTesting();
+            const context: ToolContext = {
+                ...toolContext(
+                    directory,
+                    async () => {},
+                    () => {},
+                ),
+                sessionID: "ses_binding",
+                agent: "SpecOps",
+            };
+            try {
+                await statusTool.execute({ change: "example" }, context).catch(() => {});
+
+                expect(getSessionBinding("ses_binding")).toEqual({
+                    change: "example",
+                    mode: "interactive",
+                });
+            } finally {
+                __resetSessionBindingsForTesting();
+            }
+        });
+    });
+
+    test("non-SpecOps agents never record a session binding", async () => {
+        await withTempDir(async directory => {
+            __resetSessionBindingsForTesting();
+            const context = toolContext(
+                directory,
+                async () => {},
+                () => {},
+            );
+            try {
+                await statusTool.execute({ change: "example" }, context).catch(() => {});
+
+                expect(getSessionBinding("test-session")).toBeUndefined();
+            } finally {
+                __resetSessionBindingsForTesting();
             }
         });
     });
