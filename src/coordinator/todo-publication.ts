@@ -8,12 +8,11 @@
  * identical items, and a publication failure upstream degrades to the
  * model-authored list without touching workflow state.
  *
- * Presentation scope: the projection derives from durable state only. The
- * repository-evidence pass is part of authoring the first planning artifact,
- * so it is not a separate checklist stage; ephemeral parallel entries arrive
- * with the later runtime event wiring (#53). Every item carries uniform
- * medium priority: the list is orientation, and priority must never become a
- * prescription.
+ * Presentation scope: besides the durable derivation, the only extra entries
+ * are the runtime-observed in-flight parallel dispatches spliced in by the
+ * projection; completed work stays carried by the durable stages and task
+ * checkboxes. Every item carries uniform medium priority: the list is
+ * orientation, and priority must never become a prescription.
  *
  * Exports: `NativeTodoItem`, `buildNativeTodoProjection`.
  */
@@ -21,6 +20,7 @@ import type { NormalizedStatus } from "../openspec/status.js";
 import {
     buildTodoProjection,
     type LifecycleProgressInput,
+    type ParallelProgressInput,
     type TodoProjectionEntry,
     type TodoProjectionMode,
 } from "./todo-projection.js";
@@ -51,14 +51,17 @@ const NATIVE_STATUS: Record<TodoProjectionEntry["status"], NativeTodoItem["statu
  * @param mode Coordinator mode selecting the auto-only review stages.
  * @param lifecycle Optional implementation progress advancing the post-plan
  * stages from the canonical workflow phase.
+ * @param parallel Optional ephemeral parallel work from runtime dispatch
+ *   observation, spliced after the stages they belong to.
  * @returns Native todo items in canonical projection order.
  */
 export function buildNativeTodoProjection(
     status: NormalizedStatus,
     mode: TodoProjectionMode = "interactive",
     lifecycle?: LifecycleProgressInput,
+    parallel?: ParallelProgressInput,
 ): NativeTodoItem[] {
-    return buildTodoProjection(status, mode, undefined, lifecycle).map(entry => ({
+    return buildTodoProjection(status, mode, parallel, lifecycle).map(entry => ({
         id: entry.id,
         content: entry.content,
         status: NATIVE_STATUS[entry.status],

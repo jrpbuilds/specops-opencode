@@ -70,7 +70,7 @@ describe("progress", () => {
         );
 
         expect(result).toBe(
-            "Provide reviewFanout and/or implementerAssignments to report parallel progress.",
+            "Provide reviewFanout, implementerAssignments, or implementerDispatches to report parallel progress.",
         );
         expect(called).toBe(false);
         expect(() => JSON.parse(result)).toThrow();

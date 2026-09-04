@@ -9,6 +9,7 @@ All notable changes to SpecOps are documented in this file.
 - Added an architecture contract in the documentation that defines what SpecOps tooling decides deterministically and what stays with agent judgement.
 - `specops_status` now reports the change's current workflow phase, whether implementation and review are legally available (with a stable machine-readable reason when they are not), and every workflow action that is legal right now, such as authoring a planning artifact with its owning specialist, starting implementation, running review, or doing remediation work, so routing decisions start from durable facts instead of prose.
 - The native to-do list is now published by SpecOps from the current OpenSpec state instead of hand-maintained by the coordinator: during a SpecOps run, the visible list always matches the real workflow, and a failed update falls back to the coordinator's own list.
+- The to-do list now shows in-flight parallel work where it belongs — implementer dispatches under the implementation stage and review critics under the review stage — and removes each entry as soon as that specialist finishes.
 
 ### Changed
 
@@ -18,6 +19,7 @@ All notable changes to SpecOps are documented in this file.
 - Workflow legality now comes from one shared derivation: status, planning dispatch, and the to-do list all answer "is planning complete?" from the same rule, so they can no longer contradict one another about the same change state.
 - The `# Todos` blocks no longer appear in the chat transcript after each to-do refresh; the sidebar list keeps showing the canonical projection.
 - The to-do list now advances past plan approval as work progresses: implementation shows as current once the plan is approved or a task is checked, and review once every task is done — matching the workflow phase the status tool already reports.
+- Parallel progress is now tracked by SpecOps itself: the progress tool reports which specialists are running or finished from what actually happened in the session, alongside the current checked-task totals, so the coordinator no longer maintains and resubmits that state by hand.
 
 ## [v1.6.0] - 2026-09-02
 

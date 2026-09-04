@@ -5,6 +5,12 @@ import {
     markImplementationEntered,
     recordSessionBinding,
 } from "../../src/host/session-bindings.js";
+import {
+    __resetParallelProgressForTesting,
+    createSessionEventObserver,
+    recordTaskDispatch,
+    recordTaskResult,
+} from "../../src/host/parallel-progress.js";
 import type { NormalizedApplyInstructionContext } from "../../src/openspec/apply-instructions.js";
 import type { ApplyInstructionsResult } from "../../src/openspec/apply-instructions.js";
 import type { NormalizedArtifact } from "../../src/openspec/status.js";
@@ -388,5 +394,86 @@ describe("createTodoSyncHook lifecycle advancement", () => {
 
         expect(byId(todos).get("plan-approval")?.status).toBe("in_progress");
         expect(byId(todos).get("implementation")?.status).toBe("pending");
+    });
+});
+
+describe("createTodoSyncHook parallel progress", () => {
+    afterEach(() => {
+        __resetParallelProgressForTesting();
+    });
+
+    /** Record one background implementer dispatch through the tracker seams. */
+    async function dispatchImplementer(callID: string, taskOutput: string): Promise<void> {
+        await recordTaskDispatch(
+            { tool: "task", sessionID: "ses_1", callID },
+            { args: { subagent_type: "specops-implementer" } },
+        );
+        await recordTaskResult(
+            { tool: "task", sessionID: "ses_1", callID, args: { background: true } },
+            { title: "", output: taskOutput, metadata: {} },
+        );
+    }
+
+    test("splices runtime-observed parallel entries after their anchor stages", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        await dispatchImplementer("c1", '<task id="task-1" state="running">');
+        await recordTaskDispatch(
+            { tool: "task", sessionID: "ses_1", callID: "c2" },
+            { args: { subagent_type: "specops-review-correctness" } },
+        );
+        const hook = hookWith(okStatus());
+
+        const todos = await fireTrigger(hook);
+        const ids = todos.map(todo => todo.id);
+
+        expect(ids.indexOf("implementer:task-1")).toBe(ids.indexOf("implementation") + 1);
+        expect(ids.indexOf("review-critic:correctness")).toBe(
+            ids.indexOf("independent-review") + 1,
+        );
+        expect(byId(todos).get("implementer:task-1")).toEqual({
+            id: "implementer:task-1",
+            content: "Implementer dispatch (task-1)",
+            status: "in_progress",
+            priority: "medium",
+        });
+        expect(byId(todos).get("review-critic:correctness")).toEqual({
+            id: "review-critic:correctness",
+            content: "Review critic: correctness",
+            status: "in_progress",
+            priority: "medium",
+        });
+    });
+
+    test("terminal dispatches are omitted — durable stages carry completion", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        // A foreground dispatch resolved at its tool result.
+        await recordTaskDispatch(
+            { tool: "task", sessionID: "ses_1", callID: "c1" },
+            { args: { subagent_type: "specops-implementer" } },
+        );
+        await recordTaskResult(
+            { tool: "task", sessionID: "ses_1", callID: "c1", args: {} },
+            { title: "", output: "done", metadata: {} },
+        );
+        // A background dispatch failed through its session error event.
+        await dispatchImplementer("c2", '<task id="task-2" state="running">');
+        await createSessionEventObserver()({
+            event: { type: "session.error", properties: { sessionID: "task-2" } },
+        } as never);
+        const hook = hookWith(okStatus());
+
+        const todos = await fireTrigger(hook);
+
+        expect(todos.some(todo => String(todo.id).startsWith("implementer:"))).toBe(false);
+    });
+
+    test("publishes no parallel entries when nothing was observed", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        const hook = hookWith(okStatus());
+
+        const todos = await fireTrigger(hook);
+
+        expect(todos.some(todo => String(todo.id).startsWith("implementer:"))).toBe(false);
+        expect(todos.some(todo => String(todo.id).startsWith("review-critic:"))).toBe(false);
     });
 });

@@ -4,6 +4,17 @@ import * as applyInstructions from "../../src/openspec/apply-instructions.js";
 import type { NormalizedApplyInstructionContext } from "../../src/openspec/apply-instructions.js";
 import { progressTool } from "../../src/host/tools/progress.js";
 import { progress } from "../../src/tools/progress.js";
+import {
+    __resetParallelProgressForTesting,
+    createSessionEventObserver,
+    recordTaskDispatch,
+    recordTaskResult,
+} from "../../src/host/parallel-progress.js";
+import {
+    __resetSessionBindingsForTesting,
+    recordSessionBinding,
+} from "../../src/host/session-bindings.js";
+import { AGENT_IDS } from "../../src/agents/ids.js";
 import { stripTodoRefreshMarker } from "../helpers.js";
 
 type AskRequest = Parameters<ToolContext["ask"]>[0];
@@ -173,5 +184,133 @@ describe("specops_progress tool wrapper", () => {
                 },
             },
         });
+    });
+});
+
+describe("specops_progress runtime-derived report", () => {
+    afterEach(() => {
+        __resetParallelProgressForTesting();
+        __resetSessionBindingsForTesting();
+    });
+
+    test("derives the ambient report from observed dispatches when no args are supplied", async () => {
+        recordSessionBinding("test-session", "SpecOps", "example");
+        // A background dispatch resolved through its task id and session idle.
+        await recordTaskDispatch(
+            { tool: "task", sessionID: "test-session", callID: "c1" },
+            { args: { subagent_type: AGENT_IDS.implementer } },
+        );
+        await recordTaskResult(
+            { tool: "task", sessionID: "test-session", callID: "c1", args: { background: true } },
+            { title: "", output: '<task id="task-1" state="running">', metadata: {} },
+        );
+        await createSessionEventObserver()({
+            event: { type: "session.idle", properties: { sessionID: "task-1" } },
+        } as never);
+        // A foreground dispatch still in flight.
+        await recordTaskDispatch(
+            { tool: "task", sessionID: "test-session", callID: "c2" },
+            { args: { subagent_type: AGENT_IDS.implementer } },
+        );
+        const stubbed = spyOn(applyInstructions, "getApplyInstructions").mockImplementation(
+            async () => ({
+                ok: true,
+                context: fakeApplyContext([{ id: "1.1", done: true }]),
+            }),
+        );
+        const context = toolContext(
+            async () => {},
+            () => {},
+        );
+
+        const actual = outputOf(await progressTool.execute({ change: "example" }, context));
+
+        expect(stubbed).toHaveBeenCalledWith("example", "/project");
+        expect(JSON.parse(actual)).toEqual({
+            change: "example",
+            reviewFanout: { active: false },
+            implementers: {
+                available: true,
+                dispatches: [{ dispatchId: "task-1", state: "completed" }, { state: "inFlight" }],
+                durable: { total: 1, complete: 1, remaining: 0 },
+            },
+        });
+    });
+
+    test("derives an empty ambient report with durable counters when nothing is in flight", async () => {
+        recordSessionBinding("test-session", "SpecOps", "example");
+        spyOn(applyInstructions, "getApplyInstructions").mockImplementation(async () => ({
+            ok: true,
+            context: fakeApplyContext([
+                { id: "1.1", done: true },
+                { id: "1.2", done: false },
+            ]),
+        }));
+        const context = toolContext(
+            async () => {},
+            () => {},
+        );
+
+        const actual = outputOf(await progressTool.execute({ change: "example" }, context));
+
+        expect(JSON.parse(actual)).toEqual({
+            change: "example",
+            reviewFanout: { active: false },
+            implementers: {
+                available: true,
+                dispatches: [],
+                durable: { total: 2, complete: 1, remaining: 1 },
+            },
+        });
+    });
+});
+
+describe("progress core runtime dispatch path", () => {
+    test("rejects supplying both assignments and observed dispatches", async () => {
+        const result = await progress(
+            {
+                change: "example",
+                implementerAssignments: [{ dispatchId: "impl-1", taskIds: ["1.1"] }],
+                implementerDispatches: [],
+            },
+            { getApplyInstructions: async () => ({ ok: false, error: "unused" }) },
+        );
+
+        expect(result).toBe(
+            "Provide either implementerAssignments or implementerDispatches, not both.",
+        );
+    });
+
+    test("a durable read failure degrades only the implementer view", async () => {
+        const result = await progress(
+            { change: "example", reviewFanout: snapshot, implementerDispatches: [] },
+            { getApplyInstructions: async () => ({ ok: false, error: "openspec unavailable" }) },
+        );
+
+        expect(JSON.parse(result)).toEqual({
+            change: "example",
+            reviewFanout: {
+                critics: [
+                    { id: "correctness", status: "inFlight" },
+                    { id: "risk", status: "completed" },
+                    { id: "quality", status: "pending" },
+                ],
+                counts: { pending: 1, inFlight: 1, completed: 1, failed: 0 },
+            },
+            implementers: { available: false, error: "openspec unavailable" },
+        });
+    });
+
+    test("keeps the zero-arg guidance when no view is requested at all", async () => {
+        const result = await progress(
+            { change: "example" },
+            {
+                getApplyInstructions: async () => ({ ok: false, error: "unused" }),
+            },
+        );
+
+        expect(result).toBe(
+            "Provide reviewFanout, implementerAssignments, or implementerDispatches to report parallel progress.",
+        );
     });
 });

@@ -10,7 +10,8 @@
 /** Stable identifiers for the three independent review critics. */
 export type ReviewCriticId = "correctness" | "risk" | "quality";
 
-const REVIEW_CRITIC_IDS: readonly ReviewCriticId[] = ["correctness", "risk", "quality"];
+/** Canonical critic ids in projection order. */
+export const REVIEW_CRITIC_IDS: readonly ReviewCriticId[] = ["correctness", "risk", "quality"];
 
 /** Live state and controls for one review fan-out round. */
 export interface ReviewFanout {

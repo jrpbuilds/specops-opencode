@@ -308,89 +308,100 @@ describe("buildTodoProjection parallel progress", () => {
         );
     });
 
-    test("emits in-flight and completed critics and skips pending and failed", () => {
-        const status = fixture([artifact("proposal", "ready")], ["proposal"]);
-        const entries = buildTodoProjection(status, "interactive", {
+    /** A planning-complete fixture, so the lifecycle stages exist. */
+    const stagedStatus = () => fixture([artifact("proposal", "done")], ["proposal"]);
+
+    test("splices in-flight work after its anchor stage and omits everything else", () => {
+        const entries = buildTodoProjection(
+            stagedStatus(),
+            "interactive",
+            {
+                reviewFanout: fanoutProgress,
+                implementerDispatches: [
+                    { dispatchId: "ses_f92d6cc", state: "inFlight" },
+                    { dispatchId: "ses_deadbee", state: "completed" },
+                ],
+            },
+            { apply: applyContext(4) },
+        );
+        const ids = entries.map(entry => entry.id);
+
+        // Implementer dispatch follows the implementation stage; the critic
+        // follows independent review; the terminal stage stays last.
+        expect(ids.indexOf("implementer:ses_f92d6cc")).toBe(ids.indexOf("implementation") + 1);
+        expect(ids.indexOf("review-critic:risk")).toBe(ids.indexOf("independent-review") + 1);
+        expect(ids[ids.length - 1]).toBe("lifecycle-remediation");
+
+        // Completed work is carried by the durable stages, never projected.
+        expect(entries.find(entry => entry.id === "implementer:ses_deadbee")).toBeUndefined();
+        expect(entries.find(entry => entry.id === "review-critic:correctness")).toBeUndefined();
+        expect(entries.find(entry => entry.id === "review-critic:quality")).toBeUndefined();
+    });
+
+    test("projects only in-flight critics, skipping completed, pending, and failed", () => {
+        const entries = buildTodoProjection(stagedStatus(), "interactive", {
             reviewFanout: fanoutProgress,
         });
         const criticEntries = entries.filter(entry => entry.id.startsWith("review-critic:"));
 
         expect(criticEntries).toEqual([
-            {
-                id: "review-critic:correctness",
-                content: "Review critic: correctness",
-                status: "complete",
-            },
             { id: "review-critic:risk", content: "Review critic: risk", status: "in_progress" },
         ]);
-        expect(entries.some(entry => entry.id === "review-critic:quality")).toBe(false);
 
-        const failedEntries = buildTodoProjection(status, "interactive", {
+        const failedEntries = buildTodoProjection(stagedStatus(), "interactive", {
             reviewFanout: failedFanout,
         });
         expect(failedEntries.some(entry => entry.id.startsWith("review-critic:"))).toBe(false);
     });
 
-    test("maps implementer dispatch states and falls back to positional ids", () => {
-        const status = fixture([artifact("proposal", "ready")], ["proposal"]);
-        const entries = buildTodoProjection(status, "interactive", {
+    test("truncates dispatch labels and falls back to positional ids", () => {
+        const entries = buildTodoProjection(stagedStatus(), "interactive", {
             implementerDispatches: [
-                { dispatchId: "impl-1", state: "inFlight" },
-                { state: "completed" },
+                { dispatchId: "ses_f92d6ccc2ffeEblqfsEokj5vVi", state: "inFlight" },
                 { state: "inFlight" },
+                { state: "completed" },
             ],
         });
         const dispatchEntries = entries.filter(entry => entry.id.startsWith("implementer:"));
 
         expect(dispatchEntries).toEqual([
             {
-                id: "implementer:impl-1",
-                content: "Implementer dispatch impl-1",
+                id: "implementer:ses_f92d6ccc2ffeEblqfsEokj5vVi",
+                content: "Implementer dispatch (ses_f92d)",
                 status: "in_progress",
             },
-            { id: "implementer:#2", content: "Implementer dispatch #2", status: "complete" },
-            { id: "implementer:#3", content: "Implementer dispatch #3", status: "in_progress" },
+            { id: "implementer:#2", content: "Implementer dispatch #2", status: "in_progress" },
         ]);
     });
 
-    test("falls back to a positional id for a dispatchId-less dispatch", () => {
+    test("appends at the end when the anchor stages are absent", () => {
         const status = fixture([artifact("proposal", "ready")], ["proposal"]);
         const entries = buildTodoProjection(status, "interactive", {
-            implementerDispatches: [{ state: "inFlight" }],
+            implementerDispatches: [{ dispatchId: "impl-1", state: "inFlight" }],
         });
 
         expect(entries[entries.length - 1]).toEqual({
-            id: "implementer:#1",
-            content: "Implementer dispatch #1",
+            id: "implementer:impl-1",
+            content: "Implementer dispatch (impl-1)",
             status: "in_progress",
         });
     });
 
-    test("appends parallel entries after the firstIncomplete fixup without disturbing it", () => {
-        const status = fixture([artifact("proposal", "ready")], ["proposal"]);
-        const baseline = buildTodoProjection(status);
-        const entries = buildTodoProjection(status, "interactive", {
-            reviewFanout: fanoutProgress,
-            implementerDispatches: [{ dispatchId: "impl-1", state: "inFlight" }],
+    test("splicing never disturbs the firstIncomplete fixup", () => {
+        const baseline = buildTodoProjection(stagedStatus(), "interactive", undefined, {
+            apply: applyContext(4),
         });
+        const entries = buildTodoProjection(
+            stagedStatus(),
+            "interactive",
+            { implementerDispatches: [{ dispatchId: "impl-1", state: "inFlight" }] },
+            { apply: applyContext(4) },
+        );
 
-        // Serial prefix is untouched: the fixup marks the first planning
-        // artifact as current work.
-        expect(entries.slice(0, baseline.length)).toEqual(baseline);
-        expect(entries[0]?.status).toBe("in_progress");
-        // Parallel entries are appended last with their explicit statuses.
-        expect(entries.slice(baseline.length)).toEqual([
-            {
-                id: "review-critic:correctness",
-                content: "Review critic: correctness",
-                status: "complete",
-            },
-            { id: "review-critic:risk", content: "Review critic: risk", status: "in_progress" },
-            {
-                id: "implementer:impl-1",
-                content: "Implementer dispatch impl-1",
-                status: "in_progress",
-            },
-        ]);
+        // The only difference is the spliced dispatch entry; every stage and
+        // the fixup's in_progress marking are untouched.
+        const withoutDispatch = entries.filter(entry => entry.id !== "implementer:impl-1");
+        expect(withoutDispatch).toEqual(baseline);
+        expect(entries.find(entry => entry.id === "implementation")?.status).toBe("in_progress");
     });
 });

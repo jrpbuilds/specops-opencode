@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { NormalizedApplyInstructionContext } from "../../src/openspec/apply-instructions.js";
 import {
     projectImplementerAssignments,
+    projectImplementerDispatches,
     type ImplementerAssignment,
 } from "../../src/coordinator/implementer-progress.js";
 
@@ -183,5 +184,65 @@ describe("projectImplementerAssignments", () => {
         if (!result.ok) return;
         expect(result.progress.dispatches[0]?.durablyPending).toEqual(["2.1"]);
         expect(result.progress.totals.durablyPending).toBe(1);
+    });
+});
+
+describe("projectImplementerDispatches", () => {
+    const applyContext = fakeApplyContext([
+        { id: "1.1", done: true },
+        { id: "1.2", done: false },
+    ]);
+
+    test("preserves observed dispatch states and reconciles the durable counters", () => {
+        const result = projectImplementerDispatches(
+            [
+                { dispatchId: "task-1", state: "completed" },
+                { state: "inFlight" },
+                { dispatchId: "task-2", state: "failed" },
+            ],
+            applyContext,
+        );
+
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+        expect(result.progress.dispatches).toEqual([
+            { dispatchId: "task-1", state: "completed" },
+            { state: "inFlight" },
+            { dispatchId: "task-2", state: "failed" },
+        ]);
+        expect(result.progress.durable).toEqual({ total: 2, complete: 1, remaining: 1 });
+    });
+
+    test("an empty dispatch list still reports the durable counters", () => {
+        const result = projectImplementerDispatches([], applyContext);
+
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+        expect(result.progress.dispatches).toEqual([]);
+        expect(result.progress.durable).toEqual({ total: 2, complete: 1, remaining: 1 });
+    });
+
+    test("fails closed on an unknown dispatch state", () => {
+        const result = projectImplementerDispatches(
+            [{ dispatchId: "task-1", state: "unexpected" as never }],
+            applyContext,
+        );
+
+        expect(result).toEqual({
+            ok: false,
+            error: "dispatch task-1 has an unknown state",
+        });
+    });
+
+    test("labels a stateless dispatch by position in the error message", () => {
+        const result = projectImplementerDispatches(
+            [{ state: "inFlight" }, { state: "bogus" as never }],
+            applyContext,
+        );
+
+        expect(result).toEqual({
+            ok: false,
+            error: "dispatch #2 has an unknown state",
+        });
     });
 });

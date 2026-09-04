@@ -12,8 +12,8 @@
  * state. The coordinator never authors, reconciles, reads, or persists Todo
  * content; every trigger is a full rebuild, so extra triggers are harmless
  * and no stale entries survive a planning revision or a resume. Ephemeral
- * parallel implementation/review entries are deferred to the runtime event
- * wiring (#53).
+ * parallel implementation/review entries are derived from the runtime's own
+ * dispatch observation (`./parallel-progress.ts`), not coordinator state.
  *
  * The hook is session-scoped and fails open by construction: sessions without
  * a recorded SpecOps binding pass through untouched, every failure (durable
@@ -42,8 +42,11 @@
  */
 import type { Hooks } from "@opencode-ai/plugin";
 import { buildNativeTodoProjection } from "../coordinator/todo-publication.js";
+import type { ParallelProgressInput } from "../coordinator/todo-projection.js";
+import { summarizeReviewFanout } from "../coordinator/review-fanout.js";
 import type { ApplyInstructionsResult } from "../openspec/apply-instructions.js";
 import type { OpenSpecStatusResult } from "../openspec/status.js";
+import { snapshotParallelProgress } from "./parallel-progress.js";
 import {
     getSessionBinding,
     hasEnteredImplementation,
@@ -84,10 +87,39 @@ export function createTodoSyncHook(deps: TodoSyncDeps): NonNullable<Hooks["tool.
                 return;
             }
             const apply = await deps.getApplyInstructions(binding.change, deps.directory);
-            output.args.todos = buildNativeTodoProjection(result.status, binding.mode, {
-                apply: apply.ok ? apply.context : undefined,
-                implementationEntered: hasEnteredImplementation(input.sessionID),
-            });
+            // Ephemeral parallel entries come from the runtime's own dispatch
+            // observation, never from coordinator bookkeeping. Failed critics
+            // and failed dispatches surface through coordinator reporting, not
+            // Todo state, so only live or completed work is projected.
+            const snapshot = snapshotParallelProgress(input.sessionID);
+            const fanout = snapshot.reviewFanout
+                ? summarizeReviewFanout(snapshot.reviewFanout)
+                : undefined;
+            const dispatches = (snapshot.implementerDispatches ?? []).flatMap(dispatch =>
+                dispatch.state === "failed"
+                    ? []
+                    : [
+                          dispatch.dispatchId === undefined
+                              ? { state: dispatch.state }
+                              : { dispatchId: dispatch.dispatchId, state: dispatch.state },
+                      ],
+            );
+            const parallel: ParallelProgressInput | undefined =
+                fanout?.ok || dispatches.length > 0
+                    ? {
+                          reviewFanout: fanout?.ok ? fanout.progress : undefined,
+                          implementerDispatches: dispatches,
+                      }
+                    : undefined;
+            output.args.todos = buildNativeTodoProjection(
+                result.status,
+                binding.mode,
+                {
+                    apply: apply.ok ? apply.context : undefined,
+                    implementationEntered: hasEnteredImplementation(input.sessionID),
+                },
+                parallel,
+            );
         } catch {
             // Fail open: publication must never break the model's todowrite call.
         }

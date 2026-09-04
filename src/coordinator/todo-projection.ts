@@ -31,7 +31,12 @@ export type TodoProjectionMode = "interactive" | "auto";
 export type ParallelProgressInput = {
     /** Canonical fan-out progress computed once via `summarizeReviewFanout`. */
     readonly reviewFanout?: ReviewFanoutProgress;
-    /** Implementer dispatches currently in flight or durably verified complete. */
+    /**
+     * Implementer dispatches currently in flight. Completed and failed
+     * dispatches are accepted for caller convenience but never projected:
+     * durable task checkboxes and the lifecycle stages already carry
+     * completion, and failures surface through coordinator reporting.
+     */
     readonly implementerDispatches?: readonly {
         readonly dispatchId?: string;
         readonly state: "inFlight" | "completed";
@@ -69,11 +74,12 @@ const LIFECYCLE_STAGE = {
  * Build a complete Todo projection from one durable OpenSpec status snapshot.
  *
  * The optional mode only controls the interactive approval checkpoint. The
- * optional parallel input appends ephemeral fan-out and implementer-dispatch
- * entries after the serial stages. The optional lifecycle input advances the
- * post-plan stages from the canonical workflow phase — the same derivation
- * `specops_status` answers from. Every other entry and state is derived from
- * the supplied status without I/O or retained state.
+ * optional parallel input splices ephemeral in-flight work into the stages it
+ * belongs to: implementer dispatches after the implementation stage, review
+ * critics after the independent-review stage. The optional lifecycle input
+ * advances the post-plan stages from the canonical workflow phase — the same
+ * derivation `specops_status` answers from. Every other entry and state is
+ * derived from the supplied status without I/O or retained state.
  */
 export function buildTodoProjection(
     status: NormalizedStatus,
@@ -115,37 +121,69 @@ export function buildTodoProjection(
     const firstIncomplete = entries.findIndex(entry => entry.status !== "complete");
     if (firstIncomplete >= 0) entries[firstIncomplete].status = "in_progress";
 
-    if (parallel) entries.push(...parallelEntries(parallel));
+    if (parallel) insertParallelEntries(entries, parallel);
 
     return entries;
 }
 
+/** Stage ids anchoring where ephemeral parallel work is spliced in. */
+const IMPLEMENTATION_STAGE_ID = "implementation";
+const INDEPENDENT_REVIEW_STAGE_ID = "independent-review";
+
 /**
- * Project supplied parallel work onto entries appended after the serial
- * stages. Only in-flight and completed items are emitted — pending and failed
- * critics surface through coordinator reporting, not Todo state — and the
- * entries keep their explicit statuses because the firstIncomplete fixup ran
- * before they existed.
+ * Compact display label for one in-flight implementer dispatch: the first
+ * eight characters of its background task id in parens, or a positional
+ * marker when the runtime linked no id.
  */
-function parallelEntries(parallel: ParallelProgressInput): TodoProjectionEntry[] {
-    const entries: TodoProjectionEntry[] = [];
-    for (const critic of parallel.reviewFanout?.critics ?? []) {
-        if (critic.status !== "inFlight" && critic.status !== "completed") continue;
-        entries.push({
-            id: `review-critic:${critic.id}`,
-            content: `Review critic: ${critic.id}`,
-            status: critic.status === "inFlight" ? "in_progress" : "complete",
-        });
-    }
-    (parallel.implementerDispatches ?? []).forEach((dispatch, index) => {
-        const label = dispatch.dispatchId ?? `#${index + 1}`;
-        entries.push({
-            id: `implementer:${label}`,
-            content: `Implementer dispatch ${label}`,
-            status: dispatch.state === "completed" ? "complete" : "in_progress",
-        });
-    });
-    return entries;
+function implementerLabel(dispatchId: string | undefined, index: number): string {
+    return dispatchId ? `(${dispatchId.slice(0, 8)})` : `#${index + 1}`;
+}
+
+/**
+ * Splice ephemeral parallel work into the serial stages at the points the
+ * work actually belongs: in-flight implementer dispatches follow the
+ * implementation stage, in-flight review critics follow the independent-
+ * review stage. Only in-flight work is projected — completed work is already
+ * reflected by the durable stages and task checkboxes, and pending and failed
+ * items surface through coordinator reporting — so the list stays
+ * orientation, never history. Entries keep their explicit statuses because
+ * the firstIncomplete fixup ran before they existed. A missing anchor stage
+ * (tracked work should never outlive its phase) falls back to appending.
+ */
+function insertParallelEntries(
+    entries: TodoProjectionEntry[],
+    parallel: ParallelProgressInput,
+): void {
+    const insertAfter = (stageId: string, newEntries: readonly TodoProjectionEntry[]): void => {
+        if (newEntries.length === 0) return;
+        const anchor = entries.findIndex(entry => entry.id === stageId);
+        if (anchor === -1) {
+            entries.push(...newEntries);
+            return;
+        }
+        entries.splice(anchor + 1, 0, ...newEntries);
+    };
+
+    insertAfter(
+        IMPLEMENTATION_STAGE_ID,
+        (parallel.implementerDispatches ?? [])
+            .filter(dispatch => dispatch.state === "inFlight")
+            .map((dispatch, index) => ({
+                id: `implementer:${dispatch.dispatchId ?? `#${index + 1}`}`,
+                content: `Implementer dispatch ${implementerLabel(dispatch.dispatchId, index)}`,
+                status: "in_progress" as const,
+            })),
+    );
+    insertAfter(
+        INDEPENDENT_REVIEW_STAGE_ID,
+        (parallel.reviewFanout?.critics ?? [])
+            .filter(critic => critic.status === "inFlight")
+            .map(critic => ({
+                id: `review-critic:${critic.id}`,
+                content: `Review critic: ${critic.id}`,
+                status: "in_progress" as const,
+            })),
+    );
 }
 
 /**
