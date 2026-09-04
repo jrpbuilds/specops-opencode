@@ -9,6 +9,7 @@ import {
 import { runCaptureStdout } from "../../helpers.js";
 import { requireLifecyclePermission } from "../lifecycle-permission.js";
 import { recordSessionBinding } from "../session-bindings.js";
+import { withTodoRefreshReminder } from "./todo-refresh.js";
 
 /** Valid operation names for the review guard tool. */
 type ReviewGuardOperation = "capture" | "verify";
@@ -68,6 +69,6 @@ export const reviewGuardTool = tool({
             args.operation === "capture"
                 ? await captureBaseline(args.change, root, deps)
                 : await verifyBaseline(args.change, root, deps);
-        return JSON.stringify(result);
+        return withTodoRefreshReminder(JSON.stringify(result));
     },
 });

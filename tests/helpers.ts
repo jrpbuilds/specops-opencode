@@ -1,6 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { SPECOPS_TODO_REFRESH } from "../src/host/tools/todo-refresh.js";
 
 /**
  * Create a unique temporary directory and return its path plus a cleanup hook.
@@ -39,4 +40,18 @@ export async function withTempDir<T>(fn: (dir: string) => Promise<T>, prefix?: s
  */
 export function configPath(dir: string, nested = false): string {
     return nested ? path.join(dir, "nested", "specops.json") : path.join(dir, "specops.json");
+}
+
+/**
+ * Strip the compact Todo refresh marker from one lifecycle tool output.
+ *
+ * Lifecycle tools append `SPECOPS_TODO_REFRESH` (see `../src/host/tools/todo-refresh.ts`)
+ * after their JSON payload, so wrapper-output assertions that parse or compare
+ * the payload strip the trailing marker first. Marker addition itself is
+ * covered by the todo-refresh and tool-integration tests.
+ */
+export function stripTodoRefreshMarker(output: string): string {
+    return output.endsWith(SPECOPS_TODO_REFRESH)
+        ? output.slice(0, -SPECOPS_TODO_REFRESH.length).trimEnd()
+        : output;
 }

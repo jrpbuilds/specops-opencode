@@ -4,6 +4,7 @@ import {
     type TodoProjectionEntry,
 } from "../../src/coordinator/todo-projection.js";
 import type { ReviewFanoutProgress } from "../../src/coordinator/review-fanout.js";
+import type { NormalizedApplyInstructionContext } from "../../src/openspec/apply-instructions.js";
 import type { NormalizedArtifact, NormalizedStatus } from "../../src/openspec/status.js";
 
 function artifact(
@@ -12,6 +13,23 @@ function artifact(
     requires: readonly string[] = [],
 ): NormalizedArtifact {
     return { id, outputPath: `openspec/changes/example/${id}.md`, status, requires };
+}
+
+/** An apply context with 12 tasks and `complete` of them checked. */
+function applyContext(
+    complete = 0,
+    state: NormalizedApplyInstructionContext["state"] = "ready",
+): NormalizedApplyInstructionContext {
+    return {
+        changeName: "example",
+        changeDir: "openspec/changes/example",
+        schemaName: "spec-driven",
+        contextFiles: {},
+        progress: { total: 12, complete, remaining: 12 - complete },
+        tasks: [],
+        state,
+        instruction: "",
+    };
 }
 
 function fixture(
@@ -33,28 +51,6 @@ function planningEntries(entries: readonly TodoProjectionEntry[]): TodoProjectio
 }
 
 describe("buildTodoProjection", () => {
-    test("prepends in-progress repository evidence while planning is in progress", () => {
-        const entries = buildTodoProjection(fixture([artifact("proposal", "ready")], ["proposal"]));
-
-        expect(entries[0]).toEqual({
-            id: "repository-evidence",
-            content: "Repository evidence",
-            status: "in_progress",
-            owner: "specops-explorer",
-        });
-    });
-
-    test("keeps repository evidence pending after planning is complete", () => {
-        const entries = buildTodoProjection(fixture([artifact("proposal", "done")], ["proposal"]));
-
-        expect(entries[0]).toEqual({
-            id: "repository-evidence",
-            content: "Repository evidence",
-            status: "pending",
-            owner: "specops-explorer",
-        });
-    });
-
     test("emits default-schema planning artifacts in dependency order", () => {
         const status = fixture(
             [
@@ -66,9 +62,9 @@ describe("buildTodoProjection", () => {
         );
 
         expect(planningEntries(buildTodoProjection(status)).map(entry => entry.content)).toEqual([
-            "proposal",
-            "specs",
-            "tasks",
+            "Author proposal — define the change's purpose and scope",
+            "Draft specs — write the requirement deltas for the change",
+            "Plan tasks — break the work into implementation steps",
         ]);
         expect(planningEntries(buildTodoProjection(status)).map(entry => entry.owner)).toEqual([
             "specops-planner",
@@ -89,10 +85,10 @@ describe("buildTodoProjection", () => {
         );
 
         expect(planningEntries(buildTodoProjection(status)).map(entry => entry.content)).toEqual([
-            "proposal",
-            "specs",
-            "design",
-            "tasks",
+            "Author proposal — define the change's purpose and scope",
+            "Draft specs — write the requirement deltas for the change",
+            "Design — decide the technical approach",
+            "Plan tasks — break the work into implementation steps",
         ]);
         expect(planningEntries(buildTodoProjection(status))[2]?.owner).toBe("specops-designer");
     });
@@ -111,14 +107,18 @@ describe("buildTodoProjection", () => {
             "requirements",
             "release-notes",
         ]);
-        expect(buildTodoProjection(status).some(entry => entry.content === "design")).toBe(false);
+        expect(
+            buildTodoProjection(status).some(
+                entry => entry.content === "Design — decide the technical approach",
+            ),
+        ).toBe(false);
     });
 
     test.each([
         ["done", "complete"],
         ["skipped", "complete"],
-        ["ready", "pending"],
-        ["blocked", "pending"],
+        ["ready", "in_progress"],
+        ["blocked", "in_progress"],
     ] as const)("maps durable %s status to %s or current focus", (durable, projected) => {
         const entries = planningEntries(
             buildTodoProjection(fixture([artifact("proposal", durable)], ["proposal"])),
@@ -133,15 +133,9 @@ describe("buildTodoProjection", () => {
         expect(() => buildTodoProjection(status)).not.toThrow();
         expect(buildTodoProjection(status)).toEqual([
             {
-                id: "repository-evidence",
-                content: "Repository evidence",
-                status: "in_progress",
-                owner: "specops-explorer",
-            },
-            {
                 id: "planning:proposal",
-                content: "proposal",
-                status: "pending",
+                content: "Author proposal — define the change's purpose and scope",
+                status: "in_progress",
                 owner: "specops-planner",
             },
         ]);
@@ -164,7 +158,7 @@ describe("buildTodoProjection", () => {
         expect(resumedProjection).toEqual(buildTodoProjection(resumed));
         expect(resumedProjection).not.toContainEqual({
             id: "planning:proposal",
-            content: "proposal",
+            content: "Author proposal — define the change's purpose and scope",
             status: "in_progress",
             owner: "specops-planner",
         });
@@ -174,13 +168,12 @@ describe("buildTodoProjection", () => {
         const status = fixture([artifact("proposal", "done")], ["proposal"]);
 
         expect(buildTodoProjection(status, "auto").map(entry => entry.content)).toEqual([
-            "Repository evidence",
-            "proposal",
-            "Implementation",
-            "Independent review",
-            "Auto review remediation",
-            "Auto review re-review",
-            "Lifecycle/remediation",
+            "Author proposal — define the change's purpose and scope",
+            "Implementation — build the approved tasks",
+            "Independent review — verify against specs and design",
+            "Remediate findings — fix what review flagged",
+            "Re-review — confirm the fixes hold",
+            "Complete change — archive or remediate",
         ]);
     });
 
@@ -191,6 +184,101 @@ describe("buildTodoProjection", () => {
         expect(entries.map(entry => entry.id)).toContain("auto-review-remediation");
         expect(entries.map(entry => entry.id)).toContain("auto-review-re-review");
         expect(status.artifacts[0]?.status).toBe("done");
+    });
+});
+
+describe("buildTodoProjection lifecycle advancement", () => {
+    const complete = fixture(
+        [artifact("proposal", "done"), artifact("tasks", "done", ["proposal"])],
+        ["tasks"],
+        true,
+    );
+
+    function stageStatuses(entries: readonly TodoProjectionEntry[]): Map<string, string> {
+        return new Map(
+            entries
+                .filter(entry => !entry.id.startsWith("planning:"))
+                .map(entry => [entry.id, entry.status]),
+        );
+    }
+
+    test("without an apply context every stage stays pending and the fixup marks approval", () => {
+        const statuses = stageStatuses(buildTodoProjection(complete));
+
+        expect(statuses.get("plan-approval")).toBe("in_progress");
+        expect(statuses.get("implementation")).toBe("pending");
+        expect(statuses.get("independent-review")).toBe("pending");
+        expect(statuses.get("lifecycle-remediation")).toBe("pending");
+    });
+
+    test("a blocked apply state keeps the approval checkpoint current", () => {
+        const statuses = stageStatuses(
+            buildTodoProjection(complete, "interactive", undefined, {
+                apply: applyContext(0, "blocked"),
+            }),
+        );
+
+        expect(statuses.get("plan-approval")).toBe("in_progress");
+        expect(statuses.get("implementation")).toBe("pending");
+    });
+
+    test("implementation-phase without start keeps the approval checkpoint current", () => {
+        const statuses = stageStatuses(
+            buildTodoProjection(complete, "interactive", undefined, {
+                apply: applyContext(0),
+            }),
+        );
+
+        expect(statuses.get("plan-approval")).toBe("in_progress");
+        expect(statuses.get("implementation")).toBe("pending");
+    });
+
+    test("implementation-phase with a checked task completes approval and starts implementation", () => {
+        const statuses = stageStatuses(
+            buildTodoProjection(complete, "interactive", undefined, {
+                apply: applyContext(4),
+            }),
+        );
+
+        expect(statuses.get("plan-approval")).toBe("complete");
+        expect(statuses.get("implementation")).toBe("in_progress");
+        expect(statuses.get("independent-review")).toBe("pending");
+        expect(statuses.get("lifecycle-remediation")).toBe("pending");
+    });
+
+    test("the observed entry gate starts implementation before any checkbox", () => {
+        const statuses = stageStatuses(
+            buildTodoProjection(complete, "interactive", undefined, {
+                apply: applyContext(0),
+                implementationEntered: true,
+            }),
+        );
+
+        expect(statuses.get("plan-approval")).toBe("complete");
+        expect(statuses.get("implementation")).toBe("in_progress");
+    });
+
+    test("review-phase completes implementation and starts independent review", () => {
+        const statuses = stageStatuses(
+            buildTodoProjection(complete, "interactive", undefined, {
+                apply: applyContext(12, "all_done"),
+            }),
+        );
+
+        expect(statuses.get("plan-approval")).toBe("complete");
+        expect(statuses.get("implementation")).toBe("complete");
+        expect(statuses.get("independent-review")).toBe("in_progress");
+        expect(statuses.get("lifecycle-remediation")).toBe("pending");
+    });
+
+    test("auto mode advances identically minus the skipped approval checkpoint", () => {
+        const statuses = stageStatuses(
+            buildTodoProjection(complete, "auto", undefined, { apply: applyContext(2) }),
+        );
+
+        expect(statuses.has("plan-approval")).toBe(false);
+        expect(statuses.get("implementation")).toBe("in_progress");
+        expect(statuses.get("independent-review")).toBe("pending");
     });
 });
 
@@ -212,17 +300,17 @@ describe("buildTodoProjection parallel progress", () => {
     test("omitting the parallel input reproduces the projection exactly as before", () => {
         const status = fixture([artifact("proposal", "done")], ["proposal"]);
 
-        expect(buildTodoProjection(status, "interactive", true)).toEqual(
-            buildTodoProjection(status, "interactive", true, undefined),
+        expect(buildTodoProjection(status, "interactive")).toEqual(
+            buildTodoProjection(status, "interactive", undefined),
         );
-        expect(buildTodoProjection(status, "auto", false)).toEqual(
-            buildTodoProjection(status, "auto", false, undefined),
+        expect(buildTodoProjection(status, "auto")).toEqual(
+            buildTodoProjection(status, "auto", undefined),
         );
     });
 
     test("emits in-flight and completed critics and skips pending and failed", () => {
         const status = fixture([artifact("proposal", "ready")], ["proposal"]);
-        const entries = buildTodoProjection(status, "interactive", true, {
+        const entries = buildTodoProjection(status, "interactive", {
             reviewFanout: fanoutProgress,
         });
         const criticEntries = entries.filter(entry => entry.id.startsWith("review-critic:"));
@@ -237,7 +325,7 @@ describe("buildTodoProjection parallel progress", () => {
         ]);
         expect(entries.some(entry => entry.id === "review-critic:quality")).toBe(false);
 
-        const failedEntries = buildTodoProjection(status, "interactive", true, {
+        const failedEntries = buildTodoProjection(status, "interactive", {
             reviewFanout: failedFanout,
         });
         expect(failedEntries.some(entry => entry.id.startsWith("review-critic:"))).toBe(false);
@@ -245,7 +333,7 @@ describe("buildTodoProjection parallel progress", () => {
 
     test("maps implementer dispatch states and falls back to positional ids", () => {
         const status = fixture([artifact("proposal", "ready")], ["proposal"]);
-        const entries = buildTodoProjection(status, "interactive", true, {
+        const entries = buildTodoProjection(status, "interactive", {
             implementerDispatches: [
                 { dispatchId: "impl-1", state: "inFlight" },
                 { state: "completed" },
@@ -267,7 +355,7 @@ describe("buildTodoProjection parallel progress", () => {
 
     test("falls back to a positional id for a dispatchId-less dispatch", () => {
         const status = fixture([artifact("proposal", "ready")], ["proposal"]);
-        const entries = buildTodoProjection(status, "interactive", true, {
+        const entries = buildTodoProjection(status, "interactive", {
             implementerDispatches: [{ state: "inFlight" }],
         });
 
@@ -281,13 +369,13 @@ describe("buildTodoProjection parallel progress", () => {
     test("appends parallel entries after the firstIncomplete fixup without disturbing it", () => {
         const status = fixture([artifact("proposal", "ready")], ["proposal"]);
         const baseline = buildTodoProjection(status);
-        const entries = buildTodoProjection(status, "interactive", true, {
+        const entries = buildTodoProjection(status, "interactive", {
             reviewFanout: fanoutProgress,
             implementerDispatches: [{ dispatchId: "impl-1", state: "inFlight" }],
         });
 
-        // Serial prefix is untouched: repository evidence still holds the
-        // firstIncomplete in_progress marking and planning stays pending.
+        // Serial prefix is untouched: the fixup marks the first planning
+        // artifact as current work.
         expect(entries.slice(0, baseline.length)).toEqual(baseline);
         expect(entries[0]?.status).toBe("in_progress");
         // Parallel entries are appended last with their explicit statuses.

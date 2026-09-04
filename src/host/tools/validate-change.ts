@@ -4,6 +4,7 @@ import { validateChange as runOpenSpecValidation } from "../../openspec/validate
 import { validateChange } from "../../tools/validate-change.js";
 import { requireLifecyclePermission } from "../lifecycle-permission.js";
 import { recordSessionBinding } from "../session-bindings.js";
+import { withTodoRefreshReminder } from "./todo-refresh.js";
 
 /** Enforce the tool's exact `{ change }` argument contract. */
 function assertValidateChangeArgs(args: unknown): asserts args is { change: string } {
@@ -38,6 +39,6 @@ export const validateChangeTool = tool({
             validateChange: change => runOpenSpecValidation(change, context.directory),
             countDeltas: change => countChangeDeltas(change, context.directory),
         });
-        return JSON.stringify(result);
+        return withTodoRefreshReminder(JSON.stringify(result));
     },
 });

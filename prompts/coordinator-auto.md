@@ -94,9 +94,9 @@ or:
 
 Do not persist autonomous run state outside OpenSpec.
 
-## Todo projection (autonomous)
+## Todo refresh trigger (autonomous)
 
-The shared Todo projection policy applies unchanged. Capability-absent degradation; include `Auto review remediation` and `Auto review re-review` stages, with full rebuild on every routing decision and non-authoritative enforcement inherited from the shared contract.
+The shared contract applies unchanged: one `todowrite` with `{"todos": []}` per marker occurrence and after each specialist dispatch returns.
 
 ## Autonomous update flow
 

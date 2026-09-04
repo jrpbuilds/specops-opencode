@@ -12,6 +12,7 @@ import { progressTool } from "../../src/host/tools/progress.js";
 import { reviewGuardTool } from "../../src/host/tools/review-guard.js";
 import { statusTool } from "../../src/host/tools/status.js";
 import { validateChangeTool } from "../../src/host/tools/validate-change.js";
+import { SPECOPS_TODO_REFRESH } from "../../src/host/tools/todo-refresh.js";
 import {
     __resetProcessConfigForTesting,
     setProcessConfig,
@@ -297,6 +298,59 @@ describe("lifecycle tool integration", () => {
             } finally {
                 __resetSessionBindingsForTesting();
             }
+        });
+    });
+
+    // The seven lifecycle tools whose outputs the coordinator reads at the
+    // contract's Todo refresh moments terminate their results with the compact
+    // refresh marker; every other lifecycle tool stays marker-free.
+    const REFRESH_MARKER_TOOL_IDS = [
+        "specops_archive",
+        "specops_apply_instructions",
+        "specops_create_change",
+        "specops_progress",
+        "specops_review_guard",
+        "specops_status",
+        "specops_validate_change",
+    ];
+    const refreshMarkerTools = LIFECYCLE_TOOLS.filter(item =>
+        REFRESH_MARKER_TOOL_IDS.includes(item.id),
+    );
+    const markerFreeTools = LIFECYCLE_TOOLS.filter(
+        item => !REFRESH_MARKER_TOOL_IDS.includes(item.id),
+    );
+
+    test.each(refreshMarkerTools)(
+        "$id terminates its output with exactly one compact refresh marker",
+        async item => {
+            await withTempDir(async directory => {
+                const context = toolContext(
+                    directory,
+                    async () => {},
+                    () => {},
+                );
+
+                const output = await item.definition.execute(item.args, context);
+
+                expect(typeof output).toBe("string");
+                const text = String(output);
+                expect(text.endsWith(SPECOPS_TODO_REFRESH)).toBe(true);
+                expect(text.split(SPECOPS_TODO_REFRESH)).toHaveLength(2);
+            });
+        },
+    );
+
+    test.each(markerFreeTools)("$id output carries no refresh marker", async item => {
+        await withTempDir(async directory => {
+            const context = toolContext(
+                directory,
+                async () => {},
+                () => {},
+            );
+
+            const output = await item.definition.execute(item.args, context);
+
+            expect(String(output)).not.toContain("SPECOPS_TODO_REFRESH");
         });
     });
 });

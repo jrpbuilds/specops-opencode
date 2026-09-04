@@ -3,6 +3,7 @@ import { createOpenSpecChange } from "../../openspec/create-change.js";
 import { createChange } from "../../tools/create-change.js";
 import { requireLifecyclePermission } from "../lifecycle-permission.js";
 import { recordSessionBinding } from "../session-bindings.js";
+import { withTodoRefreshReminder } from "./todo-refresh.js";
 
 /** Expose native OpenSpec change creation through the SpecOps tool surface. */
 export const createChangeTool = tool({
@@ -15,9 +16,11 @@ export const createChangeTool = tool({
         await requireLifecyclePermission(toolContext, "specops_create_change");
         recordSessionBinding(toolContext.sessionID, toolContext.agent, args.change);
         toolContext.metadata({ title: "Creating OpenSpec change…" });
-        return createChange(args.change, args.goal, {
-            createChange: (change, goal) =>
-                createOpenSpecChange(change, toolContext.directory, goal),
-        });
+        return withTodoRefreshReminder(
+            await createChange(args.change, args.goal, {
+                createChange: (change, goal) =>
+                    createOpenSpecChange(change, toolContext.directory, goal),
+            }),
+        );
     },
 });

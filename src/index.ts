@@ -9,7 +9,9 @@ import {
 } from "./host/agents.js";
 import { applyLifecycleBoundary, applyTaskBoundary } from "./host/permissions.js";
 import { TOOLS } from "./host/tools/index.js";
+import { createTodoDisplayHook } from "./host/todo-display.js";
 import { createTodoSyncHook } from "./host/todo-sync.js";
+import { getApplyInstructions } from "./openspec/apply-instructions.js";
 import { getOpenSpecStatus } from "./openspec/status.js";
 
 export { COMMANDS } from "./host/commands.js";
@@ -52,12 +54,18 @@ export const SpecOpsPlugin: Plugin = async input => ({
     tool: TOOLS,
     // Publish the runtime-owned Todo projection: the hook intercepts the
     // builtin todowrite tool for sessions that ran a SpecOps lifecycle tool,
-    // replacing the model's payload with the canonical projection derived
-    // from fresh durable state.
+    // replacing the model's blind refresh-trigger payload with the canonical
+    // projection rebuilt from fresh durable state.
     "tool.execute.before": createTodoSyncHook({
         directory: input.directory,
         getOpenSpecStatus,
+        getApplyInstructions,
     }),
+    // Suppress the builtin's `# Todos` transcript blocks: the renderer gates
+    // the tool-call part on its display metadata, so emptying that metadata
+    // after execution hides the block while the sidebar keeps showing the
+    // persisted projection.
+    "tool.execute.after": createTodoDisplayHook(),
 });
 
 /**

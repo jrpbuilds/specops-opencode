@@ -12,7 +12,12 @@ All notable changes to SpecOps are documented in this file.
 
 ### Changed
 
+- Todo interaction is now a refresh trigger only: at workflow transitions the coordinator fires the native todo tool with an empty list, and SpecOps publishes the canonical projection from current OpenSpec state on every call — the coordinator no longer authors, reconciles, or rebuilds the list.
+- SpecOps tool results now end with a compact to-do refresh marker at workflow transitions, and the coordinator treats each marker as one immediate to-do update — so the visible to-do list stays in sync even when a less capable orchestrator model would otherwise skip the update.
+- Each to-do list entry now shows a readable name and a short description of what that workflow phase is doing, so the checklist explains itself at a glance.
 - Workflow legality now comes from one shared derivation: status, planning dispatch, and the to-do list all answer "is planning complete?" from the same rule, so they can no longer contradict one another about the same change state.
+- The `# Todos` blocks no longer appear in the chat transcript after each to-do refresh; the sidebar list keeps showing the canonical projection.
+- The to-do list now advances past plan approval as work progresses: implementation shows as current once the plan is approved or a task is checked, and review once every task is done — matching the workflow phase the status tool already reports.
 
 ## [v1.6.0] - 2026-09-02
 

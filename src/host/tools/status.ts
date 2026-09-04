@@ -4,6 +4,7 @@ import { getOpenSpecStatus } from "../../openspec/status.js";
 import { status } from "../../tools/status.js";
 import { requireLifecyclePermission } from "../lifecycle-permission.js";
 import { recordSessionBinding } from "../session-bindings.js";
+import { withTodoRefreshReminder } from "./todo-refresh.js";
 
 /**
  * Expose authoritative OpenSpec status through the coordinator-only tool surface.
@@ -25,9 +26,11 @@ export const statusTool = tool({
         await requireLifecyclePermission(context, "specops_status");
         recordSessionBinding(context.sessionID, context.agent, args.change);
         context.metadata({ title: "Reading OpenSpec status…" });
-        return status(args.change, {
-            getOpenSpecStatus: change => getOpenSpecStatus(change, context.directory),
-            getApplyInstructions: change => getApplyInstructions(change, context.directory),
-        });
+        return withTodoRefreshReminder(
+            await status(args.change, {
+                getOpenSpecStatus: change => getOpenSpecStatus(change, context.directory),
+                getApplyInstructions: change => getApplyInstructions(change, context.directory),
+            }),
+        );
     },
 });

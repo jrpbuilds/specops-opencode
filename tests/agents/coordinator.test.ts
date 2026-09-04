@@ -115,43 +115,69 @@ describe("coordinator prompt composition", () => {
     });
 });
 
-describe("Todo projection contract", () => {
-    test("both coordinator modes include the projection contract", () => {
+describe("Todo refresh-trigger contract", () => {
+    test("both coordinator modes include the refresh-trigger contract", () => {
         const interactive = buildCoordinatorPrompt("interactive", false);
         const auto = buildCoordinatorPrompt("auto", false);
 
-        expect(interactive).toContain("## Todo projection");
-        expect(auto).toContain("## Todo projection");
-        expect(auto).toContain("## Todo projection (autonomous)");
-        expect(interactive).toContain("Repository evidence");
-        expect(interactive).toContain("specops-explorer");
+        expect(interactive).toContain("## Todo refresh trigger");
+        expect(auto).toContain("## Todo refresh trigger");
+        expect(auto).toContain("## Todo refresh trigger (autonomous)");
     });
 
-    test("degrades silently when the native capability is unavailable", () => {
-        expect(buildCoordinatorPrompt("interactive", false)).toContain(
-            "Probe the native Todo capability once at startup; if unavailable, skip silently",
-        );
-        expect(buildCoordinatorPrompt("auto", false)).toContain("Capability-absent degradation");
+    test("reduces the coordinator interaction to a runtime-owned blind trigger", () => {
+        const prompt = buildCoordinatorPrompt("interactive", false);
+
+        expect(prompt).toContain("The runtime owns and replaces all Todo content");
+        expect(prompt).toContain("orientation only, never authority");
+        expect(prompt).toContain('{"todos": []}');
+        expect(prompt).toContain("Never author, reconcile, or persist Todo content");
+        expect(prompt).toContain("never route from it");
     });
 
-    test("keeps Todo state non-authoritative and ephemeral", () => {
+    test("defines the compact refresh marker as one call per marker", () => {
         for (const prompt of [
             buildCoordinatorPrompt("interactive", false),
             buildCoordinatorPrompt("auto", false),
         ]) {
-            expect(prompt).toContain("Never use Todo state to decide workflow routing");
-            expect(prompt).toContain("Never persist the projection");
+            expect(prompt).toContain(
+                'SPECOPS_TODO_REFRESH: call todowrite with {"todos":[]} now — one call per marker.',
+            );
+            expect(prompt).toContain("one call per marker, every marker");
         }
     });
 
-    test("rebuilds and reconciles from durable status", () => {
-        const prompt = buildCoordinatorPrompt("interactive", false);
+    test("keeps the dispatch-returns trigger for the marker-less moment", () => {
+        for (const prompt of [
+            buildCoordinatorPrompt("interactive", false),
+            buildCoordinatorPrompt("auto", false),
+        ]) {
+            expect(prompt).toContain("after each specialist dispatch returns");
+        }
+    });
 
-        expect(prompt).toContain("Reconcile the projection on every handoff gate");
-        expect(prompt).toContain("every planning revision");
-        expect(prompt).toContain("every review-remediation round");
-        expect(prompt).toContain("On resume, rebuild the projection");
-        expect(prompt).toContain("fresh `specops_status` read");
+    test("drops content-maintenance and capability-probe instructions", () => {
+        for (const prompt of [
+            buildCoordinatorPrompt("interactive", false),
+            buildCoordinatorPrompt("auto", false),
+        ]) {
+            expect(prompt).not.toContain("Reconcile the projection");
+            expect(prompt).not.toContain("Probe the native Todo capability");
+            expect(prompt).not.toContain("publish the projection");
+            expect(prompt).not.toContain("Repository evidence entry");
+        }
+    });
+
+    test("drops the once-per-run ambiguity and the enumerated refresh moments", () => {
+        for (const prompt of [
+            buildCoordinatorPrompt("interactive", false),
+            buildCoordinatorPrompt("auto", false),
+        ]) {
+            expect(prompt).not.toContain("once now.");
+            expect(prompt).not.toContain("After change establishment, on resume");
+            expect(prompt).not.toContain("exactly one immediate native `todowrite` call");
+            expect(prompt).not.toContain("Never use Todo state to decide workflow routing");
+        }
     });
 });
 
@@ -1265,10 +1291,13 @@ describe("Auto coordinator contract", () => {
         expect(section).not.toContain("{{maxAutoReviewIterations}}");
     });
 
-    test("keeps Auto remediation and re-review visible in the non-authoritative Todo projection", () => {
-        expect(prompt).toContain("Auto review remediation");
-        expect(prompt).toContain("Auto review re-review");
-        expect(prompt).toContain("Never use Todo state to decide workflow routing");
+    test("keeps the Auto Todo section free of stage authoring", () => {
+        const autoPrompt = buildCoordinatorPrompt("auto", false);
+        expect(autoPrompt).toContain(
+            'SPECOPS_TODO_REFRESH: call todowrite with {"todos":[]} now — one call per marker.',
+        );
+        expect(autoPrompt).not.toContain("include `Auto review remediation`");
+        expect(autoPrompt).toContain("never route from it");
     });
 
     test("reads the Auto review budget from specops_config instead of baking it into the prompt", () => {

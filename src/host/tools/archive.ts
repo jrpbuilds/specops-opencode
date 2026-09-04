@@ -3,6 +3,7 @@ import { archiveChange } from "../../openspec/archive.js";
 import { archive } from "../../tools/archive.js";
 import { requireLifecyclePermission } from "../lifecycle-permission.js";
 import { recordSessionBinding } from "../session-bindings.js";
+import { withTodoRefreshReminder } from "./todo-refresh.js";
 
 /**
  * Expose native OpenSpec archiving through the SpecOps tool surface.
@@ -19,8 +20,10 @@ export const archiveTool = tool({
         await requireLifecyclePermission(context, "specops_archive");
         recordSessionBinding(context.sessionID, context.agent, args.change);
         context.metadata({ title: "Archiving OpenSpec change…" });
-        return archive(args.change, {
-            archiveChange: change => archiveChange(change, context.directory),
-        });
+        return withTodoRefreshReminder(
+            await archive(args.change, {
+                archiveChange: change => archiveChange(change, context.directory),
+            }),
+        );
     },
 });

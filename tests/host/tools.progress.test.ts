@@ -4,6 +4,7 @@ import * as applyInstructions from "../../src/openspec/apply-instructions.js";
 import type { NormalizedApplyInstructionContext } from "../../src/openspec/apply-instructions.js";
 import { progressTool } from "../../src/host/tools/progress.js";
 import { progress } from "../../src/tools/progress.js";
+import { stripTodoRefreshMarker } from "../helpers.js";
 
 type AskRequest = Parameters<ToolContext["ask"]>[0];
 type MetadataRequest = Parameters<ToolContext["metadata"]>[0];
@@ -52,7 +53,8 @@ function toolContext(ask: ToolContext["ask"], metadata: ToolContext["metadata"])
 }
 
 function outputOf(result: Awaited<ReturnType<typeof progressTool.execute>>): string {
-    return typeof result === "string" ? result : result.output;
+    const text = typeof result === "string" ? result : result.output;
+    return stripTodoRefreshMarker(text);
 }
 
 afterEach(() => {

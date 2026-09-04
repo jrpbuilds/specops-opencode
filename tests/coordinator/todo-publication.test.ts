@@ -32,22 +32,17 @@ describe("buildNativeTodoProjection", () => {
         expect(items).toEqual([
             {
                 id: "planning:proposal",
-                content: "proposal",
+                content: "Author proposal — define the change's purpose and scope",
                 status: "completed",
                 priority: "medium",
             },
-            { id: "planning:tasks", content: "tasks", status: "in_progress", priority: "medium" },
+            {
+                id: "planning:tasks",
+                content: "Plan tasks — break the work into implementation steps",
+                status: "in_progress",
+                priority: "medium",
+            },
         ]);
-    });
-
-    test("always omits the Explorer evidence entry", () => {
-        const items = buildNativeTodoProjection(
-            statusFixture({
-                artifacts: [artifact("proposal", "ready")],
-            }),
-        );
-
-        expect(items.map(item => item.id)).not.toContain("repository-evidence");
     });
 
     test("appends the fixed stages once planning is complete in interactive mode", () => {
@@ -92,5 +87,25 @@ describe("buildNativeTodoProjection", () => {
             status: "in_progress",
             priority: "medium",
         });
+    });
+
+    test("forwards the lifecycle input so post-plan stages advance natively", () => {
+        const items = buildNativeTodoProjection(statusFixture(), "interactive", {
+            apply: {
+                changeName: "example",
+                changeDir: "openspec/changes/example",
+                schemaName: "spec-driven",
+                contextFiles: {},
+                progress: { total: 12, complete: 5, remaining: 7 },
+                tasks: [],
+                state: "ready",
+                instruction: "",
+            },
+        });
+        const byId = new Map(items.map(item => [item.id, item]));
+
+        expect(byId.get("plan-approval")?.status).toBe("completed");
+        expect(byId.get("implementation")?.status).toBe("in_progress");
+        expect(byId.get("implementation")?.priority).toBe("medium");
     });
 });

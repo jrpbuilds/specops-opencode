@@ -9,7 +9,14 @@
  * untouched. Only SpecOps coordinator agents are recorded, so ordinary
  * sessions and specialist subagents are never intercepted.
  *
+ * The module also tracks one ephemeral per-session flag — whether the
+ * implementation-entry gate (`specops_apply_instructions`) was observed — so
+ * the Todo projection can show implementation as current work immediately at
+ * the approval transition. Like bindings it never persists and never feeds
+ * workflow routing.
+ *
  * Exports: `SessionBinding`, `recordSessionBinding`, `getSessionBinding`,
+ * `markImplementationEntered`, `hasEnteredImplementation`,
  * `__resetSessionBindingsForTesting`.
  */
 import { SPECOPS_AGENT_ID, SPECOPS_AUTO_AGENT_ID } from "../agents/coordinator.js";
@@ -22,6 +29,9 @@ export type SessionBinding = {
 };
 
 const bindings = new Map<string, SessionBinding>();
+
+/** Sessions observed crossing the implementation-entry gate. */
+const implementationEntered = new Set<string>();
 
 /**
  * Record or refresh the binding for one session.
@@ -57,7 +67,33 @@ export function getSessionBinding(sessionID: string): SessionBinding | undefined
     return bindings.get(sessionID);
 }
 
-/** Clear every binding; test isolation only. */
+/**
+ * Record that one session passed the implementation-entry gate.
+ *
+ * Observed from the coordinator's permission-gated `specops_apply_instructions`
+ * call — the seam the contract crosses when implementation begins. The flag
+ * only advances the Todo projection's lifecycle stages (immediate visibility
+ * before the first task checkbox lands); it never persists and never feeds
+ * workflow routing. Subagent sessions carry their own session ids, so their
+ * calls never pollute a coordinator's flag.
+ *
+ * @param sessionID OpenCode session identifier from the hook input.
+ */
+export function markImplementationEntered(sessionID: string): void {
+    if (sessionID) implementationEntered.add(sessionID);
+}
+
+/**
+ * Whether one session was observed passing the implementation-entry gate.
+ *
+ * @param sessionID OpenCode session identifier from the hook input.
+ */
+export function hasEnteredImplementation(sessionID: string): boolean {
+    return implementationEntered.has(sessionID);
+}
+
+/** Clear every binding and gate flag; test isolation only. */
 export function __resetSessionBindingsForTesting(): void {
     bindings.clear();
+    implementationEntered.clear();
 }

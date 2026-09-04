@@ -3,6 +3,7 @@ import { getApplyInstructions } from "../../openspec/apply-instructions.js";
 import { progress } from "../../tools/progress.js";
 import { requireLifecyclePermission } from "../lifecycle-permission.js";
 import { recordSessionBinding } from "../session-bindings.js";
+import { withTodoRefreshReminder } from "./todo-refresh.js";
 
 /**
  * Expose read-only parallel progress through the coordinator-only tool surface.
@@ -41,8 +42,10 @@ export const progressTool = tool({
         await requireLifecyclePermission(context, "specops_progress");
         recordSessionBinding(context.sessionID, context.agent, args.change);
         context.metadata({ title: "Reading parallel progress…" });
-        return progress(args, {
-            getApplyInstructions: change => getApplyInstructions(change, context.directory),
-        });
+        return withTodoRefreshReminder(
+            await progress(args, {
+                getApplyInstructions: change => getApplyInstructions(change, context.directory),
+            }),
+        );
     },
 });

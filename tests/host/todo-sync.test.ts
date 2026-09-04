@@ -2,8 +2,11 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { createTodoSyncHook } from "../../src/host/todo-sync.js";
 import {
     __resetSessionBindingsForTesting,
+    markImplementationEntered,
     recordSessionBinding,
 } from "../../src/host/session-bindings.js";
+import type { NormalizedApplyInstructionContext } from "../../src/openspec/apply-instructions.js";
+import type { ApplyInstructionsResult } from "../../src/openspec/apply-instructions.js";
 import type { NormalizedArtifact } from "../../src/openspec/status.js";
 import type { OpenSpecStatusResult } from "../../src/openspec/status.js";
 
@@ -31,8 +34,53 @@ function okStatus(): OpenSpecStatusResult {
     };
 }
 
+/** An apply context with 12 tasks and `complete` of them checked. */
+function applyContext(
+    complete = 0,
+    state: NormalizedApplyInstructionContext["state"] = "ready",
+): ApplyInstructionsResult {
+    return {
+        ok: true,
+        context: {
+            changeName: "example",
+            changeDir: "openspec/changes/example",
+            schemaName: "spec-driven",
+            contextFiles: {},
+            progress: { total: 12, complete, remaining: 12 - complete },
+            tasks: [],
+            state,
+            instruction: "",
+        },
+    };
+}
+
+function hookWith(
+    statusResult: OpenSpecStatusResult,
+    applyResult: ApplyInstructionsResult = applyContext(),
+) {
+    return createTodoSyncHook({
+        directory: "/project",
+        getOpenSpecStatus: async () => statusResult,
+        getApplyInstructions: async () => applyResult,
+    });
+}
+
 function hookInput(tool: string, sessionID: string) {
-    return { tool, sessionID, callID: "call_1" };
+    return { tool, sessionID, callID: "call_1", args: undefined };
+}
+
+/** Fire the contract's blind refresh trigger and return the published todos. */
+async function fireTrigger(
+    hook: ReturnType<typeof createTodoSyncHook>,
+    sessionID = "ses_1",
+): Promise<ModelTodo[]> {
+    const output = { args: { todos: [] as ModelTodo[] } };
+    await hook(hookInput("todowrite", sessionID), output);
+    return output.args.todos;
+}
+
+function byId(todos: readonly ModelTodo[]): Map<string, ModelTodo> {
+    return new Map(todos.map(todo => [todo.id as string, todo]));
 }
 
 afterEach(() => {
@@ -50,6 +98,7 @@ describe("createTodoSyncHook", () => {
                 reads += 1;
                 return okStatus();
             },
+            getApplyInstructions: async () => applyContext(),
         });
 
         await hook(hookInput("bash", "ses_1"), output);
@@ -70,6 +119,7 @@ describe("createTodoSyncHook", () => {
                 reads += 1;
                 return okStatus();
             },
+            getApplyInstructions: async () => applyContext(),
         });
 
         await hook(hookInput("todowrite", "ses_unbound"), output);
@@ -93,6 +143,7 @@ describe("createTodoSyncHook", () => {
                 reads.push([change, cwd]);
                 return okStatus();
             },
+            getApplyInstructions: async () => applyContext(),
         });
 
         await hook(hookInput("todowrite", "ses_1"), output);
@@ -102,32 +153,37 @@ describe("createTodoSyncHook", () => {
         expect(args.todos).toEqual([
             {
                 id: "planning:proposal",
-                content: "proposal",
+                content: "Author proposal — define the change's purpose and scope",
                 status: "completed",
                 priority: "medium",
             },
-            { id: "planning:tasks", content: "tasks", status: "completed", priority: "medium" },
+            {
+                id: "planning:tasks",
+                content: "Plan tasks — break the work into implementation steps",
+                status: "completed",
+                priority: "medium",
+            },
             {
                 id: "plan-approval",
-                content: "Plan approval checkpoint",
+                content: "Approve plan — checkpoint to approve or reject the plan",
                 status: "in_progress",
                 priority: "medium",
             },
             {
                 id: "implementation",
-                content: "Implementation",
+                content: "Implementation — build the approved tasks",
                 status: "pending",
                 priority: "medium",
             },
             {
                 id: "independent-review",
-                content: "Independent review",
+                content: "Independent review — verify against specs and design",
                 status: "pending",
                 priority: "medium",
             },
             {
                 id: "lifecycle-remediation",
-                content: "Lifecycle/remediation",
+                content: "Complete change — archive or remediate",
                 status: "pending",
                 priority: "medium",
             },
@@ -136,15 +192,11 @@ describe("createTodoSyncHook", () => {
 
     test("publishes with the binding's coordinator mode", async () => {
         recordSessionBinding("ses_auto", "SpecOps Auto", "example");
-        const output = { args: { todos: [] as ModelTodo[] } };
-        const hook = createTodoSyncHook({
-            directory: "/project",
-            getOpenSpecStatus: async () => okStatus(),
-        });
+        const hook = hookWith(okStatus());
 
-        await hook(hookInput("todowrite", "ses_auto"), output);
+        const todos = await fireTrigger(hook, "ses_auto");
 
-        expect(output.args.todos.map(item => item.id)).toEqual([
+        expect(todos.map(item => item.id)).toEqual([
             "planning:proposal",
             "planning:tasks",
             "implementation",
@@ -182,6 +234,7 @@ describe("createTodoSyncHook", () => {
                     },
                 };
             },
+            getApplyInstructions: async () => applyContext(),
         });
         const first: { args: { todos: { id: string }[] } } = { args: { todos: [] } };
         const second: { args: { todos: { id: string }[] } } = { args: { todos: [] } };
@@ -197,13 +250,19 @@ describe("createTodoSyncHook", () => {
         recordSessionBinding("ses_1", "SpecOps", "example");
         const args = { todos: [{ content: "model item", status: "pending", priority: "low" }] };
         const output = { args };
+        let applyReads = 0;
         const hook = createTodoSyncHook({
             directory: "/project",
             getOpenSpecStatus: async () => ({ ok: false, error: "no such change" }),
+            getApplyInstructions: async () => {
+                applyReads += 1;
+                return applyContext();
+            },
         });
 
         await hook(hookInput("todowrite", "ses_1"), output);
 
+        expect(applyReads).toBe(0);
         expect(output.args).toBe(args);
         expect(args.todos).toEqual([{ content: "model item", status: "pending", priority: "low" }]);
     });
@@ -217,6 +276,7 @@ describe("createTodoSyncHook", () => {
             getOpenSpecStatus: async () => {
                 throw new Error("openspec exploded");
             },
+            getApplyInstructions: async () => applyContext(),
         });
 
         await hook(hookInput("todowrite", "ses_1"), output);
@@ -226,13 +286,107 @@ describe("createTodoSyncHook", () => {
 
     test("never throws on malformed hook output shapes", async () => {
         recordSessionBinding("ses_1", "SpecOps", "example");
-        const hook = createTodoSyncHook({
-            directory: "/project",
-            getOpenSpecStatus: async () => okStatus(),
-        });
+        const hook = hookWith(okStatus());
 
         await hook(hookInput("todowrite", "ses_1"), undefined as never);
         await hook(hookInput("todowrite", "ses_1"), { args: "not-an-object" } as never);
         await hook(hookInput("todowrite", "ses_1"), { args: [1, 2, 3] } as never);
+    });
+
+    test("publication never decorates the payload with the refresh marker", async () => {
+        // Loop safety: the marker lives only on lifecycle tool outputs. A
+        // todowrite call publishes the canonical projection through payload
+        // replacement, so the model-visible result of todowrite carries no
+        // marker and cannot re-trigger itself.
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        const args: { todos: ModelTodo[] } = { todos: [] };
+        const output = { args };
+        const hook = hookWith(okStatus());
+
+        await hook(hookInput("todowrite", "ses_1"), output);
+
+        expect(output.args).toBe(args);
+        expect(output.args.todos.length).toBeGreaterThan(0);
+        expect(JSON.stringify(output.args.todos)).not.toContain("SPECOPS_TODO_REFRESH");
+    });
+});
+
+describe("createTodoSyncHook lifecycle advancement", () => {
+    test("keeps the approval checkpoint current while no task is checked", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        const hook = hookWith(okStatus(), applyContext(0));
+
+        const todos = await fireTrigger(hook);
+
+        expect(byId(todos).get("plan-approval")?.status).toBe("in_progress");
+        expect(byId(todos).get("implementation")?.status).toBe("pending");
+    });
+
+    test("advances to implementation once a task checkbox lands", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        const hook = hookWith(okStatus(), applyContext(3));
+
+        const todos = await fireTrigger(hook);
+
+        expect(byId(todos).get("plan-approval")?.status).toBe("completed");
+        expect(byId(todos).get("implementation")?.status).toBe("in_progress");
+        expect(byId(todos).get("independent-review")?.status).toBe("pending");
+    });
+
+    test("advances to review once every task is done", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        const hook = hookWith(okStatus(), applyContext(12, "all_done"));
+
+        const todos = await fireTrigger(hook);
+
+        expect(byId(todos).get("plan-approval")?.status).toBe("completed");
+        expect(byId(todos).get("implementation")?.status).toBe("completed");
+        expect(byId(todos).get("independent-review")?.status).toBe("in_progress");
+        expect(byId(todos).get("lifecycle-remediation")?.status).toBe("pending");
+    });
+
+    test("the implementation-entry gate advances the projection before any checkbox", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        markImplementationEntered("ses_1");
+        const hook = hookWith(okStatus(), applyContext(0));
+
+        const todos = await fireTrigger(hook);
+
+        expect(byId(todos).get("plan-approval")?.status).toBe("completed");
+        expect(byId(todos).get("implementation")?.status).toBe("in_progress");
+    });
+
+    test("observing the apply-instructions call marks the gate for the next trigger", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        const hook = hookWith(okStatus(), applyContext(0));
+
+        await hook(
+            { tool: "specops_apply_instructions", sessionID: "ses_1", callID: "gate" },
+            { args: { todos: [] } },
+        );
+        const todos = await fireTrigger(hook);
+
+        expect(byId(todos).get("plan-approval")?.status).toBe("completed");
+        expect(byId(todos).get("implementation")?.status).toBe("in_progress");
+    });
+
+    test("an apply-context read failure degrades to the waiting projection", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        const hook = hookWith(okStatus(), { ok: false, error: "openspec instructions failed" });
+
+        const todos = await fireTrigger(hook);
+
+        expect(byId(todos).get("plan-approval")?.status).toBe("in_progress");
+        expect(byId(todos).get("implementation")?.status).toBe("pending");
+    });
+
+    test("a blocked apply state keeps the waiting projection", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        const hook = hookWith(okStatus(), applyContext(0, "blocked"));
+
+        const todos = await fireTrigger(hook);
+
+        expect(byId(todos).get("plan-approval")?.status).toBe("in_progress");
+        expect(byId(todos).get("implementation")?.status).toBe("pending");
     });
 });

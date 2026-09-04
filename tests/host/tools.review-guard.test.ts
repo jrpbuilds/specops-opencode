@@ -2,7 +2,7 @@ import type { ToolContext } from "@opencode-ai/plugin/tool";
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 import * as helpers from "../../src/helpers.js";
 import { reviewGuardTool } from "../../src/host/tools/review-guard.js";
-import { withTempDir } from "../helpers.js";
+import { stripTodoRefreshMarker, withTempDir } from "../helpers.js";
 
 type AskRequest = Parameters<ToolContext["ask"]>[0];
 type MetadataRequest = Parameters<ToolContext["metadata"]>[0];
@@ -34,7 +34,8 @@ function mockGit(directory: string): void {
 }
 
 function outputOf(result: Awaited<ReturnType<typeof reviewGuardTool.execute>>): string {
-    return typeof result === "string" ? result : result.output;
+    const text = typeof result === "string" ? result : result.output;
+    return stripTodoRefreshMarker(text);
 }
 
 afterEach(() => {

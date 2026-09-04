@@ -3,6 +3,7 @@ import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 import * as helpers from "../../src/helpers.js";
 import { validateChange, type ValidateChangeDeps } from "../../src/tools/validate-change.js";
 import { validateChangeTool } from "../../src/host/tools/validate-change.js";
+import { stripTodoRefreshMarker } from "../helpers.js";
 
 afterEach(() => {
     mock.restore();
@@ -36,7 +37,8 @@ function deps(
 }
 
 function outputOf(result: Awaited<ReturnType<typeof validateChangeTool.execute>>): string {
-    return typeof result === "string" ? result : result.output;
+    const text = typeof result === "string" ? result : result.output;
+    return stripTodoRefreshMarker(text);
 }
 
 describe("validateChange tool adapter", () => {
