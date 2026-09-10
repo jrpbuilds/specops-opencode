@@ -16,6 +16,7 @@ import {
 import { TOOLS } from "./host/tools/index.js";
 import { createTodoDisplayHook } from "./host/todo-display.js";
 import { createTodoSyncHook } from "./host/todo-sync.js";
+import { recordReviewDispatch, recordReviewResult } from "./host/review-cycle.js";
 import { createTaskResultRefreshHook } from "./host/tools/todo-refresh.js";
 import { getApplyInstructions } from "./openspec/apply-instructions.js";
 import { getOpenSpecStatus } from "./openspec/status.js";
@@ -68,22 +69,26 @@ export const SpecOpsPlugin: Plugin = async input => {
         },
         tool: TOOLS,
         // Compose the tool.execute.before hooks: dispatch observation feeds the
-        // runtime's parallel-progress tracking, and the Todo sync hook publishes
-        // the runtime-owned projection by intercepting the builtin todowrite tool
-        // for sessions that ran a SpecOps lifecycle tool, replacing the model's
-        // blind refresh-trigger payload with the canonical projection rebuilt
-        // from fresh durable state.
+        // runtime's parallel-progress tracking and review-cycle observation,
+        // and the Todo sync hook publishes the runtime-owned projection by
+        // intercepting the builtin todowrite tool for sessions that ran a
+        // SpecOps lifecycle tool, replacing the model's blind refresh-trigger
+        // payload with the canonical projection rebuilt from fresh durable
+        // state.
         "tool.execute.before": async (input, output) => {
             await recordTaskDispatch(input, output);
+            await recordReviewDispatch(input, output);
             await todoSyncHook(input, output);
         },
         // Compose the tool.execute.after hooks: task results resolve tracked
-        // dispatches, then cue the coordinator to refresh its projection, and
-        // the display hook suppresses the builtin's `# Todos` transcript blocks
-        // by emptying the display metadata the renderer gates on — the sidebar
-        // keeps showing the persisted projection.
+        // dispatches and record the reviewer's observed verdict, then cue the
+        // coordinator to refresh its projection, and the display hook
+        // suppresses the builtin's `# Todos` transcript blocks by emptying
+        // the display metadata the renderer gates on — the sidebar keeps
+        // showing the persisted projection.
         "tool.execute.after": async (input, output) => {
             await recordTaskResult(input, output);
+            await recordReviewResult(input, output);
             await taskResultRefreshHook(input, output);
             await todoDisplayHook(input, output);
         },

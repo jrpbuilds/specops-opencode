@@ -43,12 +43,27 @@ export type ParallelProgressInput = {
     }[];
 };
 
+/**
+ * Ephemeral runtime observations of one session's review cycle: the latest
+ * reviewer verdict and, after a FAIL, the active remediation round. The
+ * runtime reads these from observed lifecycle calls; they are presentation
+ * state only and never workflow authority.
+ */
+export type ReviewCycleObservation = {
+    /** Latest reviewer verdict observed this session; omitted ⇒ none observed. */
+    readonly verdict?: "pass" | "fail";
+    /** Active fail-cycle round; present only while a FAIL's correction loop runs. */
+    readonly round?: "remediation" | "re-review";
+};
+
 /** Durable implementation progress and gate observations for the lifecycle stages. */
 export type LifecycleProgressInput = {
     /** Normalized apply context feeding the canonical phase derivation; omitted ⇒ stages stay pending. */
     readonly apply?: NormalizedApplyInstructionContext;
     /** True when the coordinator was observed passing the implementation-entry gate this session. */
     readonly implementationEntered?: boolean;
+    /** Observed review-cycle state; a verdict takes precedence over the durable phase derivation. */
+    readonly reviewCycle?: ReviewCycleObservation;
 };
 
 /** Workflow stages appended once every planning artifact is complete. */
@@ -107,7 +122,7 @@ export function buildTodoProjection(
             ...(mode === "auto" ? AUTO_REVIEW_STAGES : []),
             LIFECYCLE_STAGE,
         ];
-        const stageStatus = lifecycleStageStatus(status, lifecycle);
+        const stageStatus = lifecycleStageStatus(status, lifecycle, mode);
         for (const stage of stages) {
             if (stage.id === "plan-approval" && mode === "auto") continue;
             entries.push({ ...stage, status: stageStatus(stage.id) });
@@ -117,9 +132,13 @@ export function buildTodoProjection(
     // The evidence pass is part of authoring the first planning artifact, so
     // the fixup marks the first incomplete planning artifact (or, once
     // planning completes, the first stage the phase derivation left pending —
-    // normally the approval checkpoint) as current work.
-    const firstIncomplete = entries.findIndex(entry => entry.status !== "complete");
-    if (firstIncomplete >= 0) entries[firstIncomplete].status = "in_progress";
+    // normally the approval checkpoint) as current work. Observed positions
+    // win: the fixup only fills the gap when nothing is already current.
+    const current = entries.find(entry => entry.status === "in_progress");
+    if (!current) {
+        const firstIncomplete = entries.findIndex(entry => entry.status !== "complete");
+        if (firstIncomplete >= 0) entries[firstIncomplete].status = "in_progress";
+    }
 
     if (parallel) insertParallelEntries(entries, parallel);
 
@@ -194,11 +213,23 @@ function insertParallelEntries(
  * marks the approval checkpoint, preserving the pre-derivation behavior.
  * Implementation becomes current once the entry gate is observed or a task
  * checkbox lands; review becomes current once every task is done.
+ *
+ * An observed reviewer verdict takes precedence: the review round executed,
+ * so the verdict — pass or fail — completes the review stage and hands the
+ * current-work position to the cycle stages (remediation and re-review in
+ * Auto mode, the terminal archive-or-remediate stage in interactive mode).
+ * Implementation stays complete for the whole cycle: post-review task
+ * additions are remediation work, carried by the cycle stages, and a fresh
+ * implementation-entry gate crossing without an active cycle clears the
+ * verdict so durable state governs again.
  */
 function lifecycleStageStatus(
     status: NormalizedStatus,
-    lifecycle?: LifecycleProgressInput,
+    lifecycle: LifecycleProgressInput | undefined,
+    mode: TodoProjectionMode,
 ): (stageId: string) => TodoProjectionStatus {
+    const cycle = lifecycle?.reviewCycle;
+    if (cycle?.verdict) return reviewCycleStageStatus(cycle, mode);
     if (!lifecycle?.apply) return () => "pending";
     const { phase } = deriveWorkflowState(status, lifecycle.apply);
     if (phase === "implementation") {
@@ -221,6 +252,51 @@ function lifecycleStageStatus(
                   : "pending";
     }
     return () => "pending";
+}
+
+/**
+ * Resolve post-plan stage statuses from the observed review cycle. Stage
+ * semantics follow round execution: the initial review round completed once
+ * a verdict exists; a FAIL keeps the cycle active with remediation current
+ * until a review-role re-dispatch moves work into the re-review round; a
+ * PASS concludes the cycle and leaves the terminal archive-or-remediate
+ * decision current. Auto-only stages complete vacuously on a first-round
+ * PASS so the list never dangles on stages that have nothing left to do.
+ */
+function reviewCycleStageStatus(
+    cycle: ReviewCycleObservation,
+    mode: TodoProjectionMode,
+): (stageId: string) => TodoProjectionStatus {
+    const passed = cycle.verdict === "pass";
+    // A recorded FAIL always carries a round; default defensively to the
+    // remediation position should one ever be missing.
+    const round = passed ? undefined : (cycle.round ?? "remediation");
+    return stageId => {
+        switch (stageId) {
+            case "plan-approval":
+            case "implementation":
+                return "complete";
+            case "independent-review":
+                return round === "re-review" ? "in_progress" : "complete";
+            case "auto-review-remediation":
+                if (mode !== "auto") return "pending";
+                return round === "remediation" ? "in_progress" : "complete";
+            case "auto-review-re-review":
+                if (mode !== "auto") return "pending";
+                return round === "re-review" ? "in_progress" : passed ? "complete" : "pending";
+            case "lifecycle-remediation":
+                if (passed) return "in_progress";
+                // A FAIL keeps the terminal stage current only while
+                // remediation runs or the archive-or-remediate decision is
+                // open (interactive mode); the re-review round returns
+                // current work to the review stage.
+                return round === "remediation" && mode === "interactive"
+                    ? "in_progress"
+                    : "pending";
+            default:
+                return "pending";
+        }
+    };
 }
 
 /** Readable labels for default-schema planning artifacts; custom ids pass through. */

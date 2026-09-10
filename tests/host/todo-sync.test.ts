@@ -3,6 +3,7 @@ import { createTodoSyncHook } from "../../src/host/todo-sync.js";
 import {
     __resetSessionBindingsForTesting,
     markImplementationEntered,
+    recordArchivedChange,
     recordSessionBinding,
 } from "../../src/host/session-bindings.js";
 import {
@@ -289,6 +290,34 @@ describe("createTodoSyncHook", () => {
         const second = await fireTrigger(hook, "ses_1");
 
         expect(second).toEqual(first);
+    });
+
+    test("a successful publication supersedes an observed archive", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        let failing = false;
+        const hook = createTodoSyncHook({
+            directory: "/project",
+            getOpenSpecStatus: async () =>
+                failing ? { ok: false, error: "no such change" } : okStatus(),
+            getApplyInstructions: async () => applyContext(),
+        });
+
+        const active = await fireTrigger(hook);
+        // The archive finalizes the remembered projection to all-complete…
+        recordArchivedChange("ses_1");
+        failing = true;
+        const archived = await fireTrigger(hook);
+        // …and the change becomes active again under the same name: the next
+        // successful publication replaces the terminal list, so a later
+        // failure restores the fresh projection, not the archived one.
+        failing = false;
+        const republished = await fireTrigger(hook);
+        failing = true;
+        const afterFailure = await fireTrigger(hook);
+
+        expect(archived.every(todo => todo.status === "completed")).toBe(true);
+        expect(republished).toEqual(active);
+        expect(afterFailure).toEqual(active);
     });
 
     test("never throws when the status reader rejects", async () => {

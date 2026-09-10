@@ -20,6 +20,8 @@ All notable changes to SpecOps are documented in this file.
 - Workflow legality now comes from one shared derivation: status, planning dispatch, and the to-do list all answer "is planning complete?" from the same rule, so they can no longer contradict one another about the same change state.
 - The `# Todos` blocks no longer appear in the chat transcript after each to-do refresh; the sidebar list keeps showing the canonical projection.
 - The to-do list now advances past plan approval as work progresses: implementation shows as current once the plan is approved or a task is checked, and review once every task is done — matching the workflow phase the status tool already reports.
+- The to-do list now follows review to the end: a passed review checks off review and moves the list to the final archive step, while flagged findings route current work into the remediation and re-review stages as each round runs.
+- Archiving a change now leaves the to-do list fully checked off, so the panel finishes cleanly instead of leaving the last step dangling.
 - Parallel progress is now tracked by SpecOps itself: the progress tool reports which specialists are running or finished from what actually happened in the session, alongside the current checked-task totals, so the coordinator no longer maintains and resubmits that state by hand.
 - The parallel progress tool is now a read-only diagnostic: SpecOps fills in the whole report from what it observed in the session, so the coordinator no longer calls it at every parallel checkpoint or hands it any state.
 

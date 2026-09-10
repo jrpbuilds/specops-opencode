@@ -22,7 +22,8 @@ describe("archive", () => {
             },
         });
 
-        expect(result).toContain("change name is required");
+        expect(result.ok).toBe(false);
+        expect(result.message).toContain("change name is required");
         expect(called).toBe(false);
     });
 
@@ -43,8 +44,9 @@ describe("archive", () => {
         );
 
         expect(received).toBe("example");
-        expect(result).toContain("2026-08-09-example");
-        expect(result).toContain("/project/openspec/changes/archive/2026-08-09-example");
+        expect(result.ok).toBe(true);
+        expect(result.message).toContain("2026-08-09-example");
+        expect(result.message).toContain("/project/openspec/changes/archive/2026-08-09-example");
     });
 
     test("reports native archive failures without retrying", async () => {
@@ -56,7 +58,8 @@ describe("archive", () => {
             },
         });
 
-        expect(result).toContain("Change 'missing' not found.");
+        expect(result.ok).toBe(false);
+        expect(result.message).toContain("Change 'missing' not found.");
         expect(calls).toBe(1);
     });
 });

@@ -320,12 +320,13 @@ describe("lifecycle tool integration", () => {
         __resetSessionBindingsForTesting();
     });
 
-    // The seven lifecycle tools whose outputs the coordinator reads at the
+    // The eight lifecycle tools whose outputs the coordinator reads at the
     // contract's Todo refresh moments terminate their results with the compact
     // refresh marker; specialist dispatch results receive the same cue through
     // the host after-hook, while every other lifecycle tool stays marker-free.
     const REFRESH_MARKER_TOOL_IDS = [
         "specops_archive",
+        "specops_archive_instructions",
         "specops_apply_instructions",
         "specops_create_change",
         "specops_progress",

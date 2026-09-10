@@ -2,14 +2,17 @@ import { tool } from "@opencode-ai/plugin/tool";
 import { archiveChange } from "../../openspec/archive.js";
 import { archive } from "../../tools/archive.js";
 import { requireLifecyclePermission } from "../lifecycle-permission.js";
-import { recordSessionBinding } from "../session-bindings.js";
+import { recordArchivedChange, recordSessionBinding } from "../session-bindings.js";
 import { withTodoRefreshReminder } from "./todo-refresh.js";
 
 /**
  * Expose native OpenSpec archiving through the SpecOps tool surface.
  *
  * The session directory is supplied by OpenCode so archiving targets the
- * current project rather than the process working directory.
+ * current project rather than the process working directory. A successful
+ * archive is observed so the Todo projection can publish its terminal,
+ * all-complete form: after the archive the active change no longer exists,
+ * so later publications cannot rebuild from durable state.
  */
 export const archiveTool = tool({
     description: "Archive a named OpenSpec change using the native OpenSpec archive operation.",
@@ -20,11 +23,10 @@ export const archiveTool = tool({
         await requireLifecyclePermission(context, "specops_archive");
         recordSessionBinding(context.sessionID, context.agent, args.change);
         context.metadata({ title: "Archiving OpenSpec change…" });
-        return withTodoRefreshReminder(
-            await archive(args.change, {
-                archiveChange: change => archiveChange(change, context.directory),
-            }),
-            context,
-        );
+        const outcome = await archive(args.change, {
+            archiveChange: change => archiveChange(change, context.directory),
+        });
+        if (outcome.ok) recordArchivedChange(context.sessionID);
+        return withTodoRefreshReminder(outcome.message, context);
     },
 });

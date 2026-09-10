@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { createTodoSyncHook } from "../../src/host/todo-sync.js";
+import { recordReviewDispatch, recordReviewResult } from "../../src/host/review-cycle.js";
 import {
     __resetSessionBindingsForTesting,
     markImplementationEntered,
+    recordArchivedChange,
     recordSessionBinding,
 } from "../../src/host/session-bindings.js";
 import type { ApplyInstructionsResult } from "../../src/openspec/apply-instructions.js";
@@ -18,7 +20,9 @@ import type { NormalizedArtifact, OpenSpecStatusResult } from "../../src/openspe
  * projection stays useful across a run: initial publish, transitions,
  * revisions, resume, failure recovery, and idempotence. Ephemeral parallel
  * implementation/review entries are derived from the runtime's observed
- * dispatches and included in the publication hook's full-run surface.
+ * dispatches and included in the publication hook's full-run surface, and
+ * the post-review stages advance from the runtime's observed review cycle —
+ * verdicts, remediation rounds, and the terminal archive projection.
  */
 
 /** A model-authored todo as the native todowrite schema accepts it. */
@@ -302,4 +306,147 @@ describe("representative workflow synchronization", () => {
         expect(atReview.get("implementation")?.status).toBe("completed");
         expect(atReview.get("independent-review")?.status).toBe("in_progress");
     });
+});
+
+describe("review-cycle synchronization", () => {
+    const complete = plan("done", "done", "done", "done", true);
+
+    /** A publication hook over a constant durable state. */
+    function steadyHook(status: OpenSpecStatusResult = complete) {
+        return createTodoSyncHook({
+            directory: "/project",
+            getOpenSpecStatus: async () => status,
+            getApplyInstructions: async () => applyContext(12, "all_done"),
+        });
+    }
+
+    /** Observe one reviewer result through the runtime's after-hook seam. */
+    function reviewerReturns(output: string, sessionID = "ses_1"): Promise<void> {
+        return recordReviewResult(
+            {
+                tool: "task",
+                sessionID,
+                callID: "call_review",
+                args: { subagent_type: "specops-reviewer" },
+            },
+            { title: "", output, metadata: {} },
+        );
+    }
+
+    test("a PASS completes review and makes the archive step current", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        const hook = steadyHook();
+
+        const duringReview = byId(await fireTrigger(hook));
+        await reviewerReturns("PASS\nCompliance matrix:\n- R1 — VERIFIED");
+        const afterPass = byId(await fireTrigger(hook));
+
+        expect(duringReview.get("independent-review")?.status).toBe("in_progress");
+        expect(duringReview.get("lifecycle-remediation")?.status).toBe("pending");
+        expect(afterPass.get("independent-review")?.status).toBe("completed");
+        expect(afterPass.get("lifecycle-remediation")?.status).toBe("in_progress");
+    });
+
+    test("an interactive FAIL keeps implementation complete and moves work to the terminal stage", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        const hook = steadyHook();
+
+        await reviewerReturns("FAIL\nF1 — broken behaviour");
+        const afterFail = byId(await fireTrigger(hook));
+
+        expect(afterFail.get("implementation")?.status).toBe("completed");
+        expect(afterFail.get("independent-review")?.status).toBe("completed");
+        expect(afterFail.get("lifecycle-remediation")?.status).toBe("in_progress");
+    });
+
+    test("an auto FAIL routes work through remediation, re-review, and back to terminal", async () => {
+        recordSessionBinding("ses_auto", "SpecOps Auto", "example");
+        const hook = steadyHook();
+
+        await reviewerReturns("FAIL\nF1 — broken behaviour", "ses_auto");
+        const afterFail = byId(await fireTrigger(hook, "ses_auto"));
+        await recordReviewDispatch(
+            { tool: "task", sessionID: "ses_auto", callID: "call_critic" },
+            { args: { subagent_type: "specops-review-correctness" } },
+        );
+        const duringReReview = byId(await fireTrigger(hook, "ses_auto"));
+        await reviewerReturns("PASS\nfixed", "ses_auto");
+        const afterRePass = byId(await fireTrigger(hook, "ses_auto"));
+
+        expect(afterFail.get("auto-review-remediation")?.status).toBe("in_progress");
+        expect(afterFail.get("auto-review-re-review")?.status).toBe("pending");
+        expect(duringReReview.get("auto-review-remediation")?.status).toBe("completed");
+        expect(duringReReview.get("auto-review-re-review")?.status).toBe("in_progress");
+        expect(afterRePass.get("auto-review-remediation")?.status).toBe("completed");
+        expect(afterRePass.get("auto-review-re-review")?.status).toBe("completed");
+        expect(afterRePass.get("lifecycle-remediation")?.status).toBe("in_progress");
+    });
+
+    test("implementation work after a PASS regresses the projection to durable state", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        // An update-flow revision after a passed review: fresh unchecked
+        // tasks replace the completed list, and crossing the entry gate
+        // clears the observed verdict so the durable phase governs again.
+        let apply = applyContext(12, "all_done");
+        const hook = createTodoSyncHook({
+            directory: "/project",
+            getOpenSpecStatus: async () => complete,
+            getApplyInstructions: async () => apply,
+        });
+
+        await reviewerReturns("PASS\nok");
+        observeGate();
+        apply = applyContext(3);
+        const afterGate = byId(await fireTrigger(hook));
+
+        expect(afterGate.get("independent-review")?.status).toBe("pending");
+        expect(afterGate.get("implementation")?.status).toBe("in_progress");
+    });
+
+    test("a successful archive publishes the terminal, all-complete projection", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        // The durable read succeeds until the archive lands, then fails —
+        // the active change no longer exists.
+        let archived = false;
+        const hook = createTodoSyncHook({
+            directory: "/project",
+            getOpenSpecStatus: async () =>
+                archived
+                    ? ({ ok: false, error: "Change 'example' not found." } as OpenSpecStatusResult)
+                    : complete,
+            getApplyInstructions: async () => applyContext(12, "all_done"),
+        });
+
+        const beforeArchive = await fireTrigger(hook);
+        recordArchivedChange("ses_1");
+        archived = true;
+        const afterArchive = await fireTrigger(hook);
+
+        // The post-archive durable read fails; the terminal projection is
+        // the remembered list finalized at archive time.
+        expect(afterArchive).toHaveLength(beforeArchive.length);
+        expect(afterArchive.every(todo => todo.status === "completed")).toBe(true);
+        expect(afterArchive.find(todo => todo.id === "lifecycle-remediation")?.status).toBe(
+            "completed",
+        );
+    });
+
+    test("a failed archive leaves the active projection untouched", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        const hook = steadyHook();
+
+        await fireTrigger(hook);
+        // No archive observation: the wrapper records nothing on failure.
+        const afterFailedArchive = byId(await fireTrigger(hook));
+
+        expect(afterFailedArchive.get("lifecycle-remediation")?.status).toBe("pending");
+    });
+
+    /** Cross the implementation gate through the real hook seam. */
+    function observeGate(): void {
+        const hook = steadyHook();
+        void hook({ tool: "specops_apply_instructions", sessionID: "ses_1", callID: "gate" }, {
+            args: { todos: [] },
+        } as never);
+    }
 });

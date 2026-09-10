@@ -64,7 +64,7 @@ Before any planning artifact is written, and again before review can pass, SpecO
 
 The native Todo sidebar is a runtime-owned projection of durable OpenSpec state, never workflow authority. Lifecycle results and every specialist dispatch return a compact refresh cue; the coordinator performs one blind refresh per assistant turn when one or more cues arrive, and the runtime replaces the payload with a full projection. Refreshes are coalesced so batched status/validation calls do not produce duplicate updates, while the same cue path covers planning, implementation, parallel work, review, remediation, and archive. If a durable read briefly fails, SpecOps keeps the last successful projection visible rather than clearing the panel.
 
-## Review: three perspectives, one verdict
+The list also follows review to the end. The runtime observes the reviewer's verdict from its result, so a pass checks off review and moves the list to the final archive step, while flagged findings route current work into the remediation and re-review stages as each round runs. A plan revision made after a passed review regresses the list back to the new implementation work. And when a change is archived, the whole list reads as completed — the run is over, so the panel finishes cleanly instead of leaving the last step dangling.
 
 ## Review: three perspectives, one verdict
 

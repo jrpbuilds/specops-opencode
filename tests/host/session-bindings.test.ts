@@ -1,8 +1,11 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import {
     __resetSessionBindingsForTesting,
+    getRememberedTodoProjection,
     getSessionBinding,
+    recordArchivedChange,
     recordSessionBinding,
+    rememberTodoProjection,
 } from "../../src/host/session-bindings.js";
 
 afterEach(() => {
@@ -50,5 +53,50 @@ describe("session bindings", () => {
 
     test("returns undefined for unknown sessions", () => {
         expect(getSessionBinding("ses_never")).toBeUndefined();
+    });
+});
+
+describe("archived projection finalization", () => {
+    test("recordArchivedChange finalizes the remembered projection to all-complete", () => {
+        recordSessionBinding("ses_8", "SpecOps", "example");
+        rememberTodoProjection("ses_8", [
+            {
+                id: "implementation",
+                content: "Implementation — build the approved tasks",
+                status: "in_progress",
+                priority: "medium",
+            },
+            {
+                id: "lifecycle-remediation",
+                content: "Complete change — archive or remediate",
+                status: "pending",
+                priority: "medium",
+            },
+        ]);
+
+        recordArchivedChange("ses_8");
+
+        expect(getRememberedTodoProjection("ses_8")).toEqual([
+            {
+                id: "implementation",
+                content: "Implementation — build the approved tasks",
+                status: "completed",
+                priority: "medium",
+            },
+            {
+                id: "lifecycle-remediation",
+                content: "Complete change — archive or remediate",
+                status: "completed",
+                priority: "medium",
+            },
+        ]);
+    });
+
+    test("recordArchivedChange without a remembered projection finalizes nothing", () => {
+        recordSessionBinding("ses_9", "SpecOps", "example");
+
+        recordArchivedChange("ses_9");
+
+        expect(getRememberedTodoProjection("ses_9")).toBeUndefined();
     });
 });

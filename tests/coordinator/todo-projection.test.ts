@@ -282,6 +282,120 @@ describe("buildTodoProjection lifecycle advancement", () => {
     });
 });
 
+describe("buildTodoProjection review-cycle advancement", () => {
+    const complete = fixture(
+        [artifact("proposal", "done"), artifact("tasks", "done", ["proposal"])],
+        ["tasks"],
+        true,
+    );
+
+    function stageStatuses(entries: readonly TodoProjectionEntry[]): Map<string, string> {
+        return new Map(
+            entries
+                .filter(entry => !entry.id.startsWith("planning:"))
+                .map(entry => [entry.id, entry.status]),
+        );
+    }
+
+    test("a PASS completes review and makes the terminal stage current", () => {
+        for (const mode of ["interactive", "auto"] as const) {
+            const statuses = stageStatuses(
+                buildTodoProjection(complete, mode, undefined, {
+                    reviewCycle: { verdict: "pass" },
+                }),
+            );
+
+            if (mode === "interactive") {
+                expect(statuses.get("plan-approval")).toBe("complete");
+            }
+            expect(statuses.get("implementation")).toBe("complete");
+            expect(statuses.get("independent-review")).toBe("complete");
+            if (mode === "auto") {
+                expect(statuses.get("auto-review-remediation")).toBe("complete");
+                expect(statuses.get("auto-review-re-review")).toBe("complete");
+            }
+            expect(statuses.get("lifecycle-remediation")).toBe("in_progress");
+        }
+    });
+
+    test("an interactive FAIL keeps implementation complete and hands work to the terminal stage", () => {
+        const statuses = stageStatuses(
+            buildTodoProjection(complete, "interactive", undefined, {
+                reviewCycle: { verdict: "fail", round: "remediation" },
+            }),
+        );
+
+        expect(statuses.get("plan-approval")).toBe("complete");
+        expect(statuses.get("implementation")).toBe("complete");
+        expect(statuses.get("independent-review")).toBe("complete");
+        expect(statuses.get("lifecycle-remediation")).toBe("in_progress");
+    });
+
+    test("an interactive re-review round returns work to the review stage", () => {
+        const statuses = stageStatuses(
+            buildTodoProjection(complete, "interactive", undefined, {
+                reviewCycle: { verdict: "fail", round: "re-review" },
+            }),
+        );
+
+        expect(statuses.get("independent-review")).toBe("in_progress");
+        expect(statuses.get("lifecycle-remediation")).toBe("pending");
+    });
+
+    test("an auto FAIL routes current work to remediation, then re-review", () => {
+        const remediating = stageStatuses(
+            buildTodoProjection(complete, "auto", undefined, {
+                reviewCycle: { verdict: "fail", round: "remediation" },
+            }),
+        );
+
+        expect(remediating.get("independent-review")).toBe("complete");
+        expect(remediating.get("auto-review-remediation")).toBe("in_progress");
+        expect(remediating.get("auto-review-re-review")).toBe("pending");
+        expect(remediating.get("lifecycle-remediation")).toBe("pending");
+
+        const reReviewing = stageStatuses(
+            buildTodoProjection(complete, "auto", undefined, {
+                reviewCycle: { verdict: "fail", round: "re-review" },
+            }),
+        );
+
+        expect(reReviewing.get("auto-review-remediation")).toBe("complete");
+        expect(reReviewing.get("auto-review-re-review")).toBe("in_progress");
+    });
+
+    test("an observed verdict takes precedence over a regressed durable phase", () => {
+        // Remediation added unchecked tasks, so the durable phase reads
+        // implementation again; the active fail cycle must keep the original
+        // implementation complete and hold the remediation position.
+        const statuses = stageStatuses(
+            buildTodoProjection(complete, "auto", undefined, {
+                apply: applyContext(9),
+                reviewCycle: { verdict: "fail", round: "remediation" },
+            }),
+        );
+
+        expect(statuses.get("implementation")).toBe("complete");
+        expect(statuses.get("auto-review-remediation")).toBe("in_progress");
+    });
+
+    test("a verdict resolves without an apply context and the fixup stays suppressed", () => {
+        const statuses = stageStatuses(
+            buildTodoProjection(complete, "interactive", undefined, {
+                reviewCycle: { verdict: "fail", round: "remediation" },
+            }),
+        );
+
+        expect(statuses.get("independent-review")).toBe("complete");
+        expect(statuses.get("lifecycle-remediation")).toBe("in_progress");
+        expect(
+            buildTodoProjection(complete, "interactive", undefined, {
+                reviewCycle: { verdict: "fail", round: "remediation" },
+            }).filter(entry => entry.status === "in_progress"),
+        ).toHaveLength(1);
+    });
+});
+
 describe("buildTodoProjection parallel progress", () => {
     const fanoutProgress: ReviewFanoutProgress = {
         critics: [

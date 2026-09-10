@@ -30,20 +30,20 @@ A deterministic helper answers _what is true_, _what is legal_, and _what follow
 
 Today these live in:
 
-| Decision                               | Where it lives                                                                                                                          |
-| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Lifecycle, phase, and eligible actions | `src/openspec/status.ts`, `src/coordinator/workflow-state.ts`                                                                           |
-| Planning completion                    | `src/coordinator/planning-completion.ts`                                                                                                |
-| Artifact existence and dependencies    | `src/coordinator/artifact-graph.ts`                                                                                                     |
-| Artifact eligibility, planning routes  | `src/coordinator/batching.ts`, `src/coordinator/rolling-scheduler.ts`                                                                   |
-| Task existence and completion          | `src/openspec/apply-instructions.ts`                                                                                                    |
-| Assignment validity and overlap        | `src/coordinator/implementer-progress.ts`                                                                                               |
-| Concurrency and capacity accounting    | `src/coordinator/rolling-scheduler.ts`                                                                                                  |
-| Review guard state                     | `src/coordinator/review-guard.ts`                                                                                                       |
-| Archive operation (structural only)    | `src/openspec/archive.ts` — see the archive boundary below                                                                              |
-| Todo projection and publication        | `src/coordinator/todo-projection.ts`, `src/coordinator/todo-publication.ts`, `src/host/todo-sync.ts`                                    |
-| Progress projection                    | `src/tools/progress.ts`, `src/coordinator/review-fanout.ts`, `src/coordinator/implementer-progress.ts`, `src/host/parallel-progress.ts` |
-| Role and tool permissions              | `src/agents/permission-policy.ts`, `src/host/lifecycle-permission.ts`                                                                   |
+| Decision                               | Where it lives                                                                                                                                                          |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lifecycle, phase, and eligible actions | `src/openspec/status.ts`, `src/coordinator/workflow-state.ts`                                                                                                           |
+| Planning completion                    | `src/coordinator/planning-completion.ts`                                                                                                                                |
+| Artifact existence and dependencies    | `src/coordinator/artifact-graph.ts`                                                                                                                                     |
+| Artifact eligibility, planning routes  | `src/coordinator/batching.ts`, `src/coordinator/rolling-scheduler.ts`                                                                                                   |
+| Task existence and completion          | `src/openspec/apply-instructions.ts`                                                                                                                                    |
+| Assignment validity and overlap        | `src/coordinator/implementer-progress.ts`                                                                                                                               |
+| Concurrency and capacity accounting    | `src/coordinator/rolling-scheduler.ts`                                                                                                                                  |
+| Review guard state                     | `src/coordinator/review-guard.ts`                                                                                                                                       |
+| Archive operation (structural only)    | `src/openspec/archive.ts` — see the archive boundary below                                                                                                              |
+| Todo projection and publication        | `src/coordinator/todo-projection.ts`, `src/coordinator/todo-publication.ts`, `src/coordinator/reviewer-verdict.ts`, `src/host/todo-sync.ts`, `src/host/review-cycle.ts` |
+| Progress projection                    | `src/tools/progress.ts`, `src/coordinator/review-fanout.ts`, `src/coordinator/implementer-progress.ts`, `src/host/parallel-progress.ts`                                 |
+| Role and tool permissions              | `src/agents/permission-policy.ts`, `src/host/lifecycle-permission.ts`                                                                                                   |
 
 Deterministic helpers may validate, derive, and project. Deterministic helpers must not judge.
 
@@ -120,6 +120,8 @@ OpenSpec remains the durable workflow source of truth. Change artifacts and task
 ### Todo publication
 
 Current refresh behavior preserves the runtime-owned trigger bridge while covering the full run: every specialist dispatch result carries a cue, and lifecycle-tool markers are coalesced to one cue per assistant message. The coordinator refreshes once after consuming any marked result batch; duplicate cues in that turn do not create duplicate Todo updates. The task-result after-hook covers planning, foreground/background implementation, review, remediation, and specialist failures. A per-session last-successful projection is retained only as a fail-stale display fallback when a later durable read fails; it never becomes workflow authority.
+
+Post-review stages advance from ephemeral runtime observation, because review verdicts are not durable OpenSpec state: the runtime reads the reviewer's terminal verdict from its foreground result against the strict outcome contract (`src/coordinator/reviewer-verdict.ts`) and tracks the remediation/re-review rounds from observed review-role dispatches (`src/host/review-cycle.ts`). The projection consumes these observations to hand current work to the remediation, re-review, or terminal archive-or-remediate stages; it never routes from them, and they never persist — a resume shows the durable-only projection until the run re-observes these moments. A fresh implementation-entry crossing supersedes a concluded verdict, so post-approval plan revisions regress the projection to durable state again. A successful archive is observed at the tool boundary: the active change no longer exists, so the next publication's durable read fails and the hook republishes the terminal, all-complete projection finalized at archive time instead of degrading to the model's list.
 
 #### Historical v1.7 bridge baseline
 

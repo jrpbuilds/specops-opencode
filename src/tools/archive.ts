@@ -11,6 +11,14 @@ export type ArchiveDeps = {
     archiveChange: (change: string) => Promise<OpenSpecArchiveResult>;
 };
 
+/** Structured archive outcome consumed by the host tool wrapper. */
+export type ArchiveOutcome = {
+    /** Whether OpenSpec archived the change. */
+    readonly ok: boolean;
+    /** The user-facing result message. */
+    readonly message: string;
+};
+
 /**
  * Request the native archive operation for one named OpenSpec change.
  *
@@ -21,17 +29,27 @@ export type ArchiveDeps = {
  * OpenSpec state, this tool boundary can never prove archiving is legal —
  * the passed-review-before-archive invariant stays coordinator-owned.
  *
+ * The outcome is structured so the host wrapper can observe a successful
+ * archive (finalizing the Todo projection's terminal state) without parsing
+ * the message text.
+ *
  * @param change The active OpenSpec change name to archive.
  * @param deps The deterministic OpenSpec operation used to perform the archive.
- * @returns A concise success or failure message suitable for a tool result.
+ * @returns A structured success or failure outcome with a concise message.
  */
-export async function archive(change: string, deps: ArchiveDeps): Promise<string> {
+export async function archive(change: string, deps: ArchiveDeps): Promise<ArchiveOutcome> {
     const name = change.trim();
-    if (!name) return "An OpenSpec change name is required.";
+    if (!name) return { ok: false, message: "An OpenSpec change name is required." };
 
     const result = await deps.archiveChange(name);
     if (!result.ok) {
-        return `Failed to archive OpenSpec change '${name}': ${result.error}`;
+        return {
+            ok: false,
+            message: `Failed to archive OpenSpec change '${name}': ${result.error}`,
+        };
     }
-    return `OpenSpec change '${name}' archived successfully as '${result.archivedAs}' at ${result.path}.`;
+    return {
+        ok: true,
+        message: `OpenSpec change '${name}' archived successfully as '${result.archivedAs}' at ${result.path}.`,
+    };
 }
