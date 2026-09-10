@@ -60,6 +60,10 @@ Custom schemas with different or fewer artifacts work the same way. The coordina
 
 Before any planning artifact is written, and again before review can pass, SpecOps validates the change with OpenSpec's own validator (`--strict`). A change that doesn't validate doesn't move forward.
 
+## Todo visibility
+
+The native Todo sidebar is a runtime-owned projection of durable OpenSpec state, never workflow authority. Lifecycle results and every specialist dispatch return a compact refresh cue; the coordinator performs one blind refresh per assistant turn when one or more cues arrive, and the runtime replaces the payload with a full projection. Refreshes are coalesced so batched status/validation calls do not produce duplicate updates, while the same cue path covers planning, implementation, parallel work, review, remediation, and archive. If a durable read briefly fails, SpecOps keeps the last successful projection visible rather than clearing the panel.
+
 ## Review: three perspectives, one verdict
 
 ## Review: three perspectives, one verdict

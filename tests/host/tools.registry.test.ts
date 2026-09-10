@@ -54,9 +54,10 @@ const EXPECTED_TOOLS = [
     {
         id: "specops_progress",
         description:
-            "Report in-flight parallel progress for a named change: review critic fan-out " +
-            "status and implementer dispatch progress against durable task checkboxes.",
-        args: ["change", "implementerAssignments", "reviewFanout"],
+            "Read-only diagnostic view of in-flight parallel progress for a named change: " +
+            "review critic fan-out status and implementer dispatch progress, as observed by " +
+            "the runtime and reconciled against durable task checkboxes.",
+        args: ["change"],
     },
     {
         id: "specops_review_guard",

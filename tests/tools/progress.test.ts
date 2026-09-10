@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { ImplementerAssignment } from "../../src/coordinator/implementer-progress.js";
+import type { ImplementerDispatchObservation } from "../../src/coordinator/implementer-progress.js";
 import type { ReviewFanoutSnapshot } from "../../src/coordinator/review-fanout.js";
 import type { NormalizedApplyInstructionContext } from "../../src/openspec/apply-instructions.js";
 import { progress, type ProgressDeps } from "../../src/tools/progress.js";
@@ -57,7 +57,7 @@ describe("progress", () => {
         expect(called).toBe(false);
     });
 
-    test("returns a guidance string without invoking deps when neither view is present", async () => {
+    test("reports an inactive fan-out without a durable read when no view is supplied", async () => {
         let called = false;
         const result = await progress(
             { change: "example" },
@@ -69,11 +69,10 @@ describe("progress", () => {
             },
         );
 
-        expect(result).toBe(
-            "Provide reviewFanout, implementerAssignments, or implementerDispatches to report parallel progress.",
-        );
         expect(called).toBe(false);
-        expect(() => JSON.parse(result)).toThrow();
+        const report = JSON.parse(result);
+        expect(report).toEqual({ change: "example", reviewFanout: { active: false } });
+        expect("implementers" in report).toBe(false);
     });
 
     test("a fan-out-only call never invokes getApplyInstructions", async () => {
@@ -105,13 +104,13 @@ describe("progress", () => {
     });
 
     test("returns byte-identical JSON across two identical calls", async () => {
-        const assignments: readonly ImplementerAssignment[] = [
-            { dispatchId: "impl-1", taskIds: ["1.1", "1.2"] },
-        ];
         const args = {
             change: "example",
             reviewFanout: mixedSnapshot(),
-            implementerAssignments: assignments,
+            implementerDispatches: [
+                { dispatchId: "impl-1", state: "completed" },
+                { state: "inFlight" },
+            ] as readonly ImplementerDispatchObservation[],
         };
         const deps = successfulDeps({
             getApplyInstructions: async () => ({
@@ -139,22 +138,8 @@ describe("progress", () => {
             },
             implementers: {
                 available: true,
-                dispatches: [
-                    {
-                        dispatchId: "impl-1",
-                        assigned: ["1.1", "1.2"],
-                        durablyDone: ["1.1"],
-                        durablyPending: ["1.2"],
-                        missingFromDurable: [],
-                    },
-                ],
-                totals: {
-                    dispatches: 1,
-                    assignedTasks: 2,
-                    durablyDone: 1,
-                    durablyPending: 1,
-                    missingFromDurable: 0,
-                },
+                dispatches: [{ dispatchId: "impl-1", state: "completed" }, { state: "inFlight" }],
+                durable: { total: 2, complete: 1, remaining: 1 },
             },
         });
     });
@@ -197,7 +182,7 @@ describe("progress", () => {
 
     test("states no active fan-out explicitly when the snapshot is omitted", async () => {
         const result = await progress(
-            { change: "example", implementerAssignments: [] },
+            { change: "example", implementerDispatches: [] },
             successfulDeps(),
         );
 
@@ -208,24 +193,23 @@ describe("progress", () => {
         expect(report.implementers).toEqual({
             available: true,
             dispatches: [],
-            totals: {
-                dispatches: 0,
-                assignedTasks: 0,
-                durablyDone: 0,
-                durablyPending: 0,
-                missingFromDurable: 0,
-            },
+            durable: { total: 0, complete: 0, remaining: 0 },
         });
     });
 
-    test("rejects malformed implementer assignments with a failure prefix and no report", async () => {
+    test("rejects malformed implementer dispatches with a failure prefix and no report", async () => {
         const result = await progress(
-            { change: "example", implementerAssignments: [{ taskIds: [] }] },
+            {
+                change: "example",
+                implementerDispatches: [
+                    { state: "collapsed" },
+                ] as unknown as readonly ImplementerDispatchObservation[],
+            },
             successfulDeps(),
         );
 
         expect(result).toBe(
-            "Invalid implementer assignments for 'example': dispatch #1 has an empty taskIds list",
+            "Invalid implementer dispatches for 'example': dispatch #1 has an unknown state",
         );
         expect(() => JSON.parse(result)).toThrow();
     });
@@ -233,7 +217,7 @@ describe("progress", () => {
     test("degrades only the implementer view when the durable read fails", async () => {
         const error = "OpenSpec instructions apply failed with exit code 1";
         const result = await progress(
-            { change: "example", reviewFanout: mixedSnapshot(), implementerAssignments: [] },
+            { change: "example", reviewFanout: mixedSnapshot(), implementerDispatches: [] },
             failingReadDeps({
                 getApplyInstructions: async () => ({ ok: false, error }),
             }),
@@ -259,7 +243,7 @@ describe("progress", () => {
             {
                 change: "example",
                 reviewFanout: mixedSnapshot(),
-                implementerAssignments: [{ dispatchId: "impl-1", taskIds: ["1.1"] }],
+                implementerDispatches: [{ dispatchId: "impl-1", state: "inFlight" }],
             },
             successfulDeps({
                 getApplyInstructions: async () => ({
@@ -272,13 +256,8 @@ describe("progress", () => {
         const report = JSON.parse(result);
         expect(Object.keys(report)).toEqual(["change", "reviewFanout", "implementers"]);
         expect(report.implementers.dispatches).toEqual([
-            {
-                dispatchId: "impl-1",
-                assigned: ["1.1"],
-                durablyDone: ["1.1"],
-                durablyPending: [],
-                missingFromDurable: [],
-            },
+            { dispatchId: "impl-1", state: "inFlight" },
         ]);
+        expect(report.implementers.durable).toEqual({ total: 1, complete: 1, remaining: 0 });
     });
 });

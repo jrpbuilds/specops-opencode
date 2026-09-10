@@ -49,6 +49,11 @@ function dispatchLabel(assignment: ImplementerAssignment, index: number): string
  * Project the coordinator's in-flight implementer assignments onto durable
  * checkbox state.
  *
+ * Internal helper retained for dispatch-boundary assignment validation; not
+ * part of the read-only `specops_progress` surface, whose implementer view is
+ * runtime-observed. The tool-facing consumer is expected to be the planned
+ * assignment-invariant enforcement at the implementer dispatch boundary.
+ *
  * Pure over its two inputs: dispatch order and per-dispatch `taskIds` order
  * are preserved, no input is mutated, and the result is derived entirely from
  * the supplied assignments and the normalized apply-instruction context.

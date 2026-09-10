@@ -9,6 +9,7 @@ import {
     createSessionEventObserver,
     recordTaskDispatch,
     recordTaskResult,
+    snapshotParallelProgress,
 } from "../../src/host/parallel-progress.js";
 import {
     __resetSessionBindingsForTesting,
@@ -19,7 +20,6 @@ import { stripTodoRefreshMarker } from "../helpers.js";
 
 type AskRequest = Parameters<ToolContext["ask"]>[0];
 type MetadataRequest = Parameters<ToolContext["metadata"]>[0];
-type ProgressToolArgs = Parameters<typeof progressTool.execute>[0];
 
 /** Build a minimal normalized apply-instruction context around a task list. */
 const fakeApplyContext = (
@@ -38,17 +38,6 @@ const fakeApplyContext = (
     state: "ready",
     instruction: "apply the tasks",
 });
-
-// Plain (mutable) literal so the fixture matches the zod-inferred wrapper arg
-// shape while remaining assignable to the core's readonly snapshot types.
-const snapshot = {
-    pending: ["quality"],
-    inFlight: ["correctness"],
-    completed: ["risk"],
-    failed: [],
-};
-
-const assignments = [{ dispatchId: "impl-1", taskIds: ["1.1"] }];
 
 function toolContext(ask: ToolContext["ask"], metadata: ToolContext["metadata"]): ToolContext {
     return {
@@ -70,6 +59,8 @@ function outputOf(result: Awaited<ReturnType<typeof progressTool.execute>>): str
 
 afterEach(() => {
     mock.restore();
+    __resetParallelProgressForTesting();
+    __resetSessionBindingsForTesting();
 });
 
 describe("specops_progress tool wrapper", () => {
@@ -115,6 +106,10 @@ describe("specops_progress tool wrapper", () => {
 
     test("emits the reading-parallel-progress metadata title after the grant", async () => {
         const metadataRequests: MetadataRequest[] = [];
+        spyOn(applyInstructions, "getApplyInstructions").mockImplementation(async () => ({
+            ok: true,
+            context: fakeApplyContext([]),
+        }));
         const context = toolContext(
             async () => {},
             metadata => {
@@ -122,14 +117,19 @@ describe("specops_progress tool wrapper", () => {
             },
         );
 
-        // Fan-out-only call: the durable read is never touched, so no module
-        // stubbing is needed to reach the core.
-        await progressTool.execute({ change: "example", reviewFanout: snapshot }, context);
+        await progressTool.execute({ change: "example" }, context);
 
         expect(metadataRequests).toEqual([{ title: "Reading parallel progress…" }]);
     });
 
-    test("passes the core's exact JSON string through with a stubbed durable read", async () => {
+    test("passes the core's exact JSON string through for the runtime-derived report", async () => {
+        recordSessionBinding("test-session", "SpecOps", "example");
+        // One critic dispatch still in flight gives the report an active
+        // fan-out view without a durable read beyond the stub.
+        await recordTaskDispatch(
+            { tool: "task", sessionID: "test-session", callID: "c1" },
+            { args: { subagent_type: AGENT_IDS.reviewCorrectness } },
+        );
         const stubbed = spyOn(applyInstructions, "getApplyInstructions").mockImplementation(
             async () => ({
                 ok: true,
@@ -141,16 +141,22 @@ describe("specops_progress tool wrapper", () => {
             () => {},
         );
 
-        const args: ProgressToolArgs = {
-            change: "example",
-            reviewFanout: snapshot,
-            implementerAssignments: assignments,
-        };
-        const actual = outputOf(await progressTool.execute(args, context));
-        const expected = await progress(args, {
-            getApplyInstructions: change =>
-                applyInstructions.getApplyInstructions(change, "/project"),
-        });
+        const actual = outputOf(await progressTool.execute({ change: "example" }, context));
+
+        // Mirror the wrapper's derivation exactly: the observed snapshot is
+        // passed through verbatim, with the dispatch list kept ambient.
+        const observed = snapshotParallelProgress("test-session");
+        const expected = await progress(
+            {
+                change: "example",
+                ...(observed.reviewFanout ? { reviewFanout: observed.reviewFanout } : {}),
+                implementerDispatches: observed.implementerDispatches ?? [],
+            },
+            {
+                getApplyInstructions: change =>
+                    applyInstructions.getApplyInstructions(change, "/project"),
+            },
+        );
 
         expect(stubbed).toHaveBeenCalledWith("example", "/project");
         expect(actual).toBe(expected);
@@ -159,40 +165,21 @@ describe("specops_progress tool wrapper", () => {
             reviewFanout: {
                 critics: [
                     { id: "correctness", status: "inFlight" },
-                    { id: "risk", status: "completed" },
+                    { id: "risk", status: "pending" },
                     { id: "quality", status: "pending" },
                 ],
-                counts: { pending: 1, inFlight: 1, completed: 1, failed: 0 },
+                counts: { pending: 2, inFlight: 1, completed: 0, failed: 0 },
             },
             implementers: {
                 available: true,
-                dispatches: [
-                    {
-                        dispatchId: "impl-1",
-                        assigned: ["1.1"],
-                        durablyDone: ["1.1"],
-                        durablyPending: [],
-                        missingFromDurable: [],
-                    },
-                ],
-                totals: {
-                    dispatches: 1,
-                    assignedTasks: 1,
-                    durablyDone: 1,
-                    durablyPending: 0,
-                    missingFromDurable: 0,
-                },
+                dispatches: [],
+                durable: { total: 1, complete: 1, remaining: 0 },
             },
         });
     });
 });
 
 describe("specops_progress runtime-derived report", () => {
-    afterEach(() => {
-        __resetParallelProgressForTesting();
-        __resetSessionBindingsForTesting();
-    });
-
     test("derives the ambient report from observed dispatches when no args are supplied", async () => {
         recordSessionBinding("test-session", "SpecOps", "example");
         // A background dispatch resolved through its task id and session idle.
@@ -262,55 +249,5 @@ describe("specops_progress runtime-derived report", () => {
                 durable: { total: 2, complete: 1, remaining: 1 },
             },
         });
-    });
-});
-
-describe("progress core runtime dispatch path", () => {
-    test("rejects supplying both assignments and observed dispatches", async () => {
-        const result = await progress(
-            {
-                change: "example",
-                implementerAssignments: [{ dispatchId: "impl-1", taskIds: ["1.1"] }],
-                implementerDispatches: [],
-            },
-            { getApplyInstructions: async () => ({ ok: false, error: "unused" }) },
-        );
-
-        expect(result).toBe(
-            "Provide either implementerAssignments or implementerDispatches, not both.",
-        );
-    });
-
-    test("a durable read failure degrades only the implementer view", async () => {
-        const result = await progress(
-            { change: "example", reviewFanout: snapshot, implementerDispatches: [] },
-            { getApplyInstructions: async () => ({ ok: false, error: "openspec unavailable" }) },
-        );
-
-        expect(JSON.parse(result)).toEqual({
-            change: "example",
-            reviewFanout: {
-                critics: [
-                    { id: "correctness", status: "inFlight" },
-                    { id: "risk", status: "completed" },
-                    { id: "quality", status: "pending" },
-                ],
-                counts: { pending: 1, inFlight: 1, completed: 1, failed: 0 },
-            },
-            implementers: { available: false, error: "openspec unavailable" },
-        });
-    });
-
-    test("keeps the zero-arg guidance when no view is requested at all", async () => {
-        const result = await progress(
-            { change: "example" },
-            {
-                getApplyInstructions: async () => ({ ok: false, error: "unused" }),
-            },
-        );
-
-        expect(result).toBe(
-            "Provide reviewFanout, implementerAssignments, or implementerDispatches to report parallel progress.",
-        );
     });
 });
