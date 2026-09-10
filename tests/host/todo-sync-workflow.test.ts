@@ -17,8 +17,8 @@ import type { NormalizedArtifact, OpenSpecStatusResult } from "../../src/openspe
  * trigger from the contract (`{"todos": []}`), verifying that the canonical
  * projection stays useful across a run: initial publish, transitions,
  * revisions, resume, failure recovery, and idempotence. Ephemeral parallel
- * implementation/review entries are explicitly out of scope until the runtime
- * observes those dispatches (#53).
+ * implementation/review entries are derived from the runtime's observed
+ * dispatches and included in the publication hook's full-run surface.
  */
 
 /** A model-authored todo as the native todowrite schema accepts it. */

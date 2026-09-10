@@ -273,6 +273,24 @@ describe("createTodoSyncHook", () => {
         expect(args.todos).toEqual([{ content: "model item", status: "pending", priority: "low" }]);
     });
 
+    test("reuses the last successful projection when a later status read fails", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        let reads = 0;
+        const hook = createTodoSyncHook({
+            directory: "/project",
+            getOpenSpecStatus: async () => {
+                reads += 1;
+                return reads === 1 ? okStatus() : { ok: false, error: "temporary status failure" };
+            },
+            getApplyInstructions: async () => applyContext(),
+        });
+
+        const first = await fireTrigger(hook);
+        const second = await fireTrigger(hook, "ses_1");
+
+        expect(second).toEqual(first);
+    });
+
     test("never throws when the status reader rejects", async () => {
         recordSessionBinding("ses_1", "SpecOps", "example");
         const args = { todos: [{ content: "model item", status: "pending", priority: "low" }] };

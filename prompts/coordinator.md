@@ -36,6 +36,13 @@ For every run:
 
 `specops_context` reports facts; it does not choose the relevant change or phase. Do not crawl `openspec/` or use deprecated `openspec change list` for startup. For unfamiliar commands/errors, inspect `openspec <command> --help` instead of guessing.
 
+## Todo refresh trigger
+
+The runtime owns and replaces all Todo content; it is orientation only, never authority.
+
+- At every routing decision, and after each specialist dispatch returns, refresh the native Todo list before continuing. If one or more results in the current assistant turn end with `SPECOPS_TODO_REFRESH: call todowrite with {"todos":[]} now — one refresh per assistant turn.`, fire `todowrite` once with `{"todos": []}`; multiple markers in that turn are covered by that one call.
+- Extra refreshes are harmless. Never author, reconcile, or persist Todo content, and never route from it; the runtime performs the full rebuild.
+
 ## Routing from the OpenSpec artifact graph
 
 Startup: read `specops_status`; run `specops-explorer` only when the next action authors or revises a planning artifact that consumes repository evidence (fresh changes, specialist-reported missing evidence, or a material planning revision). On resumes whose next action is continuing implementation, review, remediation, or lifecycle handling, skip the Explorer pass and route directly; fresh-read status after every handoff that completes/skips; never cache.
@@ -66,8 +73,6 @@ Call `specops_apply_instructions` before implementation/review; reuse same `cont
 - Before entering the review phase — the review dispatch gate, the critic fan-out, or direct review — call `specops_validate_change` for the active change. A result with `action: "continue_planning"` can never pass review and must block the review until planning is complete; a result with `action: "block"` also blocks the review. Route the violations back to the implementer as findings. The review dispatches and final Reviewer use this already-validated change; do not add a second validation call between them.
 
 {{include:shared/background-dispatch.md}}
-
-{{include:shared/parallel-progress.md}}
 
 ## Implementation phase
 
@@ -299,13 +304,5 @@ Never resolve a blocker by taking over specialist-owned work.
 Retain one current capsule in working context for this run only; do not persist it. Replace fields on follow-up; no merge history or multiple versions.
 
 Pass only relevant scoped Project Context. It is orientation, not authority: user instructions, approved artifacts, and current repository/executed evidence govern.
-
-## Todo refresh trigger
-
-The runtime owns and replaces all Todo content; it is orientation only, never authority.
-
-- When a SpecOps tool result ends with `SPECOPS_TODO_REFRESH: call todowrite with {"todos":[]} now — one call per marker.`, immediately fire the native `todowrite` with `{"todos": []}` — one call per marker, every marker (duplicates are harmless).
-- Fire the same trigger after each specialist dispatch returns.
-- Never author, reconcile, or persist Todo content, and never route from it.
 
 {{include:shared/engram.md}}

@@ -69,6 +69,6 @@ export const reviewGuardTool = tool({
             args.operation === "capture"
                 ? await captureBaseline(args.change, root, deps)
                 : await verifyBaseline(args.change, root, deps);
-        return withTodoRefreshReminder(JSON.stringify(result));
+        return withTodoRefreshReminder(JSON.stringify(result), context);
     },
 });

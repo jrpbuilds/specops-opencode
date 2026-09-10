@@ -96,7 +96,7 @@ Do not persist autonomous run state outside OpenSpec.
 
 ## Todo refresh trigger (autonomous)
 
-The shared contract applies unchanged: one `todowrite` with `{"todos": []}` per marker occurrence and after each specialist dispatch returns.
+The shared contract applies unchanged: after each specialist dispatch returns and at every routing decision, fire one `todowrite` with `{"todos": []}` before continuing. Multiple refresh markers in one assistant turn are coalesced into that single call; the runtime owns and replaces all Todo content.
 
 ## Autonomous update flow
 

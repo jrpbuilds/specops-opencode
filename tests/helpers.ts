@@ -43,12 +43,13 @@ export function configPath(dir: string, nested = false): string {
 }
 
 /**
- * Strip the compact Todo refresh marker from one lifecycle tool output.
+ * Strip the compact Todo refresh marker from one SpecOps tool output.
  *
- * Lifecycle tools append `SPECOPS_TODO_REFRESH` (see `../src/host/tools/todo-refresh.ts`)
- * after their JSON payload, so wrapper-output assertions that parse or compare
- * the payload strip the trailing marker first. Marker addition itself is
- * covered by the todo-refresh and tool-integration tests.
+ * Lifecycle tools and specialist task results append `SPECOPS_TODO_REFRESH`
+ * (see `../src/host/tools/todo-refresh.ts`) after their payload, so
+ * wrapper-output assertions that parse or compare the payload strip the trailing
+ * marker first. Marker addition itself is covered by the todo-refresh and
+ * tool-integration tests.
  */
 export function stripTodoRefreshMarker(output: string): string {
     return output.endsWith(SPECOPS_TODO_REFRESH)

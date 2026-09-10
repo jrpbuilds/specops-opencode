@@ -20,6 +20,7 @@ import {
 import {
     __resetSessionBindingsForTesting,
     getSessionBinding,
+    recordSessionBinding,
 } from "../../src/host/session-bindings.js";
 import { DEFAULT_CONFIG } from "../../src/config.js";
 import { SpecOpsPlugin } from "../../src/index.js";
@@ -301,9 +302,28 @@ describe("lifecycle tool integration", () => {
         });
     });
 
+    test("bound specialist dispatch results carry a Todo refresh cue", async () => {
+        const hooks = await SpecOpsPlugin(pluginInput("/project"));
+        recordSessionBinding("ses_task", "SpecOps", "example");
+        const output = {
+            title: "Task",
+            output: '<task id="dispatch-1" state="completed">done</task>',
+            metadata: {},
+        };
+
+        await hooks["tool.execute.after"]?.(
+            { tool: "task", sessionID: "ses_task", callID: "call_1", args: {} },
+            output,
+        );
+
+        expect(output.output.endsWith(SPECOPS_TODO_REFRESH)).toBe(true);
+        __resetSessionBindingsForTesting();
+    });
+
     // The seven lifecycle tools whose outputs the coordinator reads at the
     // contract's Todo refresh moments terminate their results with the compact
-    // refresh marker; every other lifecycle tool stays marker-free.
+    // refresh marker; specialist dispatch results receive the same cue through
+    // the host after-hook, while every other lifecycle tool stays marker-free.
     const REFRESH_MARKER_TOOL_IDS = [
         "specops_archive",
         "specops_apply_instructions",

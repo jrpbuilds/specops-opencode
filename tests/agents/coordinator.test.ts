@@ -135,15 +135,15 @@ describe("Todo refresh-trigger contract", () => {
         expect(prompt).toContain("never route from it");
     });
 
-    test("defines the compact refresh marker as one call per marker", () => {
+    test("defines the compact refresh marker as one call per assistant turn", () => {
         for (const prompt of [
             buildCoordinatorPrompt("interactive", false),
             buildCoordinatorPrompt("auto", false),
         ]) {
             expect(prompt).toContain(
-                'SPECOPS_TODO_REFRESH: call todowrite with {"todos":[]} now — one call per marker.',
+                'SPECOPS_TODO_REFRESH: call todowrite with {"todos":[]} now — one refresh per assistant turn.',
             );
-            expect(prompt).toContain("one call per marker, every marker");
+            expect(prompt).toContain("multiple markers in that turn are covered by that one call");
         }
     });
 
@@ -1294,7 +1294,7 @@ describe("Auto coordinator contract", () => {
     test("keeps the Auto Todo section free of stage authoring", () => {
         const autoPrompt = buildCoordinatorPrompt("auto", false);
         expect(autoPrompt).toContain(
-            'SPECOPS_TODO_REFRESH: call todowrite with {"todos":[]} now — one call per marker.',
+            'SPECOPS_TODO_REFRESH: call todowrite with {"todos":[]} now — one refresh per assistant turn.',
         );
         expect(autoPrompt).not.toContain("include `Auto review remediation`");
         expect(autoPrompt).toContain("never route from it");

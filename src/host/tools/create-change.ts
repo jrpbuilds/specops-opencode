@@ -21,6 +21,7 @@ export const createChangeTool = tool({
                 createChange: (change, goal) =>
                     createOpenSpecChange(change, toolContext.directory, goal),
             }),
+            toolContext,
         );
     },
 });

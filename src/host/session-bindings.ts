@@ -9,18 +9,19 @@
  * untouched. Only SpecOps coordinator agents are recorded, so ordinary
  * sessions and specialist subagents are never intercepted.
  *
- * The module also tracks one ephemeral per-session flag — whether the
- * implementation-entry gate (`specops_apply_instructions`) was observed — so
- * the Todo projection can show implementation as current work immediately at
- * the approval transition. Like bindings it never persists and never feeds
- * workflow routing.
+ * The module also tracks ephemeral per-session Todo publication state: whether
+ * a refresh marker was emitted for the current assistant message, and the last
+ * successful projection used when a later durable read fails. Like bindings,
+ * this state never persists and never feeds workflow routing.
  *
  * Exports: `SessionBinding`, `recordSessionBinding`, `getSessionBinding`,
- * `markImplementationEntered`, `hasEnteredImplementation`,
- * `__resetSessionBindingsForTesting`.
+ * `claimTodoRefreshForMessage`, `rememberTodoProjection`,
+ * `getRememberedTodoProjection`, `markImplementationEntered`,
+ * `hasEnteredImplementation`, `__resetSessionBindingsForTesting`.
  */
 import { SPECOPS_AGENT_ID, SPECOPS_AUTO_AGENT_ID } from "../agents/coordinator.js";
 import type { TodoProjectionMode } from "../coordinator/todo-projection.js";
+import type { NativeTodoItem } from "../coordinator/todo-publication.js";
 
 /** One session's active SpecOps change and coordinator mode. */
 export type SessionBinding = {
@@ -29,6 +30,12 @@ export type SessionBinding = {
 };
 
 const bindings = new Map<string, SessionBinding>();
+
+/** Last assistant message that emitted a refresh marker for each session. */
+const lastTodoRefreshMessage = new Map<string, string>();
+
+/** Last successful runtime-owned projection for each bound session. */
+const rememberedTodoProjections = new Map<string, NativeTodoItem[]>();
 
 /** Sessions observed crossing the implementation-entry gate. */
 const implementationEntered = new Set<string>();
@@ -47,13 +54,20 @@ const implementationEntered = new Set<string>();
 export function recordSessionBinding(sessionID: string, agent: string, change: string): void {
     const trimmed = change.trim();
     if (!sessionID || !trimmed) return;
-    if (agent === SPECOPS_AUTO_AGENT_ID) {
-        bindings.set(sessionID, { change: trimmed, mode: "auto" });
-        return;
+    const mode =
+        agent === SPECOPS_AUTO_AGENT_ID
+            ? "auto"
+            : agent === SPECOPS_AGENT_ID
+              ? "interactive"
+              : undefined;
+    if (!mode) return;
+
+    const previous = bindings.get(sessionID);
+    if (previous?.change !== trimmed || previous.mode !== mode) {
+        lastTodoRefreshMessage.delete(sessionID);
+        rememberedTodoProjections.delete(sessionID);
     }
-    if (agent === SPECOPS_AGENT_ID) {
-        bindings.set(sessionID, { change: trimmed, mode: "interactive" });
-    }
+    bindings.set(sessionID, { change: trimmed, mode });
 }
 
 /**
@@ -65,6 +79,35 @@ export function recordSessionBinding(sessionID: string, agent: string, change: s
  */
 export function getSessionBinding(sessionID: string): SessionBinding | undefined {
     return bindings.get(sessionID);
+}
+
+/**
+ * Claim the first Todo refresh marker slot for one assistant message.
+ *
+ * Lifecycle tool wrappers receive the message id even though the generic
+ * after-hook for builtin tools does not. Missing ids fail open so a host API
+ * shape change cannot suppress publication.
+ */
+export function claimTodoRefreshForMessage(sessionID: string, messageID: string): boolean {
+    if (!sessionID || !messageID) return true;
+    if (lastTodoRefreshMessage.get(sessionID) === messageID) return false;
+    lastTodoRefreshMessage.set(sessionID, messageID);
+    return true;
+}
+
+/** Remember a successful projection for fail-stale Todo publication. */
+export function rememberTodoProjection(sessionID: string, todos: readonly NativeTodoItem[]): void {
+    if (!sessionID) return;
+    rememberedTodoProjections.set(
+        sessionID,
+        todos.map(todo => ({ ...todo })),
+    );
+}
+
+/** Return a copy of the last successful projection for one session. */
+export function getRememberedTodoProjection(sessionID: string): NativeTodoItem[] | undefined {
+    const todos = rememberedTodoProjections.get(sessionID);
+    return todos?.map(todo => ({ ...todo }));
 }
 
 /**
@@ -95,5 +138,7 @@ export function hasEnteredImplementation(sessionID: string): boolean {
 /** Clear every binding and gate flag; test isolation only. */
 export function __resetSessionBindingsForTesting(): void {
     bindings.clear();
+    lastTodoRefreshMessage.clear();
+    rememberedTodoProjections.clear();
     implementationEntered.clear();
 }

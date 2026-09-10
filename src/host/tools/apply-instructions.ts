@@ -18,6 +18,6 @@ export const applyInstructionsTool = tool({
         const output = await applyInstructions(args.change, {
             getApplyInstructions: change => getApplyInstructions(change, context.directory),
         });
-        return withTodoRefreshReminder(output);
+        return withTodoRefreshReminder(output, context);
     },
 });

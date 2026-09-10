@@ -16,6 +16,7 @@ import {
 import { TOOLS } from "./host/tools/index.js";
 import { createTodoDisplayHook } from "./host/todo-display.js";
 import { createTodoSyncHook } from "./host/todo-sync.js";
+import { createTaskResultRefreshHook } from "./host/tools/todo-refresh.js";
 import { getApplyInstructions } from "./openspec/apply-instructions.js";
 import { getOpenSpecStatus } from "./openspec/status.js";
 
@@ -35,6 +36,7 @@ export const SpecOpsPlugin: Plugin = async input => {
         getApplyInstructions,
     });
     const todoDisplayHook = createTodoDisplayHook();
+    const taskResultRefreshHook = createTaskResultRefreshHook();
 
     return {
         config: async (config: Config) => {
@@ -76,11 +78,13 @@ export const SpecOpsPlugin: Plugin = async input => {
             await todoSyncHook(input, output);
         },
         // Compose the tool.execute.after hooks: task results resolve tracked
-        // dispatches, and the display hook suppresses the builtin's `# Todos`
-        // transcript blocks by emptying the display metadata the renderer gates
-        // on — the sidebar keeps showing the persisted projection.
+        // dispatches, then cue the coordinator to refresh its projection, and
+        // the display hook suppresses the builtin's `# Todos` transcript blocks
+        // by emptying the display metadata the renderer gates on — the sidebar
+        // keeps showing the persisted projection.
         "tool.execute.after": async (input, output) => {
             await recordTaskResult(input, output);
+            await taskResultRefreshHook(input, output);
             await todoDisplayHook(input, output);
         },
         // Resolve background-dispatch outcomes from subagent session lifecycle:

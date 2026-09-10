@@ -31,6 +31,7 @@ export const statusTool = tool({
                 getOpenSpecStatus: change => getOpenSpecStatus(change, context.directory),
                 getApplyInstructions: change => getApplyInstructions(change, context.directory),
             }),
+            context,
         );
     },
 });

@@ -39,6 +39,6 @@ export const validateChangeTool = tool({
             validateChange: change => runOpenSpecValidation(change, context.directory),
             countDeltas: change => countChangeDeltas(change, context.directory),
         });
-        return withTodoRefreshReminder(JSON.stringify(result));
+        return withTodoRefreshReminder(JSON.stringify(result), context);
     },
 });

@@ -17,9 +17,10 @@
  *
  * The hook is session-scoped and fails open by construction: sessions without
  * a recorded SpecOps binding pass through untouched, every failure (durable
- * read, projection, unexpected shape) degrades to the model-authored list,
- * and nothing is ever thrown — a hook failure must never break the model's
- * tool call. Todo state is never read back as workflow authority.
+ * read, projection, unexpected shape) falls back to the last successful
+ * projection when available, and otherwise preserves the model-authored list.
+ * Nothing is ever thrown — a hook failure must never break the model's tool
+ * call. Todo state is never read back as workflow authority.
  *
  * Lifecycle advancement consumes the same canonical phase derivation the
  * status surface answers from: every publication reads the change's apply
@@ -48,9 +49,11 @@ import type { ApplyInstructionsResult } from "../openspec/apply-instructions.js"
 import type { OpenSpecStatusResult } from "../openspec/status.js";
 import { snapshotParallelProgress } from "./parallel-progress.js";
 import {
+    getRememberedTodoProjection,
     getSessionBinding,
     hasEnteredImplementation,
     markImplementationEntered,
+    rememberTodoProjection,
 } from "./session-bindings.js";
 
 /** Dependency boundary keeping the hook testable without a live OpenSpec CLI. */
@@ -80,10 +83,13 @@ export function createTodoSyncHook(deps: TodoSyncDeps): NonNullable<Hooks["tool.
         }
         const binding = getSessionBinding(input.sessionID);
         if (!binding) return;
+        if (!output?.args || typeof output.args !== "object" || Array.isArray(output.args)) {
+            return;
+        }
         try {
             const result = await deps.getOpenSpecStatus(binding.change, deps.directory);
-            if (!result.ok) return;
-            if (!output.args || typeof output.args !== "object" || Array.isArray(output.args)) {
+            if (!result.ok) {
+                restoreRememberedProjection(input.sessionID, output);
                 return;
             }
             const apply = await deps.getApplyInstructions(binding.change, deps.directory);
@@ -111,7 +117,7 @@ export function createTodoSyncHook(deps: TodoSyncDeps): NonNullable<Hooks["tool.
                           implementerDispatches: dispatches,
                       }
                     : undefined;
-            output.args.todos = buildNativeTodoProjection(
+            const todos = buildNativeTodoProjection(
                 result.status,
                 binding.mode,
                 {
@@ -120,8 +126,21 @@ export function createTodoSyncHook(deps: TodoSyncDeps): NonNullable<Hooks["tool.
                 },
                 parallel,
             );
+            output.args.todos = todos;
+            rememberTodoProjection(input.sessionID, todos);
         } catch {
-            // Fail open: publication must never break the model's todowrite call.
+            // Fail open: a stale projection is safer than an empty panel, but
+            // publication must never break the model's todowrite call.
+            restoreRememberedProjection(input.sessionID, output);
         }
     };
+}
+
+/** Restore the most recent good projection without inventing workflow state. */
+function restoreRememberedProjection(
+    sessionID: string,
+    output: { args: Record<string, unknown> },
+): void {
+    const todos = getRememberedTodoProjection(sessionID);
+    if (todos) output.args.todos = todos;
 }

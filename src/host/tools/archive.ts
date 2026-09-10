@@ -24,6 +24,7 @@ export const archiveTool = tool({
             await archive(args.change, {
                 archiveChange: change => archiveChange(change, context.directory),
             }),
+            context,
         );
     },
 });
