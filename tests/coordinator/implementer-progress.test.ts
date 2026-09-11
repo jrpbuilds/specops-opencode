@@ -1,8 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import type { NormalizedApplyInstructionContext } from "../../src/openspec/apply-instructions.js";
 import {
+    parseAssignedTaskIds,
     projectImplementerAssignments,
     projectImplementerDispatches,
+    validateImplementerCapacity,
+    validateImplementerOwnership,
+    validateImplementerDispatchScope,
+    type ActiveImplementerAssignment,
     type ImplementerAssignment,
 } from "../../src/coordinator/implementer-progress.js";
 
@@ -244,5 +249,339 @@ describe("projectImplementerDispatches", () => {
             ok: false,
             error: "dispatch #2 has an unknown state",
         });
+    });
+});
+
+describe("parseAssignedTaskIds", () => {
+    test("whole-list prompts without the token parse as absent", () => {
+        expect(parseAssignedTaskIds(undefined)).toEqual({ status: "absent" });
+        expect(parseAssignedTaskIds("")).toEqual({ status: "absent" });
+        expect(
+            parseAssignedTaskIds("Implement the change; every unchecked task is yours."),
+        ).toEqual({ status: "absent" });
+    });
+
+    test("the canonical line parses among surrounding prose, preserving id order", () => {
+        const prompt = [
+            "Goal: implement the approved change.",
+            "Context: read apply instructions first.",
+            "assignedTaskIds: 2.1, 1.2, T3",
+            "Return the handoff envelope when done.",
+        ].join("\n");
+
+        expect(parseAssignedTaskIds(prompt)).toEqual({
+            status: "present",
+            taskIds: ["2.1", "1.2", "T3"],
+        });
+    });
+
+    test("tolerates line-leading and line-trailing whitespace and extra separator spaces", () => {
+        expect(parseAssignedTaskIds("   assignedTaskIds: 1.1   ")).toEqual({
+            status: "present",
+            taskIds: ["1.1"],
+        });
+        expect(parseAssignedTaskIds("assignedTaskIds: 1.1,  1.2")).toEqual({
+            status: "present",
+            taskIds: ["1.1", "1.2"],
+        });
+    });
+
+    test("a single id parses", () => {
+        expect(parseAssignedTaskIds("assignedTaskIds: T9")).toEqual({
+            status: "present",
+            taskIds: ["T9"],
+        });
+    });
+
+    test("a token the parser cannot read is malformed, never reinterpreted as whole-list", () => {
+        expect(parseAssignedTaskIds("your assignedTaskIds are listed below")).toEqual({
+            status: "malformed",
+            reason: "assignedTaskIds appears but no line matches 'assignedTaskIds: <id>, <id>'",
+        });
+        expect(parseAssignedTaskIds("assignedTaskIds = 1.1, 1.2")).toEqual({
+            status: "malformed",
+            reason: "assignedTaskIds appears but no line matches 'assignedTaskIds: <id>, <id>'",
+        });
+        expect(parseAssignedTaskIds("assignedTaskIds:")).toEqual({
+            status: "malformed",
+            reason: "assignedTaskIds appears but no line matches 'assignedTaskIds: <id>, <id>'",
+        });
+    });
+
+    test("rejects multiple canonical lines, empty ids, and whitespace inside an id", () => {
+        expect(parseAssignedTaskIds("assignedTaskIds: 1.1\nassignedTaskIds: 1.2")).toEqual({
+            status: "malformed",
+            reason: "multiple canonical assignedTaskIds lines",
+        });
+        expect(parseAssignedTaskIds("assignedTaskIds:   ")).toEqual({
+            status: "malformed",
+            reason: "assignedTaskIds appears but no line matches 'assignedTaskIds: <id>, <id>'",
+        });
+        expect(parseAssignedTaskIds("assignedTaskIds: ,")).toEqual({
+            status: "malformed",
+            reason: "empty id in the list",
+        });
+        expect(parseAssignedTaskIds("assignedTaskIds: 1.1, 1. 1")).toEqual({
+            status: "malformed",
+            reason: "id '1. 1' contains whitespace",
+        });
+    });
+});
+
+describe("validateImplementerCapacity", () => {
+    test("accepts a dispatch while slots remain", () => {
+        expect(validateImplementerCapacity({ activeCount: 0, maxConcurrency: 2 })).toEqual({
+            ok: true,
+        });
+        expect(validateImplementerCapacity({ activeCount: 1, maxConcurrency: 2 })).toEqual({
+            ok: true,
+        });
+    });
+
+    test("rejects the dispatch that would exceed the ceiling", () => {
+        expect(validateImplementerCapacity({ activeCount: 2, maxConcurrency: 2 })).toEqual({
+            ok: false,
+            invariant: "capacity",
+            error:
+                "Invalid implementer dispatch: concurrency capacity is full " +
+                "(2 of 2 implementer slots already in flight)",
+        });
+        expect(validateImplementerCapacity({ activeCount: 1, maxConcurrency: 1 })).toEqual({
+            ok: false,
+            invariant: "capacity",
+            error:
+                "Invalid implementer dispatch: concurrency capacity is full " +
+                "(1 of 1 implementer slots already in flight)",
+        });
+    });
+});
+
+describe("validateImplementerOwnership", () => {
+    test("the whole-list serial path passes with empty ownership", () => {
+        expect(validateImplementerOwnership({ taskIds: undefined, activeAssignments: [] })).toEqual(
+            { ok: true },
+        );
+        expect(validateImplementerOwnership({ taskIds: ["1.1"], activeAssignments: [] })).toEqual({
+            ok: true,
+        });
+    });
+
+    test("a whole-list dispatch overlaps every active implementer", () => {
+        const one: ActiveImplementerAssignment[] = [{ dispatchId: "impl-1", taskIds: ["1.1"] }];
+        expect(
+            validateImplementerOwnership({ taskIds: undefined, activeAssignments: one }),
+        ).toEqual({
+            ok: false,
+            invariant: "ownership-overlap",
+            error: "Invalid implementer dispatch: the whole-list assignment overlaps 1 active implementer",
+        });
+
+        const two: ActiveImplementerAssignment[] = [
+            { dispatchId: "impl-1", taskIds: ["1.1"] },
+            { dispatchId: "impl-2" },
+        ];
+        expect(
+            validateImplementerOwnership({ taskIds: undefined, activeAssignments: two }),
+        ).toEqual({
+            ok: false,
+            invariant: "ownership-overlap",
+            error: "Invalid implementer dispatch: the whole-list assignment overlaps 2 active implementers",
+        });
+    });
+
+    test("no scoped assignment is disjoint from an active whole-list implementer", () => {
+        expect(
+            validateImplementerOwnership({
+                taskIds: ["1.1"],
+                activeAssignments: [{ dispatchId: "impl-1" }],
+            }),
+        ).toEqual({
+            ok: false,
+            invariant: "ownership-overlap",
+            error:
+                "Invalid implementer dispatch: task assignment overlaps active implementer " +
+                "'impl-1', which holds the whole-list assignment",
+        });
+    });
+});
+
+describe("validateImplementerDispatchScope", () => {
+    const applyContext = fakeApplyContext([
+        { id: "1.1", done: true },
+        { id: "2.1", done: false },
+        { id: "2.2", done: false },
+    ]);
+
+    test("valid serial and valid parallel assignments pass", () => {
+        expect(
+            validateImplementerDispatchScope({
+                taskIds: ["2.1"],
+                activeAssignments: [],
+                applyContext,
+            }),
+        ).toEqual({ ok: true });
+
+        expect(
+            validateImplementerDispatchScope({
+                taskIds: ["2.1"],
+                activeAssignments: [{ dispatchId: "impl-1", taskIds: ["2.2"] }],
+                applyContext,
+            }),
+        ).toEqual({ ok: true });
+    });
+
+    test("reuses the shared contract pass for empty, duplicate, and overlapping ids", () => {
+        expect(
+            validateImplementerDispatchScope({
+                taskIds: [],
+                activeAssignments: [],
+                applyContext,
+            }),
+        ).toEqual({
+            ok: false,
+            invariant: "assignment-contract",
+            error: "Invalid implementer dispatch: dispatch #1 has an empty taskIds list",
+        });
+
+        expect(
+            validateImplementerDispatchScope({
+                taskIds: ["2.1", "2.1"],
+                activeAssignments: [],
+                applyContext,
+            }),
+        ).toEqual({
+            ok: false,
+            invariant: "assignment-contract",
+            error: "Invalid implementer dispatch: task '2.1' assigned multiple times in dispatch #1",
+        });
+
+        expect(
+            validateImplementerDispatchScope({
+                taskIds: ["2.1"],
+                activeAssignments: [{ dispatchId: "impl-1", taskIds: ["2.1"] }],
+                applyContext,
+            }),
+        ).toEqual({
+            ok: false,
+            invariant: "assignment-contract",
+            error: "Invalid implementer dispatch: task '2.1' assigned to multiple dispatches (impl-1, #2)",
+        });
+    });
+
+    test("rejects unknown ids against the fresh task list", () => {
+        expect(
+            validateImplementerDispatchScope({
+                taskIds: ["9.9"],
+                activeAssignments: [],
+                applyContext,
+            }),
+        ).toEqual({
+            ok: false,
+            invariant: "unknown-task",
+            error: "Invalid implementer dispatch: assigned task '9.9' does not exist in the current task list",
+        });
+        expect(
+            validateImplementerDispatchScope({
+                taskIds: ["9.9", "8.8"],
+                activeAssignments: [],
+                applyContext,
+            }),
+        ).toEqual({
+            ok: false,
+            invariant: "unknown-task",
+            error: "Invalid implementer dispatch: assigned tasks '9.9', '8.8' do not exist in the current task list",
+        });
+    });
+
+    test("rejects already-complete ids", () => {
+        expect(
+            validateImplementerDispatchScope({
+                taskIds: ["1.1"],
+                activeAssignments: [],
+                applyContext,
+            }),
+        ).toEqual({
+            ok: false,
+            invariant: "complete-task",
+            error: "Invalid implementer dispatch: assigned task '1.1' is already complete",
+        });
+        expect(
+            validateImplementerDispatchScope({
+                taskIds: ["1.1"],
+                activeAssignments: [{ dispatchId: "impl-1", taskIds: ["1.1"] }],
+                applyContext,
+            }),
+        ).toEqual({
+            ok: false,
+            invariant: "assignment-contract",
+            error: "Invalid implementer dispatch: task '1.1' assigned to multiple dispatches (impl-1, #2)",
+        });
+    });
+
+    test("unknown-task is checked before complete-task", () => {
+        expect(
+            validateImplementerDispatchScope({
+                taskIds: ["1.1", "9.9"],
+                activeAssignments: [],
+                applyContext,
+            }),
+        ).toEqual({
+            ok: false,
+            invariant: "unknown-task",
+            error: "Invalid implementer dispatch: assigned task '9.9' does not exist in the current task list",
+        });
+    });
+
+    test("an active whole-list implementer blocks every scoped assignment", () => {
+        expect(
+            validateImplementerDispatchScope({
+                taskIds: ["2.1"],
+                activeAssignments: [{ dispatchId: "impl-1" }],
+                applyContext,
+            }),
+        ).toEqual({
+            ok: false,
+            invariant: "ownership-overlap",
+            error:
+                "Invalid implementer dispatch: task assignment overlaps active implementer " +
+                "'impl-1', which holds the whole-list assignment",
+        });
+    });
+
+    test("a sibling's own mid-flight completion is never penalized", () => {
+        expect(
+            validateImplementerDispatchScope({
+                taskIds: ["2.1"],
+                activeAssignments: [{ dispatchId: "impl-1", taskIds: ["1.1"] }],
+                applyContext,
+            }),
+        ).toEqual({ ok: true });
+    });
+
+    test("rejections never mutate their inputs", () => {
+        const activeAssignments: ActiveImplementerAssignment[] = [
+            { dispatchId: "impl-1", taskIds: ["2.2"] },
+        ];
+        const taskIds = ["2.1"];
+
+        validateImplementerDispatchScope({ taskIds, activeAssignments, applyContext });
+        validateImplementerDispatchScope({ taskIds: ["9.9"], activeAssignments, applyContext });
+
+        expect(activeAssignments).toEqual([{ dispatchId: "impl-1", taskIds: ["2.2"] }]);
+        expect(taskIds).toEqual(["2.1"]);
+    });
+
+    test("rejections never prescribe a replacement lane plan", () => {
+        for (const taskIds of [["9.9"], ["1.1"], ["2.1", "2.1"]]) {
+            const result = validateImplementerDispatchScope({
+                taskIds,
+                activeAssignments: [],
+                applyContext,
+            });
+            expect(result.ok).toBe(false);
+            if (!result.ok) {
+                expect(result.error).not.toMatch(/should|lane|group|instead|recommend/);
+            }
+        }
     });
 });

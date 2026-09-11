@@ -1,13 +1,14 @@
 import type { Config, Plugin } from "@opencode-ai/plugin";
 import { loadConfig } from "./config.js";
 import { applyCommands } from "./host/commands.js";
-import { setProcessConfig } from "./host/config-snapshot.js";
+import { setProcessConfig, getProcessConfig } from "./host/config-snapshot.js";
 import {
     registerAutoCoordinatorAgent,
     registerCoordinatorAgent,
     registerWorkflowSubagents,
 } from "./host/agents.js";
 import { applyLifecycleBoundary, applyTaskBoundary } from "./host/permissions.js";
+import { createImplementerDispatchGate } from "./host/dispatch-gate.js";
 import {
     createSessionEventObserver,
     recordTaskDispatch,
@@ -31,6 +32,11 @@ export { COMMANDS } from "./host/commands.js";
  * does not prevent the host from loading the rest of the plugin surface.
  */
 export const SpecOpsPlugin: Plugin = async input => {
+    const dispatchGate = createImplementerDispatchGate({
+        directory: input.directory,
+        getApplyInstructions,
+        getConfig: getProcessConfig,
+    });
     const todoSyncHook = createTodoSyncHook({
         directory: input.directory,
         getOpenSpecStatus,
@@ -68,14 +74,17 @@ export const SpecOpsPlugin: Plugin = async input => {
             }
         },
         tool: TOOLS,
-        // Compose the tool.execute.before hooks: dispatch observation feeds the
-        // runtime's parallel-progress tracking and review-cycle observation,
-        // and the Todo sync hook publishes the runtime-owned projection by
-        // intercepting the builtin todowrite tool for sessions that ran a
-        // SpecOps lifecycle tool, replacing the model's blind refresh-trigger
-        // payload with the canonical projection rebuilt from fresh durable
-        // state.
+        // Compose the tool.execute.before hooks: the implementer dispatch gate
+        // enforces the assignment invariants first (throwing blocks a rejected
+        // dispatch before it executes or is recorded), then dispatch
+        // observation feeds the runtime's parallel-progress tracking and
+        // review-cycle observation, and the Todo sync hook publishes the
+        // runtime-owned projection by intercepting the builtin todowrite tool
+        // for sessions that ran a SpecOps lifecycle tool, replacing the
+        // model's blind refresh-trigger payload with the canonical projection
+        // rebuilt from fresh durable state.
         "tool.execute.before": async (input, output) => {
+            await dispatchGate(input, output);
             await recordTaskDispatch(input, output);
             await recordReviewDispatch(input, output);
             await todoSyncHook(input, output);

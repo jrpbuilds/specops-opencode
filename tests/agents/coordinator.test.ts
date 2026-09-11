@@ -475,7 +475,9 @@ describe("implementation-phase contract (scoped parallel implementer)", () => {
         expect(section).toContain("Serial fallback (default)");
         expect(section).toContain("Uncertainty always means serial");
         expect(section).toContain("Scoped parallel dispatch");
-        expect(section).toContain("disjoint from every active sibling's assignment");
+        expect(section).toContain(
+            "SpecOps validates each dispatch at the boundary and rejects invalid assignments",
+        );
         expect(section).toContain("Rolling refill");
         expect(section).toContain("without waiting for the remaining siblings");
         expect(section).toContain("Durable verification");
@@ -661,8 +663,12 @@ describe("implementation-phase contract (scoped parallel implementer)", () => {
         expect(section).toContain(
             "up to `maxSubagentConcurrency` `specops-implementer` Task calls concurrently under the background dispatch contract",
         );
+        // Validity is runtime-enforced at the boundary, not re-derived from prose.
         expect(section).toContain(
-            "non-empty, unique within the dispatch, currently unchecked, and disjoint from every active sibling's assignment",
+            "each carrying the standard delegation payload plus one `assignedTaskIds: <id>, <id>` line",
+        );
+        expect(section).toContain(
+            "revise the rejected dispatch from fresh reads, since the runtime never regroups or repartitions an assignment for you",
         );
     });
 
