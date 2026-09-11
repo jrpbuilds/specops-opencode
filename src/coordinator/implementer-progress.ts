@@ -256,7 +256,9 @@ export type AssignedTaskIdsParse =
 const ASSIGNED_TASK_IDS_TOKEN = /\bassignedTaskIds\b/;
 
 /** The canonical line shape, matched against already-trimmed lines. */
-const ASSIGNED_TASK_IDS_LINE = /^assignedTaskIds:\s*(.+)$/;
+// Keep the pattern free of overlapping quantifiers so uncontrolled prompts
+// cannot trigger polynomial backtracking in the regex engine.
+const ASSIGNED_TASK_IDS_LINE = /^assignedTaskIds:(.+)$/;
 
 /**
  * Read the coordinator's `assignedTaskIds` line from one dispatch prompt.
@@ -401,11 +403,15 @@ export function validateImplementerDispatchScope(input: {
     });
     if (!ownership.ok) return ownership;
 
+    const scopedSiblings = input.activeAssignments.filter(
+        (assignment): assignment is ActiveImplementerAssignment & { taskIds: readonly string[] } =>
+            assignment.taskIds !== undefined,
+    );
     const projection = projectImplementerAssignments(
         [
-            ...input.activeAssignments.map(assignment => ({
+            ...scopedSiblings.map(assignment => ({
                 dispatchId: assignment.dispatchId,
-                taskIds: assignment.taskIds as readonly string[],
+                taskIds: assignment.taskIds,
             })),
             { taskIds: input.taskIds },
         ],
@@ -419,7 +425,7 @@ export function validateImplementerDispatchScope(input: {
         };
     }
 
-    const scoped = projection.progress.dispatches[input.activeAssignments.length];
+    const scoped = projection.progress.dispatches[scopedSiblings.length];
     if (!scoped) {
         return {
             ok: false,
