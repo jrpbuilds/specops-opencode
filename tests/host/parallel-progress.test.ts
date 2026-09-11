@@ -4,6 +4,7 @@ import {
     createSessionEventObserver,
     recordTaskDispatch,
     recordTaskResult,
+    snapshotActiveImplementers,
     snapshotParallelProgress,
 } from "../../src/host/parallel-progress.js";
 import {
@@ -28,8 +29,14 @@ async function dispatchBackground(
     callID: string,
     subagentType: string,
     taskOutput: string,
+    prompt?: string,
 ): Promise<void> {
-    await recordTaskDispatch(beforeInput(callID), { args: { subagent_type: subagentType } });
+    await recordTaskDispatch(beforeInput(callID), {
+        args: {
+            subagent_type: subagentType,
+            ...(prompt === undefined ? {} : { prompt }),
+        },
+    });
     await recordTaskResult(afterInput(callID, { background: true }), {
         title: "",
         output: taskOutput,
@@ -234,5 +241,90 @@ describe("parallel progress tracking", () => {
         ).resolves.toBeUndefined();
         await expect(observe({ type: "session.idle" })).resolves.toBeUndefined();
         await expect(observe({ type: "message.updated", properties: {} })).resolves.toBeUndefined();
+    });
+});
+
+describe("active implementer ownership", () => {
+    test("a scoped dispatch carries its parsed assignment, labelled by the background task id once linked", async () => {
+        await dispatchBackground(
+            "c1",
+            AGENT_IDS.implementer,
+            '<task id="task-1" state="running">',
+            "assignedTaskIds: 1.1, 1.2",
+        );
+
+        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
+            count: 1,
+            assignments: [{ dispatchId: "task-1", taskIds: ["1.1", "1.2"] }],
+        });
+    });
+
+    test("before the child link is known, ownership labels fall back to the call id", async () => {
+        await recordTaskDispatch(beforeInput("c1"), {
+            args: { subagent_type: AGENT_IDS.implementer, prompt: "assignedTaskIds: 2.1" },
+        });
+
+        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
+            count: 1,
+            assignments: [{ dispatchId: "c1", taskIds: ["2.1"] }],
+        });
+    });
+
+    test("a whole-list dispatch carries no ids; malformed payloads degrade to whole-list", async () => {
+        await recordTaskDispatch(beforeInput("c1"), {
+            args: { subagent_type: AGENT_IDS.implementer, prompt: "implement everything" },
+        });
+        await recordTaskDispatch(beforeInput("c2"), {
+            args: {
+                subagent_type: AGENT_IDS.implementer,
+                prompt: "your assignedTaskIds are below",
+            },
+        });
+
+        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
+            count: 2,
+            assignments: [{ dispatchId: "c1" }, { dispatchId: "c2" }],
+        });
+    });
+
+    test("critic dispatches never enter implementer ownership", async () => {
+        await dispatchBackground(
+            "c1",
+            "specops-review-correctness",
+            '<task id="r1" state="running">',
+        );
+
+        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({ count: 0, assignments: [] });
+    });
+
+    test("terminal entries release ownership; unbound sessions return empty views", async () => {
+        await dispatchBackground("c1", AGENT_IDS.implementer, '<task id="task-1" state="running">');
+        await observe({ type: "session.idle", properties: { sessionID: "task-1" } });
+
+        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({ count: 0, assignments: [] });
+        expect(snapshotActiveImplementers("ses_unknown")).toEqual({ count: 0, assignments: [] });
+    });
+
+    test("concurrent scoped ownership is disjoint input to the boundary invariants", async () => {
+        await dispatchBackground(
+            "c1",
+            AGENT_IDS.implementer,
+            '<task id="task-1" state="running">',
+            "assignedTaskIds: 1.1",
+        );
+        await dispatchBackground(
+            "c2",
+            AGENT_IDS.implementer,
+            '<task id="task-2" state="running">',
+            "assignedTaskIds: 2.1",
+        );
+
+        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
+            count: 2,
+            assignments: [
+                { dispatchId: "task-1", taskIds: ["1.1"] },
+                { dispatchId: "task-2", taskIds: ["2.1"] },
+            ],
+        });
     });
 });

@@ -38,6 +38,7 @@ Today these live in:
 | Artifact eligibility, planning routes  | `src/coordinator/batching.ts`, `src/coordinator/rolling-scheduler.ts`                                                                                                   |
 | Task existence and completion          | `src/openspec/apply-instructions.ts`                                                                                                                                    |
 | Assignment validity and overlap        | `src/coordinator/implementer-progress.ts`                                                                                                                               |
+| Implementer dispatch validation        | `src/coordinator/implementer-progress.ts` (invariants), `src/host/dispatch-gate.ts` (boundary)                                                                          |
 | Concurrency and capacity accounting    | `src/coordinator/rolling-scheduler.ts`                                                                                                                                  |
 | Review guard state                     | `src/coordinator/review-guard.ts`                                                                                                                                       |
 | Archive operation (structural only)    | `src/openspec/archive.ts` — see the archive boundary below                                                                                                              |

@@ -23,11 +23,17 @@
  * All seams fail open by construction: unmatched tools, unbound sessions,
  * unexpected shapes, and unknown events pass through untouched, and nothing
  * is ever thrown — an observation failure must never break the model's tool
- * call or the host event loop.
+ * call or the host event loop. Implementer entries additionally carry the
+ * scoped assignment parsed from the dispatch payload (whole-list dispatches
+ * carry none), exposed through `snapshotActiveImplementers` as the active
+ * ownership the dispatch-boundary invariants check against. The blocking
+ * itself belongs to `./dispatch-gate.ts`, which composes before this observer
+ * so a rejected dispatch is never retained.
  *
  * Exports: `ParallelProgressSnapshot`, `recordTaskDispatch`, `recordTaskResult`,
+ * `reserveImplementerDispatch`, `releaseImplementerDispatch`,
  * `createSessionEventObserver`, `snapshotParallelProgress`,
- * `__resetParallelProgressForTesting`.
+ * `snapshotActiveImplementers`, `__resetParallelProgressForTesting`.
  */
 import type { Hooks } from "@opencode-ai/plugin";
 import { AGENT_IDS } from "../agents/ids.js";
@@ -36,9 +42,11 @@ import {
     type ReviewCriticId,
     type ReviewFanoutSnapshot,
 } from "../coordinator/review-fanout.js";
-import type {
-    ImplementerDispatchObservation,
-    ImplementerDispatchState,
+import {
+    parseAssignedTaskIds,
+    type ActiveImplementerAssignment,
+    type ImplementerDispatchObservation,
+    type ImplementerDispatchState,
 } from "../coordinator/implementer-progress.js";
 import { getSessionBinding } from "./session-bindings.js";
 
@@ -54,8 +62,15 @@ export type ParallelProgressSnapshot = {
 type DispatchEntry = {
     role: typeof AGENT_IDS.implementer | ReviewCriticId;
     state: ImplementerDispatchState;
+    /** Implementer dispatch is awaiting the boundary's durable validation. */
+    pendingValidation?: boolean;
     /** Linked child session id (the background task id) once known. */
     childSessionId?: string;
+    /**
+     * Implementer entries only: the scoped ids parsed from the dispatch
+     * payload. Undefined covers the whole-list assignment and critics.
+     */
+    taskIds?: readonly string[];
 };
 
 /** Per-coordinator-session run state. */
@@ -104,6 +119,36 @@ function runFor(sessionId: string): ParallelRunState {
         runs.set(sessionId, run);
     }
     return run;
+}
+
+/**
+ * Reserve one implementer dispatch before an asynchronous durable read.
+ *
+ * This mutation is intentionally synchronous: concurrently started task hooks
+ * cannot interleave between the gate's ownership snapshot and this reservation,
+ * so later gates in the same assistant message observe the reservation.
+ */
+export function reserveImplementerDispatch(
+    sessionID: string,
+    callID: string,
+    taskIds: readonly string[] | undefined,
+): void {
+    const run = runFor(sessionID);
+    run.dispatches.set(callID, {
+        role: AGENT_IDS.implementer,
+        state: "inFlight",
+        pendingValidation: true,
+        ...(taskIds === undefined ? {} : { taskIds }),
+    });
+}
+
+/** Remove a provisional implementer dispatch when boundary validation fails. */
+export function releaseImplementerDispatch(sessionID: string, callID: string): void {
+    const run = runs.get(sessionID);
+    const entry = run?.dispatches.get(callID);
+    if (entry?.role === AGENT_IDS.implementer && entry.pendingValidation) {
+        run?.dispatches.delete(callID);
+    }
 }
 
 /**
@@ -158,23 +203,40 @@ export async function recordTaskDispatch(
 ): Promise<void> {
     try {
         if (input.tool !== "task" || !input.callID) return;
-        if (!getSessionBinding(input.sessionID)) return;
+        if (!getSessionBinding(input.sessionID)) {
+            releaseImplementerDispatch(input.sessionID, input.callID);
+            return;
+        }
         const subagentType = output?.args?.subagent_type;
-        if (!isTrackedRole(subagentType)) return;
+        if (!isTrackedRole(subagentType)) {
+            releaseImplementerDispatch(input.sessionID, input.callID);
+            return;
+        }
         const criticId = criticIdFor(subagentType);
         const run = runFor(input.sessionID);
         if (criticId !== undefined) {
+            releaseImplementerDispatch(input.sessionID, input.callID);
             const seen = [...run.dispatches.values()].some(entry => entry.role === criticId);
             if (seen) resetSupersededCritics(run);
             run.dispatches.set(input.callID, { role: criticId, state: "inFlight" });
         } else {
-            run.dispatches.set(input.callID, {
-                role: AGENT_IDS.implementer,
-                state: "inFlight",
-            });
+            const reserved = run.dispatches.get(input.callID);
+            if (reserved?.role === AGENT_IDS.implementer && reserved.pendingValidation) {
+                reserved.pendingValidation = false;
+            } else {
+                const parse = parseAssignedTaskIds(
+                    typeof output?.args?.prompt === "string" ? output.args.prompt : undefined,
+                );
+                run.dispatches.set(input.callID, {
+                    role: AGENT_IDS.implementer,
+                    state: "inFlight",
+                    ...(parse.status === "present" ? { taskIds: parse.taskIds } : {}),
+                });
+            }
         }
         pruneImplementers(run);
     } catch {
+        if (input.callID) releaseImplementerDispatch(input.sessionID, input.callID);
         // Fail open: observation must never break the model's task dispatch.
     }
 }
@@ -341,6 +403,37 @@ export function snapshotParallelProgress(sessionID: string): ParallelProgressSna
         ...(reviewFanout ? { reviewFanout } : {}),
         ...(implementerDispatches ? { implementerDispatches } : {}),
     };
+}
+
+/** In-flight implementer ownership for one coordinator session. */
+export type ActiveImplementers = {
+    /** Number of implementer dispatches currently in flight. */
+    readonly count: number;
+    /** Their assignments in dispatch order; whole-list entries carry no ids. */
+    readonly assignments: readonly ActiveImplementerAssignment[];
+};
+
+/**
+ * Snapshot the implementer ownership the dispatch-boundary invariants check
+ * against: every implementer entry still in flight, labelled by its linked
+ * background task id when known and by its task-tool call id otherwise.
+ * Terminal (completed/failed) entries release ownership; unbound and unknown
+ * sessions return an empty view. A read-only projection — callers can never
+ * mutate the tracked entries through it.
+ */
+export function snapshotActiveImplementers(sessionID: string): ActiveImplementers {
+    const run = runs.get(sessionID);
+    if (!run) return { count: 0, assignments: [] };
+
+    const assignments: ActiveImplementerAssignment[] = [];
+    for (const [callId, entry] of run.dispatches) {
+        if (entry.role !== AGENT_IDS.implementer || entry.state !== "inFlight") continue;
+        assignments.push({
+            dispatchId: entry.childSessionId ?? callId,
+            ...(entry.taskIds === undefined ? {} : { taskIds: entry.taskIds }),
+        });
+    }
+    return { count: assignments.length, assignments };
 }
 
 /** Clear every run and child link; test isolation only. */

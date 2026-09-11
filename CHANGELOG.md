@@ -24,6 +24,7 @@ All notable changes to SpecOps are documented in this file.
 - Archiving a change now leaves the to-do list fully checked off, so the panel finishes cleanly instead of leaving the last step dangling.
 - Parallel progress is now tracked by SpecOps itself: the progress tool reports which specialists are running or finished from what actually happened in the session, alongside the current checked-task totals, so the coordinator no longer maintains and resubmits that state by hand.
 - The parallel progress tool is now a read-only diagnostic: SpecOps fills in the whole report from what it observed in the session, so the coordinator no longer calls it at every parallel checkpoint or hands it any state.
+- Implementer dispatches are now validated by SpecOps itself at the moment of dispatch: an assignment that exceeds concurrency, overlaps an active implementer, or names a task that is missing or already checked is rejected with a concise error naming the violated invariant, so the coordinator can revise the dispatch instead of re-deriving the rules from prompt prose.
 
 ## [v1.6.0] - 2026-09-02
 

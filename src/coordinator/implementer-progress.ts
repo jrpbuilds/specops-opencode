@@ -216,3 +216,242 @@ export function projectImplementerDispatches(
         },
     };
 }
+
+/**
+ * One in-flight implementer dispatch as observed by the runtime's dispatch
+ * tracking, supplied to the dispatch-boundary invariants.
+ *
+ * A dispatch whose `taskIds` is undefined holds the whole-list assignment
+ * (every remaining unchecked task), so it overlaps every scoped sibling by
+ * construction; the invariants treat that as active ownership, never as an
+ * empty assignment.
+ */
+export type ActiveImplementerAssignment = {
+    /** Stable label for the dispatch in deterministic error messages. */
+    readonly dispatchId: string;
+    /** Explicit scoped ids in assignment order; undefined marks a whole-list implementer. */
+    readonly taskIds?: readonly string[];
+};
+
+/** Which implementer-dispatch invariant a rejection names. */
+export type ImplementerDispatchInvariant =
+    "capacity" | "ownership-overlap" | "assignment-contract" | "unknown-task" | "complete-task";
+
+/** Outcome of the dispatch-boundary invariants: pass, or a named rejected invariant. */
+export type ImplementerDispatchValidationResult =
+    | { readonly ok: true }
+    | {
+          readonly ok: false;
+          readonly invariant: ImplementerDispatchInvariant;
+          readonly error: string;
+      };
+
+/** Detection and parse result for one dispatch prompt's assignment line. */
+export type AssignedTaskIdsParse =
+    | { readonly status: "absent" }
+    | { readonly status: "present"; readonly taskIds: readonly string[] }
+    | { readonly status: "malformed"; readonly reason: string };
+
+/** The assignment token, detected anywhere in the prompt. */
+const ASSIGNED_TASK_IDS_TOKEN = /\bassignedTaskIds\b/;
+
+/** The canonical line shape, matched against already-trimmed lines. */
+// Keep the pattern free of overlapping quantifiers so uncontrolled prompts
+// cannot trigger polynomial backtracking in the regex engine.
+const ASSIGNED_TASK_IDS_LINE = /^assignedTaskIds:(.+)$/;
+
+/**
+ * Read the coordinator's `assignedTaskIds` line from one dispatch prompt.
+ *
+ * Detection is token-based and parse is line-strict, so the whole-list serial
+ * path (no token anywhere) passes through untouched while a token the parser
+ * cannot read is reported as malformed — never silently reinterpreted as a
+ * whole-list dispatch, which would rewrite a scoped assignment into a
+ * different one. The canonical form is exactly one line (after trimming the
+ * line's own leading/trailing whitespace) reading
+ * `assignedTaskIds: <id>, <id>`; ids carry no internal whitespace.
+ */
+export function parseAssignedTaskIds(prompt: string | undefined): AssignedTaskIdsParse {
+    if (typeof prompt !== "string" || !prompt) return { status: "absent" };
+    if (!ASSIGNED_TASK_IDS_TOKEN.test(prompt)) return { status: "absent" };
+
+    const canonical = prompt
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(line => ASSIGNED_TASK_IDS_LINE.test(line));
+    if (canonical.length === 0) {
+        return {
+            status: "malformed",
+            reason: "assignedTaskIds appears but no line matches 'assignedTaskIds: <id>, <id>'",
+        };
+    }
+    if (canonical.length > 1) {
+        return { status: "malformed", reason: "multiple canonical assignedTaskIds lines" };
+    }
+
+    const rest = canonical[0].slice("assignedTaskIds:".length);
+    const ids = rest.split(",").map(id => id.trim());
+    if (!rest.trim()) return { status: "malformed", reason: "empty id list" };
+    for (const id of ids) {
+        if (!id) return { status: "malformed", reason: "empty id in the list" };
+        if (/\s/.test(id)) {
+            return { status: "malformed", reason: `id '${id}' contains whitespace` };
+        }
+    }
+    return { status: "present", taskIds: ids };
+}
+
+/**
+ * Check implementer capacity against the configured concurrency ceiling.
+ *
+ * Applies to every implementer dispatch — scoped and whole-list alike —
+ * because the ceiling bounds concurrent implementer dispatches, not
+ * assignments. Pure accounting: the count is whatever the runtime observed.
+ */
+export function validateImplementerCapacity(input: {
+    activeCount: number;
+    maxConcurrency: number;
+}): ImplementerDispatchValidationResult {
+    if (input.activeCount + 1 > input.maxConcurrency) {
+        return {
+            ok: false,
+            invariant: "capacity",
+            error:
+                `Invalid implementer dispatch: concurrency capacity is full ` +
+                `(${input.activeCount} of ${input.maxConcurrency} implementer slots already in flight)`,
+        };
+    }
+    return { ok: true };
+}
+
+/**
+ * Check one implementer dispatch against active ownership.
+ *
+ * Ownership facts are pure runtime accounting — no durable read — so the
+ * boundary evaluates them before touching the task list. The whole-list
+ * assignment (every remaining unchecked task) overlaps every active
+ * implementer by construction, and an active whole-list implementer holds
+ * every task, so no scoped assignment can be disjoint from it. Rejections
+ * name the overlap without repartitioning either side: reforming lanes is
+ * coordinator judgement.
+ *
+ * `taskIds === undefined` marks the dispatch being checked as whole-list.
+ */
+export function validateImplementerOwnership(input: {
+    taskIds: readonly string[] | undefined;
+    activeAssignments: readonly ActiveImplementerAssignment[];
+}): ImplementerDispatchValidationResult {
+    if (input.taskIds === undefined) {
+        if (input.activeAssignments.length > 0) {
+            return {
+                ok: false,
+                invariant: "ownership-overlap",
+                error:
+                    `Invalid implementer dispatch: the whole-list assignment overlaps ` +
+                    `${input.activeAssignments.length} active implementer` +
+                    `${input.activeAssignments.length === 1 ? "" : "s"}`,
+            };
+        }
+        return { ok: true };
+    }
+    const wholeListSibling = input.activeAssignments.find(
+        assignment => assignment.taskIds === undefined,
+    );
+    if (wholeListSibling) {
+        return {
+            ok: false,
+            invariant: "ownership-overlap",
+            error:
+                `Invalid implementer dispatch: task assignment overlaps active implementer ` +
+                `'${wholeListSibling.dispatchId}', which holds the whole-list assignment`,
+        };
+    }
+    return { ok: true };
+}
+
+/**
+ * Enforce the scoped-assignment invariants for one implementer dispatch
+ * carrying an explicit `assignedTaskIds` list.
+ *
+ * Checks, in deterministic order:
+ *
+ * 1. ownership-overlap — the shared ownership pass: an active whole-list
+ *    implementer holds every remaining task, so no scoped assignment can be
+ *    disjoint from it;
+ * 2. assignment-contract — the shared `projectImplementerAssignments` pass
+ *    over the active scoped siblings plus this dispatch: non-empty list, ids
+ *    unique within the dispatch, disjoint across dispatches;
+ * 3. unknown-task — every assigned id must exist in the fresh canonical task
+ *    list (`missingFromDurable` is reported by the projection but enforced
+ *    only here, at the boundary);
+ * 4. complete-task — every assigned id must be currently unchecked
+ *    (`durablyDone` likewise). Siblings' own mid-flight completions are
+ *    legitimate and never penalized: only this dispatch's classification is
+ *    enforced.
+ *
+ * Rejections name the violated invariant and the offending ids without
+ * prescribing a replacement lane plan.
+ */
+export function validateImplementerDispatchScope(input: {
+    taskIds: readonly string[];
+    activeAssignments: readonly ActiveImplementerAssignment[];
+    applyContext: NormalizedApplyInstructionContext;
+}): ImplementerDispatchValidationResult {
+    const ownership = validateImplementerOwnership({
+        taskIds: input.taskIds,
+        activeAssignments: input.activeAssignments,
+    });
+    if (!ownership.ok) return ownership;
+
+    const scopedSiblings = input.activeAssignments.filter(
+        (assignment): assignment is ActiveImplementerAssignment & { taskIds: readonly string[] } =>
+            assignment.taskIds !== undefined,
+    );
+    const projection = projectImplementerAssignments(
+        [
+            ...scopedSiblings.map(assignment => ({
+                dispatchId: assignment.dispatchId,
+                taskIds: assignment.taskIds,
+            })),
+            { taskIds: input.taskIds },
+        ],
+        input.applyContext,
+    );
+    if (!projection.ok) {
+        return {
+            ok: false,
+            invariant: "assignment-contract",
+            error: `Invalid implementer dispatch: ${projection.error}`,
+        };
+    }
+
+    const scoped = projection.progress.dispatches[scopedSiblings.length];
+    if (!scoped) {
+        return {
+            ok: false,
+            invariant: "assignment-contract",
+            error: "Invalid implementer dispatch: the assigned dispatch was not projected",
+        };
+    }
+    if (scoped.missingFromDurable.length > 0) {
+        const names = scoped.missingFromDurable.map(id => `'${id}'`).join(", ");
+        return {
+            ok: false,
+            invariant: "unknown-task",
+            error:
+                `Invalid implementer dispatch: assigned task${scoped.missingFromDurable.length === 1 ? "" : "s"} ` +
+                `${names} do${scoped.missingFromDurable.length === 1 ? "es" : ""} not exist in the current task list`,
+        };
+    }
+    if (scoped.durablyDone.length > 0) {
+        const names = scoped.durablyDone.map(id => `'${id}'`).join(", ");
+        return {
+            ok: false,
+            invariant: "complete-task",
+            error:
+                `Invalid implementer dispatch: assigned task${scoped.durablyDone.length === 1 ? "" : "s"} ` +
+                `${names} ${scoped.durablyDone.length === 1 ? "is" : "are"} already complete`,
+        };
+    }
+    return { ok: true };
+}

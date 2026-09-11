@@ -726,12 +726,44 @@ describe("coordinator implementation-phase contract (scoped parallel implementer
         for (const step of [
             "1. **Fresh canonical reads.**",
             "2. **Partition lanes.**",
-            "3. **Validate scoped assignments.**",
+            "3. **Send the assignment line.**",
             "4. **Apply the no-reuse gate.**",
             "5. **Make the affinity judgement.**",
             "6. **Dispatch.**",
         ]) {
             expect(section).toContain(step);
+        }
+    });
+
+    test("defers assignment validation to the dispatch boundary", () => {
+        const section = delimitedSection(
+            buildCoordinatorPrompt("interactive", false),
+            "## Implementation phase",
+            "## Review phase",
+        );
+
+        // The canonical assignment line is pinned exactly, in the six-step
+        // procedure and the scoped-dispatch contract.
+        expect(section).toContain(
+            "Every scoped dispatch carries exactly one `assignedTaskIds: <id>, <id>` line",
+        );
+        expect(section).toContain(
+            "the standard delegation payload plus one `assignedTaskIds: <id>, <id>` line",
+        );
+
+        // The enumerated validity invariants are gone from prose; the boundary
+        // contract states what SpecOps validates and how to react.
+        expect(section).not.toContain(
+            "Require non-empty, unique, currently unchecked, sibling-disjoint IDs",
+        );
+        expect(section).not.toContain("An assignment is valid only when its task IDs");
+        for (const contract of [
+            "SpecOps validates each dispatch at the boundary",
+            "rejects an invalid dispatch with an error naming the violated invariant",
+            "revise that dispatch from the fresh reads",
+            "The runtime never regroups or repartitions tasks for you",
+        ]) {
+            expect(section).toContain(contract);
         }
     });
 
@@ -773,10 +805,14 @@ describe("coordinator implementation-phase contract (scoped parallel implementer
         const prompt = buildCoordinatorPrompt("interactive", false);
         const section = delimitedSection(prompt, "## Delegation contract", "## Handoff gate");
         expect(section).toContain("optional `assignedTaskIds`");
+        expect(section).toContain("one line reading exactly `assignedTaskIds: <id>, <id>`");
         expect(section).toContain(
             "sent only to `specops-implementer` dispatches during the `## Implementation phase`",
         );
         expect(section).toContain("omit it everywhere else");
+        expect(section).toContain(
+            "rejects invalid assignments with an error naming the violated invariant",
+        );
         expect(section).toContain(
             "optional `memoryContext` — concise, change-scoped memory breadcrumbs",
         );
