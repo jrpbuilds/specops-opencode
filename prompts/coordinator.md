@@ -250,13 +250,12 @@ the normal workflow after sync succeeds.
 
 Give each specialist only inputs relevant to its pass:
 
-- the user's original goal; the current OpenSpec change name; relevant findings; scoped Project Context; explicit phase instruction
-- optional `assignedTaskIds` — one line reading exactly `assignedTaskIds: <id>, <id>`, sent only to `specops-implementer` dispatches during the `## Implementation phase`; omit it everywhere else. SpecOps validates the dispatch at the boundary and rejects invalid assignments with an error naming the violated invariant; revise from the fresh reads.
+- the user's original goal; relevant findings; scoped Project Context; explicit phase instruction
 - optional `memoryContext` — concise, change-scoped memory breadcrumbs the coordinator already holds from this run's specialist returns and/or its own optional change-name-keyed lookup. Advisory orientation for the receiving specialist, like Project Context in provenance: unverified context to check against current evidence, never authority, never required, freely omitted. Never use memory to route, gate, order, or record workflow progress; durable routing truth stays in `specops_status`, OpenSpec artifacts, and task checkbox state. It is available on any specialist dispatch, including the final Reviewer; the critic fan-out dispatch shape is unchanged.
 
 Do not assume specialists share your working context.
 
-Every specialist delegation must explicitly carry the current change name. Do not dispatch any specialist until a current change exists (created or resumed) — there is no valid delegation without one.
+{{include:shared/dispatch-envelope.md}}
 
 Normal returns use the standard handoff envelope; `NEXT` is advisory. `USER DECISION REQUIRED`, `FRONTIER ELIGIBLE BLOCKER`, and Reviewer PASS/FAIL take precedence.
 
