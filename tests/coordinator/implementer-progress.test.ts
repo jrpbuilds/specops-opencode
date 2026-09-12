@@ -293,16 +293,32 @@ describe("parseAssignedTaskIds", () => {
         });
     });
 
-    test("a token the parser cannot read is malformed, never reinterpreted as whole-list", () => {
+    test("prose mentions of the token leave the whole-list path untouched", () => {
         expect(parseAssignedTaskIds("your assignedTaskIds are listed below")).toEqual({
-            status: "malformed",
-            reason: "assignedTaskIds appears but no line matches 'assignedTaskIds: <id>, <id>'",
+            status: "absent",
         });
+        expect(
+            parseAssignedTaskIds(
+                [
+                    "Implement all approved tasks. Task descriptions follow.",
+                    "- [ ] 1.2 Add the identity pre-step; the unscoped whole-list path",
+                    "      that carries no assignedTaskIds stays untouched.",
+                    "No scoped assignment is being made.",
+                ].join("\n"),
+            ),
+        ).toEqual({ status: "absent" });
+    });
+
+    test("a line-initial token the parser cannot read is malformed, never reinterpreted as whole-list", () => {
         expect(parseAssignedTaskIds("assignedTaskIds = 1.1, 1.2")).toEqual({
             status: "malformed",
             reason: "assignedTaskIds appears but no line matches 'assignedTaskIds: <id>, <id>'",
         });
         expect(parseAssignedTaskIds("assignedTaskIds:")).toEqual({
+            status: "malformed",
+            reason: "assignedTaskIds appears but no line matches 'assignedTaskIds: <id>, <id>'",
+        });
+        expect(parseAssignedTaskIds("assignedTaskIds : 1.1")).toEqual({
             status: "malformed",
             reason: "assignedTaskIds appears but no line matches 'assignedTaskIds: <id>, <id>'",
         });

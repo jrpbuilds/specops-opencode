@@ -252,33 +252,34 @@ export type AssignedTaskIdsParse =
     | { readonly status: "present"; readonly taskIds: readonly string[] }
     | { readonly status: "malformed"; readonly reason: string };
 
-/** The assignment token, detected anywhere in the prompt. */
-const ASSIGNED_TASK_IDS_TOKEN = /\bassignedTaskIds\b/;
+/** The assignment token, detected at the start of a trimmed prompt line. */
+const ASSIGNED_TASK_IDS_LINE_START = /^assignedTaskIds\b/;
 
 /** The canonical line shape, matched against already-trimmed lines. */
-// Keep the pattern free of overlapping quantifiers so uncontrolled prompts
+// Keep both patterns free of overlapping quantifiers so uncontrolled prompts
 // cannot trigger polynomial backtracking in the regex engine.
 const ASSIGNED_TASK_IDS_LINE = /^assignedTaskIds:(.+)$/;
 
 /**
  * Read the coordinator's `assignedTaskIds` line from one dispatch prompt.
  *
- * Detection is token-based and parse is line-strict, so the whole-list serial
- * path (no token anywhere) passes through untouched while a token the parser
- * cannot read is reported as malformed — never silently reinterpreted as a
- * whole-list dispatch, which would rewrite a scoped assignment into a
+ * Detection is line-anchored and parse is line-strict, so the whole-list
+ * serial path passes through untouched even when its prose quotes the field
+ * name — task descriptions legitimately mention `assignedTaskIds` in
+ * ordinary sentences, and a mid-line mention must not poison a whole-list
+ * dispatch. A line that starts with the token but does not match the
+ * canonical shape is reported as malformed — never silently reinterpreted
+ * as a whole-list dispatch, which would rewrite a scoped assignment into a
  * different one. The canonical form is exactly one line (after trimming the
  * line's own leading/trailing whitespace) reading
  * `assignedTaskIds: <id>, <id>`; ids carry no internal whitespace.
  */
 export function parseAssignedTaskIds(prompt: string | undefined): AssignedTaskIdsParse {
     if (typeof prompt !== "string" || !prompt) return { status: "absent" };
-    if (!ASSIGNED_TASK_IDS_TOKEN.test(prompt)) return { status: "absent" };
+    const lines = prompt.split(/\r?\n/).map(line => line.trim());
+    if (!lines.some(line => ASSIGNED_TASK_IDS_LINE_START.test(line))) return { status: "absent" };
 
-    const canonical = prompt
-        .split(/\r?\n/)
-        .map(line => line.trim())
-        .filter(line => ASSIGNED_TASK_IDS_LINE.test(line));
+    const canonical = lines.filter(line => ASSIGNED_TASK_IDS_LINE.test(line));
     if (canonical.length === 0) {
         return {
             status: "malformed",

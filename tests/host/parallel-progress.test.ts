@@ -270,7 +270,7 @@ describe("active implementer ownership", () => {
         });
     });
 
-    test("a whole-list dispatch carries no ids; malformed payloads degrade to whole-list", async () => {
+    test("whole-list dispatches carry no ids, including prompts mentioning the field in prose", async () => {
         await recordTaskDispatch(beforeInput("c1"), {
             args: { subagent_type: AGENT_IDS.implementer, prompt: "implement everything" },
         });
@@ -284,6 +284,17 @@ describe("active implementer ownership", () => {
         expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
             count: 2,
             assignments: [{ dispatchId: "c1" }, { dispatchId: "c2" }],
+        });
+    });
+
+    test("malformed payloads still degrade to whole-list ownership, never throwing", async () => {
+        await recordTaskDispatch(beforeInput("c1"), {
+            args: { subagent_type: AGENT_IDS.implementer, prompt: "assignedTaskIds = 1.1, 1.2" },
+        });
+
+        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
+            count: 1,
+            assignments: [{ dispatchId: "c1" }],
         });
     });
 

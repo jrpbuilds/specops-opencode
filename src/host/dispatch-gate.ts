@@ -28,14 +28,18 @@
  *
  * Pass-through cases: non-`task` tools, unbound sessions (no change context
  * to validate against), and dispatches whose `subagent_type` is not the
- * implementer. A dispatch with no `assignedTaskIds` token is the whole-list
- * serial path — it passes the capacity and ownership checks and
- * skips the durable read entirely, so the supported serial behaviour is
- * untouched. A scoped dispatch (token present) whose payload the parser
- * cannot read is rejected rather than reinterpreted as whole-list, which
- * would silently rewrite a scoped assignment into a different dispatch; a
- * durable read failure on a scoped dispatch likewise blocks with the read
- * error, because an assignment that cannot be proven valid is not valid.
+ * implementer. A dispatch with no line-initial `assignedTaskIds` token is
+ * the whole-list serial path — it passes the capacity and ownership checks
+ * and skips the durable read entirely, so the supported serial behaviour is
+ * untouched, including whole-list prompts that quote task descriptions
+ * mentioning the field in prose. A line that starts with the token but does
+ * not match the canonical shape is rejected rather than reinterpreted as
+ * whole-list, which would silently rewrite a scoped assignment into a
+ * different dispatch; the deliberate tradeoff is that an off-contract
+ * scoped assignment embedded mid-line is treated as whole-list rather than
+ * failing the serial path. A durable read failure on a scoped dispatch
+ * likewise blocks with the read error, because an assignment that cannot
+ * be proven valid is not valid.
  *
  * Active ownership comes from the runtime's own dispatch observation
  * (`./parallel-progress.ts`) — in-flight implementer entries with their

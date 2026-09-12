@@ -243,15 +243,35 @@ describe("implementer dispatch gate rejections", () => {
         expect(durable.reads).toEqual([]);
     });
 
-    test("a scoped payload the parser cannot read is malformed, never whole-list", async () => {
+    test("a line-initial payload the parser cannot read is malformed, never whole-list", async () => {
         const { durable, hook } = gateFor(TASKS);
 
-        await expect(dispatch(hook, "your assignedTaskIds are listed below")).rejects.toThrow(
+        await expect(dispatch(hook, "assignedTaskIds = 1.1, 1.2")).rejects.toThrow(
             "Invalid implementer dispatch: malformed assignedTaskIds payload " +
                 "(assignedTaskIds appears but no line matches 'assignedTaskIds: <id>, <id>'); " +
                 "send the assignment as one line reading 'assignedTaskIds: <id>, <id>'",
         );
         expect(durable.reads).toEqual([]);
+    });
+
+    test("a whole-list prompt quoting task prose that mentions the token passes untouched", async () => {
+        const { durable, hook } = gateFor(TASKS);
+
+        await expect(
+            dispatch(
+                hook,
+                [
+                    "Implement all approved tasks. Task descriptions follow.",
+                    "- [ ] 1.2 Add the identity pre-step; the unscoped whole-list path",
+                    "      that carries no assignedTaskIds stays untouched.",
+                ].join("\n"),
+            ),
+        ).resolves.toBeUndefined();
+        expect(durable.reads).toEqual([]);
+
+        const snapshot = snapshotActiveImplementers(COORDINATOR);
+        expect(snapshot.count).toBe(1);
+        expect(snapshot.assignments[0]?.taskIds).toBeUndefined();
     });
 
     test("unknown ids are rejected against the fresh task list", async () => {
