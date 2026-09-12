@@ -405,6 +405,11 @@ describe("shared coordinator contract fragments (issue #34)", () => {
             anchor: "Process exactly one injected completion per arrival",
             includers: ["coordinator.md"],
         },
+        {
+            fragment: "dispatch-envelope.md",
+            anchor: "rebuild this envelope from fresh canonical reads",
+            includers: ["coordinator.md"],
+        },
     ] as const;
 
     function listPromptFiles(directory: string = PROMPTS_DIR): string[] {
@@ -804,14 +809,10 @@ describe("coordinator implementation-phase contract (scoped parallel implementer
     test("delegation contract sends assignedTaskIds only to implementation dispatches", () => {
         const prompt = buildCoordinatorPrompt("interactive", false);
         const section = delimitedSection(prompt, "## Delegation contract", "## Handoff gate");
-        expect(section).toContain("optional `assignedTaskIds`");
-        expect(section).toContain("one line reading exactly `assignedTaskIds: <id>, <id>`");
+        expect(section).toContain("one `assignedTaskIds: <id>, <id>` line when scoped");
+        expect(section).toContain("on implementation-phase dispatches only");
         expect(section).toContain(
-            "sent only to `specops-implementer` dispatches during the `## Implementation phase`",
-        );
-        expect(section).toContain("omit it everywhere else");
-        expect(section).toContain(
-            "rejects invalid assignments with an error naming the violated invariant",
+            "rejects a dispatch that omits it, mangles it, or names another change",
         );
         expect(section).toContain(
             "optional `memoryContext` — concise, change-scoped memory breadcrumbs",

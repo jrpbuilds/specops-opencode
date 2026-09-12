@@ -12,7 +12,7 @@ Before escalating a `FRONTIER ELIGIBLE BLOCKER`, apply this gate:
 For an eligible blocker, consult `specops-frontier` once with:
 
 - user's original goal
-- current OpenSpec change name
+- the `changeName: <change>` envelope line
 - originating specialist role
 - the specialist's `FRONTIER ELIGIBLE BLOCKER` block verbatim
 - relevant OpenSpec artifacts and repository evidence from that pass

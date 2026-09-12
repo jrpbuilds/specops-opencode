@@ -10,6 +10,7 @@ All notable changes to SpecOps are documented in this file.
 - `specops_status` now reports the change's current workflow phase, whether implementation and review are legally available (with a stable machine-readable reason when they are not), and every workflow action that is legal right now, such as authoring a planning artifact with its owning specialist, starting implementation, running review, or doing remediation work, so routing decisions start from durable facts instead of prose.
 - The native to-do list is now published by SpecOps from the current OpenSpec state instead of hand-maintained by the coordinator: during a SpecOps run, the visible list always matches the real workflow, and a failed update reuses the last good projection when available.
 - The to-do list now shows in-flight parallel work where it belongs — implementer dispatches under the implementation stage and review critics under the review stage — and removes each entry as soon as that specialist finishes.
+- Specialist task dispatches now carry a machine-checked current-job envelope: every dispatch to a specialist names the active change on a dedicated `changeName` line that SpecOps validates before the specialist starts, so stale or misrouted dispatches fail fast with the current-job payload gathered in one shared coordinator contract.
 
 ### Changed
 

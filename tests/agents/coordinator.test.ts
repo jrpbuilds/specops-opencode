@@ -105,11 +105,12 @@ describe("coordinator prompt composition", () => {
     test("assembled prompts stay within regression budgets", () => {
         // Frontier-enabled variants are the largest assembled prompts for each
         // mode. Shared contracts (fragments, validation gates, the review guard,
-        // scoped-parallel implementation, background dispatch, the settled
-        // integrated verification gate) expand into every assembled prompt, so
-        // the budget guards against unbounded prompt growth. Deliberately
-        // generous headroom over the current maxima (55,180 and 53,584 bytes)
-        // pending a dedicated prompt-size pass: 56,500 and 54,500.
+        // scoped-parallel implementation, background dispatch, the dispatch
+        // envelope, the settled integrated verification gate) expand into every
+        // assembled prompt, so the budget guards against unbounded prompt
+        // growth. Deliberately generous headroom over the current maxima
+        // (54,336 and 52,779 bytes) pending a dedicated prompt-size pass:
+        // 56,500 and 54,500.
         expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(56_500);
         expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(54_500);
     });
@@ -333,7 +334,6 @@ describe("shared coordinator contract", () => {
     test("defines one delegation contract and scoped Project Context", () => {
         expect(prompt).toContain("## Delegation contract");
         expect(prompt).toContain("user's original goal");
-        expect(prompt).toContain("current OpenSpec change name");
         expect(prompt).toContain("relevant scoped Project Context");
         expect(prompt).toContain("Do not assume specialists share your working context");
 
@@ -404,11 +404,13 @@ describe("shared coordinator contract", () => {
         expect(prompt).toContain("Do not delegate to any specialist");
     });
 
-    test("requires every delegation to carry the current change name", () => {
-        expect(prompt).toContain(
-            "Every specialist delegation must explicitly carry the current change name",
-        );
+    test("requires every delegation to carry the dispatch envelope's change name", () => {
+        expect(prompt).toContain("carries one line reading exactly `changeName: <change>`");
         expect(prompt).toContain("Do not dispatch any specialist until a current change exists");
+        expect(prompt).toContain("there is no valid delegation without one");
+        expect(prompt).toContain(
+            "rejects a dispatch that omits it, mangles it, or names another change",
+        );
     });
 
     test("recovers a malformed completed Task return via task_id once", () => {
@@ -746,11 +748,8 @@ describe("implementation-phase contract (scoped parallel implementer)", () => {
         expect(prompt).toContain("6. Approval → `## Implementation phase`");
 
         const delegation = delimitedSection("## Delegation contract", "## Handoff gate");
-        expect(delegation).toContain("optional `assignedTaskIds`");
-        expect(delegation).toContain(
-            "sent only to `specops-implementer` dispatches during the `## Implementation phase`",
-        );
-        expect(delegation).toContain("omit it everywhere else");
+        expect(delegation).toContain("`assignedTaskIds: <id>, <id>` line when scoped");
+        expect(delegation).toContain("on implementation-phase dispatches only");
     });
 
     test("keeps remediation implementation dispatch single and serial", () => {

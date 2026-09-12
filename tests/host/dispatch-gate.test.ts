@@ -18,7 +18,7 @@ import {
     DEFAULT_REVIEW_FANOUT,
     type SpecOpsConfig,
 } from "../../src/config.js";
-import { AGENT_IDS } from "../../src/agents/ids.js";
+import { AGENT_IDS, SPECIALIST_AGENT_IDS } from "../../src/agents/ids.js";
 
 const COORDINATOR = "ses_coordinator";
 const DIRECTORY = "/project";
@@ -89,7 +89,7 @@ function makeDeferredDurableReader(tasks: readonly { id: string; done: boolean }
 
 type GateHook = ReturnType<typeof createImplementerDispatchGate>;
 
-/** Fire the gate for one implementer dispatch; a rejection rejects the promise. */
+/** Fire the gate for one specialist dispatch; a rejection rejects the promise. */
 let nextCallID = 0;
 async function dispatch(
     hook: GateHook,
@@ -174,7 +174,7 @@ describe("implementer dispatch gate passthrough", () => {
             hook({ tool: "todowrite", sessionID: COORDINATOR, callID: "c1" }, { args: {} }),
         ).resolves.toBeUndefined();
         await expect(
-            dispatch(hook, "assignedTaskIds: 1.1", AGENT_IDS.reviewer),
+            dispatch(hook, "changeName: example", AGENT_IDS.reviewer),
         ).resolves.toBeUndefined();
 
         const unbound = createImplementerDispatchGate({
@@ -192,11 +192,118 @@ describe("implementer dispatch gate passthrough", () => {
         const { durable, hook } = gateFor(TASKS);
 
         await expect(
-            dispatch(hook, "Implement the change; every unchecked task is yours.", undefined, "c1"),
+            dispatch(
+                hook,
+                "changeName: example\nImplement the change; every unchecked task is yours.",
+                undefined,
+                "c1",
+            ),
         ).resolves.toBeUndefined();
         await completeForeground("c1");
-        await expect(dispatch(hook, undefined, undefined, "c2")).resolves.toBeUndefined();
+        await expect(
+            dispatch(hook, "changeName: example", undefined, "c2"),
+        ).resolves.toBeUndefined();
 
+        expect(durable.reads).toEqual([]);
+    });
+});
+
+describe("specialist dispatch identity", () => {
+    test("every specialist role is rejected without a changeName line", async () => {
+        const { durable, hook } = gateFor(TASKS);
+
+        for (const role of SPECIALIST_AGENT_IDS) {
+            await expect(dispatch(hook, "Do the assigned pass.", role)).rejects.toThrow(
+                `Invalid ${role} dispatch: no change name`,
+            );
+        }
+        expect(durable.reads).toEqual([]);
+        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({ count: 0, assignments: [] });
+    });
+
+    test("each non-implementer specialist passes with the matching change name, no durable read", async () => {
+        const { durable, hook } = gateFor(TASKS);
+
+        for (const role of SPECIALIST_AGENT_IDS) {
+            if (role === AGENT_IDS.implementer) continue;
+            await expect(
+                dispatch(hook, "changeName: example\nDo the assigned pass.", role),
+            ).resolves.toBeUndefined();
+        }
+        expect(durable.reads).toEqual([]);
+    });
+
+    test("a line-initial payload the parser cannot read is malformed", async () => {
+        const { durable, hook } = gateFor(TASKS);
+
+        await expect(dispatch(hook, "changeName = example", AGENT_IDS.reviewer)).rejects.toThrow(
+            "Invalid specops-reviewer dispatch: malformed changeName payload " +
+                "(changeName appears but no line matches 'changeName: <change>'); " +
+                "send one line reading 'changeName: <change>'",
+        );
+        expect(durable.reads).toEqual([]);
+    });
+
+    test("a changeName naming another change is rejected", async () => {
+        const { durable, hook } = gateFor(TASKS);
+
+        await expect(
+            dispatch(hook, "changeName: other-change", AGENT_IDS.reviewer),
+        ).rejects.toThrow(
+            "Invalid specops-reviewer dispatch: changeName 'other-change' does not match " +
+                "the active change 'example'",
+        );
+        expect(durable.reads).toEqual([]);
+    });
+
+    test("a pasted template line reads as a different change, never as absent", async () => {
+        const { durable, hook } = gateFor(TASKS);
+
+        await expect(dispatch(hook, "changeName: <change>", AGENT_IDS.planner)).rejects.toThrow(
+            "Invalid specops-planner dispatch: changeName '<change>' does not match " +
+                "the active change 'example'",
+        );
+        expect(durable.reads).toEqual([]);
+    });
+
+    test("identity is checked before capacity and ownership", async () => {
+        const { durable, hook } = gateFor(TASKS, 1);
+        await seedInFlight("c1", "assignedTaskIds: 2.1");
+
+        // Capacity is full, but the identity error is what surfaces.
+        await expect(dispatch(hook, undefined)).rejects.toThrow(
+            "Invalid specops-implementer dispatch: no change name",
+        );
+        expect(durable.reads).toEqual([]);
+        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
+            count: 1,
+            assignments: [{ dispatchId: "c1", taskIds: ["2.1"] }],
+        });
+    });
+
+    test("a resumed dispatch is validated against the current binding, not the old one", async () => {
+        const { durable, hook } = gateFor(TASKS);
+
+        recordSessionBinding(COORDINATOR, "SpecOps", "renamed-change");
+        await expect(dispatch(hook, "changeName: example\nassignedTaskIds: 2.1")).rejects.toThrow(
+            "Invalid specops-implementer dispatch: changeName 'example' does not match " +
+                "the active change 'renamed-change'",
+        );
+        expect(durable.reads).toEqual([]);
+    });
+
+    test("mid-line prose mentions never satisfy the identity line", async () => {
+        const { durable, hook } = gateFor(TASKS);
+
+        await expect(
+            dispatch(
+                hook,
+                [
+                    "Implement the change. Remember: every dispatch carries changeName: <change>.",
+                    "- [ ] 1.2 The envelope's changeName line is validated at the boundary.",
+                ].join("\n"),
+            ),
+        ).rejects.toThrow("Invalid specops-implementer dispatch: no change name");
         expect(durable.reads).toEqual([]);
     });
 });
@@ -206,7 +313,7 @@ describe("implementer dispatch gate rejections", () => {
         const { durable, hook } = gateFor(TASKS);
         await seedInFlight("c1", "assignedTaskIds: 2.1");
 
-        await expect(dispatch(hook, undefined)).rejects.toThrow(
+        await expect(dispatch(hook, "changeName: example")).rejects.toThrow(
             "Invalid implementer dispatch: the whole-list assignment overlaps 1 active implementer",
         );
         expect(durable.reads).toEqual([]);
@@ -216,7 +323,7 @@ describe("implementer dispatch gate rejections", () => {
         const { durable, hook } = gateFor(TASKS);
         await seedInFlight("c1", undefined);
 
-        await expect(dispatch(hook, "whole-list")).rejects.toThrow(
+        await expect(dispatch(hook, "changeName: example\nwhole-list")).rejects.toThrow(
             "Invalid implementer dispatch: the whole-list assignment overlaps 1 active implementer",
         );
         expect(durable.reads).toEqual([]);
@@ -227,7 +334,7 @@ describe("implementer dispatch gate rejections", () => {
         await seedInFlight("c1", "assignedTaskIds: 2.1");
         await seedInFlight("c2", "assignedTaskIds: 2.2");
 
-        await expect(dispatch(hook, "assignedTaskIds: 2.1")).rejects.toThrow(
+        await expect(dispatch(hook, "changeName: example\nassignedTaskIds: 2.1")).rejects.toThrow(
             "Invalid implementer dispatch: concurrency capacity is full (2 of 2 implementer slots already in flight)",
         );
         expect(durable.reads).toEqual([]);
@@ -237,7 +344,7 @@ describe("implementer dispatch gate rejections", () => {
         const { durable, hook } = gateFor(TASKS, 1);
         await seedInFlight("c1", "assignedTaskIds: 2.1");
 
-        await expect(dispatch(hook, undefined)).rejects.toThrow(
+        await expect(dispatch(hook, "changeName: example")).rejects.toThrow(
             "Invalid implementer dispatch: concurrency capacity is full (1 of 1 implementer slots already in flight)",
         );
         expect(durable.reads).toEqual([]);
@@ -246,7 +353,9 @@ describe("implementer dispatch gate rejections", () => {
     test("a line-initial payload the parser cannot read is malformed, never whole-list", async () => {
         const { durable, hook } = gateFor(TASKS);
 
-        await expect(dispatch(hook, "assignedTaskIds = 1.1, 1.2")).rejects.toThrow(
+        await expect(
+            dispatch(hook, "changeName: example\nassignedTaskIds = 1.1, 1.2"),
+        ).rejects.toThrow(
             "Invalid implementer dispatch: malformed assignedTaskIds payload " +
                 "(assignedTaskIds appears but no line matches 'assignedTaskIds: <id>, <id>'); " +
                 "send the assignment as one line reading 'assignedTaskIds: <id>, <id>'",
@@ -254,16 +363,18 @@ describe("implementer dispatch gate rejections", () => {
         expect(durable.reads).toEqual([]);
     });
 
-    test("a whole-list prompt quoting task prose that mentions the token passes untouched", async () => {
+    test("a whole-list prompt quoting task prose that mentions the tokens passes untouched", async () => {
         const { durable, hook } = gateFor(TASKS);
 
         await expect(
             dispatch(
                 hook,
                 [
+                    "changeName: example",
                     "Implement all approved tasks. Task descriptions follow.",
                     "- [ ] 1.2 Add the identity pre-step; the unscoped whole-list path",
-                    "      that carries no assignedTaskIds stays untouched.",
+                    "      that carries no assignedTaskIds and only quotes changeName: <change>",
+                    "      in prose stays untouched.",
                 ].join("\n"),
             ),
         ).resolves.toBeUndefined();
@@ -277,7 +388,7 @@ describe("implementer dispatch gate rejections", () => {
     test("unknown ids are rejected against the fresh task list", async () => {
         const { durable, hook } = gateFor(TASKS);
 
-        await expect(dispatch(hook, "assignedTaskIds: 9.9")).rejects.toThrow(
+        await expect(dispatch(hook, "changeName: example\nassignedTaskIds: 9.9")).rejects.toThrow(
             "Invalid implementer dispatch: assigned task '9.9' does not exist in the current task list",
         );
         expect(durable.reads).toEqual([{ change: "example", cwd: DIRECTORY }]);
@@ -286,7 +397,7 @@ describe("implementer dispatch gate rejections", () => {
     test("already-complete ids are rejected", async () => {
         const { durable, hook } = gateFor(TASKS);
 
-        await expect(dispatch(hook, "assignedTaskIds: 1.1")).rejects.toThrow(
+        await expect(dispatch(hook, "changeName: example\nassignedTaskIds: 1.1")).rejects.toThrow(
             "Invalid implementer dispatch: assigned task '1.1' is already complete",
         );
         expect(durable.reads).toEqual([{ change: "example", cwd: DIRECTORY }]);
@@ -296,7 +407,7 @@ describe("implementer dispatch gate rejections", () => {
         const { durable, hook } = gateFor(TASKS);
         await seedInFlight("c1", "assignedTaskIds: 2.1");
 
-        await expect(dispatch(hook, "assignedTaskIds: 2.1")).rejects.toThrow(
+        await expect(dispatch(hook, "changeName: example\nassignedTaskIds: 2.1")).rejects.toThrow(
             "Invalid implementer dispatch: task '2.1' assigned to multiple dispatches (c1, #2)",
         );
         expect(durable.reads).toEqual([{ change: "example", cwd: DIRECTORY }]);
@@ -306,7 +417,7 @@ describe("implementer dispatch gate rejections", () => {
         const { durable, hook } = gateFor(TASKS);
         await seedInFlight("c1", undefined);
 
-        await expect(dispatch(hook, "assignedTaskIds: 2.1")).rejects.toThrow(
+        await expect(dispatch(hook, "changeName: example\nassignedTaskIds: 2.1")).rejects.toThrow(
             "Invalid implementer dispatch: task assignment overlaps active implementer " +
                 "'c1', which holds the whole-list assignment",
         );
@@ -316,7 +427,7 @@ describe("implementer dispatch gate rejections", () => {
     test("a durable read failure blocks a scoped dispatch with the read error", async () => {
         const { durable, hook } = gateFor("openspec failed");
 
-        await expect(dispatch(hook, "assignedTaskIds: 2.1")).rejects.toThrow(
+        await expect(dispatch(hook, "changeName: example\nassignedTaskIds: 2.1")).rejects.toThrow(
             "Invalid implementer dispatch: the current task list could not be read for " +
                 "'example' (openspec failed)",
         );
@@ -330,7 +441,7 @@ describe("implementer dispatch gate rejections", () => {
     test("a durable read failure never blocks the whole-list path", async () => {
         const { durable, hook } = gateFor("openspec failed");
 
-        await expect(dispatch(hook, undefined)).resolves.toBeUndefined();
+        await expect(dispatch(hook, "changeName: example")).resolves.toBeUndefined();
         expect(durable.reads).toEqual([]);
     });
 });
@@ -339,7 +450,9 @@ describe("implementer dispatch gate composition", () => {
     test("a passing scoped dispatch is recorded as active ownership", async () => {
         const { hook } = gateFor(TASKS);
 
-        await expect(compose(hook, "c1", "assignedTaskIds: 2.1")).resolves.toBe(true);
+        await expect(
+            compose(hook, "c1", "changeName: example\nassignedTaskIds: 2.1"),
+        ).resolves.toBe(true);
         expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
             count: 1,
             assignments: [{ dispatchId: "c1", taskIds: ["2.1"] }],
@@ -349,15 +462,21 @@ describe("implementer dispatch gate composition", () => {
     test("a rejected dispatch is never recorded", async () => {
         const { hook } = gateFor(TASKS);
 
-        await expect(compose(hook, "c1", "assignedTaskIds: 9.9")).resolves.toBe(false);
+        await expect(
+            compose(hook, "c1", "changeName: example\nassignedTaskIds: 9.9"),
+        ).resolves.toBe(false);
         expect(snapshotActiveImplementers(COORDINATOR)).toEqual({ count: 0, assignments: [] });
     });
 
     test("valid serial then valid parallel flows through capacity and disjointness", async () => {
         const { hook } = gateFor(TASKS, 2);
 
-        await expect(compose(hook, "c1", "assignedTaskIds: 2.1")).resolves.toBe(true);
-        await expect(compose(hook, "c2", "assignedTaskIds: 2.2")).resolves.toBe(true);
+        await expect(
+            compose(hook, "c1", "changeName: example\nassignedTaskIds: 2.1"),
+        ).resolves.toBe(true);
+        await expect(
+            compose(hook, "c2", "changeName: example\nassignedTaskIds: 2.2"),
+        ).resolves.toBe(true);
         expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
             count: 2,
             assignments: [
@@ -377,10 +496,10 @@ describe("implementer dispatch gate concurrency", () => {
             getConfig: () => makeConfig(2),
         });
 
-        const first = compose(hook, "c1", "assignedTaskIds: 2.1");
+        const first = compose(hook, "c1", "changeName: example\nassignedTaskIds: 2.1");
         expect(durable.reads).toEqual([{ change: "example", cwd: DIRECTORY }]);
 
-        const second = compose(hook, "c2", "assignedTaskIds: 2.1");
+        const second = compose(hook, "c2", "changeName: example\nassignedTaskIds: 2.1");
         expect(durable.reads).toEqual([
             { change: "example", cwd: DIRECTORY },
             { change: "example", cwd: DIRECTORY },
@@ -402,10 +521,10 @@ describe("implementer dispatch gate concurrency", () => {
             getConfig: () => makeConfig(1),
         });
 
-        const first = compose(hook, "c1", "assignedTaskIds: 2.1");
+        const first = compose(hook, "c1", "changeName: example\nassignedTaskIds: 2.1");
         expect(durable.reads).toEqual([{ change: "example", cwd: DIRECTORY }]);
 
-        const second = compose(hook, "c2", "assignedTaskIds: 2.2");
+        const second = compose(hook, "c2", "changeName: example\nassignedTaskIds: 2.2");
         expect(await second).toBe(false);
         expect(durable.reads).toEqual([{ change: "example", cwd: DIRECTORY }]);
 
@@ -425,8 +544,8 @@ describe("implementer dispatch gate concurrency", () => {
             getConfig: () => makeConfig(2),
         });
 
-        const first = compose(hook, "c1", "assignedTaskIds: 2.1");
-        const second = compose(hook, "c2", "assignedTaskIds: 2.2");
+        const first = compose(hook, "c1", "changeName: example\nassignedTaskIds: 2.1");
+        const second = compose(hook, "c2", "changeName: example\nassignedTaskIds: 2.2");
         expect(durable.reads).toEqual([
             { change: "example", cwd: DIRECTORY },
             { change: "example", cwd: DIRECTORY },

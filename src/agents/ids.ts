@@ -43,3 +43,15 @@ export const ROLE_WORKFLOW_ORDER = [
 
 /** All configurable roles used by configuration validation. */
 export const ALL_AGENT_IDS = ROLE_WORKFLOW_ORDER;
+
+/**
+ * Roles that receive specialist dispatches from the coordinator.
+ *
+ * Every Task dispatch to one of these roles carries the dispatch envelope's
+ * `changeName` identity line, validated at the dispatch boundary. The
+ * coordinator dispatches specialists but never itself, so it is the one role
+ * excluded here.
+ */
+export const SPECIALIST_AGENT_IDS: readonly AgentId[] = ROLE_WORKFLOW_ORDER.filter(
+    id => id !== AGENT_IDS.coordinator,
+);
