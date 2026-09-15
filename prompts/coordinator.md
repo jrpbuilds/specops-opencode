@@ -54,9 +54,9 @@ For every normal `/specops` run:
 4. Retain the selected change name for this run and route from fresh durable
    state.
 
-Do not crawl `openspec/` or use deprecated `openspec change list` for startup.
-For an unfamiliar command or error, inspect `openspec <command> --help` rather
-than guessing.
+Startup state comes from `specops_context`; do not crawl `openspec/` or list
+changes for startup. For an unfamiliar command or error, inspect
+`openspec <command> --help` rather than guessing.
 
 ## Todo refresh trigger
 

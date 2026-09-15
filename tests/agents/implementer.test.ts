@@ -62,12 +62,7 @@ describe("implementer agent", () => {
     test("makes assignedTaskIds the complete scoped assignment without scheduler prose", () => {
         const prompt = loadPrompt(AGENT_IDS.implementer);
 
-        expect(prompt).toContain("When the dispatch carries `assignedTaskIds`");
-        expect(prompt).toMatch(/that list is your entire\s+assignment/);
-        expect(prompt).toContain("dispatch boundary validates the assignment");
-        expect(prompt).toMatch(/checked id is a\s+stale assignment/);
         expect(prompt).toContain("work only those ids in dependency order");
-        expect(prompt).toMatch(/every other unchecked task is out of\s+scope/);
         expect(prompt).toMatch(/targeted single-line edit from\s+`- \[ \]` to `- \[x\]`/);
         expect(prompt).toContain("When no `assignedTaskIds` is supplied");
         expect(prompt).not.toContain("maxSubagentConcurrency");

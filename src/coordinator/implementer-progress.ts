@@ -1,6 +1,6 @@
 import type { NormalizedApplyInstructionContext } from "../openspec/apply-instructions.js";
 
-/** One in-flight (or just-returned) implementer dispatch, coordinator-supplied. */
+/** One in-flight (or just-returned) implementer dispatch observed by the runtime. */
 export type ImplementerAssignment = {
     readonly dispatchId?: string;
     readonly taskIds: readonly string[];
@@ -46,24 +46,25 @@ function dispatchLabel(assignment: ImplementerAssignment, index: number): string
 }
 
 /**
- * Project the coordinator's in-flight implementer assignments onto durable
- * checkbox state.
+ * Project runtime-observed implementer assignments onto durable checkbox
+ * state.
  *
- * Internal helper retained for dispatch-boundary assignment validation; not
- * part of the read-only `specops_progress` surface, whose implementer view is
- * runtime-observed. The tool-facing consumer is expected to be the planned
- * assignment-invariant enforcement at the implementer dispatch boundary.
+ * Pure reporting: this projection never gates anything by itself. The
+ * implementer dispatch boundary consumes it through
+ * `validateImplementerDispatchScope`, where the projection's
+ * `missingFromDurable` and `durablyDone` results enforce the unknown-task and
+ * complete-task invariants. Durable "currently unchecked" state is reported
+ * as `durablyPending` and deliberately never enforced. It is not part of the
+ * read-only `specops_progress` surface, whose implementer view is separately
+ * runtime-observed.
  *
  * Pure over its two inputs: dispatch order and per-dispatch `taskIds` order
  * are preserved, no input is mutated, and the result is derived entirely from
  * the supplied assignments and the normalized apply-instruction context.
  *
- * Structural validation mirrors the coordinator's own assignment contract:
- * non-empty, unique within the dispatch, disjoint across siblings. Violations
- * return `ok: false` naming the offending task id and dispatch label
- * (`dispatchId ?? '#<index>'`). Durable "currently unchecked" state is
- * deliberately reported as `durablyPending`, never enforced — this projection
- * is a read-only reporting aid, not gating.
+ * Structural validation mirrors the assignment contract: non-empty, unique
+ * within the dispatch, disjoint across siblings. Violations return `ok: false`
+ * naming the offending task id and dispatch label (`dispatchId ?? '#<index>'`).
  */
 export function projectImplementerAssignments(
     assignments: readonly ImplementerAssignment[],

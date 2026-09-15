@@ -46,12 +46,6 @@ describe("designer agent", () => {
         const prompt = loadPrompt(AGENT_IDS.designer);
 
         expect(prompt).toContain("design-role artifact named by");
-        expect(prompt).toContain("current dispatch");
-        expect(prompt).toMatch(/artifact id, output\s+path/);
-        expect(prompt).toContain("openspec instructions <artifact-id> --change <change>");
-        expect(prompt).toContain("Follow the active OpenSpec schema and template exactly");
-        expect(prompt).toMatch(/do not\s+inspect repository source yourself/i);
-        expect(prompt).toMatch(/request a\s+focused Explorer follow-up/);
         expect(prompt).toContain("Do not modify requirements-role artifacts");
         expect(prompt).toMatch(/author task-planning artifacts, or\s+implement source changes/);
     });

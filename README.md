@@ -20,7 +20,7 @@ You give it a goal:
 /specops add a health endpoint with tests
 ```
 
-Specialist agents then investigate the repository, work out the requirements, design the solution, plan the implementation, and write the code. Before anything gets archived, the finished work goes through three independent reviews. Each role can run on its own model, and OpenSpec keeps the whole change on disk as the source of truth.
+Specialist agents then investigate the repository, work out the requirements, design the solution, plan the implementation, and write the code. Before anything gets archived, the finished work is independently reviewed — a proportionate pass for small changes, and independent critics for larger or riskier ones. Each role can run on its own model, and OpenSpec keeps the whole change on disk as the source of truth.
 
 ## Documentation
 
@@ -67,7 +67,7 @@ You approve the plan before implementation starts, and you decide what happens a
 
 ## How it works
 
-The coordinator routes your change through specialist agents, then has the finished work reviewed from three independent perspectives before a final verdict. When implementation in one lane is staged across several assignments, SpecOps may reuse that lane's implementer session to preserve useful context while refreshing with fresh canonical state for every dispatch; a fresh implementer dispatch is always a valid fallback:
+The coordinator routes your change through specialist agents, then has the finished work independently reviewed before a final verdict. When implementation in one lane is staged across several assignments, SpecOps may reuse that lane's implementer session to preserve useful context while refreshing with fresh canonical state for every dispatch; a fresh implementer dispatch is always a valid fallback:
 
 ```mermaid
 flowchart TD

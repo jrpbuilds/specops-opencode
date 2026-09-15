@@ -126,21 +126,21 @@ export function createTodoSyncHook(deps: TodoSyncDeps): NonNullable<Hooks["tool.
                 return;
             }
             // Ephemeral parallel entries come from the runtime's own dispatch
-            // observation, never from coordinator bookkeeping. Failed critics
-            // and failed dispatches surface through coordinator reporting, not
-            // Todo state, so only live or completed work is projected.
+            // observation, never from coordinator bookkeeping. Completion is
+            // carried by durable task checkboxes and failures surface through
+            // coordinator reporting, so only live work is projected.
             const snapshot = snapshotParallelProgress(input.sessionID);
             const fanout = snapshot.reviewFanout
                 ? summarizeReviewFanout(snapshot.reviewFanout)
                 : undefined;
             const dispatches = (snapshot.implementerDispatches ?? []).flatMap(dispatch =>
-                dispatch.state === "failed"
-                    ? []
-                    : [
+                dispatch.state === "inFlight"
+                    ? [
                           dispatch.dispatchId === undefined
                               ? { state: dispatch.state }
                               : { dispatchId: dispatch.dispatchId, state: dispatch.state },
-                      ],
+                      ]
+                    : [],
             );
             const parallel: ParallelProgressInput | undefined =
                 fanout?.ok || dispatches.length > 0

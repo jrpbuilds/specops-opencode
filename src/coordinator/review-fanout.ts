@@ -1,10 +1,10 @@
 /**
- * Rolling bounded scheduler for the independent review critics.
+ * Canonical review-critic identity and snapshot projection.
  *
- * The coordinator prompt uses this module as an executable contract, just as
- * it uses `rolling-scheduler.ts` for planning. A critic failure permanently
- * closes the final-review fan-in gate, but does not cancel active siblings or
- * prevent pending critics from finishing safely.
+ * Defines the stable critic ids the runtime uses to identify independent
+ * review lenses, and validates/projects a review fan-out snapshot onto
+ * canonical per-critic progress for the read-only progress view and the Todo
+ * projection.
  */
 
 /** Stable identifiers for the three independent review critics. */
@@ -13,153 +13,11 @@ export type ReviewCriticId = "correctness" | "risk" | "quality";
 /** Canonical critic ids in projection order. */
 export const REVIEW_CRITIC_IDS: readonly ReviewCriticId[] = ["correctness", "risk", "quality"];
 
-/** Live state and controls for one review fan-out round. */
-export interface ReviewFanout {
-    /** Number of critics dispatched but not yet complete or failed. */
-    readonly active: number;
-    /** Free critic slots under the configured concurrency limit. */
-    readonly available: number;
-    /** Whether a critic failure has permanently closed the fan-in gate. */
-    readonly blocked: boolean;
-    /** Critics that have not been dispatched, in canonical order. */
-    readonly pending: readonly ReviewCriticId[];
-    /** Critics currently dispatched and awaiting a terminal result. */
-    readonly inFlight: readonly ReviewCriticId[];
-    /** Critics that returned a report, in canonical order. */
-    readonly completed: readonly ReviewCriticId[];
-    /** Critics that failed without a usable report, in canonical order. */
-    readonly failed: readonly ReviewCriticId[];
-
-    /** Fill available slots from the remaining critics. */
-    dispatch(): readonly ReviewCriticId[];
-
-    /** Record one critic's completed report exactly as returned. */
-    complete(id: ReviewCriticId, report: string): boolean;
-
-    /** Mark one pending or active critic as failed and close final-review fan-in. */
-    fail(id: ReviewCriticId): void;
-
-    /** Return true only when every critic selected for this round completed without a failure. */
-    allReportsCollected(): boolean;
-
-    /** Return a non-mutating, canonically ordered snapshot of completed reports. */
-    reports(): ReadonlyMap<ReviewCriticId, string>;
-
-    /** Clear this round so the same fan-out can run again for remediation. */
-    reset(): void;
-}
-
 /**
- * Create a review fan-out bounded by the configured concurrency.
- *
- * A round may cover a subset of the critics — graduated review dispatches only
- * the lenses a change calls for — so `critics` names this round's selected
- * set. Duplicates and ordering are normalized to canonical order; the set
- * defaults to all three critics.
- *
- * @param maxConcurrency Maximum number of review critics allowed in flight.
- * @param critics Critic ids selected for this round; empty selections are a
- *   programming error.
- * @returns A fresh fan-out with every selected critic pending and no failures.
- */
-export function createReviewFanout(
-    maxConcurrency: number,
-    critics: readonly ReviewCriticId[] = REVIEW_CRITIC_IDS,
-): ReviewFanout {
-    const selected: readonly ReviewCriticId[] = REVIEW_CRITIC_IDS.filter(id =>
-        critics.includes(id),
-    );
-    if (selected.length === 0) {
-        throw new Error("createReviewFanout requires at least one critic for the round");
-    }
-
-    const pending = new Set<ReviewCriticId>(selected);
-    const inFlight = new Set<ReviewCriticId>();
-    const completed = new Set<ReviewCriticId>();
-    const failed = new Set<ReviewCriticId>();
-    const completedReports = new Map<ReviewCriticId, string>();
-    let blocked = false;
-
-    const ordered = (members: ReadonlySet<ReviewCriticId>): readonly ReviewCriticId[] =>
-        REVIEW_CRITIC_IDS.filter(id => members.has(id));
-
-    return {
-        get active(): number {
-            return inFlight.size;
-        },
-        get available(): number {
-            return Math.max(0, maxConcurrency - inFlight.size);
-        },
-        get blocked(): boolean {
-            return blocked;
-        },
-        get pending(): readonly ReviewCriticId[] {
-            return ordered(pending);
-        },
-        get inFlight(): readonly ReviewCriticId[] {
-            return ordered(inFlight);
-        },
-        get completed(): readonly ReviewCriticId[] {
-            return ordered(completed);
-        },
-        get failed(): readonly ReviewCriticId[] {
-            return ordered(failed);
-        },
-        dispatch(): readonly ReviewCriticId[] {
-            const slots = Math.max(0, maxConcurrency - inFlight.size);
-            if (slots === 0) return [];
-
-            const dispatched = ordered(pending).slice(0, slots);
-            for (const id of dispatched) {
-                pending.delete(id);
-                inFlight.add(id);
-            }
-            return dispatched;
-        },
-        complete(id: ReviewCriticId, report: string): boolean {
-            if (!inFlight.delete(id)) return false;
-            completed.add(id);
-            completedReports.set(id, report);
-            return true;
-        },
-        fail(id: ReviewCriticId): void {
-            if (completed.has(id) || failed.has(id)) return;
-
-            const wasPending = pending.delete(id);
-            const wasInFlight = inFlight.delete(id);
-            if (!wasPending && !wasInFlight) return;
-
-            failed.add(id);
-            blocked = true;
-        },
-        allReportsCollected(): boolean {
-            return !blocked && failed.size === 0 && completed.size === selected.length;
-        },
-        reports(): ReadonlyMap<ReviewCriticId, string> {
-            const snapshot = new Map<ReviewCriticId, string>();
-            for (const id of selected) {
-                const report = completedReports.get(id);
-                if (report !== undefined) snapshot.set(id, report);
-            }
-            return snapshot;
-        },
-        reset(): void {
-            pending.clear();
-            inFlight.clear();
-            completed.clear();
-            failed.clear();
-            completedReports.clear();
-            for (const id of selected) pending.add(id);
-            blocked = false;
-        },
-    };
-}
-
-/**
- * Ephemeral coordinator-supplied snapshot of one fan-out round. Host-boundary
- * shape: the lists are individually optional (matching the wrapper schema);
- * the runtime contract below requires all four present in any supplied
- * snapshot.
+ * Ephemeral snapshot of one fan-out round, derived from the runtime's dispatch
+ * observations and injected host-side. The state lists are individually
+ * optional at the boundary, but a well-formed snapshot supplies all four (an
+ * empty list is valid and distinct from an absent list).
  */
 export type ReviewFanoutSnapshot = {
     readonly pending?: readonly string[];
@@ -199,12 +57,12 @@ const isCriticId = (id: string): id is ReviewCriticId =>
  * Project a fan-out snapshot onto canonical per-critic progress.
  *
  * Pure: no I/O, no retained state, never mutates the input snapshot. Fails
- * closed on any snapshot the live `ReviewFanout` object could not have
- * produced: all four state lists must be present (an empty list is valid and
- * distinct from an absent list), every entry must be a known critic id, and
- * each canonical critic must appear in exactly one set.
+ * closed on any snapshot that is not well-formed: all four state lists must be
+ * present (an empty list is valid and distinct from an absent list), every
+ * entry must be a known critic id, and each canonical critic must appear in
+ * exactly one set.
  *
- * @param snapshot Coordinator-supplied copy of the fan-out state.
+ * @param snapshot Ephemeral copy of the fan-out state.
  * @returns Canonical per-critic progress, or a deterministic error message.
  */
 export function summarizeReviewFanout(snapshot: ReviewFanoutSnapshot): ReviewFanoutSummaryResult {

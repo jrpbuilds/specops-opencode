@@ -1,6 +1,6 @@
 # Commands
 
-SpecOps registers six commands in OpenCode. All of them operate on the active OpenSpec change for the current project.
+SpecOps registers six commands in OpenCode. The change commands (`/specops`, `/specops-auto`, `/specops-update`, `/specops-sync`) operate on an OpenSpec change — the active one by default — while `/specops-onboard` and `/specops-doctor` work on the current project itself.
 
 ## `/specops <goal>`
 
@@ -11,7 +11,7 @@ Starts or resumes a change in Standard mode.
 ```
 
 - Establishes exactly one current change (resuming an existing relevant one instead of creating duplicates).
-- Takes you through: investigation → plan approval → implementation → three-way review → your decision on the result.
+- Takes you through: investigation → plan approval → implementation → independent review → your decision on the result.
 - Re-running it later in the same project resumes any active change from saved state.
 
 ## `/specops-auto <goal>`

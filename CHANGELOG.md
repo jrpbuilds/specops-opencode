@@ -2,39 +2,24 @@
 
 All notable changes to SpecOps are documented in this file.
 
-## [Unreleased]
+## [v1.7.0] - unreleased
 
 ### Added
 
-- Added an architecture contract in the documentation that defines what SpecOps tooling decides deterministically and what stays with agent judgement.
-- `specops_status` now reports the change's current workflow phase, whether implementation and review are legally available (with a stable machine-readable reason when they are not), and every workflow action that is legal right now, such as authoring a planning artifact with its owning specialist, starting implementation, running review, or doing remediation work, so routing decisions start from durable facts instead of prose.
-- The native to-do list is now published by SpecOps from the current OpenSpec state instead of hand-maintained by the coordinator: during a SpecOps run, the visible list always matches the real workflow, and a failed update reuses the last good projection when available.
-- The to-do list now shows in-flight parallel work where it belongs — implementer dispatches under the implementation stage and review critics under the review stage — and removes each entry as soon as that specialist finishes.
-- Specialist task dispatches now carry a machine-checked current-job envelope: every dispatch to a specialist names the active change on a dedicated `changeName` line that SpecOps validates before the specialist starts, so stale or misrouted dispatches fail fast with the current-job payload gathered in one shared coordinator contract.
+- SpecOps now publishes the native to-do list itself from the current OpenSpec state instead of hand-maintaining it, with the sidebar as the only place the list appears; a failed status read keeps the last good list visible rather than clearing it.
+- The to-do list shows in-flight parallel work where it belongs and removes each entry as that specialist finishes, and every entry carries a readable name and a short description so the checklist explains itself at a glance.
+- `specops_status` now reports the change's current workflow phase, whether implementation and review are legally available (with a stable machine-readable reason when they are not), and every workflow action that is legal right now, so routing decisions start from durable facts instead of prose.
+- Added a documentation contract explaining which parts of the workflow SpecOps decides for you and which stay a judgement call for the agents.
 
 ### Changed
 
-- Refined coordinator and specialist guidance so each agent follows the current workflow state and stays focused on its assigned planning, design, implementation, or review work.
-- Reduced prompt duplication and stale workflow instructions, making SpecOps runs more concise while preserving the existing decision and safety boundaries.
-- Todo interaction is now a refresh trigger only: at workflow transitions the coordinator fires the native todo tool with an empty list, and SpecOps publishes the canonical projection from current OpenSpec state on every call — the coordinator no longer authors, reconciles, or rebuilds the list.
-- SpecOps tool results and specialist dispatches now cue one coalesced to-do refresh per assistant turn, so the visible to-do list stays current across the full run without duplicate updates.
-- A temporary status-read failure now keeps the last known to-do projection visible instead of clearing the panel.
-- Each to-do list entry now shows a readable name and a short description of what that workflow phase is doing, so the checklist explains itself at a glance.
-- Workflow legality now comes from one shared derivation: status, planning dispatch, and the to-do list all answer "is planning complete?" from the same rule, so they can no longer contradict one another about the same change state.
-- The `# Todos` blocks no longer appear in the chat transcript after each to-do refresh; the sidebar list keeps showing the canonical projection.
-- The to-do list now advances past plan approval as work progresses: implementation shows as current once the plan is approved or a task is checked, and review once every task is done — matching the workflow phase the status tool already reports.
-- The to-do list now follows review to the end: a passed review checks off review and moves the list to the final archive step, while flagged findings route current work into the remediation and re-review stages as each round runs.
-- Archiving a change now leaves the to-do list fully checked off, so the panel finishes cleanly instead of leaving the last step dangling.
-- Parallel progress is now tracked by SpecOps itself: the progress tool reports which specialists are running or finished from what actually happened in the session, alongside the current checked-task totals, so the coordinator no longer maintains and resubmits that state by hand.
-- The parallel progress tool is now a read-only diagnostic: SpecOps fills in the whole report from what it observed in the session, so the coordinator no longer calls it at every parallel checkpoint or hands it any state.
-- Implementer dispatches are now validated by SpecOps itself at the moment of dispatch: an assignment that exceeds concurrency, overlaps an active implementer, or names a task that is missing or already checked is rejected with a concise error naming the violated invariant, so the coordinator can revise the dispatch instead of re-deriving the rules from prompt prose.
-- Review now scales with the change in `auto` mode: small changes get a light single-reviewer pass, moderately complex or user-visible changes get a deeper single review with runtime checks where relevant, and broad or risky changes fan out only the critics whose lenses matter — up to all three.
-
-### Fixed
-
-- The to-do list now advances past review when the reviewer runs as a background task: its PASS/FAIL verdict is read from the completed task result instead of being missed.
-- A to-do refresh that runs alongside the archive step no longer resets the list back to the plan checkpoint: a failed state read keeps the last good list, and an archived change keeps its fully checked-off list.
-- Whole-list implementer dispatches are no longer rejected when their prompt merely mentions the assignment field inside task descriptions or other prose; only a line starting with the field is treated as an assignment.
+- The to-do list now follows the whole run: it advances with the workflow phase, follows review through remediation and re-review to a fully checked-off archive, reads a background reviewer's verdict instead of missing it, and keeps its completed state through the archive step.
+- To-do interaction is now a refresh trigger only: SpecOps rebuilds the canonical projection from current state on every call and coalesces refreshes to one per assistant turn, so the panel stays current across the run without duplicate updates or stale entries.
+- Parallel progress is now tracked and reported by SpecOps from what actually happened in the session, alongside current task totals, and the progress tool is a read-only diagnostic, so the coordinator no longer maintains or submits that state.
+- Workflow legality now comes from one shared derivation, so status, planning dispatch, and the to-do list can no longer contradict one another about the same change state.
+- Specialist dispatches now name the active change on a line SpecOps checks before the specialist starts, and implementer assignments are validated when they are sent against concurrency, overlap, and current task state, so stale dispatches and invalid assignments fail fast with a clear error; whole-list dispatches are no longer rejected when an assignment field merely appears in task prose.
+- Review now scales with the change in `auto` mode: small changes get a light single-reviewer pass, moderately complex or user-visible changes get a deeper single review with runtime checks where relevant, and broad or risky changes fan out only the critics whose lenses matter.
+- Coordinator and specialist guidance is more concise and follows the current workflow state, with less duplicated prompt content while preserving the existing decision and safety boundaries.
 
 ## [v1.6.0] - 2026-09-02
 

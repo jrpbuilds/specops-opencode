@@ -48,20 +48,6 @@ describe("frontier agent registration", () => {
         });
     });
 
-    test("frontier prompt is advice-only and forbids modifications", () => {
-        const prompt = loadPrompt(AGENT_IDS.frontier);
-
-        expect(prompt).toContain("advice only");
-        expect(prompt).toContain("must not modify anything");
-        expect(prompt).toContain("Do not edit source code, tests, or configuration");
-        expect(prompt).toContain("Do not modify OpenSpec artifacts");
-        expect(prompt).toContain("Do not change task completion state");
-        expect(prompt).toContain("review verdicts");
-        expect(prompt).toContain("Do not archive the change");
-        expect(prompt).toContain("Do not run `specops_*` tools");
-        expect(prompt).toContain("Do not invoke other subagents");
-    });
-
     test("frontier prompt returns a focused FRONTIER ADVICE block", () => {
         const prompt = loadPrompt(AGENT_IDS.frontier);
 

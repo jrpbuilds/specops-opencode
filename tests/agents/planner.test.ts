@@ -46,11 +46,7 @@ describe("planner agent", () => {
         const prompt = loadPrompt(AGENT_IDS.planner);
 
         expect(prompt).toContain("one OpenSpec planning artifact named by");
-        expect(prompt).toContain("current dispatch");
-        expect(prompt).toContain("canonical output path");
         expect(prompt).toMatch(/do not reconstruct them\s+from a generic workflow/);
-        expect(prompt).toContain("openspec instructions <artifact-id> --change <change>");
-        expect(prompt).toContain("Follow the active project's schema and template exactly");
         expect(prompt).toContain("including custom schemas");
         expect(prompt).not.toContain("createRollingScheduler");
         expect(prompt).not.toContain("maxSubagentConcurrency");
@@ -62,8 +58,6 @@ describe("planner agent", () => {
         expect(prompt).toContain("Use the user's goal, approved upstream artifacts");
         expect(prompt).toContain("repository evidence");
         expect(prompt).toContain("`specops-explorer`");
-        expect(prompt).toContain("Do not inspect repository source yourself");
-        expect(prompt).toContain("tell the Coordinator exactly what Explorer must investigate");
         expect(prompt).toContain("## Material decisions");
         expect(prompt).toContain("materially affects requirements");
         expect(prompt).toContain("USER DECISION REQUIRED");

@@ -32,14 +32,13 @@ export type ParallelProgressInput = {
     /** Canonical fan-out progress computed once via `summarizeReviewFanout`. */
     readonly reviewFanout?: ReviewFanoutProgress;
     /**
-     * Implementer dispatches currently in flight. Completed and failed
-     * dispatches are accepted for caller convenience but never projected:
-     * durable task checkboxes and the lifecycle stages already carry
-     * completion, and failures surface through coordinator reporting.
+     * Implementer dispatches currently in flight. Completion is carried by
+     * durable task checkboxes, and failures surface through coordinator
+     * reporting, so neither is representable here.
      */
     readonly implementerDispatches?: readonly {
         readonly dispatchId?: string;
-        readonly state: "inFlight" | "completed";
+        readonly state: "inFlight";
     }[];
 };
 

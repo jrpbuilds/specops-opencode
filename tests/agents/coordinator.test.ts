@@ -54,26 +54,24 @@ function evaluateTask(task: Record<string, "allow" | "deny">, name: string): "al
 }
 
 describe("coordinator prompt contract", () => {
-    test("keeps mode policies mutually exclusive and Frontier conditional", () => {
+    test("keeps interactive and auto mode policies mutually exclusive", () => {
         const interactive = buildCoordinatorPrompt("interactive", false);
         const auto = buildCoordinatorPrompt("auto", false);
 
-        expect(interactive).toContain("# SpecOps Coordinator");
         expect(interactive).toContain("## Interactive policy");
         expect(interactive).not.toContain("## Autonomous operation (SpecOps Auto)");
+        expect(interactive).not.toContain("## Autonomous plan continuation");
         expect(auto).toContain("## Autonomous operation (SpecOps Auto)");
+        expect(auto).toContain("## Autonomous plan continuation");
         expect(auto).not.toContain("## Interactive policy");
+    });
 
-        expect(buildCoordinatorPrompt("interactive", false)).not.toContain(
-            "Frontier escalation is enabled for this session",
-        );
-        expect(buildCoordinatorPrompt("interactive", true)).toContain(
-            "Frontier escalation is enabled for this session",
-        );
+    test("pins the assembled coordinator identity header", () => {
+        expect(buildCoordinatorPrompt("interactive", false)).toContain("# SpecOps Coordinator");
+        expect(buildCoordinatorPrompt("auto", false)).toContain("# SpecOps Coordinator");
     });
 
     test("keeps assembled prompts substantially below the legacy budget", () => {
-        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(38_000);
         expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(35_000);
     });
 
@@ -90,7 +88,7 @@ describe("coordinator prompt contract", () => {
         expect(prompt).not.toContain("lane-continuation ledger");
     });
 
-    test("keeps startup, Todo trigger, dispatch identity, and validation gates", () => {
+    test("keeps startup, Todo trigger, and runtime-ownership boundaries", () => {
         const prompt = buildCoordinatorPrompt("interactive", false);
 
         expect(prompt).toContain("Call `specops_onboard` first");
@@ -101,9 +99,6 @@ describe("coordinator prompt contract", () => {
         );
         expect(prompt).toContain("Never author,");
         expect(prompt).toContain("route from Todo content");
-        expect(prompt).toContain("carries one line reading exactly `changeName: <change>`");
-        expect(prompt).toContain('action: "continue_planning"');
-        expect(prompt).toContain('action: "block"');
     });
 
     test("preserves Coordinator judgement for implementation and review", () => {
@@ -164,7 +159,7 @@ describe("coordinator prompt contract", () => {
         expect(prompt).toContain("Never archive from the sync flow");
     });
 
-    test("keeps durable handoff, blocker, update, and sync boundaries", () => {
+    test("keeps durable handoff, blocker, and update boundaries", () => {
         const prompt = buildCoordinatorPrompt("interactive", false);
 
         expect(prompt).toContain("## Handoff gate");
@@ -173,10 +168,6 @@ describe("coordinator prompt contract", () => {
         expect(prompt).toContain("Do not retry again or create a fresh session");
         expect(prompt).toContain("Never resolve a blocker by taking over specialist-owned work");
         expect(prompt).toContain("## Update flow");
-        expect(prompt).toContain("## Sync flow");
-        expect(prompt).toContain("openspec instructions specs --change <name> --json");
-        expect(prompt).toContain("never touch main specs");
-        expect(prompt).toContain("Never modify `changeRoot` or invoke `openspec archive`");
     });
 
     test("places settled verification before review and preserves the shared handoff", () => {

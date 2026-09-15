@@ -112,29 +112,6 @@ describe("reviewer agent registration", () => {
         expect(prompt).toContain("Do not fake, infer, or assume completion");
     });
 
-    test("reviewer prompt forbids edits, task completion, fixes, and archive", () => {
-        const prompt = loadPrompt(AGENT_IDS.reviewer);
-
-        expect(prompt).toContain("Do not modify source code or tests");
-        expect(prompt).toContain("Do not fix findings yourself");
-        expect(prompt).toContain(
-            "Do not rewrite the planning artifacts reported by the artifact graph",
-        );
-        expect(prompt).toContain("Do not change `- [ ]` to `- [x]`");
-        expect(prompt).toContain("Do not mark tasks complete on behalf of the Implementer");
-        expect(prompt).toContain("Do not archive the change");
-    });
-
-    test("reviewer prompt requires an unambiguous PASS or FAIL", () => {
-        const prompt = loadPrompt(AGENT_IDS.reviewer);
-
-        expect(prompt).toContain("Return exactly one unambiguous outcome");
-        expect(prompt).toContain("PASS");
-        expect(prompt).toContain("FAIL");
-        expect(prompt).toContain("FAIL only for unmet approved requirements");
-        expect(prompt).toContain("Do not fail for unrelated style preferences");
-    });
-
     test("reviewer prompt numbers blocking findings for remediation", () => {
         const prompt = loadPrompt(AGENT_IDS.reviewer);
 

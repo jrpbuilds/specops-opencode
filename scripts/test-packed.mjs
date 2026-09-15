@@ -156,22 +156,19 @@ try {
             .startsWith("# SpecOps Reviewer"),
         "packed reviewer prompt missing or malformed",
     );
-    for (const fragment of [
-        "engram.md",
-        "handoff-envelope.md",
-        "frontier-eligible-blocker.md",
-        "frontier-advice.md",
-        "conditional-explorer.md",
-        "planning-batches.md",
-        "decision-envelope.md",
-        "remediation-re-review.md",
-        "archive-safety.md",
-    ]) {
+    const sourceFragments = (await readdir(path.join(repositoryRoot, "prompts", "shared")))
+        .filter(file => file.endsWith(".md"))
+        .sort();
+    const packedFragments = (await readdir(path.join(packageDirectory, "prompts", "shared")))
+        .filter(file => file.endsWith(".md"))
+        .sort();
+    assertEqual(packedFragments, sourceFragments, "packed shared prompt fragment catalogue");
+    for (const fragment of sourceFragments) {
         assert(
             (
                 await readFile(path.join(packageDirectory, "prompts", "shared", fragment), "utf8")
             ).trim().length > 0,
-            `packed shared prompt fragment missing: ${fragment}`,
+            `packed shared prompt fragment missing or empty: ${fragment}`,
         );
     }
     assert(

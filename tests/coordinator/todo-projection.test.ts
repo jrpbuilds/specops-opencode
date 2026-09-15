@@ -431,10 +431,7 @@ describe("buildTodoProjection parallel progress", () => {
             "interactive",
             {
                 reviewFanout: fanoutProgress,
-                implementerDispatches: [
-                    { dispatchId: "ses_f92d6cc", state: "inFlight" },
-                    { dispatchId: "ses_deadbee", state: "completed" },
-                ],
+                implementerDispatches: [{ dispatchId: "ses_f92d6cc", state: "inFlight" }],
             },
             { apply: applyContext(4) },
         );
@@ -447,7 +444,6 @@ describe("buildTodoProjection parallel progress", () => {
         expect(ids[ids.length - 1]).toBe("lifecycle-remediation");
 
         // Completed work is carried by the durable stages, never projected.
-        expect(entries.find(entry => entry.id === "implementer:ses_deadbee")).toBeUndefined();
         expect(entries.find(entry => entry.id === "review-critic:correctness")).toBeUndefined();
         expect(entries.find(entry => entry.id === "review-critic:quality")).toBeUndefined();
     });
@@ -473,7 +469,6 @@ describe("buildTodoProjection parallel progress", () => {
             implementerDispatches: [
                 { dispatchId: "ses_f92d6ccc2ffeEblqfsEokj5vVi", state: "inFlight" },
                 { state: "inFlight" },
-                { state: "completed" },
             ],
         });
         const dispatchEntries = entries.filter(entry => entry.id.startsWith("implementer:"));
