@@ -10,10 +10,13 @@
  *
  * Observed events and their transitions:
  *
- * - a foreground reviewer dispatch result is parsed by the strict verdict
- *   contract (`../coordinator/reviewer-verdict.ts`): a PASS concludes the
- *   cycle; a FAIL opens the remediation round. Anything unresolved leaves
- *   observed state unchanged;
+ * - a completed reviewer dispatch result is parsed by the strict verdict
+ *   contract (`../coordinator/reviewer-verdict.ts`) — foreground results
+ *   carry the raw final message, and background completions carry it inside
+ *   the `<task … state="completed">` envelope's `<task_result>` wrapper: a
+ *   PASS concludes the cycle; a FAIL opens the remediation round. Anything
+ *   unresolved — including the dispatch-time `state="running"` envelope —
+ *   leaves observed state unchanged;
  * - a review-role dispatch (critic or reviewer) while a FAIL cycle is active
  *   moves the round to re-review — remediation dispatches (implementer,
  *   planner, designer) are not review roles and never do;
@@ -86,8 +89,10 @@ export async function recordReviewDispatch(
 
 /**
  * Build the after-hook that observes the reviewer's terminal verdict from a
- * completed foreground result. Background dispatch-time envelopes carry no
- * verdict and degrade to the durable projection, per the supported scope.
+ * completed result. Foreground results carry the raw final message, and
+ * background completions carry it inside the `<task … state="completed">`
+ * envelope's `<task_result>` wrapper; both parse. The dispatch-time running
+ * envelope carries no verdict and degrades to the durable projection.
  *
  * @param input The after-hook input identifying the tool call and its args.
  * @param output The after-hook output carrying the result text.

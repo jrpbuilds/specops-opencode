@@ -40,7 +40,10 @@
  * A successful archive is also observed — the change no longer exists, so
  * the next publication's durable read fails and the hook instead republishes
  * the terminal, all-complete projection finalized at archive time; without a
- * remembered projection the hook degrades as usual. All of this is
+ * remembered projection the hook degrades as usual. A publication that was
+ * still reading and building when the archive moved the change serves that
+ * finalized list too, so a stale rebuild can never publish over or
+ * re-remember the terminal state. All of this is
  * presentation state: it never persists, never survives a restart, and never
  * feeds workflow routing.
  *
@@ -62,9 +65,11 @@ import type { OpenSpecStatusResult } from "../openspec/status.js";
 import { snapshotParallelProgress } from "./parallel-progress.js";
 import { observeImplementationGate } from "./review-cycle.js";
 import {
+    clearArchivedChange,
     getRememberedTodoProjection,
     getReviewCycle,
     getSessionBinding,
+    hasArchivedChange,
     hasEnteredImplementation,
     rememberTodoProjection,
 } from "./session-bindings.js";
@@ -105,7 +110,21 @@ export function createTodoSyncHook(deps: TodoSyncDeps): NonNullable<Hooks["tool.
                 restoreRememberedProjection(input.sessionID, output);
                 return;
             }
+            // A live durable read after an observed archive means the change
+            // is active again under the same name: the next successful
+            // publication supersedes the finalized terminal list.
+            if (hasArchivedChange(input.sessionID)) clearArchivedChange(input.sessionID);
             const apply = await deps.getApplyInstructions(binding.change, deps.directory);
+            // A failed read is an environmental failure, not an empty task
+            // state: rebuilding would project every lifecycle stage as
+            // pending — regressing an advanced list back to the approval
+            // checkpoint — and would remember that regression. Keep the last
+            // good projection instead; with none, pass the model payload
+            // through, exactly like a failed status read.
+            if (!apply.ok) {
+                restoreRememberedProjection(input.sessionID, output);
+                return;
+            }
             // Ephemeral parallel entries come from the runtime's own dispatch
             // observation, never from coordinator bookkeeping. Failed critics
             // and failed dispatches surface through coordinator reporting, not
@@ -134,12 +153,19 @@ export function createTodoSyncHook(deps: TodoSyncDeps): NonNullable<Hooks["tool.
                 result.status,
                 binding.mode,
                 {
-                    apply: apply.ok ? apply.context : undefined,
+                    apply: apply.context,
                     implementationEntered: hasEnteredImplementation(input.sessionID),
                     reviewCycle: getReviewCycle(input.sessionID),
                 },
                 parallel,
             );
+            // The archive landed while this publication was reading and
+            // building: the fresh rebuild is stale, so serve the finalized
+            // terminal list and never remember the rebuild over it.
+            if (hasArchivedChange(input.sessionID)) {
+                restoreRememberedProjection(input.sessionID, output);
+                return;
+            }
             output.args.todos = todos;
             rememberTodoProjection(input.sessionID, todos);
         } catch {

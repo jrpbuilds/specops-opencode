@@ -20,6 +20,40 @@ describe("parseReviewerVerdict", () => {
         );
     });
 
+    test("reads the verdict through OpenCode's background <task_result> wrapper", () => {
+        // The exact shape recorded for background task completions: the
+        // completed envelope wraps the specialist's final message in a
+        // <task_result> block.
+        const envelope =
+            '<task id="ses_child" state="completed">\n<task_result>\nPASS\n\n' +
+            "Independent review complete.\n\n## Compliance matrix\n\n- R1 — VERIFIED\n" +
+            "</task_result>\n</task>";
+        expect(parseReviewerVerdict(envelope)).toBe("pass");
+    });
+
+    test("reads a wrapped FAIL verdict", () => {
+        const envelope =
+            '<task id="ses_child" state="completed">\n<task_result>\nFAIL\nF1 — broken\n' +
+            "</task_result>\n</task>";
+        expect(parseReviewerVerdict(envelope)).toBe("fail");
+    });
+
+    test("strips the wrapper even with surrounding whitespace", () => {
+        expect(
+            parseReviewerVerdict('<task id="c" state="completed">\r\n  <task_result>  \r\nPASS'),
+        ).toBe("pass");
+    });
+
+    test("keeps prose before the outcome unresolved even inside the wrapper", () => {
+        const envelope =
+            '<task id="c" state="completed">\n<task_result>\nSummary first.\nPASS\n</task_result>\n</task>';
+        expect(parseReviewerVerdict(envelope)).toBeUndefined();
+    });
+
+    test("treats a bare wrapper without a verdict line as unresolved", () => {
+        expect(parseReviewerVerdict("<task_result>\nmatrix text\n</task_result>")).toBeUndefined();
+    });
+
     test("leaves a frontier-eligible blocker unresolved", () => {
         expect(
             parseReviewerVerdict("FRONTIER ELIGIBLE BLOCKER\n<unresolved ambiguity>"),

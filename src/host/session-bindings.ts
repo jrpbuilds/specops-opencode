@@ -19,15 +19,19 @@
  * round, recorded by `src/host/review-cycle.ts`) and an observed successful
  * archive, whose remembered projection is finalized into its terminal, all-
  * complete form at observation time — after an archive the active change no
- * longer exists, so a durable rebuild is impossible. All of it is presentation
- * state, cleared when a session switches change or mode, and never feeds
- * workflow routing.
+ * longer exists, so a durable rebuild is impossible. The archive flag also
+ * guards the publication hook against racing an in-flight archive: a
+ * publication that was building while `specops_archive` moved the change
+ * must serve the finalized terminal list instead of publishing its stale
+ * rebuild. All of it is presentation state, cleared when a session switches
+ * change or mode, and never feeds workflow routing.
  *
  * Exports: `SessionBinding`, `recordSessionBinding`, `getSessionBinding`,
  * `claimTodoRefreshForMessage`, `rememberTodoProjection`,
  * `getRememberedTodoProjection`, `markImplementationEntered`,
  * `hasEnteredImplementation`, `recordReviewCycle`, `getReviewCycle`,
- * `clearReviewCycle`, `recordArchivedChange`, `__resetSessionBindingsForTesting`.
+ * `clearReviewCycle`, `recordArchivedChange`, `hasArchivedChange`,
+ * `clearArchivedChange`, `__resetSessionBindingsForTesting`.
  */
 import { SPECOPS_AGENT_ID, SPECOPS_AUTO_AGENT_ID } from "../agents/coordinator.js";
 import type { ReviewCycleObservation, TodoProjectionMode } from "../coordinator/todo-projection.js";
@@ -52,6 +56,9 @@ const implementationEntered = new Set<string>();
 
 /** Per-session observed review-cycle state, recorded by the review-cycle observer. */
 const reviewCycles = new Map<string, ReviewCycleObservation>();
+
+/** Sessions observed completing a successful archive of their bound change. */
+const archivedSessions = new Set<string>();
 
 /**
  * Record or refresh the binding for one session.
@@ -80,6 +87,7 @@ export function recordSessionBinding(sessionID: string, agent: string, change: s
         lastTodoRefreshMessage.delete(sessionID);
         rememberedTodoProjections.delete(sessionID);
         reviewCycles.delete(sessionID);
+        archivedSessions.delete(sessionID);
     }
     bindings.set(sessionID, { change: trimmed, mode });
 }
@@ -171,21 +179,22 @@ export function clearReviewCycle(sessionID: string): void {
 }
 
 /**
- * Finalize one session's remembered projection after an observed successful
- * archive, marking every entry complete.
+ * Record one session's observed successful archive of its bound change.
  *
  * After an archive the active change no longer exists, so later publications
- * cannot rebuild from durable state — the terminal list must be prepared at
- * observation time from the last successful projection, which the publication
- * hook then republishes whenever its durable read fails. Without a remembered
- * projection there is nothing to finalize and publication degrades as usual;
- * a later successful publication replaces the finalized list with a fresh
- * projection.
+ * cannot rebuild from durable state: the remembered projection is finalized
+ * into its terminal, all-complete form, and the session's archive flag makes
+ * subsequent publications serve that terminal list — including a publication
+ * that was concurrently building while the archive moved the change, whose
+ * stale rebuild must never publish over or re-remember the terminal state.
+ * A later successful durable read for a live change clears the flag and
+ * supersedes the terminal list.
  *
  * @param sessionID OpenCode session identifier from the tool context.
  */
 export function recordArchivedChange(sessionID: string): void {
     if (!sessionID) return;
+    archivedSessions.add(sessionID);
     const remembered = rememberedTodoProjections.get(sessionID);
     if (remembered) {
         rememberedTodoProjections.set(
@@ -195,6 +204,25 @@ export function recordArchivedChange(sessionID: string): void {
     }
 }
 
+/**
+ * Whether one session's bound change has an observed successful archive.
+ *
+ * @param sessionID OpenCode session identifier from the hook input.
+ */
+export function hasArchivedChange(sessionID: string): boolean {
+    return archivedSessions.has(sessionID);
+}
+
+/**
+ * Drop one session's observed archive, letting normal durable rebuilds
+ * supersede the terminal list.
+ *
+ * @param sessionID OpenCode session identifier from the hook input.
+ */
+export function clearArchivedChange(sessionID: string): void {
+    archivedSessions.delete(sessionID);
+}
+
 /** Clear every binding and gate flag; test isolation only. */
 export function __resetSessionBindingsForTesting(): void {
     bindings.clear();
@@ -202,4 +230,5 @@ export function __resetSessionBindingsForTesting(): void {
     rememberedTodoProjections.clear();
     implementationEntered.clear();
     reviewCycles.clear();
+    archivedSessions.clear();
 }

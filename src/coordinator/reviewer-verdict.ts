@@ -12,9 +12,11 @@
  * unchanged.
  *
  * Foreground task results carry the specialist's raw final message.
- * Background dispatch-time envelopes arrive wrapped in a `<task …>` tag, so
- * a leading tag is stripped before matching; the tag itself is never
- * treated as the verdict.
+ * Background task results are delivered wrapped in a `<task …>` envelope
+ * whose payload OpenCode wraps in `<task_result>` — `<task id=… state=
+ * "completed">\n<task_result>\n<final message>\n</task_result>\n</task>` —
+ * so both the envelope tag and the wrapper tag are stripped before
+ * matching; neither tag is ever treated as the verdict.
  *
  * Exports: `ReviewerVerdict`, `parseReviewerVerdict`.
  */
@@ -25,11 +27,11 @@ export type ReviewerVerdict = "pass" | "fail";
 /**
  * Extract the reviewer's terminal verdict from one task result.
  *
- * Strict by contract: the first non-empty line must be exactly `PASS` or
- * `FAIL`. A leading background `<task …>` envelope is tolerated and never
- * read as the verdict. Returns `undefined` for anything unresolved —
- * malformed output, a frontier-eligible blocker, or an error result — so
- * observers can fail open without inventing review state.
+ * Strict by contract: the first non-empty line after the `<task …>` envelope
+ * and optional `<task_result>` wrapper must be exactly `PASS` or `FAIL`.
+ * Returns `undefined` for anything unresolved — malformed output, a
+ * frontier-eligible blocker, or an error result — so observers can fail open
+ * without inventing review state.
  *
  * @param output The raw task-tool result text, when available.
  * @returns The observed verdict, or `undefined` when it cannot be read.
@@ -39,6 +41,8 @@ export function parseReviewerVerdict(output: string | undefined): ReviewerVerdic
     let text = output;
     const envelope = /^<task\b[^>]*>/.exec(text);
     if (envelope) text = text.slice(envelope[0].length);
+    const wrapper = /^\s*<task_result>\s*/.exec(text);
+    if (wrapper) text = text.slice(wrapper[0].length);
     for (const line of text.split(/\r?\n/)) {
         const trimmed = line.trim();
         if (!trimmed) continue;

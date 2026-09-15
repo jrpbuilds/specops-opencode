@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import {
     __resetSessionBindingsForTesting,
+    clearArchivedChange,
     getRememberedTodoProjection,
     getSessionBinding,
+    hasArchivedChange,
     recordArchivedChange,
     recordSessionBinding,
     rememberTodoProjection,
@@ -98,5 +100,38 @@ describe("archived projection finalization", () => {
         recordArchivedChange("ses_9");
 
         expect(getRememberedTodoProjection("ses_9")).toBeUndefined();
+    });
+
+    test("the archive flag is observable and clearable per session", () => {
+        recordSessionBinding("ses_10", "SpecOps", "example");
+
+        expect(hasArchivedChange("ses_10")).toBe(false);
+        recordArchivedChange("ses_10");
+        expect(hasArchivedChange("ses_10")).toBe(true);
+
+        clearArchivedChange("ses_10");
+        expect(hasArchivedChange("ses_10")).toBe(false);
+    });
+
+    test("switching change or mode clears the archive flag", () => {
+        recordSessionBinding("ses_11", "SpecOps", "example");
+        recordArchivedChange("ses_11");
+        expect(hasArchivedChange("ses_11")).toBe(true);
+
+        recordSessionBinding("ses_11", "SpecOps", "next-change");
+        expect(hasArchivedChange("ses_11")).toBe(false);
+
+        recordArchivedChange("ses_11");
+        recordSessionBinding("ses_11", "SpecOps Auto", "next-change");
+        expect(hasArchivedChange("ses_11")).toBe(false);
+    });
+
+    test("re-binding the same change and mode keeps the archive flag", () => {
+        recordSessionBinding("ses_12", "SpecOps", "example");
+        recordArchivedChange("ses_12");
+
+        recordSessionBinding("ses_12", "SpecOps", "example");
+
+        expect(hasArchivedChange("ses_12")).toBe(true);
     });
 });

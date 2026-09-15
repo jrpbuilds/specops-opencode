@@ -32,6 +32,8 @@ All notable changes to SpecOps are documented in this file.
 
 ### Fixed
 
+- The to-do list now advances past review when the reviewer runs as a background task: its PASS/FAIL verdict is read from the completed task result instead of being missed.
+- A to-do refresh that runs alongside the archive step no longer resets the list back to the plan checkpoint: a failed state read keeps the last good list, and an archived change keeps its fully checked-off list.
 - Whole-list implementer dispatches are no longer rejected when their prompt merely mentions the assignment field inside task descriptions or other prose; only a line starting with the field is treated as an assignment.
 
 ## [v1.6.0] - 2026-09-02

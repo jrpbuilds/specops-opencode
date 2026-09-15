@@ -423,14 +423,72 @@ describe("createTodoSyncHook lifecycle advancement", () => {
         expect(byId(todos).get("implementation")?.status).toBe("in_progress");
     });
 
-    test("an apply-context read failure degrades to the waiting projection", async () => {
+    test("an apply-context read failure keeps the last successful projection", async () => {
         recordSessionBinding("ses_1", "SpecOps", "example");
+        let applyOk = true;
+        const hook = createTodoSyncHook({
+            directory: "/project",
+            getOpenSpecStatus: async () => okStatus(),
+            getApplyInstructions: async () =>
+                applyOk
+                    ? applyContext(12, "all_done")
+                    : { ok: false, error: "openspec instructions failed" },
+        });
+
+        const good = await fireTrigger(hook);
+        applyOk = false;
+        const afterFailure = await fireTrigger(hook);
+
+        // A failed read is an environmental failure, not an empty task state:
+        // rebuilding would regress the advanced list back to the approval
+        // checkpoint, so the last good projection is republished instead.
+        expect(byId(good).get("plan-approval")?.status).toBe("completed");
+        expect(byId(good).get("independent-review")?.status).toBe("in_progress");
+        expect(afterFailure).toEqual(good);
+    });
+
+    test("an apply-context read failure with nothing remembered passes the model payload through", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        const args = { todos: [{ content: "model item", status: "pending", priority: "low" }] };
+        const output = { args };
         const hook = hookWith(okStatus(), { ok: false, error: "openspec instructions failed" });
 
-        const todos = await fireTrigger(hook);
+        await hook(hookInput("todowrite", "ses_1"), output);
 
-        expect(byId(todos).get("plan-approval")?.status).toBe("in_progress");
-        expect(byId(todos).get("implementation")?.status).toBe("pending");
+        expect(output.args).toBe(args);
+        expect(args.todos).toEqual([{ content: "model item", status: "pending", priority: "low" }]);
+    });
+
+    test("a publication racing the archive serves the finalized terminal list", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        markImplementationEntered("ses_1");
+        let archiveDuringApply = false;
+        let statusFails = false;
+        const hook = createTodoSyncHook({
+            directory: "/project",
+            getOpenSpecStatus: async () =>
+                statusFails ? { ok: false, error: "no such change" } : okStatus(),
+            getApplyInstructions: async () => {
+                // The archive completes while this publication is between its
+                // entry read and its publish step: it finalizes the remembered
+                // projection and sets the session's archive flag mid-build.
+                if (archiveDuringApply) recordArchivedChange("ses_1");
+                return applyContext(3);
+            },
+        });
+
+        const active = await fireTrigger(hook);
+        expect(byId(active).get("implementation")?.status).toBe("in_progress");
+
+        archiveDuringApply = true;
+        const raced = await fireTrigger(hook);
+
+        // The stale rebuild is neither published nor remembered: the
+        // finalized terminal list wins.
+        expect(raced.every(todo => todo.status === "completed")).toBe(true);
+        statusFails = true;
+        const afterFailure = await fireTrigger(hook);
+        expect(afterFailure.every(todo => todo.status === "completed")).toBe(true);
     });
 
     test("a blocked apply state keeps the waiting projection", async () => {

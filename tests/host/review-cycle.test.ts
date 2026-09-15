@@ -68,6 +68,40 @@ describe("recordReviewResult", () => {
         expect(getReviewCycle("ses_1")).toBeUndefined();
     });
 
+    test("records the verdict from a background completed envelope", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+
+        const envelope =
+            '<task id="ses_child" state="completed">\n<task_result>\nPASS\n\n' +
+            "Independent review complete.\n\n## Compliance matrix\n\n- R1 — VERIFIED\n" +
+            "</task_result>\n</task>";
+        await result("specops-reviewer", envelope);
+
+        expect(getReviewCycle("ses_1")).toEqual({ verdict: "pass" });
+    });
+
+    test("records a FAIL from a background completed envelope and opens remediation", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+
+        const envelope =
+            '<task id="ses_child" state="completed">\n<task_result>\nFAIL\nF1 — broken\n' +
+            "</task_result>\n</task>";
+        await result("specops-reviewer", envelope);
+
+        expect(getReviewCycle("ses_1")).toEqual({ verdict: "fail", round: "remediation" });
+    });
+
+    test("the dispatch-time running envelope stays unresolved", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+
+        await result(
+            "specops-reviewer",
+            '<task id="ses_child" state="running">\n<task_result>\n</task_result>\n</task>',
+        );
+
+        expect(getReviewCycle("ses_1")).toBeUndefined();
+    });
+
     test("ignores non-reviewer and unbound-session results", async () => {
         recordSessionBinding("ses_1", "SpecOps", "example");
 
