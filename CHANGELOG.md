@@ -14,6 +14,8 @@ All notable changes to SpecOps are documented in this file.
 
 ### Changed
 
+- Refined coordinator and specialist guidance so each agent follows the current workflow state and stays focused on its assigned planning, design, implementation, or review work.
+- Reduced prompt duplication and stale workflow instructions, making SpecOps runs more concise while preserving the existing decision and safety boundaries.
 - Todo interaction is now a refresh trigger only: at workflow transitions the coordinator fires the native todo tool with an empty list, and SpecOps publishes the canonical projection from current OpenSpec state on every call — the coordinator no longer authors, reconciles, or rebuilds the list.
 - SpecOps tool results and specialist dispatches now cue one coalesced to-do refresh per assistant turn, so the visible to-do list stays current across the full run without duplicate updates.
 - A temporary status-read failure now keeps the last known to-do projection visible instead of clearing the panel.

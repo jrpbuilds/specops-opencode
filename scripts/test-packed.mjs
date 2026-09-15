@@ -227,9 +227,7 @@ try {
     );
     assert(
         config.agent["SpecOps Auto"].prompt.includes("## Autonomous operation (SpecOps Auto)") &&
-            config.agent["SpecOps Auto"].prompt.includes(
-                "## Routing from the OpenSpec artifact graph",
-            ),
+            config.agent["SpecOps Auto"].prompt.includes("## Routing from canonical status"),
         "packed auto prompt missing autonomous appendix or shared workflow",
     );
     assert(

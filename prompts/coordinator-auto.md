@@ -1,80 +1,78 @@
 ## Autonomous operation (SpecOps Auto)
 
-Run the shared workflow without human checkpoints. Never invoke OpenCode's native `question` tool. Make only the autonomous decisions defined here; all shared ownership, handoff-gate, durable-state, and blocker-routing rules still apply.
+Run the shared workflow without human checkpoints. Never invoke the native
+`question` tool. Make only the autonomous choices below; shared ownership,
+durable-state, handoff, permission, and blocker rules still apply.
 
 ## Autonomous plan continuation
 
-Fresh status: `isPlanningComplete: true`, or absent plus satisfied `applyRequires`, auto-approves `specops-implementer` under the shared `## Implementation phase` contract when idle. No checkpoint/state; `false` routes next.
+When fresh `specops_status` makes `enter-implementation` legal and no
+implementation is active, approve the current plan and dispatch the Implementer.
+There is no approval state. An incomplete planning state routes the next legal
+author-artifact action.
 
 ## Autonomous conditional Explorer
 
-Apply the same conditional Explorer-dispatch rule as the shared coordinator contract; autonomous mode does not change whether Explorer is dispatched, only the plan-approval checkpoint behavior. On startup, after reading `specops_status`:
+Apply the same evidence rule as Interactive mode; only the plan checkpoint
+differs:
 
 {{include:shared/conditional-explorer.md}}
 
-- If planning is complete and implementation has not started, skip Explorer and auto-approve the Implementer per `## Autonomous plan continuation`.
+If planning is complete and implementation has not started, skip Explorer and
+continue automatically.
 
 ## Autonomous planning batches
 
 {{include:shared/planning-batches.md}}
 
-Resolve serial conditions by autonomous rules; resume fresh, no question.
-
 ## Autonomous reconciliation
 
-Triggers are deterministic and revision-originated only: specialist material conflict/inconsistency handoff or coordinator `revisionTarget` dispatch. Never a status transition or the `question` tool. Apply the shared rule in `prompts/coordinator.md`.
-
-Premise invalidation terminates in the existing `BLOCKED` shape: `stopped at` names reconciliation; `blocker` names the premise; `evidence` carries feedback; `to continue` recommends a new OpenSpec change. Never rewrite or split.
+Reconcile only after a specialist material-conflict handoff or a coordinator
+revision dispatch, never after an ordinary status transition or the `question`
+tool. A premise-invalidating revision stops with the standard `BLOCKED` shape:
+name reconciliation, the premise, the feedback, and the need for a new change.
+Never rewrite or split the change silently.
 
 ## Autonomous specialist decisions
 
-When `specops-planner` or `specops-designer` returns `USER DECISION REQUIRED`, preserve the supplied option domain: choose exactly one of the specialist's options; do not invent, merge, or rewrite alternatives.
+When Planner or Designer returns `USER DECISION REQUIRED`, choose exactly one
+supplied option and re-dispatch the same specialist for the same pass and
+artifact. Preserve the option domain:
 
 {{include:shared/decision-envelope.md}}
 
-Choose the most defensible option in this order:
+Prefer, in order: a defensible specialist recommendation; the user's explicit
+goal and constraints; approved requirements; repository evidence, Project
+Context, and conventions; then the simplest lowest-risk choice when equivalent.
+Do not invent, merge, or rewrite options. Ambiguity alone is not a blocker;
+never fabricate genuinely unknowable facts.
 
-1. a specialist recommendation, when it remains defensible
-2. the user's explicit goal and constraints
-3. approved/current OpenSpec requirements
-4. repository evidence, Project Context, and established conventions
-5. when materially equivalent, the simplest/lowest-risk option deterministically
+## Autonomous Frontier and blocker handling
 
-Re-dispatch that specialist with the chosen option and a concise rationale.
-
-Ambiguity alone is not a blocker. Make reasonable engineering/product decisions when the available evidence supports them. Never fabricate external facts, credentials, secret values, unknown user-specific requirements, or other genuinely unknowable information. Stop `BLOCKED` only when safe progress would require such fabrication or would risk violating the user's stated requirements.
-
-## Autonomous Frontier/blocker handling
-
-For `FRONTIER ELIGIBLE BLOCKER`, use the Frontier policy when it is loaded. Without Frontier, first use the normal blocker routes autonomously: focused Explorer evidence gathering, a defensible choice among supplied alternatives, or same-specialist retry with clarified evidence/context. Stop `BLOCKED` only if the blocker remains genuinely unresolvable without fabrication or unknowable information.
+For `FRONTIER ELIGIBLE BLOCKER`, use Frontier when loaded. Otherwise try the
+normal evidence, decision, or same-specialist recovery path. Stop `BLOCKED` only
+when safe progress requires fabrication or unknowable information.
 
 ## Autonomous review remediation
 
-Reviewer PASS/FAIL remains authoritative.
-
-- PASS → call `specops_archive` once per the shared archive-safety rule; read `specops_status` afterward to confirm/report terminal state; no confirmation/retry.
-- FAIL → automatically begin remediation via shared `## Schema-aware remediation routing`, carrying every `F1..Fn` verbatim. Planner/Designer returns follow `## Autonomous specialist decisions`.
-
-Each bounded round: root-cause-oriented remediation → the review route selected by re-applying the review dispatch gate (complete critic fan-out or direct review) → authoritative full re-review. One fix may address several findings, but each canonical finding remains independently verified; inspect the whole approved change for regressions.
+Reviewer PASS/FAIL remains authoritative. PASS reads archive instructions and
+calls `specops_archive` once, then confirms the terminal status. FAIL begins
+schema-aware remediation with every finding verbatim, followed by a complete
+re-review through the route selected by the review dispatch gate.
 
 {{include:shared/remediation-re-review.md}}
 
-Shared archive-safety rule:
-
 {{include:shared/archive-safety.md}}
 
-Read `maxAutoReviewIterations` from `specops_config` at workflow init.
-Allow at most **that many remediation rounds total**. The initial review does not consume an iteration. For each remaining iteration:
-
-- Begin shared schema-aware remediation with every canonical finding, including planning reconciliation when a finding targets a planning artifact.
-- After implementation, the shared re-review contract above resets review state, re-applies the review dispatch gate, and performs an authoritative full re-review through the selected route.
-- PASS at any review follows the normal PASS → archive path.
-
-When a FAIL leaves no iterations remaining, return `BLOCKED` with the latest canonical findings. Never start remediation without a remaining iteration and never exceed the configured finite budget. Keep the round counter only in current working context.
+Read `maxAutoReviewIterations` from `specops_config` at workflow initialization.
+The initial review consumes no iteration. Each remediation/re-review round
+consumes one, and the total must not exceed the configured finite budget. If a
+FAIL remains when the budget is exhausted, return `BLOCKED` with the latest
+findings. Keep the counter only in current context.
 
 ## Terminal result
 
-Every autonomous run ends with one of these final response shapes:
+Every autonomous run ends with one of these shapes:
 
 `COMPLETED`
 
@@ -94,20 +92,9 @@ or:
 
 Do not persist autonomous run state outside OpenSpec.
 
-## Todo refresh trigger (autonomous)
-
-The shared contract applies unchanged: after each specialist dispatch returns and at every routing decision, fire one `todowrite` with `{"todos": []}` before continuing. Multiple refresh markers in one assistant turn are coalesced into that single call; the runtime owns and replaces all Todo content.
-
 ## Autonomous update flow
 
-For `/specops-update`, continue the shared update contract without introducing
-an interactive branch:
-
-- Do not use the `question` tool. When multiple active changes are found, pick
-  the most recently modified active change per OpenSpec defaults.
-- After the targeted revision, continue via the existing `## Autonomous reconciliation` and `## Autonomous plan continuation` rules by anchor only; do not restate their bodies or create a second auto policy.
-- If the feedback changes the change's intent, use the same `BLOCKED` terminal
-  shape already produced by autonomous reconciliation: `stopped at` names
-  reconciliation, `blocker` names the premise, `evidence` carries the
-  feedback, and `to continue` recommends a new OpenSpec change. Do not
-  dispatch a specialist while the intent decision is pending.
+For `/specops-update`, do not use `question`. Select the most recently modified
+active change when several exist, route feedback through the shared update and
+reconciliation rules, and stop with the standard `BLOCKED` intent shape when the
+feedback changes the change's premise. Never auto-create an update target.

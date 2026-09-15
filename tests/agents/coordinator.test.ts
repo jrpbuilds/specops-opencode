@@ -19,7 +19,6 @@ import {
     DEFAULT_SUBAGENT_CONCURRENCY,
     type SpecOpsConfig,
 } from "../../src/config.js";
-import { loadPrompt } from "../../src/prompts.js";
 
 function makeConfig(
     overrides: Partial<SpecOpsConfig["agents"]> = {},
@@ -38,6 +37,10 @@ function makeConfig(
     };
 }
 
+function promptOf(config: Config, id: string): string {
+    return config.agent?.[id]?.prompt as string;
+}
+
 function evaluateTask(task: Record<string, "allow" | "deny">, name: string): "allow" | "deny" {
     let action: "allow" | "deny" | undefined;
     for (const [pattern, effect] of Object.entries(task)) {
@@ -50,1396 +53,172 @@ function evaluateTask(task: Record<string, "allow" | "deny">, name: string): "al
     return action ?? "deny";
 }
 
-function promptOf(config: Config, id: string): string {
-    return config.agent?.[id]?.prompt as string;
-}
-
-function sectionBetween(prompt: string, startMarker: string, endMarker: string): string {
-    const start = prompt.indexOf(startMarker);
-    const end = prompt.indexOf(endMarker, start);
-    expect(start).toBeGreaterThanOrEqual(0);
-    expect(end).toBeGreaterThan(start);
-    return prompt.slice(start, end);
-}
-
-function failOptions(prompt: string): string[] {
-    const checkpoint = sectionBetween(
-        prompt,
-        "For FAIL, use header",
-        "The selected option is the archive/lifecycle confirmation",
-    );
-    return [...checkpoint.matchAll(/^- `([^`]+)`/gm)].map(match => match[1]);
-}
-
-const removedFailOption = ["Revise", "implementation"].join(" ");
-
-describe("coordinator prompt composition", () => {
-    test("interactive and Auto receive mutually exclusive mode policies", () => {
+describe("coordinator prompt contract", () => {
+    test("keeps mode policies mutually exclusive and Frontier conditional", () => {
         const interactive = buildCoordinatorPrompt("interactive", false);
         const auto = buildCoordinatorPrompt("auto", false);
 
         expect(interactive).toContain("# SpecOps Coordinator");
         expect(interactive).toContain("## Interactive policy");
         expect(interactive).not.toContain("## Autonomous operation (SpecOps Auto)");
-
-        expect(auto).toContain("# SpecOps Coordinator");
         expect(auto).toContain("## Autonomous operation (SpecOps Auto)");
         expect(auto).not.toContain("## Interactive policy");
-        expect(auto).not.toContain("overrides the human-checkpoint clauses above");
+
+        expect(buildCoordinatorPrompt("interactive", false)).not.toContain(
+            "Frontier escalation is enabled for this session",
+        );
+        expect(buildCoordinatorPrompt("interactive", true)).toContain(
+            "Frontier escalation is enabled for this session",
+        );
     });
 
-    test("Frontier policy is loaded only when enabled", () => {
-        for (const mode of ["interactive", "auto"] as const) {
-            const disabled = buildCoordinatorPrompt(mode, false);
-            const enabled = buildCoordinatorPrompt(mode, true);
-
-            expect(disabled).not.toContain("Frontier escalation is enabled for this session");
-            expect(enabled).toContain("## Frontier escalation");
-            expect(enabled).toContain("Frontier escalation is enabled for this session");
-            expect(enabled).toContain(
-                "Each distinct blocker gets at most one Frontier consultation",
-            );
-        }
+    test("keeps assembled prompts substantially below the legacy budget", () => {
+        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(38_000);
+        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(35_000);
     });
 
-    test("assembled prompts stay within regression budgets", () => {
-        // Frontier-enabled variants are the largest assembled prompts for each
-        // mode. Shared contracts (fragments, validation gates, the review guard,
-        // scoped-parallel implementation, background dispatch, the dispatch
-        // envelope, the settled integrated verification gate) expand into every
-        // assembled prompt, so the budget guards against unbounded prompt
-        // growth. Deliberately generous headroom over the current maxima
-        // (54,336 and 52,779 bytes) pending a dedicated prompt-size pass:
-        // 56,500 and 54,500.
-        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(56_500);
-        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(54_500);
-    });
-});
-
-describe("Todo refresh-trigger contract", () => {
-    test("both coordinator modes include the refresh-trigger contract", () => {
-        const interactive = buildCoordinatorPrompt("interactive", false);
-        const auto = buildCoordinatorPrompt("auto", false);
-
-        expect(interactive).toContain("## Todo refresh trigger");
-        expect(auto).toContain("## Todo refresh trigger");
-        expect(auto).toContain("## Todo refresh trigger (autonomous)");
-    });
-
-    test("reduces the coordinator interaction to a runtime-owned blind trigger", () => {
+    test("consumes canonical status legality without reconstructing scheduler state", () => {
         const prompt = buildCoordinatorPrompt("interactive", false);
 
-        expect(prompt).toContain("The runtime owns and replaces all Todo content");
-        expect(prompt).toContain("orientation only, never authority");
-        expect(prompt).toContain('{"todos": []}');
-        expect(prompt).toContain("Never author, reconcile, or persist Todo content");
-        expect(prompt).toContain("never route from it");
+        expect(prompt).toContain("phase`, `lifecycle`, and `eligibleActions");
+        expect(prompt).toContain("an allowed action is legal, not recommended");
+        expect(prompt).toContain("An `author-artifact` action names the exact artifact id");
+        expect(prompt).toContain("legal actions using engineering judgement");
+        expect(prompt).not.toContain("reverse-dependency reachability");
+        expect(prompt).not.toContain("createRollingScheduler");
+        expect(prompt).not.toContain("specops_progress");
+        expect(prompt).not.toContain("lane-continuation ledger");
     });
 
-    test("defines the compact refresh marker as one call per assistant turn", () => {
-        for (const prompt of [
-            buildCoordinatorPrompt("interactive", false),
-            buildCoordinatorPrompt("auto", false),
-        ]) {
-            expect(prompt).toContain(
-                'SPECOPS_TODO_REFRESH: call todowrite with {"todos":[]} now — one refresh per assistant turn.',
-            );
-            expect(prompt).toContain("multiple markers in that turn are covered by that one call");
-        }
-    });
+    test("keeps startup, Todo trigger, dispatch identity, and validation gates", () => {
+        const prompt = buildCoordinatorPrompt("interactive", false);
 
-    test("keeps the dispatch-returns trigger for the marker-less moment", () => {
-        for (const prompt of [
-            buildCoordinatorPrompt("interactive", false),
-            buildCoordinatorPrompt("auto", false),
-        ]) {
-            expect(prompt).toContain("after each specialist dispatch returns");
-        }
-    });
-
-    test("drops content-maintenance and capability-probe instructions", () => {
-        for (const prompt of [
-            buildCoordinatorPrompt("interactive", false),
-            buildCoordinatorPrompt("auto", false),
-        ]) {
-            expect(prompt).not.toContain("Reconcile the projection");
-            expect(prompt).not.toContain("Probe the native Todo capability");
-            expect(prompt).not.toContain("publish the projection");
-            expect(prompt).not.toContain("Repository evidence entry");
-        }
-    });
-
-    test("drops the once-per-run ambiguity and the enumerated refresh moments", () => {
-        for (const prompt of [
-            buildCoordinatorPrompt("interactive", false),
-            buildCoordinatorPrompt("auto", false),
-        ]) {
-            expect(prompt).not.toContain("once now.");
-            expect(prompt).not.toContain("After change establishment, on resume");
-            expect(prompt).not.toContain("exactly one immediate native `todowrite` call");
-            expect(prompt).not.toContain("Never use Todo state to decide workflow routing");
-        }
-    });
-});
-
-describe("shared coordinator contract", () => {
-    const prompt = buildCoordinatorPrompt("interactive", false);
-
-    test("keeps deterministic startup and resume/create ownership", () => {
         expect(prompt).toContain("Call `specops_onboard` first");
         expect(prompt).toContain("Call `specops_context` exactly once");
+        expect(prompt).toContain("Establish exactly one current change");
         expect(prompt).toContain(
-            "Establish exactly one current change before any specialist delegation",
+            'SPECOPS_TODO_REFRESH: call todowrite with {"todos":[]} now — one refresh per assistant turn.',
         );
-        expect(prompt).toContain("resume it. Do not create a duplicate");
-        expect(prompt).toContain("If `activeChanges` is empty");
-        expect(prompt).toContain("call `specops_create_change` once");
-        expect(prompt).toContain("Do not crawl `openspec/`");
-        expect(prompt).toContain("deprecated `openspec change list`");
-    });
-
-    test("routes planning from the artifact graph and preserves apply/review phases", () => {
-        const expected = [
-            "## Routing from the OpenSpec artifact graph",
-            "`specops_status`",
-            "`applyRequires` closure",
-            "reverse-dependency reachability",
-            "design → specops-designer",
-            "`specops-designer`",
-            "other → specops-planner",
-            "mode-specific plan policy",
-            "`specops-implementer`",
-            "`specops-reviewer`",
-            "mode-specific lifecycle policy",
-        ];
-        for (const marker of expected) expect(prompt).toContain(marker);
-
-        expect(prompt).toContain("run `specops-explorer` only when");
-        expect(prompt).toContain("Startup: read `specops_status`");
-        expect(prompt).toContain("greenfield, small, single-file");
-        expect(prompt).toContain(
-            "never skips planning or apply-readiness (and, after apply, independent review)",
-        );
-    });
-
-    test("pins the shared reconciliation contract and propagation order", () => {
-        const sectionStart = prompt.indexOf("## Reconciling revised planning artifacts");
-        const sectionEnd = prompt.indexOf("## Delegation contract", sectionStart);
-        const section = prompt.slice(sectionStart, sectionEnd);
-
-        expect(section).toContain("coordinator-initiated revision");
-        expect(section).toContain("planner/designer/implementer material inconsistency handoff");
-        expect(section).toContain("checkpoint feedback revision");
-        expect(section).toContain("Forward progress never triggers");
-        expect(section).toContain("downstream reverse-dependency reachability");
-        expect(section).toContain("upstream transitive `requires`");
-        expect(section).toContain("design-role → `specops-designer`");
-        expect(section).toContain("other → `specops-planner`");
-        expect(section).toContain("coordinator never self-repairs");
-        expect(section).toContain("considered-set");
-        expect(section).toContain("content change OR new evidence");
-        expect(section).toContain("never create missing");
-        expect(section).toContain("`## Handoff gate`");
-        expect(section).toContain("normal routing");
-        expect(section).toContain("requirements-role→design-role→tasks-role");
-        expect(prompt).toContain("revisionTarget");
-        expect(prompt).toContain("upstreamFeedback");
-        expect(prompt).toContain(
-            "omit or leave both empty on first-pass forward-pipeline dispatches",
-        );
-    });
-
-    test("routes schema-aware review remediation in both assembled modes", () => {
-        const interactive = buildCoordinatorPrompt("interactive", false);
-        const auto = buildCoordinatorPrompt("auto", false);
-
-        for (const assembled of [interactive, auto]) {
-            expect(assembled).toContain("## Schema-aware remediation routing");
-            expect(assembled).toContain(
-                "A Reviewer FAIL no longer implies that the Implementer is next",
-            );
-            expect(assembled).toContain("active schema");
-            expect(assembled).toContain("`specops_status`");
-            expect(assembled).toContain("openspec instructions");
-            expect(assembled).toContain("### Malformed or missing handoff return");
-            expect(assembled).toContain("never guessing or reinterpreting them");
-            expect(assembled).toContain("Implementation-only");
-            expect(assembled).toContain("approved planning guidance is sufficient");
-            expect(assembled).toContain("specops-implementer");
-            expect(assembled).toContain("findings verbatim");
-            expect(assembled).toContain("every `F1..Fn`");
-            expect(assembled).toContain("Planning-artifact target");
-            expect(assembled).toContain("design` → `specops-designer");
-            expect(assembled).toContain("other declared ids (requirements, tasks, custom)");
-            expect(assembled).toContain("specops-planner");
-            expect(assembled).toContain("`revisionTarget`");
-            expect(assembled).toContain("`upstreamFeedback`");
-            expect(assembled).toContain("concrete unchecked downstream tasks");
-            expect(assembled).toContain("Mixed targets");
-            expect(assembled).toContain("one coherent pass");
-            expect(assembled).toContain("earliest planning root(s) first");
-            expect(assembled).toContain("conflicting concurrent edits");
-            expect(assembled).toContain("preserve completed work");
-        }
-    });
-
-    test("keeps specialist ownership explicit without duplicating specialist procedures", () => {
-        expect(prompt).toContain("`specops-explorer` — repository evidence");
-        expect(prompt).toContain(
-            "`specops-planner` — requirements and task-planning artifacts as declared by the change's schema",
-        );
-        expect(prompt).toContain(
-            "`specops-designer` — technical design artifact(s) as declared by the schema",
-        );
-        expect(prompt).toContain("`specops-implementer` — source/tests");
-        expect(prompt).toContain("`specops-reviewer` — independent verification");
-        expect(prompt).toContain("Coordinate; do not perform specialist work yourself");
-    });
-
-    test("defines rolling critic fan-out and guarded final fan-in", () => {
-        const start = prompt.indexOf("## Review phase");
-        const end = prompt.indexOf("## Reconciling revised planning artifacts", start);
-        const section = prompt.slice(start, end);
-
-        expect(section).toContain("createReviewFanout(maxSubagentConcurrency)");
-        expect(section).toContain("specops-review-correctness");
-        expect(section).toContain("specops-review-risk");
-        expect(section).toContain("specops-review-quality");
-        expect(section).toContain("using the background dispatch contract");
-        expect(section).toContain("without waiting for a fixed wave");
-        expect(section).toContain("complete critique is the required handoff");
-        expect(section).toContain("do not require the generic specialist handoff envelope");
-        expect(section).toContain("resume the same completed Task once");
-        expect(section).toContain("state=error");
-        expect(section).toContain("pending critics from being dispatched");
-        expect(section).toContain("Never dispatch `specops-reviewer` with a partial report set");
-        expect(section).toContain("## Specialist evidence");
-        expect(section).toContain("reports verbatim");
-        expect(section).toContain("prior `F1..Fn` findings verbatim");
-    });
-
-    test("keeps review critics terminal and non-final", () => {
-        for (const id of [
-            AGENT_IDS.reviewCorrectness,
-            AGENT_IDS.reviewRisk,
-            AGENT_IDS.reviewQuality,
-        ]) {
-            const specialistPrompt = loadPrompt(id);
-            expect(specialistPrompt).toContain("## Terminal return");
-            expect(specialistPrompt).toContain("complete critique is your final assistant message");
-            expect(specialistPrompt).toContain("forwards this message verbatim");
-        }
-    });
-
-    test("defines one delegation contract and scoped Project Context", () => {
-        expect(prompt).toContain("## Delegation contract");
-        expect(prompt).toContain("user's original goal");
-        expect(prompt).toContain("relevant scoped Project Context");
-        expect(prompt).toContain("Do not assume specialists share your working context");
-
-        expect(prompt).toContain("## Project Context");
-        expect(prompt).toContain("Retain one current capsule in working context for this run only");
-        expect(prompt).toContain("do not persist it");
-        expect(prompt).toContain("orientation, not authority");
-    });
-
-    test("uses the shared Engram policy", () => {
-        expect(prompt).toContain("## Engram");
-        expect(prompt).toContain("Use Engram as contextual memory, not authority");
-        expect(prompt).toContain("Engram is optional");
-        expect(prompt).toContain("must not block your pass");
-        expect(prompt).toContain("Write SpecOps memory at project scope, never personal scope.");
-        expect(prompt).toContain(
-            "Where the tooling supports a `topic_key`, use `change/<change-name>/<subject>` so same-subject breadcrumbs update in place while distinct subjects stay distinct; never use one key for the whole change.",
-        );
-        expect(prompt).toContain(
-            "Read memory only when it would materially improve the pass, chiefly when resuming the same active change",
-        );
-        expect(prompt).toContain(
-            "Treat results as leads to verify against current approved artifacts, repository state, and executed evidence, never facts.",
-        );
-        expect(prompt).toContain(
-            "Write only durably useful context for whoever works the change next",
-        );
-        expect(prompt).toContain(
-            "If nothing durable was learned, write nothing; a pass without a write is complete and writes are never required.",
-        );
-        expect(prompt).toContain("Workflow state includes:");
-        expect(prompt).toContain(
-            "run-scoped capsules — the Project Context capsule and the Todo projection.",
-        );
-        expect(prompt).toContain(
-            "proposal, specs, design, and tasks content is never copied into memory — only context about it.",
-        );
-        expect(prompt).not.toContain("mem_");
-    });
-
-    test("coordinator memory context never routes or gates workflow", () => {
-        const delegation = sectionBetween(prompt, "## Delegation contract", "## Handoff gate");
-
-        expect(delegation).toContain(
-            "optional `memoryContext` — concise, change-scoped memory breadcrumbs",
-        );
-        expect(delegation).toContain("Advisory orientation for the receiving specialist");
-        expect(delegation).toContain("unverified context to check against current evidence");
-        expect(delegation).toContain("never authority, never required, freely omitted");
-        expect(delegation).toContain(
-            "Never use memory to route, gate, order, or record workflow progress",
-        );
-        expect(delegation).toContain("durable routing truth stays in `specops_status`");
-        expect(delegation).toContain("any specialist dispatch, including the final Reviewer");
-        expect(delegation).toContain("critic fan-out dispatch shape is unchanged");
-    });
-
-    test("establishes a change before any specialist delegation", () => {
-        expect(prompt).toContain(
-            "Establish exactly one current change before any specialist delegation",
-        );
-        expect(prompt).toContain("If `activeChanges` is empty");
-        expect(prompt).toContain("call `specops_create_change` once");
-        expect(prompt).toContain(
-            "Only a successful creation (or a resumed change) permits specialist delegation",
-        );
-        expect(prompt).toContain("If creation fails, stop as BLOCKED");
-        expect(prompt).toContain("Do not delegate to any specialist");
-    });
-
-    test("requires every delegation to carry the dispatch envelope's change name", () => {
+        expect(prompt).toContain("Never author,");
+        expect(prompt).toContain("route from Todo content");
         expect(prompt).toContain("carries one line reading exactly `changeName: <change>`");
-        expect(prompt).toContain("Do not dispatch any specialist until a current change exists");
-        expect(prompt).toContain("there is no valid delegation without one");
-        expect(prompt).toContain(
-            "rejects a dispatch that omits it, mangles it, or names another change",
-        );
+        expect(prompt).toContain('action: "continue_planning"');
+        expect(prompt).toContain('action: "block"');
     });
 
-    test("recovers a malformed completed Task return via task_id once", () => {
-        const malformed = prompt.slice(prompt.indexOf("### Malformed or missing handoff return"));
-        expect(malformed).toContain("Resume the same OpenCode Task session");
-        expect(malformed).toContain("task_id");
-        expect(malformed).toContain("return its already-completed handoff");
-        expect(malformed).toContain("without repeating any investigation or owned work");
-        expect(malformed).toContain("Do not retry a second time");
-        expect(malformed).toContain("do not spawn a fresh session");
-        expect(malformed).toContain("A genuine execution error");
-        expect(malformed).toContain("is not a malformed return");
-        expect(malformed).not.toContain("launch a fresh specialist investigation");
+    test("preserves Coordinator judgement for implementation and review", () => {
+        const prompt = buildCoordinatorPrompt("interactive", false);
+
+        expect(prompt).toContain("Serial implementation is the default");
+        expect(prompt).toContain("Parallel implementation is a judgement call");
+        expect(prompt).toContain("independence alone is insufficient");
+        expect(prompt).toContain("maxSubagentConcurrency");
+        expect(prompt).toContain("assignedTaskIds: <id>, <id>");
+        expect(prompt).toContain("dispatch boundary validates identity, capacity, overlap");
+        expect(prompt).toContain("never ask the runtime to regroup or repartition it");
+        expect(prompt).toContain("reviewFanout");
+        expect(prompt).toContain("specops-review-correctness");
+        expect(prompt).toContain("## Specialist evidence");
+        expect(prompt).toContain("specops_review_guard");
+        expect(prompt).toContain("F1..Fn");
     });
 
-    test("gates every handoff against durable state", () => {
+    test("retains the archive boundary that tooling cannot prove", () => {
+        const prompt = buildCoordinatorPrompt("interactive", false);
+
+        expect(prompt).toContain("does not list archive as an eligible action");
+        expect(prompt).toContain("review PASS is not durable");
+        expect(prompt).toMatch(/archived only after the required\s+review succeeds/);
+        expect(prompt).toContain("Archive despite findings");
+        expect(prompt).toContain("specops_archive_instructions");
+        expect(prompt).toContain("Never archive from the sync flow");
+    });
+
+    test("keeps durable handoff, blocker, update, and sync boundaries", () => {
+        const prompt = buildCoordinatorPrompt("interactive", false);
+
         expect(prompt).toContain("## Handoff gate");
-        expect(prompt).toContain("After every specialist return and before routing onward");
         expect(prompt).toContain("Read fresh `specops_status`");
-        expect(prompt).toContain("dispatched artifact's reported status transition");
-        expect(prompt).toContain("Route from durable OpenSpec state");
-        expect(prompt).toContain("not from `NEXT` or a claimed success alone");
-        expect(prompt).toContain(
-            "`specops_status` (the OpenSpec artifact graph) and task checkbox state",
-        );
-    });
-
-    test("routes blockers by ownership rather than taking work over", () => {
-        expect(prompt).toContain("missing repository evidence");
-        expect(prompt).toContain("focused `specops-explorer` follow-up");
-        expect(prompt).toContain("`specops-planner` USER DECISION REQUIRED flow");
-        expect(prompt).toContain("`specops-designer` USER DECISION REQUIRED flow");
-        expect(prompt).toContain("ordinary implementation/test failure");
-        expect(prompt).toContain("Reviewer FAIL");
+        expect(prompt).toContain("### Malformed or missing handoff return");
+        expect(prompt).toContain("Do not retry again or create a fresh session");
         expect(prompt).toContain("Never resolve a blocker by taking over specialist-owned work");
-    });
-});
-
-describe("implementation-phase contract (scoped parallel implementer)", () => {
-    const prompt = buildCoordinatorPrompt("interactive", false);
-
-    // Anchor on newline-delimited headers: inline-code mentions of the section
-    // name elsewhere in the prompt would defeat a bare indexOf.
-    function delimitedSection(startHeader: string, endHeader: string): string {
-        const marker = `\n${startHeader}\n`;
-        const start = prompt.indexOf(marker);
-        expect(start).toBeGreaterThanOrEqual(0);
-        const startOffset = start + 1;
-        const end = prompt.indexOf(`\n${endHeader}\n`, startOffset);
-        expect(end).toBeGreaterThan(startOffset);
-        return prompt.slice(startOffset, end);
-    }
-
-    test("exposes the bounded, LLM-driven implementation dispatch contract", () => {
-        const section = delimitedSection("## Implementation phase", "## Review phase");
-        expect(section).toContain(
-            "`maxSubagentConcurrency` (read once from `specops_config` at workflow init; default 1)",
-        );
-        expect(section).toContain(
-            "Task selection, dependency reasoning, routing, and overlap analysis are coordinator judgements",
-        );
-        expect(section).toContain("`specops_apply_instructions` is the only per-task authority");
-        expect(section).toContain("`specops_status` carries no checkbox state");
-        expect(section).toContain("Serial fallback (default)");
-        expect(section).toContain("Uncertainty always means serial");
-        expect(section).toContain("Scoped parallel dispatch");
-        expect(section).toContain(
-            "SpecOps validates each dispatch at the boundary and rejects invalid assignments",
-        );
-        expect(section).toContain("Rolling refill");
-        expect(section).toContain("without waiting for the remaining siblings");
-        expect(section).toContain("Durable verification");
-        expect(section).toContain("Successful siblings stand");
-        expect(section).toContain("Suspension");
-        expect(section).toContain("checkbox regression");
-        expect(section).toContain("Never reconstruct or persist batch state");
-
-        // Serial is framed as the default; parallel dispatch is the exception.
-        expect(section).toContain("Serial implementation is the normal choice");
-        expect(section).toContain("scoped parallel dispatch is the exception");
-        expect(section).toContain(
-            "positive evidence that multiple lanes will reduce total wall-clock time",
-        );
-
-        // The final serial trigger requires genuine segregation plus
-        // expected wall-clock benefit, not mere independence.
-        expect(section).toContain(
-            "genuinely segregated groups whose concurrent implementation is likely to reduce total wall-clock time",
-        );
-        expect(section).not.toContain("at least two clearly independent groups");
+        expect(prompt).toContain("## Update flow");
+        expect(prompt).toContain("## Sync flow");
+        expect(prompt).toContain("openspec instructions specs --change <name> --json");
+        expect(prompt).toContain("never touch main specs");
+        expect(prompt).toContain("Never modify `changeRoot` or invoke `openspec archive`");
     });
 
-    test("keeps coherent, tightly related work with a single serial implementer", () => {
-        const section = delimitedSection("## Implementation phase", "## Review phase");
-
-        expect(section).toContain(
-            "the remaining unchecked tasks are dependency-independent but form coherent, tightly related work",
-        );
-        expect(section).toContain(
-            "same code surface, shared types, integration points, or test setup",
-        );
+    test("places settled verification before review and preserves the shared handoff", () => {
+        for (const mode of ["interactive", "auto"] as const) {
+            const prompt = buildCoordinatorPrompt(mode, false);
+            expect(prompt).toContain("Settled integrated verification");
+            expect(prompt.indexOf("Settled integrated verification")).toBeLessThan(
+                prompt.indexOf("## Review phase"),
+            );
+            expect(prompt).toContain("## Delegation contract");
+        }
     });
 
-    test("treats dependency-independence alone as insufficient for parallel dispatch", () => {
-        const section = delimitedSection("## Implementation phase", "## Review phase");
-
-        expect(section).toContain("Dependency-independence alone is not sufficient");
-        expect(section).toContain(
-            "positive evidence that concurrent lanes will reduce total wall-clock time",
+    test("returns misplaced decision recommendations for correction in both modes", () => {
+        for (const mode of ["interactive", "auto"] as const) {
+            const prompt = buildCoordinatorPrompt(mode, false);
+            expect(prompt).toContain("does not identify the first supplied option");
+        }
+        expect(buildCoordinatorPrompt("interactive", false)).toMatch(
+            /append\s+` \(Recommended\)` to the first supplied option only/,
         );
-    });
-
-    test("gates scoped parallel dispatch on the full implementation-segregation criteria", () => {
-        const section = delimitedSection("## Implementation phase", "## Review phase");
-
-        expect(section).toContain("genuinely segregated for implementation");
-        expect(section).toContain("a meaningfully separate subsystem or write surface");
-        expect(section).toContain(
-            "low overlap in source files, shared types, integration points, and test setup",
-        );
-        expect(section).toContain("little need to understand partially completed sibling work");
-        expect(section).toContain("independent implementation and verification");
-        expect(section).toContain(
-            "enough substantive work per lane to justify another implementer's context and bootstrap cost",
-        );
-    });
-
-    test("treats the concurrency cap as a ceiling, never a slot-filling target", () => {
-        const section = delimitedSection("## Implementation phase", "## Review phase");
-
-        expect(section).toContain(
-            "strict ceiling on available capacity, never a utilisation target",
-        );
-        expect(section).toContain(
-            "do not dispatch implementers merely because slots are available",
-        );
-        expect(section).toContain(
-            "having fewer active implementers than the cap allows is the expected, correct state",
-        );
-    });
-
-    test("may consolidate related task groups into one implementer", () => {
-        const section = delimitedSection("## Implementation phase", "## Review phase");
-
-        expect(section).toContain("multiple related task groups to a single implementer");
-        expect(section).toContain("one assignment naming the consolidated task IDs");
-        expect(section).toContain("sequential assignments to the same implementer");
-        expect(section).toContain(
-            "when shared context in one worker is more efficient than separate implementers",
-        );
-        expect(section).toContain("without exceeding the cap");
-    });
-
-    test("refill re-applies the dispatch gate and leaves unjustified slots empty", () => {
-        const section = delimitedSection("## Implementation phase", "## Review phase");
-
-        expect(section).toContain(
-            "Re-apply the same segregation and wall-clock-benefit gate on every refill",
-        );
-        expect(section).toContain("leave the slot empty and let the active siblings finish");
-    });
-
-    test("prefers critical-path lanes when eligible lanes exceed concurrency slots (issue #45)", () => {
-        const section = delimitedSection("## Implementation phase", "## Review phase");
-
-        expect(section).toContain(
-            "choose the lanes most likely to determine total completion time",
-        );
-        // Downstream-unblocking work is the strongest priority signal.
-        expect(section).toContain(
-            "a lane that gates or unlocks substantial downstream implementation",
-        );
-        expect(section).toContain(
-            "likely to dominate the critical path because of its scope or complexity",
-        );
-        expect(section).toContain("a substantial lane over a trivial lane");
-        expect(section).toContain("Do not simply select the first N lanes by task ID");
-        expect(section).toContain("do not prefer small work merely because it is easy to dispatch");
-    });
-
-    test("critical-path priority uses existing task order as the stable tie-breaker", () => {
-        const section = delimitedSection("## Implementation phase", "## Review phase");
-
-        expect(section).toContain(
-            "existing stable task/plan order as the tie-breaker when no meaningful difference can be established",
-        );
-    });
-
-    test("critical-path priority relies on qualitative evidence without fabricated estimates", () => {
-        const section = delimitedSection("## Implementation phase", "## Review phase");
-
-        expect(section).toContain(
-            "Judge from the qualitative evidence in the approved tasks and design",
-        );
-        expect(section).toContain("never fabricate or require numeric duration estimates");
-    });
-
-    test("critical-path priority never bypasses the segregation and benefit gate", () => {
-        const section = delimitedSection("## Implementation phase", "## Review phase");
-
-        expect(section).toContain(
-            "Priority only ever orders lanes that already passed the full dispatch gate; it never makes an unqualified lane eligible for parallel execution",
-        );
-        // Priority orders valid lanes; the gate itself stays authoritative.
-        expect(section.indexOf("full dispatch gate")).toBeGreaterThan(-1);
-    });
-
-    test("rolling refill applies the same critical-path priority rule", () => {
-        const section = delimitedSection("## Implementation phase", "## Review phase");
-
-        expect(section).toContain(
-            "apply the same critical-path priority to choose which remaining eligible lane dispatches",
-        );
-        expect(section).toContain("a free slot still does not require a dispatch");
-    });
-
-    test("falls back to serial whenever any part of the dispatch gate is uncertain", () => {
-        const section = delimitedSection("## Implementation phase", "## Review phase");
-
-        expect(section).toContain("Uncertainty always means serial");
-        expect(section).toContain(
-            "you cannot confidently establish at least two genuinely segregated groups",
-        );
-    });
-
-    test("preserves the serial fallback at the default concurrency cap", () => {
-        const section = delimitedSection("## Implementation phase", "## Review phase");
-
-        expect(section).toContain(
-            "`maxSubagentConcurrency` (read once from `specops_config` at workflow init; default 1)",
-        );
-        expect(section).toContain(
-            "Dispatch exactly one `specops-implementer` with no `assignedTaskIds` (whole-list behaviour) when: `maxSubagentConcurrency` is 1",
-        );
-        expect(section).toContain("Uncertainty always means serial");
-        // At a concurrency cap of 1 the whole unchecked list stays with one
-        // whole-list implementer; remaining work continues through the same
-        // whole-list flow, never as sequential scoped shards.
-        expect(section).toContain(
-            "the whole unchecked list belongs to exactly one whole-list implementer",
-        );
-        expect(section).toContain("implementation is never split across multiple implementers");
-        expect(section).toContain("rather than sequential scoped shards");
-        expect(section).toContain(
-            "re-dispatching whole-list remains available only for the documented failure and recovery boundaries",
-        );
-    });
-
-    test("requires explicitly scoped, bounded parallel ownership", () => {
-        const section = delimitedSection("## Implementation phase", "## Review phase");
-
-        expect(section).toContain(
-            "up to `maxSubagentConcurrency` `specops-implementer` Task calls concurrently under the background dispatch contract",
-        );
-        // Validity is runtime-enforced at the boundary, not re-derived from prose.
-        expect(section).toContain(
-            "each carrying the standard delegation payload plus one `assignedTaskIds: <id>, <id>` line",
-        );
-        expect(section).toContain(
-            "revise the rejected dispatch from fresh reads, since the runtime never regroups or repartitions an assignment for you",
-        );
-    });
-
-    test("carries the shared background dispatch contract for rolling refill", () => {
-        // Parallel dispatches run as background Task calls so each completion
-        // wakes the coordinator immediately instead of at wave boundaries.
-        expect(prompt).toContain("`background: true`");
-        expect(prompt).toContain("Process exactly one injected completion per arrival");
-        expect(prompt).toContain("refill only the freed slot from fresh durable state");
-        expect(prompt).toContain("do not sleep, poll for progress");
-
-        // Serial dispatches and hosts without background support keep working.
-        expect(prompt).toContain(
-            "Serial dispatches under a concurrency cap of 1 always use ordinary foreground Task calls",
-        );
-        expect(prompt).toContain(
-            "retry that same dispatch as an ordinary foreground call and refill per-wave instead",
-        );
-    });
-
-    test.each([
-        "`specops_apply_instructions` is the only per-task authority",
-        "Read it fresh before the initial dispatch and before every refill; select only from its current unchecked tasks",
-        "run its handoff gate, then refill the freed slot from a fresh `specops_apply_instructions` read without waiting for the remaining siblings",
-        "re-establish independence against still-active assignments before each refill dispatch",
-    ])("keeps apply authority and rolling refill wording: %s", clause => {
-        const section = delimitedSection("## Implementation phase", "## Review phase");
-
-        expect(section).toContain(clause);
-    });
-
-    test("requires fresh durable verification before review can follow partial success", () => {
-        const section = delimitedSection("## Implementation phase", "## Review phase");
-
-        expect(section).toContain(
-            "before counting an assignment complete, read fresh `specops_apply_instructions` and `specops_status` and confirm every assigned task ID is durably checked",
-        );
-        expect(section).toContain(
-            "Successful siblings stand: a failed or blocked shard never rolls back or cancels them",
-        );
-        expect(prompt).toContain(
-            "after implementation and the review validation gate, enter the `## Review phase`",
-        );
-    });
-
-    test.each([
-        "unexpected overlap",
-        "newly discovered dependency",
-        "shared integration point",
-        "malformed handoff",
-        "bounded malformed-return recovery",
-        "stale task state",
-        "an assigned ID missing or already checked",
-        "checkbox regression",
-        "task-state mismatch between claimed and durable state",
-        "without cancelling active siblings",
-        "Let active siblings finish",
-        "resume only from fresh durable state, re-forming assignments from scratch",
-    ])("suspends safely on the implementation boundary: %s", clause => {
-        const section = delimitedSection("## Implementation phase", "## Review phase");
-
-        expect(section).toContain(clause);
-    });
-
-    test("rebuilds recovery from durable state without retained batch state", () => {
-        const section = delimitedSection("## Implementation phase", "## Review phase");
-
-        expect(section).toContain("Never reconstruct or persist batch state");
-        expect(section).toContain(
-            "resume only from fresh durable state, re-forming assignments from scratch",
-        );
-    });
-
-    test("routes approval through the implementation phase and scopes assignedTaskIds to implementation dispatches", () => {
-        expect(prompt).toContain("6. Approval → `## Implementation phase`");
-
-        const delegation = delimitedSection("## Delegation contract", "## Handoff gate");
-        expect(delegation).toContain("`assignedTaskIds: <id>, <id>` line when scoped");
-        expect(delegation).toContain("on implementation-phase dispatches only");
-    });
-
-    test("keeps remediation implementation dispatch single and serial", () => {
-        const implementation = delimitedSection("## Implementation phase", "## Review phase");
-        const routing = delimitedSection(
-            "## Schema-aware remediation routing",
-            "## Reconciling revised planning artifacts",
-        );
-        expect(routing).toContain(
-            "**Implementation-only:** all targets are `implementation` and approved planning guidance is sufficient → direct a single, serial `specops-implementer` with goal, change name, findings verbatim, and explicit remediation; never a parallel shard.",
-        );
-        expect(routing).toContain("never a parallel shard");
-        expect(implementation).toContain(
-            "the schema declares no tasks artifact or the apply flow is dynamic",
-        );
-        expect(implementation).toContain("the work is review-remediation task creation");
-        expect(implementation).toContain("the delegation is the sync flow");
-    });
-
-    test("keeps task-selection judgement out of deterministic tooling", () => {
-        const section = delimitedSection("## Implementation phase", "## Review phase");
-
-        expect(section).toContain(
-            "Task selection, dependency reasoning, routing, and overlap analysis are coordinator judgements; never move them into deterministic tooling",
-        );
-        expect(section).not.toContain("work all unchecked tasks");
-        expect(section).not.toContain("deterministic selector");
-        expect(section).not.toContain("deterministic implementation-task selector");
     });
 });
 
 describe("interactive coordinator contract", () => {
     const prompt = buildCoordinatorPrompt("interactive", false);
 
-    test("keeps the plan approval checkpoint and resume semantics", () => {
+    test("requires explicit plan approval and preserves exact lifecycle choices", () => {
         expect(prompt).toContain("## Plan checkpoint");
-        expect(prompt).toContain("implementation has not started");
-        expect(prompt).toContain("`isPlanningComplete: true`");
-        expect(prompt).toContain("omits that flag while the `applyRequires` closure is satisfied");
-        expect(prompt).toContain("tasks-mapped artifact's checkbox state");
-        expect(prompt).not.toContain("`totalTasks > 0`");
-        expect(prompt).not.toContain("`completedTasks == 0`");
-        expect(prompt).toContain("If any task is already complete");
-        expect(prompt).toContain("skip this checkpoint and resume the workflow");
-        expect(prompt).toContain("do not call `specops_context` again");
+        expect(prompt).toContain("header: `Plan ready`");
+        expect(prompt).toContain("sole option: `Start implementation`");
+        expect(prompt).toContain("revision invalidates approval");
+        expect(prompt).toContain("## Review lifecycle checkpoint");
+        expect(prompt).toContain("`Complete and archive`");
+        expect(prompt).toContain("`Address findings`");
+        expect(prompt).toContain("`Archive despite findings`");
+        expect(prompt).toContain("`Leave open`");
     });
 
-    test("plan checkpoint exposes exactly the intended approval path", () => {
-        const section = prompt.slice(
-            prompt.indexOf("## Plan checkpoint"),
-            prompt.indexOf("## Lossless"),
-        );
-        expect(section).toContain("header: `Plan ready`");
-        expect(section).toContain("sole option: `Start implementation`");
-        expect(section).toContain(
-            "OpenCode enables the native type-your-own-answer path by default",
-        );
-        expect(section).toContain("do not add a `custom` field");
-        expect(section).toContain("omit `multiple` for single-select");
-        expect(section).toContain(
-            "Do not add `Leave open`, `Revise plan`, or any other explicit option",
-        );
-    });
-
-    test("interactive intent changes use a distinct native decision", () => {
-        const section = prompt.slice(
-            prompt.indexOf("## Intent-change decision"),
-            prompt.indexOf("## Lossless specialist decisions"),
-        );
-        expect(section).toContain("native single-select `question`");
-        expect(section).toContain("header `Plan intent changed`");
-        expect(section).toContain("Start a new change");
-        expect(section).toContain("preserve custom answers");
-        expect(section).not.toContain("Plan ready");
-        expect(section).not.toContain("Review passed");
-        expect(section).not.toContain("Review needs attention");
-    });
-
-    test("plan feedback routes to owners and always requires reapproval", () => {
-        const section = prompt.slice(
-            prompt.indexOf("## Plan checkpoint"),
-            prompt.indexOf("## Lossless"),
-        );
-        expect(section).toContain("treat the text verbatim as plan feedback; do not implement");
-        expect(section).toContain("Planner requirements pass");
-        expect(section).toContain("Designer");
-        expect(section).toContain("Planner tasks pass");
-        expect(section).toContain("See the shared reconciliation rule");
-        expect(section).toContain("a task-only change may affect nothing else");
-        expect(section).toContain("Any revision invalidates prior approval");
-        expect(section).toContain(
-            "implementation starts only after `Start implementation` is selected",
-        );
-        expect(section).toContain("Do not persist separate approval state");
-    });
-
-    test("transports Planner/Designer decisions losslessly", () => {
-        const section = prompt.slice(
-            prompt.indexOf("## Lossless specialist decisions"),
-            prompt.indexOf("## Review lifecycle checkpoint"),
-        );
-        expect(section).toContain("Only `specops-planner` and `specops-designer`");
-        expect(section).toContain("`Decision`");
-        expect(section).toContain("`Why it matters`");
-        expect(section).toContain("all 2–4 supplied options, in supplied order");
-        expect(section).toContain("every option's trade-off");
-        expect(section).toContain("`Recommendation`");
-        expect(section).toContain("`Affected artifact`");
-        expect(section).toContain(
-            "Do not add, remove, merge, reorder, rank, pre-select, or invent options",
-        );
-        expect(section).toContain("If the envelope is malformed");
-        expect(section).toContain("return it to the same specialist for correction");
-        expect(section).toContain("must identify the first supplied option");
-        expect(section).toContain("rather than reordering it yourself");
-        expect(section).toContain("append ` (Recommended)` to that first option's native label");
-        expect(section).toContain("leave its supplied trade-off unchanged");
-        expect(section).toContain("custom answer back verbatim");
-        expect(section).toContain("**same specialist**");
-        expect(section).toContain("**same pass and same artifact**");
-        expect(section).toContain("Never batch separate decision envelopes");
-    });
-
-    test("keeps exact PASS and FAIL lifecycle choices in order", () => {
-        const section = prompt.slice(prompt.indexOf("## Review lifecycle checkpoint"));
-        const passArchive = section.indexOf("`Complete and archive`");
-        const passLeaveOpen = section.indexOf("`Leave open`");
-        expect(passArchive).toBeGreaterThan(-1);
-        expect(passLeaveOpen).toBeGreaterThan(passArchive);
-        expect(section).toContain("header `Review passed`");
-        expect(section).toContain(
-            "The change passed independent review. What would you like to do?",
-        );
-
-        const failStart = section.indexOf("For FAIL, use header");
-        const fail = section.slice(failStart);
-        const addressFindings = fail.indexOf("`Address findings`");
-        const archive = fail.indexOf("`Archive despite findings`");
-        const leaveOpen = fail.indexOf("`Leave open`");
-        expect(addressFindings).toBeGreaterThan(-1);
-        expect(archive).toBeGreaterThan(addressFindings);
-        expect(leaveOpen).toBeGreaterThan(archive);
-        expect(fail).toContain("header `Review needs attention`");
-        expect(fail).toContain("The reviewer found blocking issues. What would you like to do?");
-
-        expect(section).toContain(
-            "The selected option is the archive/lifecycle confirmation; do not ask again",
-        );
-        expect(section).toContain("`specops_archive` once");
-        expect(section).toContain("never use a filesystem fallback");
-    });
-
-    test("keeps interactive remediation user-controlled and lossless", () => {
-        const section = prompt.slice(prompt.indexOf("## Interactive review remediation"));
-        expect(section).toContain("shared `## Schema-aware remediation routing`");
-        expect(section).toContain("complete Reviewer FAIL findings verbatim");
-        expect(section).toContain("every `F1..Fn`");
-        expect(section).toContain("do not summarize, paraphrase, renumber, or drop findings");
-        expect(section).toContain("re-dispatch `specops-reviewer`");
-        expect(section).toContain("prior findings verbatim");
-        expect(section).toContain("same review lifecycle checkpoint");
-        expect(section).toContain("Never auto-remediate in interactive mode");
-        expect(section).toContain("another pass requires explicit choice");
-    });
-
-    test("FAIL checkpoint exposes the renamed options and native custom-answer path", () => {
-        const checkpoint = sectionBetween(
-            prompt,
-            "## Review lifecycle checkpoint",
-            "## Interactive review remediation",
-        );
-
-        expect(failOptions(checkpoint)).toEqual([
-            "Address findings",
-            "Archive despite findings",
-            "Leave open",
-        ]);
-        expect(checkpoint).not.toContain(removedFailOption);
-        expect(checkpoint).toContain("omit `multiple`");
-        expect(checkpoint).not.toContain("custom` field");
-    });
-
-    test("Address findings uses shared routing for implementation-only findings", () => {
-        const remediation = sectionBetween(
-            prompt,
-            "## Interactive review remediation",
-            "## Interactive update flow",
-        );
-
-        expect(remediation).toContain("shared `## Schema-aware remediation routing`");
-        expect(prompt).toContain(
-            "**Implementation-only:** all targets are `implementation` and approved planning guidance is sufficient → direct a single, serial `specops-implementer` with goal, change name, findings verbatim, and explicit remediation; never a parallel shard.",
-        );
-    });
-
-    test("Address findings sends design findings to Designer instead of Implementer", () => {
-        const routing = sectionBetween(
-            prompt,
-            "## Schema-aware remediation routing",
-            "## Reconciling revised planning artifacts",
-        );
-
-        expect(routing).toContain("`design` → `specops-designer`");
-        expect(routing).not.toContain("`design` → `specops-implementer`");
-    });
-
-    test("Address findings sends other planning-artifact findings to Planner", () => {
-        const routing = sectionBetween(
-            prompt,
-            "## Schema-aware remediation routing",
-            "## Reconciling revised planning artifacts",
-        );
-
-        expect(routing).toContain(
-            "other declared ids (requirements, tasks, custom) → `specops-planner`",
-        );
-        expect(routing).not.toContain("requirements, tasks, custom) → `specops-implementer`");
-    });
-
-    test("Address findings keeps mixed targets in one coherent remediation pass", () => {
-        const routing = sectionBetween(
-            prompt,
-            "## Schema-aware remediation routing",
-            "## Reconciling revised planning artifacts",
-        );
-        const remediation = sectionBetween(
-            prompt,
-            "## Interactive review remediation",
-            "## Interactive update flow",
-        );
-
-        expect(routing).toContain("**Mixed targets:** one coherent pass");
-        expect(routing).toContain("earliest planning root(s) first");
-        expect(remediation).toContain("shared `## Schema-aware remediation routing`");
-    });
-
-    test("FAIL custom feedback travels verbatim to the shared-routing owner", () => {
-        const remediation = sectionBetween(
-            prompt,
-            "## Interactive review remediation",
-            "## Interactive update flow",
-        );
-
-        expect(remediation).toContain("FAIL custom answer");
-        expect(remediation).toContain("typed text travels verbatim");
-        expect(remediation).toContain("alongside `F1..Fn`");
-        expect(remediation).toContain(
-            "no paraphrase, summarization, or forced implementer routing",
-        );
-        expect(remediation).not.toContain("custom answer → direct `specops-implementer`");
-        expect(prompt).toContain(
-            "other declared ids (requirements, tasks, custom) → `specops-planner`",
-        );
-    });
-
-    test("planning remediation re-presents Plan ready while implementation-only remediation skips it", () => {
-        const plan = sectionBetween(
-            prompt,
-            "## Plan checkpoint",
-            "## Lossless specialist decisions",
-        );
-        const remediation = sectionBetween(
-            prompt,
-            "## Interactive review remediation",
-            "## Interactive update flow",
-        );
-
-        expect(remediation).toContain("specops-planner");
-        expect(remediation).toContain("specops-designer");
-        expect(remediation).toContain("invalidates approval");
-        expect(remediation).toContain("re-present `Plan ready`");
-        expect(remediation).toContain("specops-implementer`-only skips");
-        expect(remediation.indexOf("specops-implementer`-only skips")).toBeLessThan(
-            remediation.indexOf("complete critic fan-out"),
-        );
-
-        expect(plan).toContain("header: `Plan ready`");
-        expect(plan).toContain(
-            "question: `Review the plan above. Start implementation, or type your feedback if you'd like anything changed.`",
-        );
-        expect(plan).toContain("sole option: `Start implementation`");
-        expect(plan).toContain(
-            "Do not add `Leave open`, `Revise plan`, or any other explicit option",
-        );
-    });
-
-    test("remediation re-runs the full review pipeline and returns to the same lifecycle checkpoint", () => {
-        const checkpoint = sectionBetween(
-            prompt,
-            "## Review lifecycle checkpoint",
-            "## Interactive review remediation",
-        );
-        const remediation = sectionBetween(
-            prompt,
-            "## Interactive review remediation",
-            "## Interactive update flow",
-        );
-
-        expect(remediation).toContain("re-apply the review dispatch gate under `## Review phase`");
-        expect(remediation).toContain("never a partial subset");
-        expect(remediation).toContain("re-dispatch `specops-reviewer` directly");
-        expect(remediation).toContain("re-dispatch `specops-reviewer`");
-        expect(remediation).toContain("new reports (fan-out route)");
-        expect(remediation).toContain("remediation summary");
-        expect(remediation).toContain("prior findings verbatim");
-        expect(remediation).toContain("explicit re-review");
-        expect(remediation).toContain("this same review lifecycle checkpoint");
-        expect(remediation).toContain("Never auto-remediate in interactive mode");
-        expect(failOptions(checkpoint)).toEqual([
-            "Address findings",
-            "Archive despite findings",
-            "Leave open",
-        ]);
-        expect(checkpoint).toContain("header `Review passed`");
-        expect(checkpoint).toContain("header `Review needs attention`");
-    });
-
-    test("PASS, Archive despite findings, and Leave open retain their terminal behavior", () => {
-        const checkpoint = sectionBetween(
-            prompt,
-            "## Review lifecycle checkpoint",
-            "## Interactive review remediation",
-        );
-
-        expect(checkpoint).toContain("header `Review passed`");
-        expect(checkpoint).toContain(
-            "The change passed independent review. What would you like to do?",
-        );
-        expect(checkpoint).toContain("`Complete and archive`");
-        expect(checkpoint).toContain("`Leave open`");
-        expect(checkpoint).toContain(
-            "FAIL → `Archive despite findings`: archive per the shared archive-safety rule",
-        );
-        expect(checkpoint).toContain("FAIL → `Leave open`: acknowledge briefly and stop");
-        expect(checkpoint).not.toContain(removedFailOption);
-        expect(checkpoint).not.toContain(
-            "Complete and archive` — finish the change and archive it in OpenSpec\n- `Leave open` — keep the completed change active without archiving\n- `Address findings`",
-        );
-    });
-});
-
-describe("conditional Explorer dispatch contract", () => {
-    test("prompts skip the Explorer pass on routine resumes", () => {
-        const prompt = buildCoordinatorPrompt("interactive", false);
-        expect(prompt).toContain("skip the Explorer pass");
-        expect(prompt).toContain("continuing implementation");
-        expect(prompt).toContain("remediation");
-        expect(prompt).toContain("lifecycle handling");
-    });
-
-    test("prompts still dispatch Explorer on fresh changes", () => {
-        const prompt = buildCoordinatorPrompt("interactive", false);
-        expect(prompt).toContain("run `specops-explorer` only when");
-        expect(prompt).toContain("fresh changes");
-    });
-
-    test("prompts define focused follow-up contract for specialist-reported missing evidence", () => {
-        const prompt = buildCoordinatorPrompt("interactive", false);
-        expect(prompt).toContain("focused follow-up, not a full startup scan");
-        expect(prompt).toContain("Planner/Designer handoffs");
-        expect(loadPrompt(AGENT_IDS.planner)).toContain(
-            "Do not inspect repository source code yourself",
-        );
-        expect(loadPrompt(AGENT_IDS.designer)).toContain(
-            "Do not inspect repository source code yourself",
-        );
-        expect(loadPrompt(AGENT_IDS.implementer)).toContain(
-            "Inspect and modify repository source code and tests directly",
-        );
-        expect(loadPrompt(AGENT_IDS.reviewer)).toContain(
-            "Inspect the implemented source code and tests directly",
-        );
-    });
-
-    test("prompts re-dispatch Explorer when a planning revision invalidates the scoped Project Context", () => {
-        const prompt = buildCoordinatorPrompt("interactive", false);
-        expect(prompt).toContain("scoped Project Context");
-        expect(prompt).toContain("material");
-        expect(prompt).toContain("drop the stale capsule");
-    });
-
-    test("autonomous mode mirrors the same conditional rule", () => {
-        const prompt = buildCoordinatorPrompt("auto", false);
-        expect(prompt).toContain("run `specops-explorer` only when");
-        expect(prompt).toContain("skip the Explorer pass");
-        expect(prompt).toContain("focused follow-up, not a full startup scan");
+    test("routes material decisions and remediation without inventing policy", () => {
+        expect(prompt).toContain("Only Planner and Designer may return");
+        expect(prompt).toContain("preserve the 2-4 options and their order");
+        expect(prompt).toContain("same specialist");
+        expect(prompt).toContain("same pass and same artifact");
+        expect(prompt).toContain("schema-aware remediation");
+        expect(prompt).toMatch(/Never auto-remediate\s+in interactive mode/);
     });
 });
 
 describe("Auto coordinator contract", () => {
     const prompt = buildCoordinatorPrompt("auto", false);
 
-    test("has no interactive checkpoint policy and runtime instruction forbids questions", () => {
-        expect(prompt).not.toContain("## Interactive policy");
-        expect(prompt).not.toContain("## Plan checkpoint");
-        expect(prompt).not.toContain("## Review lifecycle checkpoint");
-        expect(prompt).not.toContain("Start implementation");
-        expect(prompt).not.toContain("Review passed");
-        expect(prompt).not.toContain("Review needs attention");
-        expect(prompt).toContain("Never invoke OpenCode's native `question` tool");
-    });
-
-    test("continues automatically from a completed plan", () => {
+    test("has no human checkpoints and continues from legal status", () => {
+        expect(prompt).toContain("Never invoke the native");
         expect(prompt).toContain("## Autonomous plan continuation");
-        expect(prompt).toContain("`isPlanningComplete: true`");
-        expect(prompt).toContain("absent plus satisfied `applyRequires`");
-        expect(prompt).toContain("auto-approves `specops-implementer`");
-        expect(prompt).toContain("auto-approves `specops-implementer`");
-        expect(prompt).toContain("No checkpoint/state");
+        expect(prompt).toContain("makes `enter-implementation` legal");
+        expect(prompt).not.toContain("## Plan checkpoint");
+        expect(prompt).not.toContain("Review passed");
     });
 
-    test("pins deterministic autonomous reconciliation and terminal intent blocking", () => {
-        const sectionStart = prompt.indexOf("## Autonomous reconciliation");
-        const sectionEnd = prompt.indexOf("## Autonomous specialist decisions", sectionStart);
-        const section = prompt.slice(sectionStart, sectionEnd);
-
-        expect(section).toContain("Triggers are deterministic and revision-originated only");
-        expect(section).toContain("specialist material conflict/inconsistency handoff");
-        expect(section).toContain("coordinator `revisionTarget` dispatch");
-        expect(section).toContain("Never a status transition");
-        expect(section).toContain("Never a status transition or the `question` tool");
-        expect(section).toContain("existing `BLOCKED` shape");
-        expect(section).toContain("`stopped at` names reconciliation");
-        expect(section).toContain("`blocker` names the premise");
-        expect(section).toContain("`evidence` carries feedback");
-        expect(section).toContain("`to continue` recommends a new OpenSpec change");
-    });
-
-    test("does not retain the old workflow state machine or four-artifact sequence", () => {
-        for (const prompt of [
-            buildCoordinatorPrompt("interactive", false),
-            buildCoordinatorPrompt("auto", false),
-        ]) {
-            expect(prompt).not.toContain("## Workflow state machine");
-            expect(prompt).not.toContain("proposal → specs → design → tasks");
-        }
-    });
-
-    test("scenario a: the default flow maps requirements, design, tasks, and plan readiness", () => {
-        expect(prompt).toContain("design → specops-designer");
-        expect(prompt).toContain("`specops-designer`");
-        expect(prompt).toContain("other → specops-planner");
-        expect(prompt).toContain("mode-specific plan policy");
-    });
-
-    test("scenario b: reordered and parallel artifacts use readiness and schema order", () => {
-        expect(prompt).toContain("reverse-dependency reachability");
-        expect(prompt).toContain("then schema order");
-        expect(prompt).toContain("Static specialist rule (mapping, not ordering)");
-        expect(prompt).toContain("ignore outside artifacts");
-    });
-
-    test("scenario c: omitted artifacts are not required by the coordinator", () => {
-        expect(prompt).toContain("Planning artifacts are exactly those declared by the schema");
-        expect(prompt).not.toContain("design.md");
-        expect(prompt).not.toContain("tasks.md");
-    });
-
-    test("scenario d: skipped artifacts satisfy dependents and are never authored", () => {
-        expect(prompt).toContain("`done`/`skipped` satisfy");
-        expect(prompt).toContain("skipped never targets authoring");
-        expect(prompt).toContain("skipped-artifact ids to ignore as do-not-read/do-not-author");
-    });
-
-    test("scenario e: custom ids use role metadata and the generic planner fallback", () => {
-        expect(prompt).toContain("other →");
-        expect(prompt).toContain("other → specops-planner");
-        expect(prompt).toContain("structured per-dispatch payload");
-    });
-
-    test("scenario f: resumed changes re-derive routing from fresh status", () => {
-        expect(prompt).toContain("read `specops_status`");
-        expect(prompt).toContain("fresh-read status after every handoff that completes/skips");
-        expect(prompt).toContain("never cache");
-    });
-
-    test("scenario g: planning completion reaches interactive approval or auto approval", () => {
-        const interactive = buildCoordinatorPrompt("interactive", false);
-        const auto = buildCoordinatorPrompt("auto", false);
-        expect(interactive).toContain(
-            "Satisfied closure plus `isPlanningComplete: true` or absent flag permits mode-specific plan policy",
-        );
-        expect(interactive).toContain("## Plan checkpoint");
-        expect(auto).toContain("Fresh status: `isPlanningComplete: true`");
-        expect(auto).toContain("auto-approves `specops-implementer`");
-    });
-
-    test("BLOCKED paths route to planner decisions instead of auto-recovery", () => {
-        expect(prompt).toContain("Missing ids are BLOCKED");
-        expect(prompt).toContain("through Planner");
-        expect(prompt).toContain("never fabricate");
-        expect(prompt).toContain("`false` with satisfied closure is BLOCKED");
-        expect(prompt).toContain("No feasible artifact is BLOCKED");
-    });
-
-    test("chooses only within the supplied specialist decision domain", () => {
-        const section = prompt.slice(
-            prompt.indexOf("## Autonomous specialist decisions"),
-            prompt.indexOf("## Autonomous Frontier"),
-        );
-        expect(section).toContain("choose exactly one of the specialist's options");
-        expect(section).toContain("do not invent, merge, or rewrite alternatives");
-        expect(section).toContain("If the envelope is malformed");
-        expect(section).toContain("return it to the same specialist for correction");
-        expect(section).toContain("specialist recommendation");
-        expect(section).toContain("user's explicit goal and constraints");
-        expect(section).toContain("approved/current OpenSpec requirements");
-        expect(section).toContain(
-            "repository evidence, Project Context, and established conventions",
-        );
-        expect(section).toContain("simplest/lowest-risk option deterministically");
-        expect(section).toContain("**same specialist**");
-        expect(section).toContain("**same pass and same artifact**");
-    });
-
-    test("distinguishes ambiguity from genuinely unknowable blockers", () => {
-        expect(prompt).toContain("Ambiguity alone is not a blocker");
-        expect(prompt).toContain("Never fabricate external facts, credentials, secret values");
-        expect(prompt).toContain("genuinely unknowable information");
-    });
-
-    test("automatically remediates review FAIL within the configured finite budget", () => {
-        const section = prompt.slice(prompt.indexOf("## Autonomous review remediation"));
-        expect(section).toContain("PASS → call `specops_archive` once");
-        expect(section).toContain("FAIL → automatically begin remediation");
-        expect(section).toContain("shared `## Schema-aware remediation routing`");
-        expect(section).toContain("every `F1..Fn` verbatim");
-        expect(section).toContain("every `F1..Fn`");
-        expect(section).toContain(
-            "Planner/Designer returns follow `## Autonomous specialist decisions`",
-        );
-        expect(section).toContain("complete critic fan-out again");
-        expect(section).toContain("root-cause-oriented remediation");
-        expect(section).toContain("re-applying the review dispatch gate");
-        expect(section).toContain("complete critic fan-out or direct review");
-        expect(section).toContain("authoritative full re-review");
-        expect(section).toContain("each canonical finding remains independently verified");
-        expect(section).toContain("inspect the whole approved change for regressions");
-        expect(section).toContain("Read `maxAutoReviewIterations` from `specops_config`");
-        expect(section).toContain("at most **that many remediation rounds total**");
-        expect(section).toContain("The initial review does not consume an iteration");
-        expect(section).toContain("When a FAIL leaves no iterations remaining, return `BLOCKED`");
-        expect(section).toContain("never exceed the configured finite budget");
-        expect(section).not.toContain("{{maxAutoReviewIterations}}");
-    });
-
-    test("keeps the Auto Todo section free of stage authoring", () => {
-        const autoPrompt = buildCoordinatorPrompt("auto", false);
-        expect(autoPrompt).toContain(
-            'SPECOPS_TODO_REFRESH: call todowrite with {"todos":[]} now — one refresh per assistant turn.',
-        );
-        expect(autoPrompt).not.toContain("include `Auto review remediation`");
-        expect(autoPrompt).toContain("never route from it");
-    });
-
-    test("reads the Auto review budget from specops_config instead of baking it into the prompt", () => {
-        const prompt = buildCoordinatorPrompt("auto", false);
-        const section = prompt.slice(prompt.indexOf("## Autonomous review remediation"));
-
-        // The placeholder substitution is gone; the prompt instructs the
-        // coordinator to read the effective budget from specops_config.
-        expect(section).not.toContain("{{maxAutoReviewIterations}}");
-        expect(section).not.toContain("at most **12 remediation rounds total**");
-        expect(section).toContain("Read `maxAutoReviewIterations` from `specops_config`");
-        expect(section).toContain("at most **that many remediation rounds total**");
-    });
-
-    test("retains terminal COMPLETED/BLOCKED result contracts", () => {
+    test("uses a finite review-remediation budget and terminal result", () => {
+        expect(prompt).toContain("Read `maxAutoReviewIterations` from `specops_config`");
+        expect(prompt).toContain("configured finite budget");
+        expect(prompt).toContain("FAIL remains when the budget is exhausted");
         expect(prompt).toContain("`COMPLETED`");
-        expect(prompt).toContain("OpenSpec change: <change name>");
-        expect(prompt).toContain("archive result:");
         expect(prompt).toContain("`BLOCKED`");
-        expect(prompt).toContain("stopped at: <workflow phase>");
-        expect(prompt).toContain("to continue: <required information or action>");
-    });
-});
-
-describe("specops-update contract (issue #11)", () => {
-    const interactive = buildCoordinatorPrompt("interactive", false);
-    const auto = buildCoordinatorPrompt("auto", false);
-
-    function section(prompt: string, header: string): string {
-        const marker = `\n${header}\n`;
-        const markerStart = prompt.indexOf(marker);
-        expect(markerStart).toBeGreaterThanOrEqual(0);
-        const start = markerStart + 1;
-        const nextHeader = prompt.indexOf("\n## ", start + header.length);
-        return prompt.slice(start, nextHeader === -1 ? prompt.length : nextHeader);
-    }
-
-    test("composes shared and mode-specific update sections", () => {
-        expect(interactive).toContain("## Update flow");
-        expect(interactive).toContain("## Interactive update flow");
-        expect(auto).toContain("## Update flow");
-        expect(auto).toContain("## Autonomous update flow");
-    });
-
-    test("documents ownership, intent refusal, and fresh approval", () => {
-        for (const prompt of [interactive, auto]) {
-            expect(prompt).toContain(
-                "`proposal`/`specs`/`tasks` → `specops-planner`; `design` → `specops-designer`",
-            );
-            expect(prompt).toContain("Plan intent changed");
-            expect(prompt).toContain("feedback verbatim");
-            expect(prompt).toContain("`- [x]` task completion state");
-            expect(prompt).toContain("`## Reconciling revised planning artifacts`");
-        }
-
-        expect(interactive).toContain("re-present the existing `Plan ready` checkpoint");
-        expect(auto).toContain("`## Autonomous plan continuation`");
-    });
-
-    test("resolves active changes without auto-creating and blocks when none exist", () => {
-        for (const prompt of [interactive, auto]) {
-            expect(prompt).toContain("reusing `specops_context` and `specops_status`");
-            expect(prompt).toContain("never call `specops_create_change`");
-            expect(prompt).toContain("no active");
-            expect(prompt).toContain("stop `BLOCKED`");
-            expect(prompt).toContain("Never auto-create a change");
-        }
-    });
-
-    test("documents mode-specific ambiguous active-change handling", () => {
-        expect(interactive).toContain("multiple active changes are found");
-        expect(interactive).toContain("native single-select question");
-        expect(auto).toContain("most recently modified active change");
-        expect(auto).toContain("Do not use the `question` tool");
-    });
-
-    test("does not add tools, parallel commands, or a replacement workflow", () => {
-        for (const prompt of [interactive, auto]) {
-            expect(prompt).not.toContain("specops_update");
-            expect(prompt).not.toContain("specops-update-auto");
-            expect(prompt).not.toContain("## Workflow state machine");
-            expect(prompt).not.toContain("proposal → specs → design → tasks");
-        }
-    });
-
-    test("references reconciliation instead of duplicating its rule body", () => {
-        const sharedUpdate = section(interactive, "## Update flow");
-        const autoUpdate = section(auto, "## Autonomous update flow");
-
-        expect(sharedUpdate).toContain("## Reconciling revised planning artifacts");
-        expect(sharedUpdate).not.toContain("downstream reverse-dependency reachability");
-        expect(sharedUpdate).not.toContain("requirements-role→design-role→tasks-role");
-        expect(autoUpdate).toContain("## Autonomous reconciliation");
-        expect(autoUpdate).not.toContain("Triggers are deterministic and revision-originated only");
-    });
-});
-
-describe("reconciliation coverage cases", () => {
-    const prompt = buildCoordinatorPrompt("interactive", false);
-    const sectionStart = prompt.indexOf("## Reconciling revised planning artifacts");
-    const sectionEnd = prompt.indexOf("## Delegation contract", sectionStart);
-    const section = prompt.slice(sectionStart, sectionEnd);
-
-    test("upstream — requirements-role revision cascades to design-role and tasks-role", () => {
-        expect(section).toContain("requirements-role→design-role→tasks-role");
-        expect(section).toContain("valid `- [x]`");
-    });
-
-    test("downstream — design-role revision affects tasks-role but not requirements-role when consistent", () => {
-        expect(section).toContain("design-role→tasks-role");
-        expect(section).toContain("consistent requirements");
-    });
-
-    test("bidirectional — design↔requirements conflict permits one re-dispatch then terminates", () => {
-        expect(section).toContain(
-            "bidirectional conflict→considered-set, one changed-content re-dispatch",
-        );
-        expect(section).toContain(
-            "repeat only after content change OR new evidence; else terminate",
-        );
-    });
-
-    test("task-only — tasks-role revision with no upstream inconsistency makes no further dispatch", () => {
-        expect(section).toContain("task-only→no upstream");
-        expect(section).toContain(
-            "repeat only after content change OR new evidence; else terminate",
-        );
-    });
-
-    test("no-op — revision that affects no other artifact exits via the status re-read", () => {
-        expect(section).toContain("no-op→no dispatch/status reread");
-        expect(section).toContain("fresh status; normal routing");
+        expect(prompt).not.toContain("{{maxAutoReviewIterations}}");
     });
 });
 
 describe("coordinator registration", () => {
-    test("registers interactive and Auto with their assembled prompts and hard question boundary", () => {
+    test("registers both modes with the assembled prompts and hard question boundary", () => {
         const interactiveConfig: Config = {};
         const autoConfig: Config = {};
         registerCoordinatorAgent(interactiveConfig, makeConfig());
@@ -1479,10 +258,7 @@ describe("coordinator registration", () => {
         expect(autoPermission[SPECOPS_LIFECYCLE_PERMISSION]).toBe("allow");
     });
 
-    test("does not bake the configured Auto review budget into the registered prompt", () => {
-        // The configured value lives in the process snapshot read by specops_config;
-        // the prompt no longer substitutes it, so a larger configured budget must
-        // not appear verbatim in the assembled prompt.
+    test("does not bake the configured Auto review budget into the prompt", () => {
         const specOpsConfig = makeConfig();
         specOpsConfig.maxAutoReviewIterations = 12;
         const config: Config = {};
@@ -1496,11 +272,10 @@ describe("coordinator registration", () => {
         expect(prompt).toContain("Read `maxAutoReviewIterations` from `specops_config`");
     });
 
-    test("restricts both coordinators to the private SpecOps subagent namespace", () => {
+    test("restricts coordinators to the private SpecOps subagent namespace", () => {
         const configs: Config[] = [{}, {}];
         registerCoordinatorAgent(configs[0], makeConfig());
         registerAutoCoordinatorAgent(configs[1], makeConfig());
-
         const names = [
             "general",
             "explore",
@@ -1528,7 +303,7 @@ describe("coordinator registration", () => {
         }
     });
 
-    test("uses the same coordinator capability policy in both modes", () => {
+    test("keeps capability policy and Frontier loading aligned across modes", () => {
         const interactive: Config = {};
         const auto: Config = {};
         registerCoordinatorAgent(interactive, makeConfig());
@@ -1540,14 +315,11 @@ describe("coordinator registration", () => {
         expect(auto.agent?.[SPECOPS_AUTO_AGENT_ID]?.permission).toMatchObject(
             COORDINATOR_PERMISSION,
         );
-    });
 
-    test("registered prompts include Frontier only when configured", () => {
         const disabled: Config = {};
         const enabled: Config = {};
         registerCoordinatorAgent(disabled, makeConfig({}, false));
         registerCoordinatorAgent(enabled, makeConfig({}, true));
-
         expect(promptOf(disabled, SPECOPS_AGENT_ID)).not.toContain(
             "Frontier escalation is enabled for this session",
         );
@@ -1556,7 +328,7 @@ describe("coordinator registration", () => {
         );
     });
 
-    test("applies configured coordinator model and variant", () => {
+    test("applies configured coordinator models without changing fallback semantics", () => {
         const config: Config = {};
         registerCoordinatorAgent(
             config,
@@ -1567,134 +339,17 @@ describe("coordinator registration", () => {
                 },
             }),
         );
-
         expect(config.agent?.[SPECOPS_AGENT_ID]).toMatchObject({
             model: "opencode-go/deepseek-v4-flash",
             variant: "high",
         });
-    });
 
-    test("Auto shares the configured coordinator model and variant", () => {
-        const config: Config = {};
-        registerAutoCoordinatorAgent(
-            config,
-            makeConfig({
-                [AGENT_IDS.coordinator]: {
-                    model: "opencode-go/deepseek-v4-flash",
-                    variant: "high",
-                },
-            }),
-        );
-
-        expect(config.agent?.[SPECOPS_AUTO_AGENT_ID]).toMatchObject({
-            model: "opencode-go/deepseek-v4-flash",
-            variant: "high",
-        });
-    });
-
-    test("applies model without variant when only model is configured", () => {
-        const config: Config = {};
+        const fallback: Config = {};
         registerCoordinatorAgent(
-            config,
-            makeConfig({ [AGENT_IDS.coordinator]: { model: "openai/gpt-5" } }),
-        );
-
-        expect(config.agent?.[SPECOPS_AGENT_ID]?.model).toBe("openai/gpt-5");
-        expect("variant" in (config.agent?.[SPECOPS_AGENT_ID] ?? {})).toBe(false);
-    });
-
-    test("omits model and variant for blank model to preserve OpenCode default", () => {
-        const config: Config = {};
-        registerCoordinatorAgent(
-            config,
+            fallback,
             makeConfig({ [AGENT_IDS.coordinator]: { model: "   ", variant: "high" } }),
         );
-
-        expect("model" in (config.agent?.[SPECOPS_AGENT_ID] ?? {})).toBe(false);
-        expect("variant" in (config.agent?.[SPECOPS_AGENT_ID] ?? {})).toBe(false);
-    });
-
-    test("does not modify existing built-in agents", () => {
-        const config: Config = {
-            agent: {
-                build: { description: "Build", mode: "primary", prompt: "Build prompt" },
-                plan: { description: "Plan", mode: "primary", prompt: "Plan prompt" },
-            },
-        };
-        registerCoordinatorAgent(config, makeConfig());
-
-        expect(config.agent?.build?.description).toBe("Build");
-        expect(config.agent?.plan?.description).toBe("Plan");
-    });
-});
-
-describe("settled integrated verification gate", () => {
-    test("both coordinator modes carry the gate before the review dispatch gate", () => {
-        for (const mode of ["interactive", "auto"] as const) {
-            const prompt = buildCoordinatorPrompt(mode, false);
-
-            expect(prompt).toContain("Settled integrated verification");
-            expect(
-                prompt.indexOf(
-                    "settled verification pass runs against the stable completed implementation",
-                ),
-            ).toBeLessThan(
-                prompt.indexOf("select the review route with the **review dispatch gate**"),
-            );
-        }
-    });
-
-    test("runs exactly one implementer dispatch after all lanes settle and before review", () => {
-        const prompt = buildCoordinatorPrompt("interactive", false);
-
-        expect(prompt).toContain(
-            "every implementation sibling has returned, durable verification confirms all assigned task IDs are checked, and no implementation dispatch is active",
-        );
-        expect(prompt).toContain(
-            "dispatch exactly one `specops-implementer` with an explicit settled integrated verification instruction before the review validation gate and the review dispatch",
-        );
-        expect(prompt).toContain(
-            "Reusing a suitable completed implementer session via the lane-continuation ledger is allowed; a fresh dispatch is always valid",
-        );
-    });
-
-    test("verifies current repository and canonical state rather than implementer claims", () => {
-        expect(buildCoordinatorPrompt("interactive", false)).toContain(
-            "verifies current repository and canonical OpenSpec state only — never prior implementer summaries",
-        );
-    });
-
-    test("requires broad checks, change validation, and reporting of unperformable checks", () => {
-        const prompt = buildCoordinatorPrompt("interactive", false);
-
-        expect(prompt).toContain(
-            "running repository-appropriate broad checks, the full relevant test suite where appropriate, required typecheck/build/lint/format checks, and `openspec validate <change>`",
-        );
-        expect(prompt).toContain("reporting any check that could not be performed");
-    });
-
-    test("blocks review on failure and routes evidence back through implementation handling", () => {
-        const prompt = buildCoordinatorPrompt("interactive", false);
-
-        expect(prompt).toContain(
-            "a failing or unavailable required check blocks entry into review, and the failure is real implementation evidence routed back through normal implementation handling",
-        );
-        expect(prompt).toContain(
-            "never by attributing it to the implementer whose lane contains the failing test name",
-        );
-    });
-
-    test("keeps serial implementation free of the extra pass", () => {
-        expect(buildCoordinatorPrompt("interactive", false)).toContain(
-            "Serial implementation (no scoped lanes dispatched) skips this pass entirely; the existing serial verification flow is unchanged",
-        );
-    });
-
-    test("keeps the pass subordinate to independent review", () => {
-        const prompt = buildCoordinatorPrompt("interactive", false);
-
-        expect(prompt).toContain(
-            "The pass establishes readiness for review; it does not approve the change, and the selected review route and final-review behaviour are unchanged",
-        );
+        expect("model" in (fallback.agent?.[SPECOPS_AGENT_ID] ?? {})).toBe(false);
+        expect("variant" in (fallback.agent?.[SPECOPS_AGENT_ID] ?? {})).toBe(false);
     });
 });

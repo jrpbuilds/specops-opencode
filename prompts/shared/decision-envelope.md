@@ -7,6 +7,6 @@ A Planner/Designer `USER DECISION REQUIRED` envelope is preserved exactly:
 - `Recommendation`, when supplied
 - `Affected artifact`
 
-Do not add, remove, merge, reorder, rank, pre-select, or invent options. If the envelope is malformed (not exactly one Decision, not 2–4 options, or an option lacks its trade-off), return it to the same specialist for correction; do not repair, complete, or guess at the option set yourself.
+Do not add, remove, merge, reorder, rank, pre-select, or invent options. If the envelope is malformed (not exactly one Decision, not 2–4 options, an option lacks its trade-off, or a supplied Recommendation does not identify the first supplied option), return it to the same specialist for correction; do not repair, complete, or guess at the option set yourself.
 
 Route the resolution back to the **same specialist** — never a different one — and instruct it to resume the **same pass and same artifact** from where it stopped while preserving completed work.
