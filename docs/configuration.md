@@ -133,9 +133,9 @@ Controls when implementation splits across parallel implementer lanes (requires 
 
 ### `reviewFanout` (default: `auto`)
 
-Controls whether review runs the three independent critics (correctness, risk, quality) before the final Reviewer.
+Controls whether review runs the independent critics (correctness, risk, quality) before the final Reviewer.
 
-- **`auto` (default):** the coordinator fans out for changes that span a large surface (multiple subsystems, many tasks) or carry elevated risk (security, data, compatibility) — and reviews a small, simple change with the final Reviewer alone.
+- **`auto` (default):** the coordinator scales review to the change — a small, simple change gets a light single-reviewer pass, a moderately complex or user-visible change gets a deeper single review (runtime or browser checks where relevant), and a large or risky change fans out the critics its risk profile calls for, up to all three.
 - **`always`:** the previous behaviour — every change gets all three critics.
 - **`never`:** never run critics; the final Reviewer always reviews alone.
 

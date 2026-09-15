@@ -65,6 +65,16 @@ describe("reviewer agent registration", () => {
         expect(prompt).toContain("The compliance matrix, finding contract, PASS/FAIL authority");
     });
 
+    test("reviewer generalizes the evidence envelope to any dispatched critic subset", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toMatch(
+            /the provided critic reports — one to three,\s*one section per critic that ran/,
+        );
+        expect(prompt).toMatch(/every blocking candidate from each provided critic/);
+        expect(prompt).toContain("An absent envelope means no critics ran for this change");
+    });
+
     test("reviewer directly disposes specialist blocking candidates instead of counting votes", () => {
         const prompt = loadPrompt(AGENT_IDS.reviewer);
 
@@ -369,11 +379,24 @@ describe("reviewer agent registration", () => {
         expect(prompt).toContain("Maintainability / readability");
         expect(prompt).toContain("Regression risk");
         expect(prompt).toContain("only where the concern is relevant to this change");
-        expect(prompt).toContain("Do not manufacture findings");
+        expect(prompt).toMatch(/(Never|Do not) manufacture (depth, breadth, or )?findings/);
         expect(prompt).toContain("not a second verdict mechanism");
         expect(prompt).toContain("flow into the compliance matrix");
         expect(prompt).toContain(
             "Do not FAIL merely because you prefer another style or abstraction",
+        );
+    });
+
+    test("reviewer prompt scales verification depth to the change", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt).toMatch(/with verification depth scaled to the change/);
+        expect(prompt).toMatch(
+            /a small text-only change needs focused evidence from its directly relevant checks/,
+        );
+        expect(prompt).toMatch(/not exhaustive runtime verification/);
+        expect(prompt).toMatch(
+            /a visual or runtime-behaviour change warrants runtime or browser verification of the affected behaviour/,
         );
     });
 

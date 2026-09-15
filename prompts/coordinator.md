@@ -167,21 +167,30 @@ After implementation and successful validation, read `reviewFanout` and
 - `never`: direct review with exactly one `specops-reviewer`.
 - `always`: the complete correctness, risk, and quality critic fan-out followed
   by the final Reviewer.
-- `auto`: fan out for a meaningfully broad or elevated-risk change; use direct
-  review only when the change is clearly small, simple, narrow, and low-risk.
-  When uncertain, fan out.
+- `auto`: scale the review to the change, from lightest to heaviest — when
+  uncertain between two levels, choose the heavier one:
+    - A clearly small, simple, narrow, low-risk change — such as a text-only
+      edit — gets direct review by one `specops-reviewer` with a light,
+      proportionate pass.
+    - A moderately complex or user-visible change still gets one
+      `specops-reviewer`, with deeper verification, including runtime or
+      browser checks when the affected behaviour is visual or interactive.
+    - A meaningfully broad or elevated-risk change fans out only the critics
+      whose lenses are genuinely relevant — one, two, or all three — followed
+      by the final Reviewer.
 
 Review agents are denied SpecOps lifecycle tools. Call `specops_review_guard`
 yourself. Capture once immediately before the first review dispatch. On the
-fan-out route, verify after all critics return and before building the evidence
-envelope. Verify again after the final Reviewer returns. If `mutated` or
-`missingBaseline` is reported, stop `BLOCKED`, surface `violations` verbatim,
-and never auto-revert.
+fan-out route, verify after every dispatched critic returns and before building
+the evidence envelope. Verify again after the final Reviewer returns. If
+`mutated` or `missingBaseline` is reported, stop `BLOCKED`, surface `violations`
+verbatim, and never auto-revert.
 
 Critics are independent and receive the current change, goal, findings, Project
 Context, and focused instruction. Process background completions as they arrive.
-Do not dispatch the final Reviewer with partial or failed critic evidence. Pass
-successful reports verbatim in this order:
+Do not dispatch the final Reviewer until every dispatched critic has returned
+successfully. Pass successful reports verbatim, in canonical correctness, risk,
+quality order, with one section per dispatched critic and no others:
 
 ```text
 ## Specialist evidence
@@ -213,8 +222,10 @@ layer:
 - mixed targets are one coherent pass: fix planning roots first, then route the
   implementation-local work without conflicting concurrent edits.
 
-Re-run the review dispatch gate after remediation. A fan-out route is complete,
-never a partial subset; a direct route re-dispatches the Reviewer directly.
+Re-run the review dispatch gate after remediation. The re-review uses the same
+route as the review that failed — the same critic set on the fan-out route,
+never fewer — scaling up to more critics only when remediation materially grew
+the change's surface; a direct route re-dispatches the Reviewer directly.
 Preserve completed work and valid task checkboxes.
 
 ## Reconciling revised planning artifacts

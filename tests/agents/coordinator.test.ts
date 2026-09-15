@@ -123,6 +123,36 @@ describe("coordinator prompt contract", () => {
         expect(prompt).toContain("F1..Fn");
     });
 
+    test("scales review breadth to the change under the auto route", () => {
+        const prompt = buildCoordinatorPrompt("interactive", false);
+
+        expect(prompt).toMatch(/scale the review to the change/);
+        expect(prompt).toMatch(/light,\s+proportionate pass/);
+        expect(prompt).toMatch(
+            /runtime or\s+browser checks when the affected behaviour is visual or interactive/,
+        );
+        expect(prompt).toMatch(/one, two, or all three/);
+        expect(prompt).toMatch(/when\s+uncertain between two levels, choose the heavier one/);
+    });
+
+    test("passes only dispatched critics in the evidence envelope", () => {
+        const prompt = buildCoordinatorPrompt("interactive", false);
+
+        expect(prompt).toMatch(/until every dispatched critic has returned\s+successfully/);
+        expect(prompt).toMatch(/one section per dispatched critic and no others/);
+        expect(prompt).toMatch(/after every dispatched critic returns and before building/);
+    });
+
+    test("keeps re-review on the failed round's route without shrinking the critic set", () => {
+        const prompt = buildCoordinatorPrompt("interactive", false);
+
+        expect(prompt).toMatch(/the same\s+route as the review that failed/);
+        expect(prompt).toMatch(/the same critic set on the fan-out route,\s+never fewer/);
+        expect(prompt).toMatch(
+            /scaling up to more critics only when remediation materially grew\s+the change's surface/,
+        );
+    });
+
     test("retains the archive boundary that tooling cannot prove", () => {
         const prompt = buildCoordinatorPrompt("interactive", false);
 

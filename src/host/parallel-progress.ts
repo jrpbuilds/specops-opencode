@@ -173,9 +173,10 @@ function pruneImplementers(run: ParallelRunState): void {
 
 /**
  * A critic re-dispatch (one whose id was already seen this run) means a new
- * fan-out round — remediation re-review re-runs the complete fan-out, never a
- * subset — so every critic entry from the previous round is cleared before
- * the new one is recorded. Implementer entries are unaffected.
+ * fan-out round, so every critic entry from the previous round is cleared
+ * before the new one is recorded — the new round's critic set may
+ * legitimately be a subset of the three critics. Implementer entries are
+ * unaffected.
  */
 function resetSupersededCritics(run: ParallelRunState): void {
     for (const [callId, entry] of run.dispatches) {

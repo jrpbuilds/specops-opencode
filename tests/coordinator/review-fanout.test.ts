@@ -204,3 +204,80 @@ describe("createReviewFanout", () => {
         expect(fanout.active).toBe(0);
     });
 });
+
+describe("createReviewFanout subset rounds", () => {
+    test("defaults to the complete critic set", () => {
+        const fanout = createReviewFanout(3);
+
+        expect(fanout.pending).toEqual(["correctness", "risk", "quality"]);
+        expect(fanout.dispatch()).toEqual(["correctness", "risk", "quality"]);
+    });
+
+    test("runs a single-critic round to its own fan-in gate", () => {
+        const fanout = createReviewFanout(3, ["risk"]);
+
+        expect(fanout.pending).toEqual(["risk"]);
+        expect(fanout.dispatch()).toEqual(["risk"]);
+        expect(fanout.allReportsCollected()).toBe(false);
+        fanout.complete("risk", report("risk"));
+        expect(fanout.allReportsCollected()).toBe(true);
+        expect([...fanout.reports().entries()]).toEqual([["risk", report("risk")]]);
+    });
+
+    test("does not open the fan-in gate while an unselected critic stays untouched", () => {
+        const fanout = createReviewFanout(2, ["correctness", "quality"]);
+
+        expect(fanout.pending).toEqual(["correctness", "quality"]);
+        expect(fanout.dispatch()).toEqual(["correctness", "quality"]);
+        expect(fanout.complete("correctness", report("correctness"))).toBe(true);
+        expect(fanout.allReportsCollected()).toBe(false);
+        fanout.complete("quality", report("quality"));
+        expect(fanout.allReportsCollected()).toBe(true);
+    });
+
+    test("blocks fan-in when only a selected critic fails", () => {
+        const fanout = createReviewFanout(2, ["correctness"]);
+
+        fanout.dispatch();
+        fanout.fail("correctness");
+
+        expect(fanout.blocked).toBe(true);
+        expect(fanout.allReportsCollected()).toBe(false);
+    });
+
+    test("completing an unselected critic is rejected without changing state", () => {
+        const fanout = createReviewFanout(1, ["risk"]);
+
+        expect(fanout.dispatch()).toEqual(["risk"]);
+        expect(fanout.complete("correctness", report("correctness"))).toBe(false);
+        expect(fanout.complete("quality", report("quality"))).toBe(false);
+        expect(fanout.completed).toEqual([]);
+        expect(fanout.inFlight).toEqual(["risk"]);
+    });
+
+    test("resets a subset round back to its selected critics", () => {
+        const fanout = createReviewFanout(1, ["quality"]);
+
+        fanout.dispatch();
+        fanout.fail("quality");
+        fanout.reset();
+
+        expect(fanout.blocked).toBe(false);
+        expect(fanout.pending).toEqual(["quality"]);
+        expect(fanout.failed).toEqual([]);
+        expect(fanout.dispatch()).toEqual(["quality"]);
+    });
+
+    test("normalizes duplicate and unordered selections to canonical order", () => {
+        const fanout = createReviewFanout(3, ["quality", "correctness", "quality"]);
+
+        expect(fanout.pending).toEqual(["correctness", "quality"]);
+        expect(fanout.dispatch()).toEqual(["correctness", "quality"]);
+    });
+
+    test("rejects an empty round selection", () => {
+        expect(() => createReviewFanout(1, [])).toThrow(
+            "createReviewFanout requires at least one critic for the round",
+        );
+    });
+});

@@ -12,7 +12,7 @@ The Implementer's completion claim, checkbox state, summary, and reported test r
 
 ## Using specialist evidence
 
-When the Coordinator provides a `## Specialist evidence` envelope, treat the three reports as evidence, not votes or authority, and verify them directly. Cross-check every material claim against the approved artifacts, implementation, and tests; your direct inspection remains authoritative. The specialists are independent and do not see each other's reports. Their `blocking candidate` labels do not determine materiality. The compliance matrix, finding contract, PASS/FAIL authority, and remediation re-review rules below remain unchanged.
+When the Coordinator provides a `## Specialist evidence` envelope, treat the provided critic reports — one to three, one section per critic that ran — as evidence, not votes or authority, and verify them directly. Cross-check every material claim against the approved artifacts, implementation, and tests; your direct inspection remains authoritative. The specialists are independent and do not see each other's reports. Their `blocking candidate` labels do not determine materiality. The compliance matrix, finding contract, PASS/FAIL authority, and remediation re-review rules below remain unchanged.
 
 An absent envelope means no critics ran for this change: perform the normal full review above with no Specialist disposition section.
 
@@ -43,7 +43,7 @@ Do not archive the change.
 
 ## Review lenses
 
-Apply these lenses systematically, but proportionally — only where the concern is relevant to this change. Do not manufacture findings for concerns that do not apply. Findings discovered through any lens flow into the compliance matrix (as `FAILING` where they cover an approved behaviour) and the `F1..Fn` blocking finding contract below; lenses are not a second verdict mechanism.
+Apply these lenses systematically, but proportionally — only where the concern is relevant to this change, and with verification depth scaled to the change: a small text-only change needs focused evidence from its directly relevant checks, not exhaustive runtime verification, while a visual or runtime-behaviour change warrants runtime or browser verification of the affected behaviour. Never manufacture depth, breadth, or findings the change does not call for. Findings discovered through any lens flow into the compliance matrix (as `FAILING` where they cover an approved behaviour) and the `F1..Fn` blocking finding contract below; lenses are not a second verdict mechanism.
 
 - **Correctness / spec compliance** — approved requirements and scenarios behave as required; the implementation matches the intended behaviour.
 - **Reliability** — error handling, invalid or missing inputs, failure paths, state consistency, and resource/lifecycle handling where relevant.
@@ -94,7 +94,7 @@ Specialist disposition:
 - Q1 — ...
 ```
 
-Include one line for every specialist blocking candidate and omit specialists' non-blocking findings unless they materially inform the verdict. Omit the whole section when no specialist evidence was provided. A PASS requires every material specialist concern to be resolved or defensibly rejected through direct inspection.
+Include one line for every blocking candidate from each provided critic and omit specialists' non-blocking findings unless they materially inform the verdict. Omit the whole section when no specialist evidence was provided. A PASS requires every material specialist concern to be resolved or defensibly rejected through direct inspection.
 
 Number every blocking finding `F1`, `F2`, ..., `Fn` so it can be mapped directly to remediation. Every blocking finding must include exactly one Correction target, and each finding must include:
 

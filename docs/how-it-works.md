@@ -66,13 +66,13 @@ The native Todo sidebar is a runtime-owned projection of durable OpenSpec state,
 
 The list also follows review to the end. The runtime observes the reviewer's verdict from its result, so a pass checks off review and moves the list to the final archive step, while flagged findings route current work into the remediation and re-review stages as each round runs. A plan revision made after a passed review regresses the list back to the new implementation work. And when a change is archived, the whole list reads as completed — the run is over, so the panel finishes cleanly instead of leaving the last step dangling.
 
-## Review: three perspectives, one verdict
+## Review: independent perspectives, one verdict
 
-After implementation, the coordinator picks a review route with the **review dispatch gate** before dispatching any reviewer. Changes that span a meaningfully large surface (multiple subsystems or capabilities, substantial or numerous tasks) or carry elevated risk regardless of size (security, data or migration handling, compatibility or cross-cutting behaviour, concurrency) run the complete three-critic fan-out below — **correctness**, **risk**, and **quality** — in parallel up to your concurrency limit; each returns a complete critique and none sees the others' reports. A small, simple change goes to a single `specops-reviewer` directly. Blocking findings are numbered (`F1`, `F2`, …) so they can be traced through remediation.
+After implementation, the coordinator picks a review route with the **review dispatch gate** before dispatching any reviewer, scaling review effort to the change. A small, simple change goes to a single `specops-reviewer` directly for a light, proportionate pass. A moderately complex or user-visible change still gets one reviewer, with deeper verification — runtime or browser checks when the affected behaviour is visual or interactive. Changes that span a meaningfully large surface (multiple subsystems or capabilities, substantial or numerous tasks) or carry elevated risk regardless of size (security, data or migration handling, compatibility or cross-cutting behaviour, concurrency) fan out the critics below — **correctness**, **risk**, and **quality** — in parallel up to your concurrency limit, including only the critics whose lenses are genuinely relevant (up to all three); each returns a complete critique and none sees the others' reports. Blocking findings are numbered (`F1`, `F2`, …) so they can be traced through remediation.
 
 The same parallelism covers planning and implementation: independent planning artifacts author concurrently, and implementation parallelizes only when the change is large enough and planned work is genuinely segregated so concurrent lanes actually finish sooner — small changes (roughly three or fewer files in one coherent area) and tightly related work always build on a single implementer. When one lane receives staged assignments, its implementer session may be reused to preserve useful context, but every dispatch receives fresh canonical state; a fresh implementer dispatch is always a valid fallback. Launch OpenCode with `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true` for the best experience — parallel specialists then run as background tasks and each finished slot is refilled immediately, instead of waiting for every in-flight specialist to finish before the next batch starts.
 
-The final `specops-reviewer` receives all three reports verbatim as evidence on the fan-out route and owns the only PASS/FAIL decision either way. The critics don't vote and can't overrule it.
+The final `specops-reviewer` receives every dispatched critic's report verbatim as evidence on the fan-out route and owns the only PASS/FAIL decision either way. The critics don't vote and can't overrule it.
 
 During the review window, review agents can't change tracked repository files or the `openspec/` tree. If protected state changes mid-review, the run stops rather than pass a review that no longer matches the work — so a PASS means the review looked at exactly what shipped.
 
@@ -85,7 +85,7 @@ A FAIL doesn't automatically go back to the Implementer. The coordinator classif
 - Findings about requirements or tasks → the Planner revises those artifacts first.
 - Mixed findings → one coherent pass, earliest roots first, keeping completed work.
 
-After correction, the review dispatch gate runs again — the full three-specialist fan-out when it applies, never a partial subset — followed by a fresh Reviewer verdict.
+After correction, the review dispatch gate runs again — the same critic set as the review that failed, never fewer, followed by a fresh Reviewer verdict.
 
 ## Standard vs Auto
 

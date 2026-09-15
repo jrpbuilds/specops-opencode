@@ -39,24 +39,41 @@ export interface ReviewFanout {
     /** Mark one pending or active critic as failed and close final-review fan-in. */
     fail(id: ReviewCriticId): void;
 
-    /** Return true only when all three critics completed without a failure. */
+    /** Return true only when every critic selected for this round completed without a failure. */
     allReportsCollected(): boolean;
 
     /** Return a non-mutating, canonically ordered snapshot of completed reports. */
     reports(): ReadonlyMap<ReviewCriticId, string>;
 
-    /** Clear this round so the full fan-out can run again for remediation. */
+    /** Clear this round so the same fan-out can run again for remediation. */
     reset(): void;
 }
 
 /**
  * Create a review fan-out bounded by the configured concurrency.
  *
+ * A round may cover a subset of the critics — graduated review dispatches only
+ * the lenses a change calls for — so `critics` names this round's selected
+ * set. Duplicates and ordering are normalized to canonical order; the set
+ * defaults to all three critics.
+ *
  * @param maxConcurrency Maximum number of review critics allowed in flight.
- * @returns A fresh fan-out with all critics pending and no failures.
+ * @param critics Critic ids selected for this round; empty selections are a
+ *   programming error.
+ * @returns A fresh fan-out with every selected critic pending and no failures.
  */
-export function createReviewFanout(maxConcurrency: number): ReviewFanout {
-    const pending = new Set<ReviewCriticId>(REVIEW_CRITIC_IDS);
+export function createReviewFanout(
+    maxConcurrency: number,
+    critics: readonly ReviewCriticId[] = REVIEW_CRITIC_IDS,
+): ReviewFanout {
+    const selected: readonly ReviewCriticId[] = REVIEW_CRITIC_IDS.filter(id =>
+        critics.includes(id),
+    );
+    if (selected.length === 0) {
+        throw new Error("createReviewFanout requires at least one critic for the round");
+    }
+
+    const pending = new Set<ReviewCriticId>(selected);
     const inFlight = new Set<ReviewCriticId>();
     const completed = new Set<ReviewCriticId>();
     const failed = new Set<ReviewCriticId>();
@@ -116,11 +133,11 @@ export function createReviewFanout(maxConcurrency: number): ReviewFanout {
             blocked = true;
         },
         allReportsCollected(): boolean {
-            return !blocked && failed.size === 0 && completed.size === REVIEW_CRITIC_IDS.length;
+            return !blocked && failed.size === 0 && completed.size === selected.length;
         },
         reports(): ReadonlyMap<ReviewCriticId, string> {
             const snapshot = new Map<ReviewCriticId, string>();
-            for (const id of REVIEW_CRITIC_IDS) {
+            for (const id of selected) {
                 const report = completedReports.get(id);
                 if (report !== undefined) snapshot.set(id, report);
             }
@@ -132,7 +149,7 @@ export function createReviewFanout(maxConcurrency: number): ReviewFanout {
             completed.clear();
             failed.clear();
             completedReports.clear();
-            for (const id of REVIEW_CRITIC_IDS) pending.add(id);
+            for (const id of selected) pending.add(id);
             blocked = false;
         },
     };
