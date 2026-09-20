@@ -44,7 +44,7 @@ describe("createTodoDisplayHook", () => {
         expect(metadata.todos).toEqual([]);
     });
 
-    test("suppression applies to the auto coordinator mode", async () => {
+    test("suppression applies to the auto orchestrator mode", async () => {
         recordSessionBinding("ses_auto", "SpecOps Auto", "example");
         const output = {
             title: "Todos",

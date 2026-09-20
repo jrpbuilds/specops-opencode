@@ -84,7 +84,7 @@ describe("registerModelSettings", () => {
                 expect(
                     options.slice(0, 10).map(option => option.title.replace(/^[!*] /, "")),
                 ).toEqual([
-                    "Coordinator",
+                    "Orchestrator",
                     "Explorer",
                     "Planner",
                     "Designer",

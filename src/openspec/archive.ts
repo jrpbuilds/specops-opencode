@@ -12,7 +12,7 @@ import { assertShape, OpenSpecShapeError, type Schema } from "./validation.js";
  * review, and that verdict is not durable OpenSpec state, so no trustworthy
  * canonical source exists. Manufacture of an `archive.allowed` fact from
  * structural readiness alone is forbidden; the passed-review-before-archive
- * invariant stays coordinator-owned prompt guidance until durable review
+ * invariant stays orchestrator-owned prompt guidance until durable review
  * state is separately scoped.
  */
 
@@ -66,7 +66,7 @@ export type OpenSpecArchiveResult =
  * reports. SpecOps policy also requires a passed review before archiving, and
  * that verdict is not durable OpenSpec state, so this module must never be
  * read as proof that archiving is legal. Archive legality stays a
- * coordinator-owned invariant until review success is durably represented.
+ * orchestrator-owned invariant until review success is durably represented.
  *
  * @param change The active OpenSpec change name supplied to the CLI.
  * @param cwd The project directory in which OpenSpec resolves its root.

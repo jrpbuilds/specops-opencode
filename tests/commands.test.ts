@@ -3,10 +3,10 @@ import { describe, expect, test } from "bun:test";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
-    buildCoordinatorPrompt,
+    buildOrchestratorPrompt,
     SPECOPS_AGENT_ID,
     SPECOPS_AUTO_AGENT_ID,
-} from "../src/agents/coordinator.js";
+} from "../src/agents/orchestrator.js";
 import { DESIGNER_AGENT_ID } from "../src/agents/designer.js";
 import { EXPLORER_AGENT_ID } from "../src/agents/explorer.js";
 import { FRONTIER_AGENT_ID } from "../src/agents/frontier.js";
@@ -73,13 +73,13 @@ describe("SpecOps server plugin", () => {
                 ]);
                 expect(config.command).toEqual(COMMANDS);
                 expect(config.command?.specops).toEqual({
-                    description: "Run a goal under the SpecOps coordinator",
+                    description: "Run a goal under the SpecOps orchestrator",
                     agent: SPECOPS_AGENT_ID,
                     template: "$ARGUMENTS",
                 });
                 expect(config.command?.["specops-auto"]).toEqual({
                     description:
-                        "Run a goal under the SpecOps Auto coordinator (autonomous, no human checkpoints)",
+                        "Run a goal under the SpecOps Auto orchestrator (autonomous, no human checkpoints)",
                     agent: SPECOPS_AUTO_AGENT_ID,
                     template: "$ARGUMENTS",
                 });
@@ -114,7 +114,7 @@ describe("SpecOps server plugin", () => {
         });
     });
 
-    test("registers coordinator modes and specialist prompts with expected permissions", async () => {
+    test("registers orchestrator modes and specialist prompts with expected permissions", async () => {
         await withTempDir(async dir => {
             const original = process.env.XDG_CONFIG_HOME;
             process.env.XDG_CONFIG_HOME = dir;
@@ -122,13 +122,13 @@ describe("SpecOps server plugin", () => {
                 const config = await loadPluginConfig(dir);
 
                 expect(config.agent?.[SPECOPS_AGENT_ID]).toMatchObject({
-                    description: "SpecOps coordinator for spec-driven development",
+                    description: "SpecOps orchestrator for spec-driven development",
                     mode: "primary",
-                    prompt: buildCoordinatorPrompt("interactive", false),
+                    prompt: buildOrchestratorPrompt("interactive", false),
                 });
                 expect(config.agent?.[SPECOPS_AUTO_AGENT_ID]).toMatchObject({
                     mode: "primary",
-                    prompt: buildCoordinatorPrompt("auto", false),
+                    prompt: buildOrchestratorPrompt("auto", false),
                 });
                 expect(
                     (config.agent?.[SPECOPS_AGENT_ID]?.permission as { question?: string })
@@ -141,7 +141,7 @@ describe("SpecOps server plugin", () => {
 
                 expect(config.agent?.[EXPLORER_AGENT_ID] as Record<string, unknown>).toEqual({
                     description:
-                        "Investigates repository source, behavior, conventions, tests, constraints, and risks for planning and design. Use when the SpecOps coordinator needs focused repository evidence.",
+                        "Investigates repository source, behavior, conventions, tests, constraints, and risks for planning and design. Use when the SpecOps orchestrator needs focused repository evidence.",
                     mode: "subagent",
                     hidden: true,
                     permission: EXPLORER_PERMISSION,
@@ -185,7 +185,7 @@ describe("SpecOps server plugin", () => {
         });
     });
 
-    test("keeps Frontier absent and its coordinator policy unloaded when disabled", async () => {
+    test("keeps Frontier absent and its orchestrator policy unloaded when disabled", async () => {
         await withTempDir(async dir => {
             const original = process.env.XDG_CONFIG_HOME;
             process.env.XDG_CONFIG_HOME = dir;
@@ -204,7 +204,7 @@ describe("SpecOps server plugin", () => {
         });
     });
 
-    test("registers Frontier and loads its coordinator policy when enabled", async () => {
+    test("registers Frontier and loads its orchestrator policy when enabled", async () => {
         await withTempDir(async dir => {
             const original = process.env.XDG_CONFIG_HOME;
             process.env.XDG_CONFIG_HOME = dir;
@@ -224,10 +224,10 @@ describe("SpecOps server plugin", () => {
                     prompt: loadPrompt(AGENT_IDS.frontier),
                 });
                 expect(config.agent?.[SPECOPS_AGENT_ID]?.prompt).toBe(
-                    buildCoordinatorPrompt("interactive", true),
+                    buildOrchestratorPrompt("interactive", true),
                 );
                 expect(config.agent?.[SPECOPS_AUTO_AGENT_ID]?.prompt).toBe(
-                    buildCoordinatorPrompt("auto", true),
+                    buildOrchestratorPrompt("auto", true),
                 );
             } finally {
                 process.env.XDG_CONFIG_HOME = original;

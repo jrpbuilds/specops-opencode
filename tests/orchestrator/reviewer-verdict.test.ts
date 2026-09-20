@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parseReviewerVerdict } from "../../src/coordinator/reviewer-verdict.js";
+import { parseReviewerVerdict } from "../../src/orchestrator/reviewer-verdict.js";
 
 describe("parseReviewerVerdict", () => {
     test("reads a PASS outcome line", () => {

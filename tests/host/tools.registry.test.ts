@@ -3,7 +3,7 @@ import { TOOLS } from "../../src/host/tools/index.js";
 
 /**
  * The registered catalogue is a compatibility contract: OpenCode 1 users and
- * coordinator prompts depend on these exact tool names, descriptions, and
+ * orchestrator prompts depend on these exact tool names, descriptions, and
  * argument shapes surviving refactors of either host layer.
  */
 const EXPECTED_TOOLS = [

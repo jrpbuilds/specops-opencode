@@ -5,7 +5,7 @@ import type { SpecOpsConfig } from "../config.js";
 import type { SpecOpsAgentDefinition } from "./definition.js";
 
 /**
- * Subagent ID used by the Coordinator to delegate genuinely difficult
+ * Subagent ID used by the Orchestrator to delegate genuinely difficult
  * technical blocker consultation.
  */
 export const FRONTIER_AGENT_ID = AGENT_IDS.frontier;

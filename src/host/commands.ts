@@ -1,21 +1,21 @@
 import type { Config } from "@opencode-ai/plugin";
-import { SPECOPS_AGENT_ID, SPECOPS_AUTO_AGENT_ID } from "../agents/coordinator.js";
+import { SPECOPS_AGENT_ID, SPECOPS_AUTO_AGENT_ID } from "../agents/orchestrator.js";
 
 /**
  * Slash commands installed by the plugin.
  *
  * Lifecycle tools such as archive are intentionally not duplicated as slash
- * commands; the Coordinator invokes them when the workflow reaches that step.
+ * commands; the Orchestrator invokes them when the workflow reaches that step.
  */
 export const COMMANDS = {
     specops: {
-        description: "Run a goal under the SpecOps coordinator",
+        description: "Run a goal under the SpecOps orchestrator",
         agent: SPECOPS_AGENT_ID,
         template: "$ARGUMENTS",
     },
     "specops-auto": {
         description:
-            "Run a goal under the SpecOps Auto coordinator (autonomous, no human checkpoints)",
+            "Run a goal under the SpecOps Auto orchestrator (autonomous, no human checkpoints)",
         agent: SPECOPS_AUTO_AGENT_ID,
         template: "$ARGUMENTS",
     },

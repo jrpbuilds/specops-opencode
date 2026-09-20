@@ -121,10 +121,10 @@ try {
         "packed TUI entry missing",
     );
     assert(
-        (await readFile(path.join(packageDirectory, "prompts", "coordinator.md"), "utf8"))
+        (await readFile(path.join(packageDirectory, "prompts", "orchestrator.md"), "utf8"))
             .trim()
-            .startsWith("# SpecOps Coordinator"),
-        "packed coordinator prompt missing or malformed",
+            .startsWith("# SpecOps Orchestrator"),
+        "packed orchestrator prompt missing or malformed",
     );
     assert(
         (await readFile(path.join(packageDirectory, "prompts", "explorer.md"), "utf8"))
@@ -174,11 +174,11 @@ try {
     assert(
         typeof config.agent["SpecOps"].prompt === "string" &&
             config.agent["SpecOps"].prompt.length > 0,
-        "coordinator prompt not loaded in packed install",
+        "orchestrator prompt not loaded in packed install",
     );
     assert(
         config.agent["SpecOps"].prompt.includes("## Engram"),
-        "packed coordinator prompt did not resolve shared Engram fragment",
+        "packed orchestrator prompt did not resolve shared Engram fragment",
     );
     assert(
         typeof config.agent["specops-explorer"].prompt === "string" &&
@@ -217,7 +217,7 @@ try {
     );
 
     // Autonomous boundary: the SpecOps Auto agent denies the question permission and appends
-    // the autonomous policy to the shared coordinator prompt.
+    // the autonomous policy to the shared orchestrator prompt.
     assert(
         config.agent["SpecOps Auto"].permission?.question === "deny",
         "packed auto question permission",

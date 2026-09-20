@@ -4,16 +4,16 @@
  * OpenCode exposes no plugin write API for Todo state (verified through the
  * 1.18.x line): the only writer is the builtin `todowrite` tool executed
  * inside a model turn. Synchronization is therefore deliberately
- * trigger-driven — the supported v1.7 contract. The coordinator's only Todo
+ * trigger-driven — the supported v1.7 contract. The orchestrator's only Todo
  * interaction is a blind refresh trigger: it invokes `todowrite` with an
  * empty payload at the moments the contract names, and this hook intercepts
  * that one tool through `tool.execute.before` and replaces the payload in
  * place with the canonical projection rebuilt from fresh durable OpenSpec
- * state. The coordinator never authors, reconciles, reads, or persists Todo
+ * state. The orchestrator never authors, reconciles, reads, or persists Todo
  * content; every trigger is a full rebuild, so extra triggers are harmless
  * and no stale entries survive a planning revision or a resume. Ephemeral
  * parallel implementation/review entries are derived from the runtime's own
- * dispatch observation (`./parallel-progress.ts`), not coordinator state.
+ * dispatch observation (`./parallel-progress.ts`), not orchestrator state.
  *
  * The hook is session-scoped and fails open by construction: sessions without
  * a recorded SpecOps binding pass through untouched, every failure (durable
@@ -57,9 +57,9 @@
  * Exports: `TodoSyncDeps`, `createTodoSyncHook`.
  */
 import type { Hooks } from "@opencode-ai/plugin";
-import { buildNativeTodoProjection } from "../coordinator/todo-publication.js";
-import type { ParallelProgressInput } from "../coordinator/todo-projection.js";
-import { summarizeReviewFanout } from "../coordinator/review-fanout.js";
+import { buildNativeTodoProjection } from "../orchestrator/todo-publication.js";
+import type { ParallelProgressInput } from "../orchestrator/todo-projection.js";
+import { summarizeReviewFanout } from "../orchestrator/review-fanout.js";
 import type { ApplyInstructionsResult } from "../openspec/apply-instructions.js";
 import type { OpenSpecStatusResult } from "../openspec/status.js";
 import { snapshotParallelProgress } from "./parallel-progress.js";
@@ -126,9 +126,9 @@ export function createTodoSyncHook(deps: TodoSyncDeps): NonNullable<Hooks["tool.
                 return;
             }
             // Ephemeral parallel entries come from the runtime's own dispatch
-            // observation, never from coordinator bookkeeping. Completion is
+            // observation, never from orchestrator bookkeeping. Completion is
             // carried by durable task checkboxes and failures surface through
-            // coordinator reporting, so only live work is projected.
+            // orchestrator reporting, so only live work is projected.
             const snapshot = snapshotParallelProgress(input.sessionID);
             const fanout = snapshot.reviewFanout
                 ? summarizeReviewFanout(snapshot.reviewFanout)

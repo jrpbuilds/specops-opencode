@@ -5,7 +5,7 @@ import { requireLifecyclePermission } from "../lifecycle-permission.js";
 import { recordSessionBinding } from "../session-bindings.js";
 import { withTodoRefreshReminder } from "./todo-refresh.js";
 
-/** Expose canonical OpenSpec archive instructions through the coordinator-only tool surface. */
+/** Expose canonical OpenSpec archive instructions through the orchestrator-only tool surface. */
 export const archiveInstructionsTool = tool({
     description: "Read normalized OpenSpec archive instructions for a named change.",
     args: {

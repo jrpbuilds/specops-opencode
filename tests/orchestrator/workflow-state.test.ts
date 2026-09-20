@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
     deriveEligibleActions,
     deriveWorkflowState,
-} from "../../src/coordinator/workflow-state.js";
+} from "../../src/orchestrator/workflow-state.js";
 import type { NormalizedApplyInstructionContext } from "../../src/openspec/apply-instructions.js";
 import type { NormalizedStatus } from "../../src/openspec/status.js";
 

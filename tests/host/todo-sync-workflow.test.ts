@@ -15,7 +15,7 @@ import type { NormalizedArtifact, OpenSpecStatusResult } from "../../src/openspe
  * projection (#52).
  *
  * Each test drives the real publication hook through a scripted sequence of
- * durable OpenSpec states while the coordinator fires only the blind refresh
+ * durable OpenSpec states while the orchestrator fires only the blind refresh
  * trigger from the contract (`{"todos": []}`), verifying that the canonical
  * projection stays useful across a run: initial publish, transitions,
  * revisions, resume, failure recovery, and idempotence. Ephemeral parallel

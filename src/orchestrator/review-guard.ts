@@ -241,7 +241,7 @@ export async function captureBaseline(
  *
  * `modified` — present in both with different hashes; `added` — present only
  * in the current state; `removed` — present only in the baseline. Scopes are
- * tagged so the coordinator can tell tracked from OpenSpec evidence.
+ * tagged so the orchestrator can tell tracked from OpenSpec evidence.
  */
 export function diffBaseline(baseline: Baseline, current: CurrentState): GuardViolation[] {
     const violations: GuardViolation[] = [];
@@ -275,7 +275,7 @@ export function diffBaseline(baseline: Baseline, current: CurrentState): GuardVi
  * Verify current protected state against the captured baseline for one change.
  *
  * Fails closed: when the baseline file is absent or unusable the result
- * reports `missingBaseline: true` so the coordinator must block rather than
+ * reports `missingBaseline: true` so the orchestrator must block rather than
  * continue with an unguarded review.
  */
 export async function verifyBaseline(

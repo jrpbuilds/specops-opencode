@@ -12,7 +12,7 @@ export type OpenSpecActiveChange = {
     lastModified: string;
 };
 
-/** Current OpenSpec facts needed by the Coordinator at startup. */
+/** Current OpenSpec facts needed by the Orchestrator at startup. */
 export type OpenSpecContextResult = {
     available: boolean;
     initialized: boolean;

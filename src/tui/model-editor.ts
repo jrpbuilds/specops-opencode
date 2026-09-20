@@ -1,5 +1,5 @@
 /**
- * Orchestrator for the staged SpecOps model-mapping editor.
+ * Coordinates the staged SpecOps model-mapping editor.
  *
  * Bootstraps one editor session from persisted configuration plus the current
  * OpenCode provider catalogue, then wires the navigation graph between the

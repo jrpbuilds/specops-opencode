@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { createRollingScheduler } from "../../src/coordinator/rolling-scheduler.js";
+import { createRollingScheduler } from "../../src/orchestrator/rolling-scheduler.js";
 import type { NormalizedArtifact, NormalizedStatus } from "../../src/openspec/status.js";
-import type { PlanningRoute } from "../../src/coordinator/batching.js";
+import type { PlanningRoute } from "../../src/orchestrator/batching.js";
 
 const output = (id: string): string => `openspec/changes/example/${id}.md`;
 

@@ -1,7 +1,7 @@
 /**
  * Shared traversal primitives over the normalized OpenSpec artifact graph.
  *
- * Coordinator modules use these helpers to reason about `applyRequires`
+ * Orchestrator modules use these helpers to reason about `applyRequires`
  * closure and dependency reachability without duplicating graph walks.
  * Every function is pure: it never mutates the supplied lookup and retains
  * no state between calls.

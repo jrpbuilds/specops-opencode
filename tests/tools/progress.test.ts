@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { ImplementerDispatchObservation } from "../../src/coordinator/implementer-progress.js";
-import type { ReviewFanoutSnapshot } from "../../src/coordinator/review-fanout.js";
+import type { ImplementerDispatchObservation } from "../../src/orchestrator/implementer-progress.js";
+import type { ReviewFanoutSnapshot } from "../../src/orchestrator/review-fanout.js";
 import type { NormalizedApplyInstructionContext } from "../../src/openspec/apply-instructions.js";
 import { progress, type ProgressDeps } from "../../src/tools/progress.js";
 

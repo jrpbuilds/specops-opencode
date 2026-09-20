@@ -161,16 +161,16 @@ describe("frontier agent registration", () => {
         const config: Config = {
             agent: {
                 build: { description: "Build", mode: "primary", prompt: "Build prompt" },
-                [AGENT_IDS.coordinator]: {
-                    description: "Coordinator",
+                [AGENT_IDS.orchestrator]: {
+                    description: "Orchestrator",
                     mode: "primary",
-                    prompt: "Coordinator prompt",
+                    prompt: "Orchestrator prompt",
                 },
             },
         };
         registerWorkflowSubagents(config, makeConfig());
 
         expect(config.agent?.build?.description).toBe("Build");
-        expect(config.agent?.[AGENT_IDS.coordinator]?.description).toBe("Coordinator");
+        expect(config.agent?.[AGENT_IDS.orchestrator]?.description).toBe("Orchestrator");
     });
 });

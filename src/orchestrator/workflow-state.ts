@@ -9,7 +9,7 @@
  * The projection is pure: no I/O, no timestamps, no inferred state; identical
  * durable state yields identical results. `allowed: true` and a listed
  * eligible action mean an action is legal now, never that it is recommended;
- * choosing among legal actions remains coordinator judgement.
+ * choosing among legal actions remains orchestrator judgement.
  *
  * Exports: `WorkflowPhase`, `LifecycleBlockReason`, `LifecycleCapability`,
  * `LifecycleCapabilities`, `WorkflowState`, `EligibleAction`,
@@ -68,7 +68,7 @@ export type WorkflowState = {
  * current state; OpenSpec structural readiness alone must not stand in for a
  * passed review. Adding an archive action requires a canonical legality
  * source first; until then the passed-review-before-archive invariant stays
- * coordinator-owned prompt guidance.
+ * orchestrator-owned prompt guidance.
  */
 export type EligibleAction =
     | { type: "author-artifact"; artifactId: string; role: AgentId }
@@ -143,7 +143,7 @@ export function deriveWorkflowState(
  * Derive the mechanically legal workflow actions from one durable snapshot.
  *
  * Author actions reuse the planning scheduler's feasibility derivation, so
- * they always agree with what the coordinator could dispatch, and they never
+ * they always agree with what the orchestrator could dispatch, and they never
  * appear alongside implementation or review actions: a feasible artifact
  * means the planning closure is unsatisfied, which blocks both capabilities.
  * The implementation action is legal whenever implementation work is, taking
@@ -153,7 +153,7 @@ export function deriveWorkflowState(
  * The result is ordered deterministically for stable output and tests —
  * author actions in schema order, then the implementation-family action, then
  * review — but the order is not a recommendation; when several actions are
- * legal, choosing among them is coordinator judgement.
+ * legal, choosing among them is orchestrator judgement.
  *
  * @param status Normalized `openspec status` facts for the change.
  * @param apply Normalized `openspec instructions apply` facts for the change.

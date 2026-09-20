@@ -11,7 +11,7 @@ export const SPECOPS_LIFECYCLE_PERMISSION = "specops_lifecycle";
  * Architectural invariant overlay applied to every specialist role.
  *
  * The runtime loop guard is pinned to allow: specialists serve both the
- * interactive and auto coordinators through one static registration, so a
+ * interactive and auto orchestrators through one static registration, so a
  * pinned deny would silently abort spurious loop detection mid-phase, and an
  * ask would stall headless runs. Allow matches the shipped implementer and
  * reviewer precedent; each role's edit/bash scope bounds any loop's blast
@@ -25,15 +25,15 @@ const SPECIALIST_INVARIANT = {
     [SPECOPS_LIFECYCLE_PERMISSION]: "deny",
 } as const;
 
-/** Coordinator lifecycle ownership — task and question are added at registration. */
-const COORDINATOR_LIFECYCLE_INVARIANT = {
+/** Orchestrator lifecycle ownership — task and question are added at registration. */
+const ORCHESTRATOR_LIFECYCLE_INVARIANT = {
     [SPECOPS_LIFECYCLE_PERMISSION]: "allow",
 } as const;
 
-/** Shared authority for the two SpecOps coordinator entry points. */
-export const COORDINATOR_PERMISSION = {
-    ...ROLE_CAPABILITY_POLICY["specops-coordinator"],
-    ...COORDINATOR_LIFECYCLE_INVARIANT,
+/** Shared authority for the two SpecOps orchestrator entry points. */
+export const ORCHESTRATOR_PERMISSION = {
+    ...ROLE_CAPABILITY_POLICY["specops-orchestrator"],
+    ...ORCHESTRATOR_LIFECYCLE_INVARIANT,
 } as const;
 
 /** Read-only repository evidence role. */
@@ -78,7 +78,7 @@ export const FRONTIER_PERMISSION = {
  * remain denied.
  *
  * `specops_config` is intentionally NOT allowlisted here. It is a
- * coordinator-only surface, and ordinary agents are denied through the
+ * orchestrator-only surface, and ordinary agents are denied through the
  * `"*": "deny"` fallback. Add it here only if ordinary agents should ever gain
  * read access to the effective SpecOps configuration (not currently desired).
  */
@@ -93,7 +93,7 @@ export const ORDINARY_LIFECYCLE_PERMISSION = {
  *
  * OpenCode's `task` permission matches its `pattern` against the subagent
  * name, so `specops-*` covers internal subagents and future roles in that
- * reserved namespace. The visible `SpecOps` coordinator keys are handled
+ * reserved namespace. The visible `SpecOps` orchestrator keys are handled
  * separately by `isSpecOpsAgentKey`.
  */
 export const SPECOPS_TASK_GLOB = "specops-*";
@@ -103,13 +103,13 @@ export const SPECOPS_TASK_GLOB = "specops-*";
  *
  * `applyTaskBoundary` applies an equivalent `specops-*` deny at the global and
  * per-agent levels through `denyTaskGlob`, preserving existing task rules while
- * placing the deny last. Coordinators use `SPECOPS_TASK_ALLOW`, which denies
+ * placing the deny last. Orchestrators use `SPECOPS_TASK_ALLOW`, which denies
  * every other subagent and allows the private namespace last so OpenCode's
  * last-match-wins evaluation selects it.
  */
 export const SPECOPS_TASK_DENY = { [SPECOPS_TASK_GLOB]: "deny" } as const;
 
-/** Coordinators may dispatch only the private specops-* subagent namespace. */
+/** Orchestrators may dispatch only the private specops-* subagent namespace. */
 export const SPECOPS_TASK_ALLOW = {
     "*": "deny",
     [SPECOPS_TASK_GLOB]: "allow",

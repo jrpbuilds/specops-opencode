@@ -4,12 +4,12 @@ import { getProcessConfig } from "../config-snapshot.js";
 import { requireLifecyclePermission } from "../lifecycle-permission.js";
 
 /**
- * Expose the effective SpecOps configuration snapshot to coordinators only.
+ * Expose the effective SpecOps configuration snapshot to orchestrators only.
  *
  * The process-effective configuration is captured once at plugin startup (see
  * `src/host/config-snapshot.ts`). SpecOps configuration changes require an
  * OpenCode restart before they become effective; this tool does not support
- * live reload. Access is restricted to the two SpecOps coordinators through
+ * live reload. Access is restricted to the two SpecOps orchestrators through
  * the existing lifecycle permission boundary: specialists carry an explicit
  * `specops_lifecycle: deny` invariant, and ordinary primary agents are denied
  * through the `"*": "deny"` fallback of `ORDINARY_LIFECYCLE_PERMISSION` (which

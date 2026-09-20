@@ -15,13 +15,13 @@ afterEach(() => {
 });
 
 describe("session bindings", () => {
-    test("records the interactive coordinator with its change name", () => {
+    test("records the interactive orchestrator with its change name", () => {
         recordSessionBinding("ses_1", "SpecOps", "example");
 
         expect(getSessionBinding("ses_1")).toEqual({ change: "example", mode: "interactive" });
     });
 
-    test("records the auto coordinator with auto mode", () => {
+    test("records the auto orchestrator with auto mode", () => {
         recordSessionBinding("ses_2", "SpecOps Auto", "example");
 
         expect(getSessionBinding("ses_2")).toEqual({ change: "example", mode: "auto" });

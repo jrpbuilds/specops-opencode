@@ -13,7 +13,7 @@ import { configPath, withTempDir } from "../helpers.js";
  */
 function fullyPopulated() {
     const agents = structuredClone(DEFAULT_CONFIG.agents);
-    agents["specops-coordinator"] = {
+    agents["specops-orchestrator"] = {
         model: "opencode-go/minimax-m3",
         variant: "thinking",
     };
@@ -120,6 +120,47 @@ describe("loadConfig", () => {
         });
     });
 
+    test("migrates a legacy orchestrator id and keeps the configured model", async () => {
+        await withTempDir(async dir => {
+            const destination = configPath(dir);
+            const agents: Record<string, unknown> = structuredClone(DEFAULT_CONFIG.agents);
+            delete agents["specops-orchestrator"];
+            agents["specops-coordinator"] = {
+                model: "opencode-go/minimax-m3",
+                variant: "thinking",
+            };
+            await writeFile(destination, JSON.stringify({ agents }), "utf8");
+
+            const loaded = await loadConfig(destination);
+            expect(loaded.agents["specops-orchestrator"]).toEqual({
+                model: "opencode-go/minimax-m3",
+                variant: "thinking",
+            });
+
+            await saveConfig(loaded, destination);
+            const onDisk = JSON.parse(await readFile(destination, "utf8"));
+            expect(onDisk.agents["specops-orchestrator"]).toEqual({
+                model: "opencode-go/minimax-m3",
+                variant: "thinking",
+            });
+            expect(onDisk.agents["specops-coordinator"]).toBeUndefined();
+        });
+    });
+
+    test("fails loudly when legacy and canonical orchestrator entries conflict", async () => {
+        await withTempDir(async dir => {
+            const destination = configPath(dir);
+            const agents: Record<string, unknown> = structuredClone(DEFAULT_CONFIG.agents);
+            agents["specops-coordinator"] = { model: "opencode-go/minimax-m3" };
+            agents["specops-orchestrator"] = { model: "openference/GLM-5.2" };
+            await writeFile(destination, JSON.stringify({ agents }), "utf8");
+
+            await expect(loadConfig(destination)).rejects.toThrow(
+                /conflicting SpecOps configuration/,
+            );
+        });
+    });
+
     test("loads an older config without frontier escalation as disabled", async () => {
         await withTempDir(async dir => {
             const destination = configPath(dir);
@@ -161,7 +202,7 @@ describe("saveConfig", () => {
         await withTempDir(async dir => {
             const destination = configPath(dir);
             const config = structuredClone(DEFAULT_CONFIG);
-            config.agents["specops-coordinator"] = {
+            config.agents["specops-orchestrator"] = {
                 model: "openference/GLM-5.2",
                 variant: "high",
             };

@@ -37,7 +37,7 @@ export type ImplementerProgressResult =
     | { readonly ok: false; readonly error: string };
 
 /**
- * Label for one dispatch in deterministic error messages: its coordinator
+ * Label for one dispatch in deterministic error messages: its orchestrator
  * record id when present, else its 1-based position (`#2` for the second
  * dispatch), matching the todo-projection fallback id convention.
  */
@@ -262,7 +262,7 @@ const ASSIGNED_TASK_IDS_LINE_START = /^assignedTaskIds\b/;
 const ASSIGNED_TASK_IDS_LINE = /^assignedTaskIds:(.+)$/;
 
 /**
- * Read the coordinator's `assignedTaskIds` line from one dispatch prompt.
+ * Read the orchestrator's `assignedTaskIds` line from one dispatch prompt.
  *
  * Detection is line-anchored and parse is line-strict, so the whole-list
  * serial path passes through untouched even when its prose quotes the field
@@ -335,7 +335,7 @@ export function validateImplementerCapacity(input: {
  * implementer by construction, and an active whole-list implementer holds
  * every task, so no scoped assignment can be disjoint from it. Rejections
  * name the overlap without repartitioning either side: reforming lanes is
- * coordinator judgement.
+ * orchestrator judgement.
  *
  * `taskIds === undefined` marks the dispatch being checked as whole-list.
  */

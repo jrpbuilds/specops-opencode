@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { nextBatch, type PlanningRoute } from "../../src/coordinator/batching.js";
-import { buildTodoProjection } from "../../src/coordinator/todo-projection.js";
-import { derivePlanningCompletion } from "../../src/coordinator/planning-completion.js";
+import { nextBatch, type PlanningRoute } from "../../src/orchestrator/batching.js";
+import { buildTodoProjection } from "../../src/orchestrator/todo-projection.js";
+import { derivePlanningCompletion } from "../../src/orchestrator/planning-completion.js";
 import {
     deriveEligibleActions,
     deriveWorkflowState,
-} from "../../src/coordinator/workflow-state.js";
+} from "../../src/orchestrator/workflow-state.js";
 import type { NormalizedApplyInstructionContext } from "../../src/openspec/apply-instructions.js";
 import type { NormalizedStatus } from "../../src/openspec/status.js";
 

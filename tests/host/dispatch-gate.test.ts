@@ -20,7 +20,7 @@ import {
 } from "../../src/config.js";
 import { AGENT_IDS, SPECIALIST_AGENT_IDS } from "../../src/agents/ids.js";
 
-const COORDINATOR = "ses_coordinator";
+const ORCHESTRATOR = "ses_orchestrator";
 const DIRECTORY = "/project";
 
 function makeConfig(maxSubagentConcurrency: number): SpecOpsConfig {
@@ -98,7 +98,7 @@ async function dispatch(
     callID = `gate-${++nextCallID}`,
 ): Promise<void> {
     await hook(
-        { tool: "task", sessionID: COORDINATOR, callID },
+        { tool: "task", sessionID: ORCHESTRATOR, callID },
         { args: { subagent_type: subagentType ?? AGENT_IDS.implementer, prompt } },
     );
 }
@@ -106,7 +106,7 @@ async function dispatch(
 /** Complete a foreground dispatch after its before-hook was fired directly. */
 async function completeForeground(callID: string): Promise<void> {
     await recordTaskResult(
-        { tool: "task", sessionID: COORDINATOR, callID, args: {} },
+        { tool: "task", sessionID: ORCHESTRATOR, callID, args: {} },
         { title: "", output: "done", metadata: {} },
     );
 }
@@ -114,7 +114,7 @@ async function completeForeground(callID: string): Promise<void> {
 /** Seed one in-flight implementer entry through the fail-open observer. */
 async function seedInFlight(callID: string, prompt?: string): Promise<void> {
     await recordTaskDispatch(
-        { tool: "task", sessionID: COORDINATOR, callID },
+        { tool: "task", sessionID: ORCHESTRATOR, callID },
         {
             args: {
                 subagent_type: AGENT_IDS.implementer,
@@ -138,14 +138,14 @@ function gateFor(tasks: readonly { id: string; done: boolean }[] | string, maxCo
 async function compose(hook: GateHook, callID: string, prompt?: string): Promise<boolean> {
     try {
         await hook(
-            { tool: "task", sessionID: COORDINATOR, callID },
+            { tool: "task", sessionID: ORCHESTRATOR, callID },
             { args: { subagent_type: AGENT_IDS.implementer, prompt } },
         );
     } catch {
         return false;
     }
     await recordTaskDispatch(
-        { tool: "task", sessionID: COORDINATOR, callID },
+        { tool: "task", sessionID: ORCHESTRATOR, callID },
         { args: { subagent_type: AGENT_IDS.implementer, prompt } },
     );
     return true;
@@ -158,7 +158,7 @@ const TASKS = [
 ];
 
 beforeEach(() => {
-    recordSessionBinding(COORDINATOR, "SpecOps", "example");
+    recordSessionBinding(ORCHESTRATOR, "SpecOps", "example");
 });
 
 afterEach(() => {
@@ -171,7 +171,7 @@ describe("implementer dispatch gate passthrough", () => {
         const { durable, hook } = gateFor(TASKS);
 
         await expect(
-            hook({ tool: "todowrite", sessionID: COORDINATOR, callID: "c1" }, { args: {} }),
+            hook({ tool: "todowrite", sessionID: ORCHESTRATOR, callID: "c1" }, { args: {} }),
         ).resolves.toBeUndefined();
         await expect(
             dispatch(hook, "changeName: example", AGENT_IDS.reviewer),
@@ -218,7 +218,7 @@ describe("specialist dispatch identity", () => {
             );
         }
         expect(durable.reads).toEqual([]);
-        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({ count: 0, assignments: [] });
+        expect(snapshotActiveImplementers(ORCHESTRATOR)).toEqual({ count: 0, assignments: [] });
     });
 
     test("each non-implementer specialist passes with the matching change name, no durable read", async () => {
@@ -275,7 +275,7 @@ describe("specialist dispatch identity", () => {
             "Invalid specops-implementer dispatch: no change name",
         );
         expect(durable.reads).toEqual([]);
-        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
+        expect(snapshotActiveImplementers(ORCHESTRATOR)).toEqual({
             count: 1,
             assignments: [{ dispatchId: "c1", taskIds: ["2.1"] }],
         });
@@ -284,7 +284,7 @@ describe("specialist dispatch identity", () => {
     test("a resumed dispatch is validated against the current binding, not the old one", async () => {
         const { durable, hook } = gateFor(TASKS);
 
-        recordSessionBinding(COORDINATOR, "SpecOps", "renamed-change");
+        recordSessionBinding(ORCHESTRATOR, "SpecOps", "renamed-change");
         await expect(dispatch(hook, "changeName: example\nassignedTaskIds: 2.1")).rejects.toThrow(
             "Invalid specops-implementer dispatch: changeName 'example' does not match " +
                 "the active change 'renamed-change'",
@@ -380,7 +380,7 @@ describe("implementer dispatch gate rejections", () => {
         ).resolves.toBeUndefined();
         expect(durable.reads).toEqual([]);
 
-        const snapshot = snapshotActiveImplementers(COORDINATOR);
+        const snapshot = snapshotActiveImplementers(ORCHESTRATOR);
         expect(snapshot.count).toBe(1);
         expect(snapshot.assignments[0]?.taskIds).toBeUndefined();
     });
@@ -432,7 +432,7 @@ describe("implementer dispatch gate rejections", () => {
                 "'example' (openspec failed)",
         );
         expect(durable.reads).toEqual([{ change: "example", cwd: DIRECTORY }]);
-        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
+        expect(snapshotActiveImplementers(ORCHESTRATOR)).toEqual({
             count: 0,
             assignments: [],
         });
@@ -453,7 +453,7 @@ describe("implementer dispatch gate composition", () => {
         await expect(
             compose(hook, "c1", "changeName: example\nassignedTaskIds: 2.1"),
         ).resolves.toBe(true);
-        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
+        expect(snapshotActiveImplementers(ORCHESTRATOR)).toEqual({
             count: 1,
             assignments: [{ dispatchId: "c1", taskIds: ["2.1"] }],
         });
@@ -465,7 +465,7 @@ describe("implementer dispatch gate composition", () => {
         await expect(
             compose(hook, "c1", "changeName: example\nassignedTaskIds: 9.9"),
         ).resolves.toBe(false);
-        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({ count: 0, assignments: [] });
+        expect(snapshotActiveImplementers(ORCHESTRATOR)).toEqual({ count: 0, assignments: [] });
     });
 
     test("valid serial then valid parallel flows through capacity and disjointness", async () => {
@@ -477,7 +477,7 @@ describe("implementer dispatch gate composition", () => {
         await expect(
             compose(hook, "c2", "changeName: example\nassignedTaskIds: 2.2"),
         ).resolves.toBe(true);
-        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
+        expect(snapshotActiveImplementers(ORCHESTRATOR)).toEqual({
             count: 2,
             assignments: [
                 { dispatchId: "c1", taskIds: ["2.1"] },
@@ -507,7 +507,7 @@ describe("implementer dispatch gate concurrency", () => {
 
         durable.release();
         expect(await Promise.all([first, second])).toEqual([true, false]);
-        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
+        expect(snapshotActiveImplementers(ORCHESTRATOR)).toEqual({
             count: 1,
             assignments: [{ dispatchId: "c1", taskIds: ["2.1"] }],
         });
@@ -530,7 +530,7 @@ describe("implementer dispatch gate concurrency", () => {
 
         durable.release();
         expect(await first).toBe(true);
-        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
+        expect(snapshotActiveImplementers(ORCHESTRATOR)).toEqual({
             count: 1,
             assignments: [{ dispatchId: "c1", taskIds: ["2.1"] }],
         });
@@ -553,7 +553,7 @@ describe("implementer dispatch gate concurrency", () => {
 
         durable.release();
         expect(await Promise.all([first, second])).toEqual([true, true]);
-        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
+        expect(snapshotActiveImplementers(ORCHESTRATOR)).toEqual({
             count: 2,
             assignments: [
                 { dispatchId: "c1", taskIds: ["2.1"] },

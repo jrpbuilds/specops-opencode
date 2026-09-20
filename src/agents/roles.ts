@@ -20,7 +20,7 @@ export type RoleMeta = {
  * a compile-time error and preserves literal types for the shared scalars.
  */
 export const ROLE_META = {
-    [AGENT_IDS.coordinator]: { displayName: "Coordinator", promptFile: "coordinator.md" },
+    [AGENT_IDS.orchestrator]: { displayName: "Orchestrator", promptFile: "orchestrator.md" },
     [AGENT_IDS.explorer]: { displayName: "Explorer", promptFile: "explorer.md" },
     [AGENT_IDS.planner]: { displayName: "Planner", promptFile: "planner.md" },
     [AGENT_IDS.designer]: { displayName: "Designer", promptFile: "designer.md" },

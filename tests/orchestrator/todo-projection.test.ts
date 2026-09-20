@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import {
     buildTodoProjection,
     type TodoProjectionEntry,
-} from "../../src/coordinator/todo-projection.js";
-import type { ReviewFanoutProgress } from "../../src/coordinator/review-fanout.js";
+} from "../../src/orchestrator/todo-projection.js";
+import type { ReviewFanoutProgress } from "../../src/orchestrator/review-fanout.js";
 import type { NormalizedApplyInstructionContext } from "../../src/openspec/apply-instructions.js";
 import type { NormalizedArtifact, NormalizedStatus } from "../../src/openspec/status.js";
 

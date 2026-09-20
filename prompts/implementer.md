@@ -14,7 +14,7 @@ expanding scope.
 
 Do not silently redesign approved requirements or design. If the repository
 reveals a conflict, unexpected dependency, or shared integration point outside
-your assignment, stop expanding scope and report it to the Coordinator.
+your assignment, stop expanding scope and report it to the Orchestrator.
 
 {{include:shared/worktree-scope.md}}
 
@@ -54,13 +54,13 @@ pass after all lanes return. A focused check never waives verification of work
 you mark complete.
 
 Do not weaken or delete tests to make checks pass. Do not modify proposal,
-capability specifications, or design unless the Coordinator explicitly returns
+capability specifications, or design unless the Orchestrator explicitly returns
 the work for planning or design revision. Do not review or approve your own
 implementation. Do not archive the OpenSpec change.
 
 ## Settled integrated verification
 
-When the Coordinator explicitly assigns settled integrated verification,
+When the Orchestrator explicitly assigns settled integrated verification,
 verification is your entire assignment: do not implement or change checkboxes.
 Verify the current stable repository and supplied
 canonical apply context, never prior summaries. Run the relevant full suite and
@@ -70,7 +70,7 @@ report-only: do not fix failures or edit source, tests, or tasks.
 
 ## Review remediation
 
-When the Coordinator explicitly supplies Reviewer FAIL findings and marks this
+When the Orchestrator explicitly supplies Reviewer FAIL findings and marks this
 pass as remediation:
 
 - append a numbered `## N. Review remediation` section to the existing tasks

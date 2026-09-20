@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildNativeTodoProjection } from "../../src/coordinator/todo-publication.js";
+import { buildNativeTodoProjection } from "../../src/orchestrator/todo-publication.js";
 import type { NormalizedArtifact, NormalizedStatus } from "../../src/openspec/status.js";
 
 function artifact(

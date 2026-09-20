@@ -2,7 +2,7 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
-import { SPECOPS_AGENT_ID, SPECOPS_AUTO_AGENT_ID } from "../../src/agents/coordinator.js";
+import { SPECOPS_AGENT_ID, SPECOPS_AUTO_AGENT_ID } from "../../src/agents/orchestrator.js";
 import { EXPLORER_AGENT_ID } from "../../src/agents/explorer.js";
 import { PLANNER_AGENT_ID } from "../../src/agents/planner.js";
 import { DESIGNER_AGENT_ID } from "../../src/agents/designer.js";
@@ -74,7 +74,7 @@ async function runPluginConfig(
 }
 
 describe("isSpecOpsAgentKey", () => {
-    test("recognizes the coordinators and every specops-* agent", () => {
+    test("recognizes the orchestrators and every specops-* agent", () => {
         expect(isSpecOpsAgentKey(SPECOPS_AGENT_ID)).toBe(true);
         expect(isSpecOpsAgentKey(SPECOPS_AUTO_AGENT_ID)).toBe(true);
         for (const id of INTERNAL_SUBAGENT_IDS) {
@@ -143,7 +143,7 @@ describe("applyTaskBoundary", () => {
         expect(custom.permission?.task).toEqual({ [SPECOPS_TASK_GLOB]: "deny" });
     });
 
-    test("leaves SpecOps coordinators and subagents untouched", () => {
+    test("leaves SpecOps orchestrators and subagents untouched", () => {
         const config = {
             agent: {
                 [SPECOPS_AGENT_ID]: { mode: "primary", permission: { question: "allow" } },
@@ -152,10 +152,10 @@ describe("applyTaskBoundary", () => {
         } as unknown as Config;
         applyTaskBoundary(config);
 
-        const coordinator = config.agent?.[SPECOPS_AGENT_ID] as {
+        const orchestrator = config.agent?.[SPECOPS_AGENT_ID] as {
             permission?: Record<string, unknown>;
         };
-        expect(coordinator.permission).toEqual({ question: "allow" });
+        expect(orchestrator.permission).toEqual({ question: "allow" });
 
         const explorer = config.agent?.[EXPLORER_AGENT_ID] as {
             permission?: Record<string, unknown>;
@@ -165,7 +165,7 @@ describe("applyTaskBoundary", () => {
 });
 
 describe("SpecOpsPlugin boundary integration", () => {
-    test("registers internal subagents hidden with task deny, coordinators primary with task allow", async () => {
+    test("registers internal subagents hidden with task deny, orchestrators primary with task allow", async () => {
         const config: Config = {};
         await runPluginConfig(config, { ...DEFAULT_CONFIG, frontierEscalation: true });
 
@@ -180,10 +180,10 @@ describe("SpecOpsPlugin boundary integration", () => {
         expect(config.agent?.[SPECOPS_AGENT_ID]).toMatchObject({ mode: "primary" });
         expect(config.agent?.[SPECOPS_AUTO_AGENT_ID]).toMatchObject({ mode: "primary" });
 
-        const coordinator = config.agent?.[SPECOPS_AGENT_ID] as {
+        const orchestrator = config.agent?.[SPECOPS_AGENT_ID] as {
             permission?: Record<string, unknown>;
         };
-        expect(coordinator.permission?.task).toEqual({ "*": "deny", "specops-*": "allow" });
+        expect(orchestrator.permission?.task).toEqual({ "*": "deny", "specops-*": "allow" });
 
         const auto = config.agent?.[SPECOPS_AUTO_AGENT_ID] as {
             permission?: Record<string, unknown>;

@@ -12,12 +12,12 @@ import type { AgentId } from "./ids.js";
  * emitted first and specific allows follow.
  */
 export const ROLE_CAPABILITY_POLICY = {
-    "specops-coordinator": {
+    "specops-orchestrator": {
         external_directory: "deny",
         edit: { "*": "deny" },
         // Read-only OpenSpec inspection: instructions fetches template text for
         // subagents, `change show` renders deltas/JSON for orchestration. Neither
-        // mutates openspec state, so the coordinator cannot drift specs through bash.
+        // mutates openspec state, so the orchestrator cannot drift specs through bash.
         bash: {
             "*": "deny",
             "openspec --help": "allow",

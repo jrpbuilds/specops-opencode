@@ -3,7 +3,7 @@ import { ROLE_WORKFLOW_ORDER } from "../../src/agents/ids.js";
 import { agentDisplayName } from "../../src/models.js";
 
 const DISPLAY_NAMES = [
-    "Coordinator",
+    "Orchestrator",
     "Explorer",
     "Planner",
     "Designer",
@@ -24,7 +24,7 @@ describe("agentDisplayName", () => {
 describe("ROLE_WORKFLOW_ORDER", () => {
     test("matches the SpecOps workflow order", () => {
         expect(ROLE_WORKFLOW_ORDER).toEqual([
-            "specops-coordinator",
+            "specops-orchestrator",
             "specops-explorer",
             "specops-planner",
             "specops-designer",

@@ -9,7 +9,7 @@ export type CreateChangeDeps = {
  * Request creation of one named OpenSpec change.
  *
  * This validates only the required input and leaves name rules and workflow
- * policy to OpenSpec and the Coordinator respectively.
+ * policy to OpenSpec and the Orchestrator respectively.
  */
 export async function createChange(
     change: string,

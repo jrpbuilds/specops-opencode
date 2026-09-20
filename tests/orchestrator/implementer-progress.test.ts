@@ -9,7 +9,7 @@ import {
     validateImplementerDispatchScope,
     type ActiveImplementerAssignment,
     type ImplementerAssignment,
-} from "../../src/coordinator/implementer-progress.js";
+} from "../../src/orchestrator/implementer-progress.js";
 
 /** Build a minimal normalized apply-instruction context around a task list. */
 const fakeApplyContext = (

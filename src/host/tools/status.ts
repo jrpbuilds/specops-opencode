@@ -7,7 +7,7 @@ import { recordSessionBinding } from "../session-bindings.js";
 import { withTodoRefreshReminder } from "./todo-refresh.js";
 
 /**
- * Expose authoritative OpenSpec status through the coordinator-only tool surface.
+ * Expose authoritative OpenSpec status through the orchestrator-only tool surface.
  *
  * The session directory is supplied by OpenCode so status targets the current
  * project rather than the process working directory. Both durable reads feed

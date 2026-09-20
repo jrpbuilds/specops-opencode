@@ -38,7 +38,7 @@ A complete example:
     "implementerFanout": "auto",
     "reviewFanout": "auto",
     "agents": {
-        "specops-coordinator": {
+        "specops-orchestrator": {
             "model": "opencode-go/deepseek-v4-flash",
             "variant": "high"
         },
@@ -81,11 +81,15 @@ A complete example:
 
 Every key is optional. Leave a role out (or set no `model`) and that role inherits OpenCode's global default model.
 
+## Upgrading from older releases
+
+Older releases named the primary role `specops-coordinator`. Existing files keep working: SpecOps reads the legacy key and migrates it to `specops-orchestrator` automatically, keeping the configured model and variant. New saves always write `specops-orchestrator`. If a file contains both keys with different models or variants, SpecOps refuses to guess and reports the conflict with guidance on how to resolve it.
+
 ## Configurable roles
 
 | Role key                     | Purpose                                 |
 | ---------------------------- | --------------------------------------- |
-| `specops-coordinator`        | Orchestrates the whole workflow         |
+| `specops-orchestrator`       | Orchestrates the whole workflow         |
 | `specops-explorer`           | Repository investigation                |
 | `specops-planner`            | Proposal, specifications, tasks         |
 | `specops-designer`           | Technical design                        |
@@ -135,7 +139,7 @@ Controls when implementation splits across parallel implementer lanes (requires 
 
 Controls whether review runs the independent critics (correctness, risk, quality) before the final Reviewer.
 
-- **`auto` (default):** the coordinator scales review to the change — a small, simple change gets a light single-reviewer pass, a moderately complex or user-visible change gets a deeper single review (runtime or browser checks where relevant), and a large or risky change fans out the critics its risk profile calls for, up to all three.
+- **`auto` (default):** the orchestrator scales review to the change — a small, simple change gets a light single-reviewer pass, a moderately complex or user-visible change gets a deeper single review (runtime or browser checks where relevant), and a large or risky change fans out the critics its risk profile calls for, up to all three.
 - **`always`:** the previous behaviour — every change gets all three critics.
 - **`never`:** never run critics; the final Reviewer always reviews alone.
 

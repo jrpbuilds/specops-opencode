@@ -8,7 +8,7 @@ Use the matrix below to pick a starting point, then validate the mapping on the 
 
 | Role           | What matters most                                   | Good options                                                     |
 | -------------- | --------------------------------------------------- | ---------------------------------------------------------------- |
-| Coordinator    | Reliable long-context instructions and tool routing | Hy3; MiniMax M3; DeepSeek V4 Flash                               |
+| Orchestrator   | Reliable long-context instructions and tool routing | Hy3; MiniMax M3; DeepSeek V4 Flash                               |
 | Explorer       | Fast, cheap repository reading                      | Qwen3.7 Plus; DeepSeek V4 Flash; Muse Spark 1.2 Contributor      |
 | Planner        | Requirements judgement                              | GPT-5.6 Terra; GLM 5.3; Kimi K3                                  |
 | Designer       | Architecture and trade-offs                         | GPT-5.6 Terra; GLM 5.3; Kimi K3                                  |
@@ -19,7 +19,7 @@ Use the matrix below to pick a starting point, then validate the mapping on the 
 
 ## Choose for the role, not the leaderboard
 
-The Coordinator is a great place to spend less. It follows a tightly defined workflow and routes work between constrained specialists; it doesn't need to be the strongest coding or architecture model in the stack. Hy3 is an excellent starting point because it's inexpensive and reliable at agentic tool calling. MiniMax M3 is a useful step up if you want a more capable controller.
+The Orchestrator is a great place to spend less. It follows a tightly defined workflow and routes work between constrained specialists; it doesn't need to be the strongest coding or architecture model in the stack. Hy3 is an excellent starting point because it's inexpensive and reliable at agentic tool calling. MiniMax M3 is a useful step up if you want a more capable controller.
 
 The Explorer is mostly a reading job. Context window, retrieval discipline, speed, and cost usually matter more than code generation. Qwen3.7 Plus is a good low-cost default, and DeepSeek V4 Flash is another strong choice. Muse Spark 1.2 Contributor can be especially effective for public-source investigation. The joke writes itself: Meta get a capable model to explore code they may later learn from. Don't use it for private or confidential source.
 
@@ -36,7 +36,7 @@ This is the only complete example in this guide. It uses low-cost models for rou
 ```json
 {
     "agents": {
-        "specops-coordinator": {
+        "specops-orchestrator": {
             "model": "opencode-go/hy3",
             "variant": "high"
         },
@@ -89,4 +89,4 @@ Concurrency changes speed, not the number of model calls. Auto review iterations
 
 The aim isn't to crown one model family. Different models make different assumptions, notice different risks, and have different strengths in tool use, long-context reading, architecture, implementation, and review. Deliberately varying the Planner, Designer, Implementer, Reviewer, and critics gives the workflow more independent perspectives.
 
-Don't dismiss a model because it's cheap or unfashionable in a broad benchmark. Hy3 and standard MiMo V2.5 are often underestimated, yet both can be excellent on narrow, well-constrained work. And a model that benchmarks well for code generation isn't automatically the right Coordinator, Explorer, or Reviewer. Match the model to the role, then test it on the kind of work you actually run.
+Don't dismiss a model because it's cheap or unfashionable in a broad benchmark. Hy3 and standard MiMo V2.5 are often underestimated, yet both can be excellent on narrow, well-constrained work. And a model that benchmarks well for code generation isn't automatically the right Orchestrator, Explorer, or Reviewer. Match the model to the role, then test it on the kind of work you actually run.

@@ -1,18 +1,18 @@
 import type { FanoutMode, SpecOpsConfig } from "../config.js";
 
 /**
- * Allow-listed, coordinator-relevant view of the effective SpecOps configuration.
+ * Allow-listed, orchestrator-relevant view of the effective SpecOps configuration.
  *
  * This is a stable, explicit API surface — NOT the raw `specops.json` shape.
  * Adding a new internal or host-only setting to {@link SpecOpsConfig} does not
- * automatically expose it to coordinators; extend this type deliberately when a
- * coordinator genuinely needs to reason about a new effective setting.
+ * automatically expose it to orchestrators; extend this type deliberately when a
+ * orchestrator genuinely needs to reason about a new effective setting.
  *
  * Values represent the configuration active for the current OpenCode process.
  * SpecOps configuration changes require an OpenCode restart before they become
  * effective; this view does not support live reload.
  */
-export type CoordinatorConfigView = {
+export type OrchestratorConfigView = {
     maxSubagentConcurrency: number;
     maxAutoReviewIterations: number;
     frontierEscalation: boolean;
@@ -32,7 +32,7 @@ export type ConfigViewDeps = {
 };
 
 /**
- * Build the allow-listed coordinator config view from a validated config.
+ * Build the allow-listed orchestrator config view from a validated config.
  *
  * The normalized `SpecOpsConfig` already carries concrete values for every
  * allow-listed field, so the view copies them directly rather than re-defaulting.
@@ -40,10 +40,10 @@ export type ConfigViewDeps = {
  * configuration.
  *
  * @param deps Provides the effective SpecOps configuration.
- * @returns A structured coordinator config view; the tool wrapper handles JSON
+ * @returns A structured orchestrator config view; the tool wrapper handles JSON
  *     serialization.
  */
-export function configView(deps: ConfigViewDeps): CoordinatorConfigView {
+export function configView(deps: ConfigViewDeps): OrchestratorConfigView {
     const config = deps.getConfig();
     return {
         maxSubagentConcurrency: config.maxSubagentConcurrency,

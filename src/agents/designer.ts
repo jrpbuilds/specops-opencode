@@ -5,7 +5,7 @@ import type { SpecOpsConfig } from "../config.js";
 import type { SpecOpsAgentDefinition } from "./definition.js";
 
 /**
- * Subagent ID used by the Coordinator to delegate technical design artifact
+ * Subagent ID used by the Orchestrator to delegate technical design artifact
  * authorship.
  */
 export const DESIGNER_AGENT_ID = AGENT_IDS.designer;

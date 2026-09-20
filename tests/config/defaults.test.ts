@@ -48,7 +48,7 @@ describe("DEFAULT_CONFIG", () => {
 
     test("structuredClone is independent of the original", () => {
         const copy = structuredClone(DEFAULT_CONFIG);
-        copy.agents["specops-coordinator"].model = "openference/GLM-5.2";
-        expect(DEFAULT_CONFIG.agents["specops-coordinator"]).toEqual({});
+        copy.agents["specops-orchestrator"].model = "openference/GLM-5.2";
+        expect(DEFAULT_CONFIG.agents["specops-orchestrator"]).toEqual({});
     });
 });

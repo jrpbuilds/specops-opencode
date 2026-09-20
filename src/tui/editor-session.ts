@@ -27,8 +27,8 @@ export type EditorSession = {
  * Navigation surface connecting the editor screens.
  *
  * Screens receive a navigator instead of importing one another, which keeps
- * the screen modules free of import cycles while the orchestrator owns the
- * wiring between them.
+ * the screen modules free of import cycles while the model-editor module owns
+ * the wiring between them.
  */
 export type EditorNavigator = {
     showRoleList(): void;

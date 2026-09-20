@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { buildCoordinatorPrompt } from "../../src/agents/coordinator.js";
+import { buildOrchestratorPrompt } from "../../src/agents/orchestrator.js";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import { loadPrompt } from "../../src/prompts.js";
 
-describe("coordinator-explorer-dispatch contract", () => {
-    const interactive = buildCoordinatorPrompt("interactive", false);
-    const auto = buildCoordinatorPrompt("auto", false);
+describe("orchestrator-explorer-dispatch contract", () => {
+    const interactive = buildOrchestratorPrompt("interactive", false);
+    const auto = buildOrchestratorPrompt("auto", false);
 
     test("both modes use the shared conditional evidence rule", () => {
         expect(interactive).toContain("## Conditional Explorer on resume");
@@ -30,7 +30,7 @@ describe("coordinator-explorer-dispatch contract", () => {
     test("specialists preserve the repository-evidence ownership boundary", () => {
         const planner = loadPrompt(AGENT_IDS.planner);
         expect(planner).toMatch(/Do not\s+inspect repository source yourself/);
-        expect(planner).toContain("tell the Coordinator exactly what Explorer must investigate");
+        expect(planner).toContain("tell the Orchestrator exactly what Explorer must investigate");
 
         const designer = loadPrompt(AGENT_IDS.designer);
         expect(designer).toMatch(/do not\s+inspect repository source yourself/i);

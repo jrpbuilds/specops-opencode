@@ -11,17 +11,17 @@ import {
     __resetSessionBindingsForTesting,
     recordSessionBinding,
 } from "../../src/host/session-bindings.js";
-import { summarizeReviewFanout } from "../../src/coordinator/review-fanout.js";
+import { summarizeReviewFanout } from "../../src/orchestrator/review-fanout.js";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 
-const COORDINATOR = "ses_coordinator";
+const ORCHESTRATOR = "ses_orchestrator";
 
 function beforeInput(callID: string) {
-    return { tool: "task", sessionID: COORDINATOR, callID };
+    return { tool: "task", sessionID: ORCHESTRATOR, callID };
 }
 
 function afterInput(callID: string, args?: Record<string, unknown>) {
-    return { tool: "task", sessionID: COORDINATOR, callID, args: args ?? {} };
+    return { tool: "task", sessionID: ORCHESTRATOR, callID, args: args ?? {} };
 }
 
 /** Fire the tracker's before/after seams for one background dispatch. */
@@ -52,7 +52,7 @@ async function observe(event: Record<string, unknown>): Promise<void> {
 }
 
 beforeEach(() => {
-    recordSessionBinding(COORDINATOR, "SpecOps", "example");
+    recordSessionBinding(ORCHESTRATOR, "SpecOps", "example");
 });
 
 afterEach(() => {
@@ -63,7 +63,7 @@ afterEach(() => {
 describe("parallel progress tracking", () => {
     test("ignores non-task tools, unbound sessions, and untracked subagents", async () => {
         await recordTaskDispatch(
-            { tool: "todowrite", sessionID: COORDINATOR, callID: "c1" },
+            { tool: "todowrite", sessionID: ORCHESTRATOR, callID: "c1" },
             {
                 args: {},
             },
@@ -76,17 +76,17 @@ describe("parallel progress tracking", () => {
         );
         await recordTaskDispatch(beforeInput("c3"), { args: { subagent_type: "specops-planner" } });
 
-        expect(snapshotParallelProgress(COORDINATOR)).toEqual({});
+        expect(snapshotParallelProgress(ORCHESTRATOR)).toEqual({});
     });
 
     test("tracks a background implementer dispatch through its task id and completion", async () => {
         await dispatchBackground("c1", AGENT_IDS.implementer, '<task id="task-1" state="running">');
-        expect(snapshotParallelProgress(COORDINATOR).implementerDispatches).toEqual([
+        expect(snapshotParallelProgress(ORCHESTRATOR).implementerDispatches).toEqual([
             { dispatchId: "task-1", state: "inFlight" },
         ]);
 
         await observe({ type: "session.idle", properties: { sessionID: "task-1" } });
-        expect(snapshotParallelProgress(COORDINATOR).implementerDispatches).toEqual([
+        expect(snapshotParallelProgress(ORCHESTRATOR).implementerDispatches).toEqual([
             { dispatchId: "task-1", state: "completed" },
         ]);
     });
@@ -94,13 +94,13 @@ describe("parallel progress tracking", () => {
     test("session.error and session.deleted fail the linked dispatch", async () => {
         await dispatchBackground("c1", AGENT_IDS.implementer, '<task id="task-1" state="running">');
         await observe({ type: "session.error", properties: { sessionID: "task-1" } });
-        expect(snapshotParallelProgress(COORDINATOR).implementerDispatches).toEqual([
+        expect(snapshotParallelProgress(ORCHESTRATOR).implementerDispatches).toEqual([
             { dispatchId: "task-1", state: "failed" },
         ]);
 
         await dispatchBackground("c2", AGENT_IDS.implementer, '<task id="task-2" state="running">');
         await observe({ type: "session.deleted", properties: { info: { id: "task-2" } } });
-        expect(snapshotParallelProgress(COORDINATOR).implementerDispatches).toEqual([
+        expect(snapshotParallelProgress(ORCHESTRATOR).implementerDispatches).toEqual([
             { dispatchId: "task-1", state: "failed" },
             { dispatchId: "task-2", state: "failed" },
         ]);
@@ -112,23 +112,23 @@ describe("parallel progress tracking", () => {
         });
         await recordTaskResult(afterInput("c1"), { title: "", output: "done", metadata: {} });
 
-        expect(snapshotParallelProgress(COORDINATOR).implementerDispatches).toEqual([
+        expect(snapshotParallelProgress(ORCHESTRATOR).implementerDispatches).toEqual([
             { state: "completed" },
         ]);
     });
 
     test("session.created corroborates the child link when the envelope is unparseable", async () => {
         await dispatchBackground("c1", AGENT_IDS.implementer, "no envelope here");
-        expect(snapshotParallelProgress(COORDINATOR).implementerDispatches).toEqual([
+        expect(snapshotParallelProgress(ORCHESTRATOR).implementerDispatches).toEqual([
             { state: "inFlight" },
         ]);
 
         await observe({
             type: "session.created",
-            properties: { info: { id: "task-1", parentID: COORDINATOR } },
+            properties: { info: { id: "task-1", parentID: ORCHESTRATOR } },
         });
         await observe({ type: "session.idle", properties: { sessionID: "task-1" } });
-        expect(snapshotParallelProgress(COORDINATOR).implementerDispatches).toEqual([
+        expect(snapshotParallelProgress(ORCHESTRATOR).implementerDispatches).toEqual([
             { dispatchId: "task-1", state: "completed" },
         ]);
     });
@@ -142,7 +142,7 @@ describe("parallel progress tracking", () => {
         await dispatchBackground("c2", "specops-review-risk", '<task id="r2" state="running">');
         await observe({ type: "session.idle", properties: { sessionID: "r1" } });
 
-        const snapshot = snapshotParallelProgress(COORDINATOR);
+        const snapshot = snapshotParallelProgress(ORCHESTRATOR);
         expect(snapshot.reviewFanout).toEqual({
             pending: ["quality"],
             inFlight: ["risk"],
@@ -164,7 +164,7 @@ describe("parallel progress tracking", () => {
     test("a critic failure is reflected and a re-dispatch starts a fresh round", async () => {
         await dispatchBackground("c1", "specops-review-risk", '<task id="r1" state="running">');
         await observe({ type: "session.error", properties: { sessionID: "r1" } });
-        expect(snapshotParallelProgress(COORDINATOR).reviewFanout).toEqual({
+        expect(snapshotParallelProgress(ORCHESTRATOR).reviewFanout).toEqual({
             pending: ["correctness", "quality"],
             inFlight: [],
             completed: [],
@@ -172,7 +172,7 @@ describe("parallel progress tracking", () => {
         });
 
         await dispatchBackground("c2", "specops-review-risk", '<task id="r2" state="running">');
-        expect(snapshotParallelProgress(COORDINATOR).reviewFanout).toEqual({
+        expect(snapshotParallelProgress(ORCHESTRATOR).reviewFanout).toEqual({
             pending: ["correctness", "quality"],
             inFlight: ["risk"],
             completed: [],
@@ -185,7 +185,7 @@ describe("parallel progress tracking", () => {
         await observe({ type: "session.idle", properties: { sessionID: "task-1" } });
         await dispatchBackground("c2", AGENT_IDS.implementer, '<task id="task-2" state="running">');
 
-        expect(snapshotParallelProgress(COORDINATOR).implementerDispatches).toEqual([
+        expect(snapshotParallelProgress(ORCHESTRATOR).implementerDispatches).toEqual([
             { dispatchId: "task-1", state: "completed" },
             { dispatchId: "task-2", state: "inFlight" },
         ]);
@@ -197,13 +197,13 @@ describe("parallel progress tracking", () => {
 
         // Resume: a new dispatch reusing the prior session id as its task id.
         await dispatchBackground("c2", AGENT_IDS.implementer, '<task id="task-1" state="running">');
-        expect(snapshotParallelProgress(COORDINATOR).implementerDispatches).toEqual([
+        expect(snapshotParallelProgress(ORCHESTRATOR).implementerDispatches).toEqual([
             { dispatchId: "task-1", state: "completed" },
             { dispatchId: "task-1", state: "inFlight" },
         ]);
 
         await observe({ type: "session.idle", properties: { sessionID: "task-1" } });
-        expect(snapshotParallelProgress(COORDINATOR).implementerDispatches).toEqual([
+        expect(snapshotParallelProgress(ORCHESTRATOR).implementerDispatches).toEqual([
             { dispatchId: "task-1", state: "completed" },
             { dispatchId: "task-1", state: "completed" },
         ]);
@@ -217,7 +217,7 @@ describe("parallel progress tracking", () => {
             '<task id="r1" state="running">',
         );
 
-        const snapshot = snapshotParallelProgress(COORDINATOR);
+        const snapshot = snapshotParallelProgress(ORCHESTRATOR);
         expect(snapshot.implementerDispatches).toEqual([
             { dispatchId: "task-1", state: "inFlight" },
         ]);
@@ -232,7 +232,7 @@ describe("parallel progress tracking", () => {
     test("observation seams never throw on malformed input", async () => {
         await expect(
             recordTaskDispatch(
-                { tool: "task", sessionID: COORDINATOR, callID: "c1" },
+                { tool: "task", sessionID: ORCHESTRATOR, callID: "c1" },
                 undefined as never,
             ),
         ).resolves.toBeUndefined();
@@ -253,7 +253,7 @@ describe("active implementer ownership", () => {
             "assignedTaskIds: 1.1, 1.2",
         );
 
-        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
+        expect(snapshotActiveImplementers(ORCHESTRATOR)).toEqual({
             count: 1,
             assignments: [{ dispatchId: "task-1", taskIds: ["1.1", "1.2"] }],
         });
@@ -264,7 +264,7 @@ describe("active implementer ownership", () => {
             args: { subagent_type: AGENT_IDS.implementer, prompt: "assignedTaskIds: 2.1" },
         });
 
-        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
+        expect(snapshotActiveImplementers(ORCHESTRATOR)).toEqual({
             count: 1,
             assignments: [{ dispatchId: "c1", taskIds: ["2.1"] }],
         });
@@ -281,7 +281,7 @@ describe("active implementer ownership", () => {
             },
         });
 
-        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
+        expect(snapshotActiveImplementers(ORCHESTRATOR)).toEqual({
             count: 2,
             assignments: [{ dispatchId: "c1" }, { dispatchId: "c2" }],
         });
@@ -292,7 +292,7 @@ describe("active implementer ownership", () => {
             args: { subagent_type: AGENT_IDS.implementer, prompt: "assignedTaskIds = 1.1, 1.2" },
         });
 
-        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
+        expect(snapshotActiveImplementers(ORCHESTRATOR)).toEqual({
             count: 1,
             assignments: [{ dispatchId: "c1" }],
         });
@@ -305,14 +305,14 @@ describe("active implementer ownership", () => {
             '<task id="r1" state="running">',
         );
 
-        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({ count: 0, assignments: [] });
+        expect(snapshotActiveImplementers(ORCHESTRATOR)).toEqual({ count: 0, assignments: [] });
     });
 
     test("terminal entries release ownership; unbound sessions return empty views", async () => {
         await dispatchBackground("c1", AGENT_IDS.implementer, '<task id="task-1" state="running">');
         await observe({ type: "session.idle", properties: { sessionID: "task-1" } });
 
-        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({ count: 0, assignments: [] });
+        expect(snapshotActiveImplementers(ORCHESTRATOR)).toEqual({ count: 0, assignments: [] });
         expect(snapshotActiveImplementers("ses_unknown")).toEqual({ count: 0, assignments: [] });
     });
 
@@ -330,7 +330,7 @@ describe("active implementer ownership", () => {
             "assignedTaskIds: 2.1",
         );
 
-        expect(snapshotActiveImplementers(COORDINATOR)).toEqual({
+        expect(snapshotActiveImplementers(ORCHESTRATOR)).toEqual({
             count: 2,
             assignments: [
                 { dispatchId: "task-1", taskIds: ["1.1"] },

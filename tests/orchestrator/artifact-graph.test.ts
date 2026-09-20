@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { requiredClosure, transitiveRequires } from "../../src/coordinator/artifact-graph.js";
+import { requiredClosure, transitiveRequires } from "../../src/orchestrator/artifact-graph.js";
 import type { NormalizedArtifact } from "../../src/openspec/status.js";
 
 function artifact(id: string, requires: readonly string[] = []): NormalizedArtifact {

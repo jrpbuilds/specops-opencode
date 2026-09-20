@@ -197,7 +197,7 @@ describe("createTodoSyncHook", () => {
         ]);
     });
 
-    test("publishes with the binding's coordinator mode", async () => {
+    test("publishes with the binding's orchestrator mode", async () => {
         recordSessionBinding("ses_auto", "SpecOps Auto", "example");
         const hook = hookWith(okStatus());
 

@@ -5,7 +5,7 @@ import type { SpecOpsConfig } from "../config.js";
 import type { SpecOpsAgentDefinition } from "./definition.js";
 
 /**
- * Subagent ID used by the Coordinator to delegate approved task implementation
+ * Subagent ID used by the Orchestrator to delegate approved task implementation
  * and verification.
  */
 export const IMPLEMENTER_AGENT_ID = AGENT_IDS.implementer;

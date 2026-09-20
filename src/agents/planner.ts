@@ -5,7 +5,7 @@ import type { SpecOpsConfig } from "../config.js";
 import type { SpecOpsAgentDefinition } from "./definition.js";
 
 /**
- * Subagent ID used by the Coordinator to delegate planning-artifact authorship.
+ * Subagent ID used by the Orchestrator to delegate planning-artifact authorship.
  */
 export const PLANNER_AGENT_ID = AGENT_IDS.planner;
 

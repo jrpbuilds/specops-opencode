@@ -25,9 +25,9 @@ export type ArchiveOutcome = {
  * The name is trimmed and rejected when empty, then passed to the injected
  * OpenSpec operation. This function does not inspect review state, validate
  * tasks, retry failures, or add lifecycle state; those decisions belong to
- * the Coordinator and OpenSpec itself. Because a passed review is not durable
+ * the Orchestrator and OpenSpec itself. Because a passed review is not durable
  * OpenSpec state, this tool boundary can never prove archiving is legal —
- * the passed-review-before-archive invariant stays coordinator-owned.
+ * the passed-review-before-archive invariant stays orchestrator-owned.
  *
  * The outcome is structured so the host wrapper can observe a successful
  * archive (finalizing the Todo projection's terminal state) without parsing

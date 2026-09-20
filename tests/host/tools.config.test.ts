@@ -54,7 +54,7 @@ describe("specops_config host wrapper", () => {
         __resetProcessConfigForTesting();
     });
 
-    test("returns the stringified CoordinatorConfigView for a coordinator", async () => {
+    test("returns the stringified OrchestratorConfigView for an orchestrator", async () => {
         setProcessConfig(
             makeConfig({
                 frontierEscalation: true,

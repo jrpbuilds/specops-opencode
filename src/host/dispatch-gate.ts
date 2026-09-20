@@ -3,42 +3,42 @@
  * envelope's `changeName` identity, followed by the implementer-assignment
  * invariants.
  *
- * The Coordinator owns whether a change uses parallel implementation, which
+ * The Orchestrator owns whether a change uses parallel implementation, which
  * tasks form a coherent lane, and which legal lane runs first — those stay
  * judgements and are never encoded here. What this boundary owns is the
  * objectively verifiable facts the workflow contract already states.
  *
  * Identity pre-step: every dispatch to a SpecOps specialist role carries the
  * envelope's `changeName: <change>` line naming the active change. The gate
- * parses it (`../coordinator/dispatch-envelope.ts`) and compares it against
+ * parses it (`../orchestrator/dispatch-envelope.ts`) and compares it against
  * the session binding, rejecting a dispatch that omits the line, mangles it,
  * or names a different change. This keeps resumed and remediation dispatches
  * honest against the current binding — a resumed session cannot act on a
  * stale change name merely because its old conversation still says so — and
- * replaces the prompt prose asking the Coordinator to "always carry the
+ * replaces the prompt prose asking the Orchestrator to "always carry the
  * change name" with one deterministic check. Rejections never repair the
- * payload: the gate throws, and revising the dispatch is coordinator work.
+ * payload: the gate throws, and revising the dispatch is orchestrator work.
  *
  * For implementer dispatches, the boundary additionally enforces the
  * assignment invariants: an assignment is only valid when its ids exist in
  * the current canonical task list, are currently unchecked, are unique within
  * the dispatch, are disjoint from every active sibling, and stay within the
  * configured implementer concurrency. Enforcing them here replaces prompt
- * prose the Coordinator previously had to re-derive on every dispatch, and
+ * prose the Orchestrator previously had to re-derive on every dispatch, and
  * the structured rejections let it revise its choice without a permanent
  * invariant manual.
  *
  * Blocking primitive: this hook throws on a rejected dispatch. OpenCode's
  * plugin bus awaits every hook handler with no catch, so a throw fails the
  * effect before the tool executes — the `task` call never starts and the
- * error message is surfaced to the Coordinator as the tool result. This is
+ * error message is surfaced to the Orchestrator as the tool result. This is
  * the one SpecOps hook that deliberately fails closed: the sibling observers
  * (`./parallel-progress.ts`, `./review-cycle.ts`, `./todo-sync.ts`) must
  * never break a dispatch, while this boundary must never let an invalid one
  * through. Rejections name the violated invariant and the offending ids and
  * never prescribe a replacement lane plan; the runtime never regroups or
  * repartitions an invalid assignment into a different valid one — reforming
- * lanes is coordinator judgement.
+ * lanes is orchestrator judgement.
  *
  * Pass-through cases: non-`task` tools, unbound sessions (no change context
  * to validate against), Task calls whose `subagent_type` is not a SpecOps
@@ -68,13 +68,13 @@
 import type { Hooks } from "@opencode-ai/plugin";
 import { AGENT_IDS, SPECIALIST_AGENT_IDS } from "../agents/ids.js";
 import type { SpecOpsConfig } from "../config.js";
-import { parseChangeName } from "../coordinator/dispatch-envelope.js";
+import { parseChangeName } from "../orchestrator/dispatch-envelope.js";
 import {
     parseAssignedTaskIds,
     validateImplementerCapacity,
     validateImplementerOwnership,
     validateImplementerDispatchScope,
-} from "../coordinator/implementer-progress.js";
+} from "../orchestrator/implementer-progress.js";
 import type { ApplyInstructionsResult } from "../openspec/apply-instructions.js";
 import { getSessionBinding } from "./session-bindings.js";
 import {

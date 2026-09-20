@@ -103,7 +103,7 @@ describe("SpecOps Configure save flow", () => {
                 await fake.runCommand();
 
                 expect(fake.currentDialog()?.options?.map(option => option.value)).toEqual([
-                    "specops-coordinator",
+                    "specops-orchestrator",
                     "specops-explorer",
                     "specops-planner",
                     "specops-designer",

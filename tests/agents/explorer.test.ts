@@ -35,7 +35,7 @@ describe("explorer agent registration", () => {
 
         expect(config.agent?.[EXPLORER_AGENT_ID] as Record<string, unknown>).toEqual({
             description:
-                "Investigates repository source, behavior, conventions, tests, constraints, and risks for planning and design. Use when the SpecOps coordinator needs focused repository evidence.",
+                "Investigates repository source, behavior, conventions, tests, constraints, and risks for planning and design. Use when the SpecOps orchestrator needs focused repository evidence.",
             mode: "subagent",
             hidden: true,
             permission: EXPLORER_PERMISSION,
@@ -52,7 +52,7 @@ describe("explorer agent registration", () => {
         expect(prompt).toContain("conventions and tooling");
         expect(prompt).toContain("risks and assumptions");
         expect(prompt).toContain("unresolved questions, and blockers");
-        expect(prompt).toContain("Do not require the coordinator to resume your session");
+        expect(prompt).toContain("Do not require the orchestrator to resume your session");
     });
 
     test("explorer follows a lightweight evidence path and labels uncertainty", () => {
@@ -139,21 +139,21 @@ describe("explorer agent registration", () => {
         expect("variant" in (config.agent?.[EXPLORER_AGENT_ID] ?? {})).toBe(false);
     });
 
-    test("does not modify existing agents including the coordinator", () => {
+    test("does not modify existing agents including the orchestrator", () => {
         const config: Config = {
             agent: {
                 build: { description: "Build", mode: "primary", prompt: "Build prompt" },
-                [AGENT_IDS.coordinator]: {
-                    description: "Coordinator",
+                [AGENT_IDS.orchestrator]: {
+                    description: "Orchestrator",
                     mode: "primary",
-                    prompt: "Coordinator prompt",
+                    prompt: "Orchestrator prompt",
                 },
             },
         };
         registerWorkflowSubagents(config, makeConfig());
 
         expect(config.agent?.build?.description).toBe("Build");
-        expect(config.agent?.[AGENT_IDS.coordinator]?.description).toBe("Coordinator");
+        expect(config.agent?.[AGENT_IDS.orchestrator]?.description).toBe("Orchestrator");
     });
 
     test("explorer prompt does not mention Frontier escalation", () => {

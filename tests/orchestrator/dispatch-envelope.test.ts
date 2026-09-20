@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parseChangeName } from "../../src/coordinator/dispatch-envelope.js";
+import { parseChangeName } from "../../src/orchestrator/dispatch-envelope.js";
 
 describe("parseChangeName", () => {
     test("is absent from undefined, empty, and prompts without the token", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { nextBatch, type PlanningRoute } from "../../src/coordinator/batching.js";
+import { nextBatch, type PlanningRoute } from "../../src/orchestrator/batching.js";
 import type { NormalizedArtifact, NormalizedStatus } from "../../src/openspec/status.js";
 
 const output = (id: string): string => `openspec/changes/example/${id}.md`;
@@ -31,7 +31,7 @@ function authorIds(routes: readonly PlanningRoute[]): (string | false)[] {
     return routes.map(route => route.kind === "author" && route.artifactId);
 }
 
-/** Dispatch a single-artifact batch, mirroring serial coordinator operation. */
+/** Dispatch a single-artifact batch, mirroring serial orchestrator operation. */
 function firstRoute(status: NormalizedStatus): PlanningRoute | null {
     return nextBatch(status, 1)[0] ?? null;
 }

@@ -67,7 +67,7 @@ You approve the plan before implementation starts, and you decide what happens a
 
 ## How it works
 
-The coordinator routes your change through specialist agents, then has the finished work independently reviewed before a final verdict. When implementation in one lane is staged across several assignments, SpecOps may reuse that lane's implementer session to preserve useful context while refreshing with fresh canonical state for every dispatch; a fresh implementer dispatch is always a valid fallback:
+The orchestrator routes your change through specialist agents, then has the finished work independently reviewed before a final verdict. When implementation in one lane is staged across several assignments, SpecOps may reuse that lane's implementer session to preserve useful context while refreshing with fresh canonical state for every dispatch; a fresh implementer dispatch is always a valid fallback:
 
 ```mermaid
 flowchart TD
@@ -92,15 +92,15 @@ flowchart TD
     L --> C3
 ```
 
-When the Reviewer fails the work, the coordinator finds the earliest incorrect layer (implementation, design, or requirements), gets it corrected there, and runs the whole review pipeline again. [How it works](docs/how-it-works.md) covers the details.
+When the Reviewer fails the work, the orchestrator finds the earliest incorrect layer (implementation, design, or requirements), gets it corrected there, and runs the whole review pipeline again. [How it works](docs/how-it-works.md) covers the details.
 
-SpecOps keeps no persistent workflow state of its own: durable state lives in OpenSpec artifacts under `openspec/changes/<change>/`, while temporary session affinity ends with the coordinator run. That's why custom schemas work, and why an interrupted change picks up where it left off.
+SpecOps keeps no persistent workflow state of its own: durable state lives in OpenSpec artifacts under `openspec/changes/<change>/`, while temporary session affinity ends with the orchestrator run. That's why custom schemas work, and why an interrupted change picks up where it left off.
 
-The specialist agents (`specops-explorer`, `specops-planner`, `specops-designer`, `specops-implementer`, `specops-reviewer`, the three review specialists, and optionally `specops-frontier`) are internal to SpecOps. Only its coordinators can dispatch them, they don't show up in OpenCode's `@` menu, and the coordinators themselves never edit files.
+The specialist agents (`specops-explorer`, `specops-planner`, `specops-designer`, `specops-implementer`, `specops-reviewer`, the three review specialists, and optionally `specops-frontier`) are internal to SpecOps. Only its orchestrators can dispatch them, they don't show up in OpenCode's `@` menu, and the orchestrators themselves never edit files.
 
 ## Model configuration
 
-Open the command palette (`Ctrl+P`), choose **SpecOps Configure**, and map any of the ten roles — coordinator, explorer, planner, designer, implementer, reviewer, three review specialists, and frontier — to their own model and reasoning variant.
+Open the command palette (`Ctrl+P`), choose **SpecOps Configure**, and map any of the ten roles — orchestrator, explorer, planner, designer, implementer, reviewer, three review specialists, and frontier — to their own model and reasoning variant.
 
 Configuration lives at `~/.config/opencode/specops.json` and looks like this:
 
@@ -112,7 +112,7 @@ Configuration lives at `~/.config/opencode/specops.json` and looks like this:
     "implementerFanout": "auto",
     "reviewFanout": "auto",
     "agents": {
-        "specops-coordinator": { "model": "opencode-go/deepseek-v4-flash", "variant": "high" },
+        "specops-orchestrator": { "model": "opencode-go/deepseek-v4-flash", "variant": "high" },
         "specops-planner": { "model": "openai/gpt-5.6-terra", "variant": "high" },
         "specops-reviewer": { "model": "openference/DeepSeek-V4-Pro", "variant": "high" }
     }
@@ -141,7 +141,7 @@ Headless example: `opencode run --auto --command specops-auto "<goal>"`. Details
 SpecOps works fine without Engram. If you want agents to remember decisions and conventions across sessions, you can run the [Engram](https://github.com/Gentleman-Programming/engram) MCP server alongside it.
 
 Engram is contextual memory only. What's in front of the agents always wins: your current instructions, the OpenSpec artifacts, the state of the repository, and evidence from commands that actually ran. See Engram's [installation guide](https://github.com/Gentleman-Programming/engram/blob/main/docs/INSTALLATION.md) and [OpenCode setup](https://github.com/Gentleman-Programming/engram/blob/main/docs/AGENT-SETUP.md).
-When specialists resume the same active change, they can find prior breadcrumbs with gotchas, decisions, and conventions from earlier sessions. The coordinator may also pass concise, change-scoped breadcrumbs through the optional advisory `memoryContext` field. Memory is never used for workflow state, routing, or verdicts.
+When specialists resume the same active change, they can find prior breadcrumbs with gotchas, decisions, and conventions from earlier sessions. The orchestrator may also pass concise, change-scoped breadcrumbs through the optional advisory `memoryContext` field. Memory is never used for workflow state, routing, or verdicts.
 
 ## Development
 

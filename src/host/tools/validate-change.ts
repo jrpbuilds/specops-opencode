@@ -21,7 +21,7 @@ function assertValidateChangeArgs(args: unknown): asserts args is { change: stri
     }
 }
 
-/** Expose the scoped validation gate to coordinator agents. */
+/** Expose the scoped validation gate to orchestrator agents. */
 export const validateChangeTool = tool({
     description:
         "Validate one active OpenSpec change with strict, change-scoped validation. " +

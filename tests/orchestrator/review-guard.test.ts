@@ -12,7 +12,7 @@ import {
     resolveRepoRoot,
     verifyBaseline,
     type Baseline,
-} from "../../src/coordinator/review-guard.js";
+} from "../../src/orchestrator/review-guard.js";
 import { withTempDir } from "../helpers.js";
 
 afterEach(() => {
@@ -49,7 +49,7 @@ function mockGit(root: string, getTracked: () => string[]): void {
 
 describe("isIgnored", () => {
     test("excludes verification artifacts, logs, and the guard store", () => {
-        expect(isIgnored("src/coordinator/review-guard.ts")).toBe(false);
+        expect(isIgnored("src/orchestrator/review-guard.ts")).toBe(false);
         expect(isIgnored("openspec/changes/demo/proposal.md")).toBe(false);
         expect(isIgnored("dist/bundle.js")).toBe(true);
         expect(isIgnored("coverage/lcov.info")).toBe(true);

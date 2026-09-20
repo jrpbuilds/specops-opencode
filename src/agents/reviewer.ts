@@ -5,7 +5,7 @@ import type { SpecOpsConfig } from "../config.js";
 import type { SpecOpsAgentDefinition } from "./definition.js";
 
 /**
- * Subagent ID used by the Coordinator to delegate independent final review.
+ * Subagent ID used by the Orchestrator to delegate independent final review.
  */
 export const REVIEWER_AGENT_ID = AGENT_IDS.reviewer;
 
@@ -18,7 +18,7 @@ export const REVIEWER_AGENT_ID = AGENT_IDS.reviewer;
  * definition. The reviewer is intended to remain verification-only through its
  * prompt and native edit denial. Its unrestricted bash permission can still
  * perform shell mutations, so this is not a hard shell-level immutability
- * guarantee. Lifecycle actions such as archiving stay with the Coordinator and
+ * guarantee. Lifecycle actions such as archiving stay with the Orchestrator and
  * deterministic tools.
  *
  * @param specOpsConfig Validated persisted role-to-model configuration.

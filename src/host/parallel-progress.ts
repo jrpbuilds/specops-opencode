@@ -2,13 +2,13 @@
  * Runtime-owned ephemeral tracking of parallel specialist dispatches.
  *
  * OpenCode's plugin surface observes every SpecOps-parallel dispatch the
- * Coordinator makes: `tool.execute.before` sees each `task` call whose
+ * Orchestrator makes: `tool.execute.before` sees each `task` call whose
  * `subagent_type` is the implementer or one of the three review critics, and
  * terminal outcomes arrive through the background-task envelope in
  * `tool.execute.after` (task id and immediate `running` state) and through
  * session lifecycle events (`session.created` for the child session,
  * `session.idle`/`session.error` for its completion or failure). This module
- * turns those observations into the parallel progress the Coordinator
+ * turns those observations into the parallel progress the Orchestrator
  * previously had to maintain itself and resupply through `specops_progress`
  * arguments and Todo bookkeeping.
  *
@@ -41,16 +41,16 @@ import {
     REVIEW_CRITIC_IDS,
     type ReviewCriticId,
     type ReviewFanoutSnapshot,
-} from "../coordinator/review-fanout.js";
+} from "../orchestrator/review-fanout.js";
 import {
     parseAssignedTaskIds,
     type ActiveImplementerAssignment,
     type ImplementerDispatchObservation,
     type ImplementerDispatchState,
-} from "../coordinator/implementer-progress.js";
+} from "../orchestrator/implementer-progress.js";
 import { getSessionBinding } from "./session-bindings.js";
 
-/** Runtime-derived parallel progress for one coordinator session. */
+/** Runtime-derived parallel progress for one orchestrator session. */
 export type ParallelProgressSnapshot = {
     /** Raw fan-out state lists; omitted when no critic dispatch was observed. */
     readonly reviewFanout?: ReviewFanoutSnapshot;
@@ -73,16 +73,16 @@ type DispatchEntry = {
     taskIds?: readonly string[];
 };
 
-/** Per-coordinator-session run state. */
+/** Per-orchestrator-session run state. */
 type ParallelRunState = {
     /** Dispatch entries in observation order, keyed by task-tool call id. */
     dispatches: Map<string, DispatchEntry>;
 };
 
-/** Coordinator session id -> run state. */
+/** Orchestrator session id -> run state. */
 const runs = new Map<string, ParallelRunState>();
 
-/** Child session id -> the coordinator session and call it belongs to. */
+/** Child session id -> the orchestrator session and call it belongs to. */
 const callByChild = new Map<string, { sessionId: string; callId: string }>();
 
 /** Bound on tracked implementer entries per run; drops oldest terminal first. */
@@ -111,7 +111,7 @@ function isTrackedRole(
     );
 }
 
-/** Get or create the run state for one coordinator session. */
+/** Get or create the run state for one orchestrator session. */
 function runFor(sessionId: string): ParallelRunState {
     let run = runs.get(sessionId);
     if (!run) {
@@ -351,7 +351,7 @@ export function createSessionEventObserver(): NonNullable<Hooks["event"]> {
 }
 
 /**
- * Snapshot the runtime-derived parallel progress for one coordinator session.
+ * Snapshot the runtime-derived parallel progress for one orchestrator session.
  *
  * Pure read over the observed entries: critics project onto the canonical
  * snapshot lists (every critic appears in exactly one list, so the snapshot
@@ -406,7 +406,7 @@ export function snapshotParallelProgress(sessionID: string): ParallelProgressSna
     };
 }
 
-/** In-flight implementer ownership for one coordinator session. */
+/** In-flight implementer ownership for one orchestrator session. */
 export type ActiveImplementers = {
     /** Number of implementer dispatches currently in flight. */
     readonly count: number;

@@ -27,7 +27,7 @@ continue automatically.
 
 ## Autonomous reconciliation
 
-Reconcile only after a specialist material-conflict handoff or a coordinator
+Reconcile only after a specialist material-conflict handoff or an orchestrator
 revision dispatch, never after an ordinary status transition or the `question`
 tool. A premise-invalidating revision stops with the standard `BLOCKED` shape:
 name reconciliation, the premise, the feedback, and the need for a new change.

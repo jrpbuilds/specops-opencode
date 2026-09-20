@@ -1,4 +1,4 @@
-import { deriveEligibleActions, deriveWorkflowState } from "../coordinator/workflow-state.js";
+import { deriveEligibleActions, deriveWorkflowState } from "../orchestrator/workflow-state.js";
 import type { ApplyInstructionsResult } from "../openspec/apply-instructions.js";
 import type { OpenSpecStatusResult } from "../openspec/status.js";
 

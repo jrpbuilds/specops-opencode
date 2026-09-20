@@ -53,8 +53,8 @@ Without `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true`, OpenCode's foreground
 **A small change no longer gets parallel implementers or review critics**
 Deliberate. Both fan-out stages are size-gated (`auto` by default): small or simple changes build with one implementer and are reviewed by the final Reviewer alone — lightly for a trivial change, more deeply for a moderately complex one — while larger or riskier changes fan out the critics their risk profile calls for. Set [implementerFanout](configuration.md#implementerfanout-default-auto) or [reviewFanout](configuration.md#reviewfanout-default-auto) to `always` in `specops.json` if you want the previous always-parallel behaviour.
 
-**The coordinator refused to edit files or run shell commands itself**
-Working as intended. Coordinators orchestrate; specialist agents do the hands-on work.
+**The orchestrator refused to edit files or run shell commands itself**
+Working as intended. Orchestrators orchestrate; specialist agents do the hands-on work.
 
 **An Auto run stopped unexpectedly early**
 Host-level loop protection ends turns that repeat without progress instead of spinning indefinitely. Resume with `/specops-auto`; completed work is preserved in OpenSpec artifacts.

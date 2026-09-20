@@ -54,7 +54,7 @@ The first run initialises OpenSpec in the project for you. You can also do it ex
 
 ## What happens next
 
-The coordinator investigates your repository and plans the requirements and design for your approval. Once you approve, specialist agents implement the change, and the finished work goes through independent review before anything is archived. In Standard mode you stay in control at every checkpoint: SpecOps never archives a change without your say-so.
+The orchestrator investigates your repository and plans the requirements and design for your approval. Once you approve, specialist agents implement the change, and the finished work goes through independent review before anything is archived. In Standard mode you stay in control at every checkpoint: SpecOps never archives a change without your say-so.
 
 While the change runs, its state lives in ordinary files under `openspec/changes/<change>/` (proposal, specifications, design, tasks). There's no hidden side database, so you can stop mid-change, close the terminal, and pick it up later with the same command.
 

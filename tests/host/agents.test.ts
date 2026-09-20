@@ -3,9 +3,9 @@ import type { Config } from "@opencode-ai/plugin";
 import {
     SPECOPS_AGENT_ID,
     SPECOPS_AUTO_AGENT_ID,
-    interactiveCoordinatorAgentDefinition,
-    autoCoordinatorAgentDefinition,
-} from "../../src/agents/coordinator.js";
+    interactiveOrchestratorAgentDefinition,
+    autoOrchestratorAgentDefinition,
+} from "../../src/agents/orchestrator.js";
 import { EXPLORER_AGENT_ID, explorerAgentDefinition } from "../../src/agents/explorer.js";
 import { PLANNER_AGENT_ID, plannerAgentDefinition } from "../../src/agents/planner.js";
 import { DESIGNER_AGENT_ID, designerAgentDefinition } from "../../src/agents/designer.js";
@@ -97,8 +97,8 @@ describe("applyAgentDefinition translation", () => {
 
     test("maps every role to its registered id", () => {
         const config: Config = {};
-        applyAgentDefinition(config, interactiveCoordinatorAgentDefinition(DEFAULT_CONFIG));
-        applyAgentDefinition(config, autoCoordinatorAgentDefinition(DEFAULT_CONFIG));
+        applyAgentDefinition(config, interactiveOrchestratorAgentDefinition(DEFAULT_CONFIG));
+        applyAgentDefinition(config, autoOrchestratorAgentDefinition(DEFAULT_CONFIG));
         applyAgentDefinition(config, explorerAgentDefinition(DEFAULT_CONFIG));
         applyAgentDefinition(config, plannerAgentDefinition(DEFAULT_CONFIG));
         applyAgentDefinition(config, designerAgentDefinition(DEFAULT_CONFIG));
@@ -155,7 +155,7 @@ describe("applyAgentDefinition translation", () => {
 });
 
 describe("registerWorkflowSubagents table", () => {
-    test("registers every workflow role except the coordinator", () => {
+    test("registers every workflow role except the orchestrator", () => {
         const config: Config = {};
         const specOpsConfig = structuredClone(DEFAULT_CONFIG);
         specOpsConfig.frontierEscalation = true;
@@ -163,7 +163,7 @@ describe("registerWorkflowSubagents table", () => {
 
         // Guards against a new ROLE_WORKFLOW_ORDER role missing a registration
         // table entry, which would silently drop it from the agent catalogue.
-        const expected = ROLE_WORKFLOW_ORDER.filter(id => id !== AGENT_IDS.coordinator);
+        const expected = ROLE_WORKFLOW_ORDER.filter(id => id !== AGENT_IDS.orchestrator);
         expect(Object.keys(config.agent ?? {}).sort()).toEqual([...expected].sort());
     });
 
@@ -178,18 +178,18 @@ describe("registerWorkflowSubagents table", () => {
 });
 
 describe("runtime loop-guard placement", () => {
-    test("interactive coordinator omits the guard so the host default governs", () => {
+    test("interactive orchestrator omits the guard so the host default governs", () => {
         const config: Config = {};
-        applyAgentDefinition(config, interactiveCoordinatorAgentDefinition(DEFAULT_CONFIG));
+        applyAgentDefinition(config, interactiveOrchestratorAgentDefinition(DEFAULT_CONFIG));
 
         const permission = config.agent?.[SPECOPS_AGENT_ID]?.permission as Record<string, unknown>;
         expect("doom_loop" in permission).toBe(false);
         expect(permission.question).toBe("allow");
     });
 
-    test("auto coordinator pins deny because headless asks cannot resolve", () => {
+    test("auto orchestrator pins deny because headless asks cannot resolve", () => {
         const config: Config = {};
-        applyAgentDefinition(config, autoCoordinatorAgentDefinition(DEFAULT_CONFIG));
+        applyAgentDefinition(config, autoOrchestratorAgentDefinition(DEFAULT_CONFIG));
 
         const permission = config.agent?.[SPECOPS_AUTO_AGENT_ID]?.permission as Record<
             string,

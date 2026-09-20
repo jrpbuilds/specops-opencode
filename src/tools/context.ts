@@ -5,7 +5,7 @@ export type ContextDeps = {
     getContext: () => Promise<OpenSpecContextResult>;
 };
 
-/** Return current OpenSpec facts for Coordinator startup reasoning. */
+/** Return current OpenSpec facts for Orchestrator startup reasoning. */
 export async function context(deps: ContextDeps): Promise<string> {
     return JSON.stringify(await deps.getContext(), null, 2);
 }

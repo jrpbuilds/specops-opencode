@@ -11,7 +11,7 @@
  * Observed events and their transitions:
  *
  * - a completed reviewer dispatch result is parsed by the strict verdict
- *   contract (`../coordinator/reviewer-verdict.ts`) — foreground results
+ *   contract (`../orchestrator/reviewer-verdict.ts`) — foreground results
  *   carry the raw final message, and background completions carry it inside
  *   the `<task … state="completed">` envelope's `<task_result>` wrapper: a
  *   PASS concludes the cycle; a FAIL opens the remediation round. Anything
@@ -37,7 +37,7 @@
  */
 import type { Hooks } from "@opencode-ai/plugin";
 import { AGENT_IDS } from "../agents/ids.js";
-import { parseReviewerVerdict } from "../coordinator/reviewer-verdict.js";
+import { parseReviewerVerdict } from "../orchestrator/reviewer-verdict.js";
 import {
     clearReviewCycle,
     getReviewCycle,

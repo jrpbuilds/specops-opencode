@@ -43,7 +43,7 @@ describe("context", () => {
         });
     });
 
-    test("preserves context errors for the Coordinator", async () => {
+    test("preserves context errors for the Orchestrator", async () => {
         const result = await context(
             deps({
                 getContext: async () => ({

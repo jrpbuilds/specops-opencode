@@ -72,7 +72,7 @@ afterEach(() => {
 });
 
 describe("createTaskResultRefreshHook", () => {
-    test("cues a bound coordinator after a specialist result", async () => {
+    test("cues a bound orchestrator after a specialist result", async () => {
         recordSessionBinding("ses_1", "SpecOps", "example");
         const output = {
             title: "Task",

@@ -4,9 +4,9 @@ import type { SpecOpsConfig } from "../config.js";
 import { resolveAgentMapping } from "../models.js";
 import { AGENT_IDS, type AgentId } from "../agents/ids.js";
 import {
-    autoCoordinatorAgentDefinition,
-    interactiveCoordinatorAgentDefinition,
-} from "../agents/coordinator.js";
+    autoOrchestratorAgentDefinition,
+    interactiveOrchestratorAgentDefinition,
+} from "../agents/orchestrator.js";
 import { explorerAgentDefinition } from "../agents/explorer.js";
 import { plannerAgentDefinition } from "../agents/planner.js";
 import { designerAgentDefinition } from "../agents/designer.js";
@@ -70,8 +70,8 @@ export function applyAgentDefinition(config: Config, definition: SpecOpsAgentDef
  * @param config OpenCode configuration object mutated with the primary agent.
  * @param specOpsConfig Validated persisted role-to-model configuration.
  */
-export function registerCoordinatorAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyAgentDefinition(config, interactiveCoordinatorAgentDefinition(specOpsConfig));
+export function registerOrchestratorAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
+    applyAgentDefinition(config, interactiveOrchestratorAgentDefinition(specOpsConfig));
 }
 
 /**
@@ -80,8 +80,8 @@ export function registerCoordinatorAgent(config: Config, specOpsConfig: SpecOpsC
  * @param config OpenCode configuration object mutated with the primary agent.
  * @param specOpsConfig Validated persisted role-to-model configuration.
  */
-export function registerAutoCoordinatorAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
-    applyAgentDefinition(config, autoCoordinatorAgentDefinition(specOpsConfig));
+export function registerAutoOrchestratorAgent(config: Config, specOpsConfig: SpecOpsConfig): void {
+    applyAgentDefinition(config, autoOrchestratorAgentDefinition(specOpsConfig));
 }
 
 /**

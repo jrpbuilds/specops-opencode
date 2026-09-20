@@ -45,7 +45,7 @@ export function loadPrompt(id: AgentId): string {
  * Load a packaged prompt asset by filename rather than by agent role.
  *
  * Used for prompt fragments that are not tied to a configurable role, such as
- * the autonomous appendix appended to the coordinator prompt for the
+ * the autonomous appendix appended to the orchestrator prompt for the
  * SpecOps Auto agent. Whole-line include directives are resolved from the
  * packaged prompts directory so the same lookup works before and after
  * packaging.

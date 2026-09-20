@@ -2,18 +2,18 @@ import {
     summarizeReviewFanout,
     type ReviewFanoutProgress,
     type ReviewFanoutSnapshot,
-} from "../coordinator/review-fanout.js";
+} from "../orchestrator/review-fanout.js";
 import {
     projectImplementerDispatches,
     type ImplementerDispatchObservation,
     type ImplementerDispatchProgress,
-} from "../coordinator/implementer-progress.js";
+} from "../orchestrator/implementer-progress.js";
 import type { ApplyInstructionsResult } from "../openspec/apply-instructions.js";
 
 /**
  * Progress views supplied by the host wrapper, derived from the runtime's
  * dispatch observation (`../host/parallel-progress.ts`) on every call — never
- * coordinator-authored bookkeeping state.
+ * orchestrator-authored bookkeeping state.
  */
 export type ProgressArgs = {
     readonly change: string;

@@ -3,8 +3,8 @@ import { loadConfig } from "./config.js";
 import { applyCommands } from "./host/commands.js";
 import { setProcessConfig, getProcessConfig } from "./host/config-snapshot.js";
 import {
-    registerAutoCoordinatorAgent,
-    registerCoordinatorAgent,
+    registerAutoOrchestratorAgent,
+    registerOrchestratorAgent,
     registerWorkflowSubagents,
 } from "./host/agents.js";
 import { applyLifecycleBoundary, applyTaskBoundary } from "./host/permissions.js";
@@ -57,13 +57,13 @@ export const SpecOpsPlugin: Plugin = async input => {
             try {
                 const specOpsConfig = await loadConfig();
                 // Capture the process-effective configuration before registering
-                // agents so coordinator tools (specops_config) read the same
+                // agents so orchestrator tools (specops_config) read the same
                 // validated snapshot that produced the registered agent catalogue.
                 // SpecOps settings require an OpenCode restart to take effect, so
                 // the snapshot is intentionally frozen for the process lifetime.
                 setProcessConfig(specOpsConfig);
-                registerCoordinatorAgent(config, specOpsConfig);
-                registerAutoCoordinatorAgent(config, specOpsConfig);
+                registerOrchestratorAgent(config, specOpsConfig);
+                registerAutoOrchestratorAgent(config, specOpsConfig);
                 registerWorkflowSubagents(config, specOpsConfig);
             } catch (error) {
                 const reason = error instanceof Error ? error.message : String(error);
@@ -91,7 +91,7 @@ export const SpecOpsPlugin: Plugin = async input => {
         },
         // Compose the tool.execute.after hooks: task results resolve tracked
         // dispatches and record the reviewer's observed verdict, then cue the
-        // coordinator to refresh its projection, and the display hook
+        // orchestrator to refresh its projection, and the display hook
         // suppresses the builtin's `# Todos` transcript blocks by emptying
         // the display metadata the renderer gates on — the sidebar keeps
         // showing the persisted projection.

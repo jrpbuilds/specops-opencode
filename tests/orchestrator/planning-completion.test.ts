@@ -3,7 +3,7 @@ import {
     collectUnknownRequired,
     derivePlanningCompletion,
     satisfiedArtifactIds,
-} from "../../src/coordinator/planning-completion.js";
+} from "../../src/orchestrator/planning-completion.js";
 import type { NormalizedArtifact, NormalizedStatus } from "../../src/openspec/status.js";
 
 function artifact(

@@ -93,10 +93,10 @@ describe("changedAgentIds", () => {
         const initial = configWith();
         const staged = configWith([
             [AGENT_IDS.frontier, { model: glm.id }],
-            [AGENT_IDS.coordinator, { model: glm.id }],
+            [AGENT_IDS.orchestrator, { model: glm.id }],
         ]);
         expect(changedAgentIds(initial, staged)).toEqual([
-            AGENT_IDS.coordinator,
+            AGENT_IDS.orchestrator,
             AGENT_IDS.frontier,
         ]);
     });

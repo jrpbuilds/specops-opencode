@@ -2,13 +2,13 @@ import type { Config } from "@opencode-ai/plugin";
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 import {
-    buildCoordinatorPrompt,
+    buildOrchestratorPrompt,
     SPECOPS_AGENT_ID,
     SPECOPS_AUTO_AGENT_ID,
-} from "../../src/agents/coordinator.js";
-import { registerAutoCoordinatorAgent, registerCoordinatorAgent } from "../../src/host/agents.js";
+} from "../../src/agents/orchestrator.js";
+import { registerAutoOrchestratorAgent, registerOrchestratorAgent } from "../../src/host/agents.js";
 import {
-    COORDINATOR_PERMISSION,
+    ORCHESTRATOR_PERMISSION,
     SPECOPS_LIFECYCLE_PERMISSION,
     SPECOPS_TASK_ALLOW,
 } from "../../src/agents/permissions.js";
@@ -53,10 +53,10 @@ function evaluateTask(task: Record<string, "allow" | "deny">, name: string): "al
     return action ?? "deny";
 }
 
-describe("coordinator prompt contract", () => {
+describe("orchestrator prompt contract", () => {
     test("keeps interactive and auto mode policies mutually exclusive", () => {
-        const interactive = buildCoordinatorPrompt("interactive", false);
-        const auto = buildCoordinatorPrompt("auto", false);
+        const interactive = buildOrchestratorPrompt("interactive", false);
+        const auto = buildOrchestratorPrompt("auto", false);
 
         expect(interactive).toContain("## Interactive policy");
         expect(interactive).not.toContain("## Autonomous operation (SpecOps Auto)");
@@ -66,17 +66,17 @@ describe("coordinator prompt contract", () => {
         expect(auto).not.toContain("## Interactive policy");
     });
 
-    test("pins the assembled coordinator identity header", () => {
-        expect(buildCoordinatorPrompt("interactive", false)).toContain("# SpecOps Coordinator");
-        expect(buildCoordinatorPrompt("auto", false)).toContain("# SpecOps Coordinator");
+    test("pins the assembled orchestrator identity header", () => {
+        expect(buildOrchestratorPrompt("interactive", false)).toContain("# SpecOps Orchestrator");
+        expect(buildOrchestratorPrompt("auto", false)).toContain("# SpecOps Orchestrator");
     });
 
     test("keeps assembled prompts substantially below the legacy budget", () => {
-        expect(buildCoordinatorPrompt("auto", true).length).toBeLessThan(35_000);
+        expect(buildOrchestratorPrompt("auto", true).length).toBeLessThan(35_000);
     });
 
     test("consumes canonical status legality without reconstructing scheduler state", () => {
-        const prompt = buildCoordinatorPrompt("interactive", false);
+        const prompt = buildOrchestratorPrompt("interactive", false);
 
         expect(prompt).toContain("phase`, `lifecycle`, and `eligibleActions");
         expect(prompt).toContain("an allowed action is legal, not recommended");
@@ -89,7 +89,7 @@ describe("coordinator prompt contract", () => {
     });
 
     test("keeps startup, Todo trigger, and runtime-ownership boundaries", () => {
-        const prompt = buildCoordinatorPrompt("interactive", false);
+        const prompt = buildOrchestratorPrompt("interactive", false);
 
         expect(prompt).toContain("Call `specops_onboard` first");
         expect(prompt).toContain("Call `specops_context` exactly once");
@@ -101,8 +101,8 @@ describe("coordinator prompt contract", () => {
         expect(prompt).toContain("route from Todo content");
     });
 
-    test("preserves Coordinator judgement for implementation and review", () => {
-        const prompt = buildCoordinatorPrompt("interactive", false);
+    test("preserves Orchestrator judgement for implementation and review", () => {
+        const prompt = buildOrchestratorPrompt("interactive", false);
 
         expect(prompt).toContain("Serial implementation is the default");
         expect(prompt).toContain("Parallel implementation is a judgement call");
@@ -119,7 +119,7 @@ describe("coordinator prompt contract", () => {
     });
 
     test("scales review breadth to the change under the auto route", () => {
-        const prompt = buildCoordinatorPrompt("interactive", false);
+        const prompt = buildOrchestratorPrompt("interactive", false);
 
         expect(prompt).toMatch(/scale the review to the change/);
         expect(prompt).toMatch(/light,\s+proportionate pass/);
@@ -131,7 +131,7 @@ describe("coordinator prompt contract", () => {
     });
 
     test("passes only dispatched critics in the evidence envelope", () => {
-        const prompt = buildCoordinatorPrompt("interactive", false);
+        const prompt = buildOrchestratorPrompt("interactive", false);
 
         expect(prompt).toMatch(/until every dispatched critic has returned\s+successfully/);
         expect(prompt).toMatch(/one section per dispatched critic and no others/);
@@ -139,7 +139,7 @@ describe("coordinator prompt contract", () => {
     });
 
     test("keeps re-review on the failed round's route without shrinking the critic set", () => {
-        const prompt = buildCoordinatorPrompt("interactive", false);
+        const prompt = buildOrchestratorPrompt("interactive", false);
 
         expect(prompt).toMatch(/the same\s+route as the review that failed/);
         expect(prompt).toMatch(/the same critic set on the fan-out route,\s+never fewer/);
@@ -149,7 +149,7 @@ describe("coordinator prompt contract", () => {
     });
 
     test("retains the archive boundary that tooling cannot prove", () => {
-        const prompt = buildCoordinatorPrompt("interactive", false);
+        const prompt = buildOrchestratorPrompt("interactive", false);
 
         expect(prompt).toContain("does not list archive as an eligible action");
         expect(prompt).toContain("review PASS is not durable");
@@ -160,7 +160,7 @@ describe("coordinator prompt contract", () => {
     });
 
     test("keeps durable handoff, blocker, and update boundaries", () => {
-        const prompt = buildCoordinatorPrompt("interactive", false);
+        const prompt = buildOrchestratorPrompt("interactive", false);
 
         expect(prompt).toContain("## Handoff gate");
         expect(prompt).toContain("Read fresh `specops_status`");
@@ -172,7 +172,7 @@ describe("coordinator prompt contract", () => {
 
     test("places settled verification before review and preserves the shared handoff", () => {
         for (const mode of ["interactive", "auto"] as const) {
-            const prompt = buildCoordinatorPrompt(mode, false);
+            const prompt = buildOrchestratorPrompt(mode, false);
             expect(prompt).toContain("Settled integrated verification");
             expect(prompt.indexOf("Settled integrated verification")).toBeLessThan(
                 prompt.indexOf("## Review phase"),
@@ -183,17 +183,17 @@ describe("coordinator prompt contract", () => {
 
     test("returns misplaced decision recommendations for correction in both modes", () => {
         for (const mode of ["interactive", "auto"] as const) {
-            const prompt = buildCoordinatorPrompt(mode, false);
+            const prompt = buildOrchestratorPrompt(mode, false);
             expect(prompt).toContain("does not identify the first supplied option");
         }
-        expect(buildCoordinatorPrompt("interactive", false)).toMatch(
+        expect(buildOrchestratorPrompt("interactive", false)).toMatch(
             /append\s+` \(Recommended\)` to the first supplied option only/,
         );
     });
 });
 
-describe("interactive coordinator contract", () => {
-    const prompt = buildCoordinatorPrompt("interactive", false);
+describe("interactive orchestrator contract", () => {
+    const prompt = buildOrchestratorPrompt("interactive", false);
 
     test("requires explicit plan approval and preserves exact lifecycle choices", () => {
         expect(prompt).toContain("## Plan checkpoint");
@@ -217,8 +217,8 @@ describe("interactive coordinator contract", () => {
     });
 });
 
-describe("Auto coordinator contract", () => {
-    const prompt = buildCoordinatorPrompt("auto", false);
+describe("Auto orchestrator contract", () => {
+    const prompt = buildOrchestratorPrompt("auto", false);
 
     test("has no human checkpoints and continues from legal status", () => {
         expect(prompt).toContain("Never invoke the native");
@@ -238,18 +238,18 @@ describe("Auto coordinator contract", () => {
     });
 });
 
-describe("coordinator registration", () => {
+describe("orchestrator registration", () => {
     test("registers both modes with the assembled prompts and hard question boundary", () => {
         const interactiveConfig: Config = {};
         const autoConfig: Config = {};
-        registerCoordinatorAgent(interactiveConfig, makeConfig());
-        registerAutoCoordinatorAgent(autoConfig, makeConfig());
+        registerOrchestratorAgent(interactiveConfig, makeConfig());
+        registerAutoOrchestratorAgent(autoConfig, makeConfig());
 
         expect(promptOf(interactiveConfig, SPECOPS_AGENT_ID)).toBe(
-            buildCoordinatorPrompt("interactive", false),
+            buildOrchestratorPrompt("interactive", false),
         );
         expect(promptOf(autoConfig, SPECOPS_AUTO_AGENT_ID)).toBe(
-            buildCoordinatorPrompt("auto", false),
+            buildOrchestratorPrompt("auto", false),
         );
 
         const interactivePermission = interactiveConfig.agent?.[SPECOPS_AGENT_ID]
@@ -284,19 +284,19 @@ describe("coordinator registration", () => {
         specOpsConfig.maxAutoReviewIterations = 12;
         const config: Config = {};
 
-        registerAutoCoordinatorAgent(config, specOpsConfig);
+        registerAutoOrchestratorAgent(config, specOpsConfig);
 
         const prompt = promptOf(config, SPECOPS_AUTO_AGENT_ID);
-        expect(prompt).toBe(buildCoordinatorPrompt("auto", false));
+        expect(prompt).toBe(buildOrchestratorPrompt("auto", false));
         expect(prompt).not.toContain("12 remediation rounds");
         expect(prompt).not.toContain("{{maxAutoReviewIterations}}");
         expect(prompt).toContain("Read `maxAutoReviewIterations` from `specops_config`");
     });
 
-    test("restricts coordinators to the private SpecOps subagent namespace", () => {
+    test("restricts orchestrators to the private SpecOps subagent namespace", () => {
         const configs: Config[] = [{}, {}];
-        registerCoordinatorAgent(configs[0], makeConfig());
-        registerAutoCoordinatorAgent(configs[1], makeConfig());
+        registerOrchestratorAgent(configs[0], makeConfig());
+        registerAutoOrchestratorAgent(configs[1], makeConfig());
         const names = [
             "general",
             "explore",
@@ -327,20 +327,20 @@ describe("coordinator registration", () => {
     test("keeps capability policy and Frontier loading aligned across modes", () => {
         const interactive: Config = {};
         const auto: Config = {};
-        registerCoordinatorAgent(interactive, makeConfig());
-        registerAutoCoordinatorAgent(auto, makeConfig());
+        registerOrchestratorAgent(interactive, makeConfig());
+        registerAutoOrchestratorAgent(auto, makeConfig());
 
         expect(interactive.agent?.[SPECOPS_AGENT_ID]?.permission).toMatchObject(
-            COORDINATOR_PERMISSION,
+            ORCHESTRATOR_PERMISSION,
         );
         expect(auto.agent?.[SPECOPS_AUTO_AGENT_ID]?.permission).toMatchObject(
-            COORDINATOR_PERMISSION,
+            ORCHESTRATOR_PERMISSION,
         );
 
         const disabled: Config = {};
         const enabled: Config = {};
-        registerCoordinatorAgent(disabled, makeConfig({}, false));
-        registerCoordinatorAgent(enabled, makeConfig({}, true));
+        registerOrchestratorAgent(disabled, makeConfig({}, false));
+        registerOrchestratorAgent(enabled, makeConfig({}, true));
         expect(promptOf(disabled, SPECOPS_AGENT_ID)).not.toContain(
             "Frontier escalation is enabled for this session",
         );
@@ -349,12 +349,12 @@ describe("coordinator registration", () => {
         );
     });
 
-    test("applies configured coordinator models without changing fallback semantics", () => {
+    test("applies configured orchestrator models without changing fallback semantics", () => {
         const config: Config = {};
-        registerCoordinatorAgent(
+        registerOrchestratorAgent(
             config,
             makeConfig({
-                [AGENT_IDS.coordinator]: {
+                [AGENT_IDS.orchestrator]: {
                     model: "opencode-go/deepseek-v4-flash",
                     variant: "high",
                 },
@@ -366,9 +366,9 @@ describe("coordinator registration", () => {
         });
 
         const fallback: Config = {};
-        registerCoordinatorAgent(
+        registerOrchestratorAgent(
             fallback,
-            makeConfig({ [AGENT_IDS.coordinator]: { model: "   ", variant: "high" } }),
+            makeConfig({ [AGENT_IDS.orchestrator]: { model: "   ", variant: "high" } }),
         );
         expect("model" in (fallback.agent?.[SPECOPS_AGENT_ID] ?? {})).toBe(false);
         expect("variant" in (fallback.agent?.[SPECOPS_AGENT_ID] ?? {})).toBe(false);

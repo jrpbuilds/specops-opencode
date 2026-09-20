@@ -1,5 +1,5 @@
 /**
- * Rolling bounded scheduler for coordinator-owned planning dispatches.
+ * Rolling bounded scheduler for orchestrator-owned planning dispatches.
  *
  * Wraps the pure `nextBatch` selector with in-memory capacity accounting,
  * refills freed slots one completion at a time, and suspends new dispatches

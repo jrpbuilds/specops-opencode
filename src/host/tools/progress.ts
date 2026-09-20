@@ -7,13 +7,13 @@ import { recordSessionBinding } from "../session-bindings.js";
 import { withTodoRefreshReminder } from "./todo-refresh.js";
 
 /**
- * Expose read-only parallel progress through the coordinator-only tool surface.
+ * Expose read-only parallel progress through the orchestrator-only tool surface.
  *
  * A diagnostic/recovery view, not an orchestration step: normal SpecOps
  * operation never requires calling it. Every report is derived by the runtime
  * from the dispatch lifecycle this process observed (`../parallel-progress.ts`),
  * reconciled against fresh durable task state by the deterministic core; the
- * coordinator supplies no progress state of its own.
+ * orchestrator supplies no progress state of its own.
  */
 export const progressTool = tool({
     description:

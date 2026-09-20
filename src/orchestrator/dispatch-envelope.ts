@@ -2,11 +2,11 @@
  * Parse the dispatch envelope's `changeName` identity line from one
  * specialist dispatch prompt.
  *
- * The envelope is the current-job payload the coordinator sends with every
+ * The envelope is the current-job payload the orchestrator sends with every
  * specialist Task dispatch; the change name is its one machine-checked field,
  * validated against the session binding at the dispatch boundary
  * (`src/host/dispatch-gate.ts`) so a stale or misrouted dispatch fails before
- * the specialist starts. Everything else in the envelope is coordinator-
+ * the specialist starts. Everything else in the envelope is orchestrator-
  * authored prose pasted from canonical tool output and is deliberately not
  * parsed here — the boundary validates identity, it never authors payloads.
  *
@@ -37,7 +37,7 @@ const CHANGE_NAME_LINE_START = /^changeName\b/;
 const CHANGE_NAME_LINE = /^changeName:(.+)$/;
 
 /**
- * Read the coordinator's `changeName` line from one dispatch prompt.
+ * Read the orchestrator's `changeName` line from one dispatch prompt.
  *
  * @param prompt The raw Task prompt sent to a specialist, if any.
  * @returns `absent` when no line starts with the token, `malformed` when the

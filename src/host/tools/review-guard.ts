@@ -5,7 +5,7 @@ import {
     verifyBaseline,
     type CaptureResult,
     type GuardResult,
-} from "../../coordinator/review-guard.js";
+} from "../../orchestrator/review-guard.js";
 import { runCaptureStdout } from "../../helpers.js";
 import { requireLifecyclePermission } from "../lifecycle-permission.js";
 import { recordSessionBinding } from "../session-bindings.js";
@@ -37,11 +37,11 @@ function assertReviewGuardArgs(args: unknown): asserts args is {
 }
 
 /**
- * Expose the review worktree-mutation guard to coordinator agents.
+ * Expose the review worktree-mutation guard to orchestrator agents.
  *
- * The coordinator captures a protected-state baseline before the review critic
+ * The orchestrator captures a protected-state baseline before the review critic
  * fan-out and verifies it after each review phase fan-in. Review agents are
- * denied `specops_*` and `specops_lifecycle`, so only the coordinator can
+ * denied `specops_*` and `specops_lifecycle`, so only the orchestrator can
  * invoke this tool; it rides the existing lifecycle boundary without any
  * permission-policy change.
  */

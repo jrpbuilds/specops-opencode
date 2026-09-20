@@ -1,6 +1,6 @@
 ## Handoff
 
-Return a concise summary to the coordinator in the standard SpecOps handoff envelope:
+Return a concise summary to the orchestrator in the standard SpecOps handoff envelope:
 
 {{include:shared/handoff-envelope.md}}
 

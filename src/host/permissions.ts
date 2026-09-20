@@ -1,5 +1,5 @@
 import type { Config } from "@opencode-ai/plugin";
-import { SPECOPS_AGENT_ID, SPECOPS_AUTO_AGENT_ID } from "../agents/coordinator.js";
+import { SPECOPS_AGENT_ID, SPECOPS_AUTO_AGENT_ID } from "../agents/orchestrator.js";
 import {
     ORDINARY_LIFECYCLE_PERMISSION,
     SPECOPS_LIFECYCLE_PERMISSION,
@@ -11,11 +11,11 @@ import {
 export type RolePermission = NonNullable<NonNullable<Config["agent"]>[string]>["permission"];
 
 /**
- * Whether an agent key belongs to the SpecOps workflow itself (a coordinator or
+ * Whether an agent key belongs to the SpecOps workflow itself (an orchestrator or
  * an internal `specops-*` subagent).
  *
  * These agents must be excluded from the per-agent deny pass because they
- * carry their own explicit `task` rules: the coordinators allow `specops-*`,
+ * carry their own explicit `task` rules: the orchestrators allow `specops-*`,
  * and the internal subagents deny `*`.
  */
 export function isSpecOpsAgentKey(key: string): boolean {
@@ -25,7 +25,7 @@ export function isSpecOpsAgentKey(key: string): boolean {
 /**
  * Apply the private `specops-*` boundary to the host configuration.
  *
- * Two deny layers enforce the invariant that only the SpecOps coordinators may
+ * Two deny layers enforce the invariant that only the SpecOps orchestrators may
  * dispatch `specops-*` subagents:
  *
  * 1. A global `permission.task["specops-*"] = "deny"` covers OpenCode's native

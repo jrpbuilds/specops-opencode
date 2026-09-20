@@ -96,7 +96,7 @@ describe("planner agent", () => {
         expect(prompt).toContain("openspec validate <change>");
         expect(prompt).toContain("`no deltas found`");
         expect(prompt).toContain("Real validation failures are blockers");
-        expect(prompt).not.toContain("Graph readiness is the coordinator's responsibility");
+        expect(prompt).not.toContain("Graph readiness is the orchestrator's responsibility");
     });
 
     test("keeps terminal handoff, Project Context, and Frontier contracts", () => {

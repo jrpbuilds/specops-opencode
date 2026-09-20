@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { AGENT_IDS, ALL_AGENT_IDS } from "../../src/agents/ids.js";
 import { ROLE_CAPABILITY_POLICY } from "../../src/agents/permission-policy.js";
 import {
-    COORDINATOR_PERMISSION,
+    ORCHESTRATOR_PERMISSION,
     DESIGNER_PERMISSION,
     EXPLORER_PERMISSION,
     FRONTIER_PERMISSION,
@@ -48,8 +48,8 @@ describe("role permission profiles", () => {
         expect(Object.keys(permissions)).not.toContain("SPECOPS_AUTO_PERMISSION");
     });
 
-    test("gives coordinators help-only shell and lifecycle authority", () => {
-        expect(COORDINATOR_PERMISSION).toMatchObject({
+    test("gives orchestrators help-only shell and lifecycle authority", () => {
+        expect(ORCHESTRATOR_PERMISSION).toMatchObject({
             external_directory: "deny",
             edit: { "*": "deny" },
             bash: {
@@ -66,8 +66,8 @@ describe("role permission profiles", () => {
     });
 
     test("keeps critical role capability fields explicit", () => {
-        expect(COORDINATOR_PERMISSION.edit).toEqual({ "*": "deny" });
-        expect(COORDINATOR_PERMISSION.bash).toEqual({
+        expect(ORCHESTRATOR_PERMISSION.edit).toEqual({ "*": "deny" });
+        expect(ORCHESTRATOR_PERMISSION.bash).toEqual({
             "*": "deny",
             "openspec --help": "allow",
             "openspec * --help": "allow",
@@ -76,11 +76,11 @@ describe("role permission profiles", () => {
             "openspec validate *": "allow",
             "openspec change show *": "allow",
         });
-        expect(COORDINATOR_PERMISSION.external_directory).toBe("deny");
-        // The shared coordinator base carries no runtime loop guard; the
+        expect(ORCHESTRATOR_PERMISSION.external_directory).toBe("deny");
+        // The shared orchestrator base carries no runtime loop guard; the
         // interactive registration omits it (host default `ask`) and the auto
         // registration pins "deny" at definition time.
-        expect("doom_loop" in COORDINATOR_PERMISSION).toBe(false);
+        expect("doom_loop" in ORCHESTRATOR_PERMISSION).toBe(false);
 
         expect(EXPLORER_PERMISSION.edit).toEqual({ "*": "deny" });
         expect(EXPLORER_PERMISSION.bash).toBe("deny");
@@ -132,7 +132,7 @@ describe("role permission profiles", () => {
         ];
         for (const definition of criticDefinitions) {
             // The critics reuse the reviewer permission verbatim, so they can
-            // never invoke coordinator-only surfaces such as specops_review_guard.
+            // never invoke orchestrator-only surfaces such as specops_review_guard.
             expect(definition.permission).toEqual(REVIEWER_PERMISSION);
             expect(definition.permission["specops_*"]).toBe("deny");
             expect(definition.permission[SPECOPS_LIFECYCLE_PERMISSION]).toBe("deny");
@@ -150,7 +150,7 @@ describe("role permission profiles", () => {
     });
 
     test("keeps lifecycle authority unchanged for the v0.7.1 hotfix", () => {
-        expect(COORDINATOR_PERMISSION[SPECOPS_LIFECYCLE_PERMISSION]).toBe("allow");
+        expect(ORCHESTRATOR_PERMISSION[SPECOPS_LIFECYCLE_PERMISSION]).toBe("allow");
         for (const permission of [
             EXPLORER_PERMISSION,
             PLANNER_PERMISSION,

@@ -51,7 +51,7 @@ Do not persist the question or answer outside the dispatched design artifact.
 
 Do not modify requirements-role artifacts, author task-planning artifacts, or
 implement source changes. If a requirements conflict appears, report it to the
-Coordinator for Planner routing. A revision dispatch may identify
+Orchestrator for Planner routing. A revision dispatch may identify
 `revisionTarget` and `upstreamFeedback`; revise only affected design decisions,
 risks, components, or flow and preserve the rest.
 

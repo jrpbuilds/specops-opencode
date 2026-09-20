@@ -6,7 +6,7 @@ import type { SpecOpsConfig } from "../config.js";
  * The plugin's `config()` hook loads and validates the on-disk `specops.json`
  * once via `loadConfig` and stores the result here. All SpecOps settings
  * require an OpenCode restart to take effect, so this snapshot is intentionally
- * frozen for the process lifetime: coordinator tools read from this holder
+ * frozen for the process lifetime: orchestrator tools read from this holder
  * rather than re-reading the file, which keeps their view of effective policy
  * aligned with the configuration that produced the currently-registered agents.
  */
@@ -30,7 +30,7 @@ export function setProcessConfig(config: SpecOpsConfig): void {
  * Read the process-effective SpecOps configuration.
  *
  * @throws Error if the plugin `config()` hook has not yet populated the snapshot.
- *     Production code paths always populate the snapshot before any coordinator
+ *     Production code paths always populate the snapshot before any orchestrator
  *     tool executes; tests must call {@link setProcessConfig} in their setup.
  *     Throwing (rather than lazy-loading) preserves snapshot semantics and
  *     surfaces plugin-init ordering bugs loudly instead of masking them with
@@ -41,7 +41,7 @@ export function getProcessConfig(): SpecOpsConfig {
     if (!processConfig) {
         throw new Error(
             "SpecOps process configuration snapshot is not initialized; " +
-                "the plugin config() hook must run before any coordinator tool executes.",
+                "the plugin config() hook must run before any orchestrator tool executes.",
         );
     }
     return processConfig;

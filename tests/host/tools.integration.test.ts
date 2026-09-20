@@ -320,7 +320,7 @@ describe("lifecycle tool integration", () => {
         __resetSessionBindingsForTesting();
     });
 
-    // The eight lifecycle tools whose outputs the coordinator reads at the
+    // The eight lifecycle tools whose outputs the orchestrator reads at the
     // contract's Todo refresh moments terminate their results with the compact
     // refresh marker; specialist dispatch results receive the same cue through
     // the host after-hook, while every other lifecycle tool stays marker-free.

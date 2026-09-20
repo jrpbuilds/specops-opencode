@@ -2,10 +2,10 @@
  * Compact Todo refresh directive appended to lifecycle tool outputs.
  *
  * OpenCode exposes no plugin write API for Todo state, so publication rides
- * the coordinator's builtin `todowrite` call (see `../todo-sync.ts`). Cheap
- * coordinators demonstrably skip a blind `{"todos": []}` call instructed only
+ * the orchestrator's builtin `todowrite` call (see `../todo-sync.ts`). Cheap
+ * orchestrators demonstrably skip a blind `{"todos": []}` call instructed only
  * by prose, so lifecycle tools and specialist dispatch results end their
- * result with this stable, compact marker. The coordinator prompt defines the
+ * result with this stable, compact marker. The orchestrator prompt defines the
  * marker's meaning: after consuming a batch of results, it requires one
  * immediate `todowrite` call with `{"todos": []}` when one or more markers
  * appeared, and nothing else; the runtime continues to own and replace all
@@ -13,7 +13,7 @@
  * unconditionally — including on failure outputs — without state diffing.
  *
  * The marker must stay a directive, not prose: it is matched by shape in the
- * coordinator contract and must never grow explanatory text.
+ * orchestrator contract and must never grow explanatory text.
  *
  * Exports: `SPECOPS_TODO_REFRESH`, `withTodoRefreshReminder`,
  * `createTaskResultRefreshHook`.
@@ -38,7 +38,7 @@ export type TodoRefreshContext = {
  * returned unchanged, so decoration can never cascade into a refresh loop.
  *
  * @param output The raw lifecycle tool output.
- * @param context Optional coordinator message scope used for coalescing.
+ * @param context Optional orchestrator message scope used for coalescing.
  * @returns The output terminated by the compact refresh directive.
  */
 export function withTodoRefreshReminder(output: string, context?: TodoRefreshContext): string {
@@ -54,11 +54,11 @@ export function withTodoRefreshReminder(output: string, context?: TodoRefreshCon
 }
 
 /**
- * Build the after-hook that cues a bound coordinator after every specialist
+ * Build the after-hook that cues a bound orchestrator after every specialist
  * dispatch, including foreground, background, successful, and failed results.
  *
  * The generic OpenCode after-hook does not expose the assistant message id, so
- * task results are intentionally decorated individually. The coordinator
+ * task results are intentionally decorated individually. The orchestrator
  * contract coalesces multiple task markers received in one assistant turn.
  */
 export function createTaskResultRefreshHook(): NonNullable<Hooks["tool.execute.after"]> {

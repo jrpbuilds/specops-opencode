@@ -2,7 +2,7 @@
  * Batch scheduler for graph-derived planning dispatch.
  *
  * This module owns the planning-batch output vocabulary and scheduling
- * helpers used by the coordinator to dispatch specialist subagents
+ * helpers used by the orchestrator to dispatch specialist subagents
  * concurrently. Its exports are `SpecialistPass`, `PlanningRoute`,
  * `nextBatch()`, `feasiblePlanningArtifacts()`, and `ownerRoleIdFor()`.
  */

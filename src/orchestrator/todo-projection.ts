@@ -24,7 +24,7 @@ export type TodoProjectionEntry = {
     owner?: TodoProjectionOwner;
 };
 
-/** Coordinator mode used when deciding whether to show the approval checkpoint. */
+/** Orchestrator mode used when deciding whether to show the approval checkpoint. */
 export type TodoProjectionMode = "interactive" | "auto";
 
 /** Ephemeral parallel work reflected in the Todo projection. */
@@ -33,7 +33,7 @@ export type ParallelProgressInput = {
     readonly reviewFanout?: ReviewFanoutProgress;
     /**
      * Implementer dispatches currently in flight. Completion is carried by
-     * durable task checkboxes, and failures surface through coordinator
+     * durable task checkboxes, and failures surface through orchestrator
      * reporting, so neither is representable here.
      */
     readonly implementerDispatches?: readonly {
@@ -59,7 +59,7 @@ export type ReviewCycleObservation = {
 export type LifecycleProgressInput = {
     /** Normalized apply context feeding the canonical phase derivation; omitted ⇒ stages stay pending. */
     readonly apply?: NormalizedApplyInstructionContext;
-    /** True when the coordinator was observed passing the implementation-entry gate this session. */
+    /** True when the orchestrator was observed passing the implementation-entry gate this session. */
     readonly implementationEntered?: boolean;
     /** Observed review-cycle state; a verdict takes precedence over the durable phase derivation. */
     readonly reviewCycle?: ReviewCycleObservation;
@@ -163,7 +163,7 @@ function implementerLabel(dispatchId: string | undefined, index: number): string
  * implementation stage, in-flight review critics follow the independent-
  * review stage. Only in-flight work is projected — completed work is already
  * reflected by the durable stages and task checkboxes, and pending and failed
- * items surface through coordinator reporting — so the list stays
+ * items surface through orchestrator reporting — so the list stays
  * orientation, never history. Entries keep their explicit statuses because
  * the firstIncomplete fixup ran before they existed. A missing anchor stage
  * (tracked work should never outlive its phase) falls back to appending.

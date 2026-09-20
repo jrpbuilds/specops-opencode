@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
     summarizeReviewFanout,
     type ReviewFanoutSnapshot,
-} from "../../src/coordinator/review-fanout.js";
+} from "../../src/orchestrator/review-fanout.js";
 
 const fullSnapshot = (overrides: Partial<ReviewFanoutSnapshot> = {}): ReviewFanoutSnapshot => ({
     pending: [],

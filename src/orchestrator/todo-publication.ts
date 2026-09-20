@@ -48,7 +48,7 @@ const NATIVE_STATUS: Record<TodoProjectionEntry["status"], NativeTodoItem["statu
  * deterministic order.
  *
  * @param status Normalized OpenSpec status for the active change.
- * @param mode Coordinator mode selecting the auto-only review stages.
+ * @param mode Orchestrator mode selecting the auto-only review stages.
  * @param lifecycle Optional implementation progress advancing the post-plan
  * stages from the canonical workflow phase.
  * @param parallel Optional ephemeral parallel work from runtime dispatch

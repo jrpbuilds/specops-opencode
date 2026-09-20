@@ -6,7 +6,7 @@
  * know which change's projection a session's `todowrite` calls should carry.
  * Bindings are ephemeral host state — they never persist, never feed workflow
  * routing, and a missing binding simply leaves a session's Todo writes
- * untouched. Only SpecOps coordinator agents are recorded, so ordinary
+ * untouched. Only SpecOps orchestrator agents are recorded, so ordinary
  * sessions and specialist subagents are never intercepted.
  *
  * The module also tracks ephemeral per-session Todo publication state: whether
@@ -33,11 +33,14 @@
  * `clearReviewCycle`, `recordArchivedChange`, `hasArchivedChange`,
  * `clearArchivedChange`, `__resetSessionBindingsForTesting`.
  */
-import { SPECOPS_AGENT_ID, SPECOPS_AUTO_AGENT_ID } from "../agents/coordinator.js";
-import type { ReviewCycleObservation, TodoProjectionMode } from "../coordinator/todo-projection.js";
-import type { NativeTodoItem } from "../coordinator/todo-publication.js";
+import { SPECOPS_AGENT_ID, SPECOPS_AUTO_AGENT_ID } from "../agents/orchestrator.js";
+import type {
+    ReviewCycleObservation,
+    TodoProjectionMode,
+} from "../orchestrator/todo-projection.js";
+import type { NativeTodoItem } from "../orchestrator/todo-publication.js";
 
-/** One session's active SpecOps change and coordinator mode. */
+/** One session's active SpecOps change and orchestrator mode. */
 export type SessionBinding = {
     change: string;
     mode: TodoProjectionMode;
@@ -135,12 +138,12 @@ export function getRememberedTodoProjection(sessionID: string): NativeTodoItem[]
 /**
  * Record that one session passed the implementation-entry gate.
  *
- * Observed from the coordinator's permission-gated `specops_apply_instructions`
+ * Observed from the orchestrator's permission-gated `specops_apply_instructions`
  * call — the seam the contract crosses when implementation begins. The flag
  * only advances the Todo projection's lifecycle stages (immediate visibility
  * before the first task checkbox lands); it never persists and never feeds
  * workflow routing. Subagent sessions carry their own session ids, so their
- * calls never pollute a coordinator's flag.
+ * calls never pollute an orchestrator's flag.
  *
  * @param sessionID OpenCode session identifier from the hook input.
  */

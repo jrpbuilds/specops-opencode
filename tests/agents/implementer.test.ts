@@ -55,7 +55,7 @@ describe("implementer agent", () => {
         expect(prompt).toContain("Follow the approved requirements, design");
         expect(prompt).toContain("smallest coherent change");
         expect(prompt).toContain("Do not silently redesign approved requirements or design");
-        expect(prompt).toContain("report it to the Coordinator");
+        expect(prompt).toContain("report it to the Orchestrator");
         expect(prompt).not.toContain("Do not inspect repository source yourself");
     });
 

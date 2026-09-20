@@ -400,7 +400,7 @@ describe("reviewer agent registration", () => {
 
         expect(prompt).toContain("## Remediation re-review");
         expect(prompt).toContain(
-            "active only when the SpecOps coordinator explicitly says this is a remediation re-review",
+            "active only when the SpecOps orchestrator explicitly says this is a remediation re-review",
         );
         expect(prompt).toContain("provides the prior `F1..Fn` blocking findings");
         expect(prompt).toContain("perform the normal full review above");

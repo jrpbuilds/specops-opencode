@@ -5,7 +5,7 @@
  * contract between prompts, agent registration, and the configuration UI.
  */
 export const AGENT_IDS = {
-    coordinator: "specops-coordinator",
+    orchestrator: "specops-orchestrator",
     explorer: "specops-explorer",
     planner: "specops-planner",
     designer: "specops-designer",
@@ -29,7 +29,7 @@ export type AgentId = (typeof AGENT_IDS)[keyof typeof AGENT_IDS];
  * Configurable roles in the order used by the SpecOps workflow and editor.
  */
 export const ROLE_WORKFLOW_ORDER = [
-    AGENT_IDS.coordinator,
+    AGENT_IDS.orchestrator,
     AGENT_IDS.explorer,
     AGENT_IDS.planner,
     AGENT_IDS.designer,
@@ -45,13 +45,13 @@ export const ROLE_WORKFLOW_ORDER = [
 export const ALL_AGENT_IDS = ROLE_WORKFLOW_ORDER;
 
 /**
- * Roles that receive specialist dispatches from the coordinator.
+ * Roles that receive specialist dispatches from the orchestrator.
  *
  * Every Task dispatch to one of these roles carries the dispatch envelope's
  * `changeName` identity line, validated at the dispatch boundary. The
- * coordinator dispatches specialists but never itself, so it is the one role
+ * orchestrator dispatches specialists but never itself, so it is the one role
  * excluded here.
  */
 export const SPECIALIST_AGENT_IDS: readonly AgentId[] = ROLE_WORKFLOW_ORDER.filter(
-    id => id !== AGENT_IDS.coordinator,
+    id => id !== AGENT_IDS.orchestrator,
 );

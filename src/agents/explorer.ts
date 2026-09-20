@@ -5,7 +5,7 @@ import type { SpecOpsConfig } from "../config.js";
 import type { SpecOpsAgentDefinition } from "./definition.js";
 
 /**
- * Subagent ID used by the Coordinator to delegate repository exploration and
+ * Subagent ID used by the Orchestrator to delegate repository exploration and
  * evidence gathering.
  */
 export const EXPLORER_AGENT_ID = AGENT_IDS.explorer;
@@ -29,7 +29,7 @@ export function explorerAgentDefinition(specOpsConfig: SpecOpsConfig): SpecOpsAg
         id: EXPLORER_AGENT_ID,
         description:
             "Investigates repository source, behavior, conventions, tests, constraints, and " +
-            "risks for planning and design. Use when the SpecOps coordinator needs focused " +
+            "risks for planning and design. Use when the SpecOps orchestrator needs focused " +
             "repository evidence.",
         mode: "subagent",
         hidden: true,

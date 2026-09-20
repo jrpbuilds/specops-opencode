@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { AGENT_IDS, ALL_AGENT_IDS } from "../../src/agents/ids.js";
-import { DEFAULT_CONFIG, validateConfig } from "../../src/config.js";
+import { DEFAULT_CONFIG, validateConfig, type AgentConfig } from "../../src/config.js";
 
 /**
  * Build a complete role map with a cloned entry for every configured role.
@@ -21,7 +21,7 @@ describe("validateConfig - valid shapes", () => {
 
     test("accepts a model with no variant", () => {
         const value = { agents: allRoles({ model: "openference/GLM-5.2" }) };
-        expect(validateConfig(value).agents["specops-coordinator"]).toEqual({
+        expect(validateConfig(value).agents["specops-orchestrator"]).toEqual({
             model: "openference/GLM-5.2",
         });
     });
@@ -232,7 +232,7 @@ describe("validateConfig - role catalogue", () => {
 describe("validateConfig - entry shape", () => {
     test("rejects an entry that is not an object", () => {
         const agents = allRoles();
-        agents["specops-coordinator"] = "openference/GLM-5.2";
+        agents["specops-orchestrator"] = "openference/GLM-5.2";
         expect(() => validateConfig({ agents })).toThrow();
     });
 
@@ -289,11 +289,112 @@ describe("validateConfig - entry shape", () => {
     });
 });
 
+describe("validateConfig - legacy role migration", () => {
+    const LEGACY_ORCHESTRATOR_ID = "specops-coordinator";
+
+    test("migrates a legacy-only entry to the canonical id, preserving the mapping", () => {
+        const agents = allRoles();
+        delete agents["specops-orchestrator"];
+        agents[LEGACY_ORCHESTRATOR_ID] = {
+            model: "opencode-go/minimax-m3",
+            variant: "thinking",
+        };
+
+        const config = validateConfig({ agents });
+        expect(config.agents["specops-orchestrator"]).toEqual({
+            model: "opencode-go/minimax-m3",
+            variant: "thinking",
+        });
+        expect(
+            (config.agents as Record<string, AgentConfig | undefined>)[LEGACY_ORCHESTRATOR_ID],
+        ).toBeUndefined();
+    });
+
+    test("migrates a legacy-only empty entry to an empty canonical entry", () => {
+        const agents = allRoles();
+        delete agents["specops-orchestrator"];
+        agents[LEGACY_ORCHESTRATOR_ID] = {};
+
+        const config = validateConfig({ agents });
+        expect(config.agents["specops-orchestrator"]).toEqual({});
+        expect(
+            (config.agents as Record<string, AgentConfig | undefined>)[LEGACY_ORCHESTRATOR_ID],
+        ).toBeUndefined();
+    });
+
+    test("collapses equivalent legacy and canonical entries", () => {
+        const agents = allRoles();
+        agents[LEGACY_ORCHESTRATOR_ID] = { model: "opencode-go/minimax-m3" };
+        agents["specops-orchestrator"] = { model: "opencode-go/minimax-m3" };
+
+        const config = validateConfig({ agents });
+        expect(config.agents["specops-orchestrator"]).toEqual({ model: "opencode-go/minimax-m3" });
+        expect(
+            (config.agents as Record<string, AgentConfig | undefined>)[LEGACY_ORCHESTRATOR_ID],
+        ).toBeUndefined();
+    });
+
+    test("rejects a malformed legacy entry even when a canonical entry exists", () => {
+        const agents = allRoles();
+        agents[LEGACY_ORCHESTRATOR_ID] = { model: "opencode-go/minimax-m3", junk: true };
+        agents["specops-orchestrator"] = { model: "opencode-go/minimax-m3" };
+
+        expect(() => validateConfig({ agents })).toThrow(
+            "invalid SpecOps configuration entry: specops-orchestrator",
+        );
+    });
+
+    test("rejects a non-record legacy entry even when a canonical entry exists", () => {
+        const agents = allRoles();
+        agents[LEGACY_ORCHESTRATOR_ID] = "opencode-go/minimax-m3";
+        agents["specops-orchestrator"] = { model: "opencode-go/minimax-m3" };
+
+        expect(() => validateConfig({ agents })).toThrow(
+            "invalid SpecOps configuration entry: specops-orchestrator",
+        );
+    });
+
+    test("still rejects conflicting legacy and canonical entries with actionable guidance", () => {
+        const agents = allRoles();
+        agents[LEGACY_ORCHESTRATOR_ID] = { model: "opencode-go/minimax-m3", variant: "high" };
+        agents["specops-orchestrator"] = { model: "openference/GLM-5.2" };
+
+        expect(() => validateConfig({ agents })).toThrow(
+            /conflicting SpecOps configuration for specops-orchestrator[\s\S]*specops-coordinator[\s\S]*Remove the legacy/,
+        );
+    });
+
+    test("rejects conflicting variants even when both models match", () => {
+        const agents = allRoles();
+        agents[LEGACY_ORCHESTRATOR_ID] = { model: "opencode-go/minimax-m3", variant: "high" };
+        agents["specops-orchestrator"] = { model: "opencode-go/minimax-m3" };
+
+        expect(() => validateConfig({ agents })).toThrow(/conflicting SpecOps configuration/);
+    });
+
+    test("validates the migrated entry shape under the canonical id", () => {
+        const agents = allRoles();
+        delete agents["specops-orchestrator"];
+        agents[LEGACY_ORCHESTRATOR_ID] = { variant: "high" };
+
+        expect(() => validateConfig({ agents })).toThrow(
+            "invalid SpecOps configuration entry: specops-orchestrator",
+        );
+    });
+
+    test("still rejects unknown ids alongside a legacy id", () => {
+        const agents = allRoles();
+        agents[LEGACY_ORCHESTRATOR_ID] = {};
+        agents["specops-architect"] = {};
+        expect(() => validateConfig({ agents })).toThrow();
+    });
+});
+
 describe("validateConfig - isolation", () => {
     test("returns a deep clone so mutating the result cannot affect the input", () => {
         const input = structuredClone(DEFAULT_CONFIG);
         const result = validateConfig(input);
-        result.agents["specops-coordinator"].model = "openference/GLM-5.2";
-        expect(input.agents["specops-coordinator"]).toEqual({});
+        result.agents["specops-orchestrator"].model = "openference/GLM-5.2";
+        expect(input.agents["specops-orchestrator"]).toEqual({});
     });
 });

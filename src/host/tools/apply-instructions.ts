@@ -5,7 +5,7 @@ import { requireLifecyclePermission } from "../lifecycle-permission.js";
 import { recordSessionBinding } from "../session-bindings.js";
 import { withTodoRefreshReminder } from "./todo-refresh.js";
 
-/** Expose canonical OpenSpec apply instructions through the coordinator-only tool surface. */
+/** Expose canonical OpenSpec apply instructions through the orchestrator-only tool surface. */
 export const applyInstructionsTool = tool({
     description: "Read normalized OpenSpec apply instructions for a named change.",
     args: {

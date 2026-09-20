@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "bun:test";
-import { buildCoordinatorPrompt } from "../src/agents/coordinator.js";
+import { buildOrchestratorPrompt } from "../src/agents/orchestrator.js";
 import { AGENT_IDS } from "../src/agents/ids.js";
 import { loadPrompt, resolveIncludes } from "../src/prompts.js";
 
@@ -19,11 +19,11 @@ const ENGRAM_AWARE_ROLES = [
     "implementer",
     "reviewer",
     "frontier",
-    "coordinator",
+    "orchestrator",
 ] as const satisfies ReadonlyArray<keyof typeof AGENT_IDS>;
 
 const ALL_SPECIALIST_ROLES = [
-    ...ENGRAM_AWARE_ROLES.filter(role => role !== "coordinator"),
+    ...ENGRAM_AWARE_ROLES.filter(role => role !== "orchestrator"),
     "reviewCorrectness",
     "reviewRisk",
     "reviewQuality",
@@ -36,7 +36,7 @@ const ENGRAM_AWARE_SOURCE_FILES = [
     "implementer.md",
     "reviewer.md",
     "frontier.md",
-    "coordinator.md",
+    "orchestrator.md",
 ] as const;
 
 const SHARED_ENGRAM_POLICY_ANCHORS = [
@@ -154,7 +154,7 @@ describe("terminal handoff contracts", () => {
     });
 });
 
-describe("coordinator sync-flow contract", () => {
+describe("orchestrator sync-flow contract", () => {
     function expectSyncFlowContract(prompt: string): void {
         expect(prompt).toContain("## Sync flow");
         const start = prompt.indexOf("## Sync flow");
@@ -170,10 +170,10 @@ describe("coordinator sync-flow contract", () => {
         expect(syncFlow).toContain("openspec archive");
     }
 
-    test("shared coordinator prompt and both modes retain sync invariants", () => {
-        expectSyncFlowContract(loadPrompt(AGENT_IDS.coordinator));
-        expectSyncFlowContract(buildCoordinatorPrompt("interactive", false));
-        expectSyncFlowContract(buildCoordinatorPrompt("auto", false));
+    test("shared orchestrator prompt and both modes retain sync invariants", () => {
+        expectSyncFlowContract(loadPrompt(AGENT_IDS.orchestrator));
+        expectSyncFlowContract(buildOrchestratorPrompt("interactive", false));
+        expectSyncFlowContract(buildOrchestratorPrompt("auto", false));
     });
 });
 
@@ -226,13 +226,15 @@ describe("shared Engram policy", () => {
 });
 
 describe("prompt boundaries and budgets", () => {
-    test("coordinator prompts use config snapshots and no legacy placeholders", async () => {
+    test("orchestrator prompts use config snapshots and no legacy placeholders", async () => {
         const promptsDir = path.resolve(
             path.dirname(fileURLToPath(import.meta.url)),
             "..",
             "prompts",
         );
-        for (const file of readdirSync(promptsDir).filter(file => file.startsWith("coordinator"))) {
+        for (const file of readdirSync(promptsDir).filter(file =>
+            file.startsWith("orchestrator"),
+        )) {
             expect(await readFile(path.join(promptsDir, file), "utf8")).not.toContain(
                 "{{maxAutoReviewIterations}}",
             );
@@ -240,12 +242,12 @@ describe("prompt boundaries and budgets", () => {
 
         for (const mode of ["interactive", "auto"] as const) {
             for (const frontier of [false, true]) {
-                const prompt = buildCoordinatorPrompt(mode, frontier);
+                const prompt = buildOrchestratorPrompt(mode, frontier);
                 expect(prompt).not.toContain("{{maxAutoReviewIterations}}");
                 expect(prompt).toContain("maxSubagentConcurrency");
             }
         }
-        expect(buildCoordinatorPrompt("auto", false)).toContain(
+        expect(buildOrchestratorPrompt("auto", false)).toContain(
             "Read `maxAutoReviewIterations` from `specops_config`",
         );
     });
@@ -260,11 +262,11 @@ describe("prompt boundaries and budgets", () => {
         expect(loadSpecialistPrompt("planner").length).toBeLessThan(17_000);
         expect(loadSpecialistPrompt("designer").length).toBeLessThan(13_000);
         expect(loadSpecialistPrompt("implementer").length).toBeLessThan(18_000);
-        expect(buildCoordinatorPrompt("interactive", true).length).toBeLessThan(35_000);
+        expect(buildOrchestratorPrompt("interactive", true).length).toBeLessThan(35_000);
     });
 
-    test("Coordinator retains the hard Bash boundary", () => {
-        const prompt = loadPrompt(AGENT_IDS.coordinator);
+    test("Orchestrator retains the hard Bash boundary", () => {
+        const prompt = loadPrompt(AGENT_IDS.orchestrator);
         const start = prompt.indexOf("## Bash discipline");
         const end = prompt.indexOf("## Startup", start);
         const section = prompt.slice(start, end);
@@ -287,8 +289,8 @@ describe("prompt boundaries and budgets", () => {
 });
 
 describe("rewritten role contracts", () => {
-    test("Coordinator consumes runtime legality and preserves model judgement", () => {
-        const prompt = buildCoordinatorPrompt("interactive", false);
+    test("Orchestrator consumes runtime legality and preserves model judgement", () => {
+        const prompt = buildOrchestratorPrompt("interactive", false);
         expect(prompt).toContain("eligibleActions");
         expect(prompt).toContain("legal, not recommended");
         expect(prompt).toContain("engineering judgement");

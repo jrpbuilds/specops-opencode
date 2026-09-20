@@ -2,7 +2,7 @@ import { mkdir, open, readFile, rename, unlink } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { ALL_AGENT_IDS, type AgentId } from "./agents/ids.js";
+import { AGENT_IDS, ALL_AGENT_IDS, type AgentId } from "./agents/ids.js";
 import { isRecord } from "./openspec/helpers.js";
 import { resolveAgentMapping } from "./models.js";
 
@@ -56,6 +56,19 @@ export const DEFAULT_REVIEW_FANOUT: FanoutMode = "auto";
 export const DEFAULT_SUBAGENT_CONCURRENCY = 1;
 /** Default value used when `maxAutoReviewIterations` is omitted from a config. */
 export const DEFAULT_AUTO_REVIEW_ITERATIONS = 3;
+
+/**
+ * Legacy role identifiers persisted by older SpecOps releases, mapped to the
+ * canonical role that replaced them.
+ *
+ * Loading a configuration that carries a legacy key migrates it to the
+ * canonical identifier in memory, so existing installs keep their configured
+ * model and variant without manual edits. The legacy key itself is never
+ * written back: saves emit canonical identifiers only.
+ */
+export const LEGACY_AGENT_IDS: Readonly<Record<string, AgentId>> = {
+    "specops-coordinator": AGENT_IDS.orchestrator,
+};
 
 /**
  * Initial configuration used when no SpecOps file exists.
@@ -148,6 +161,8 @@ export async function loadConfig(
  * and non-blank variants without a valid model context. Role entries missing
  * from older configuration files are backfilled as empty inheriting mappings
  * so the file still loads and the editor can persist the full catalogue later.
+ * Legacy role identifiers are accepted and migrated to their canonical
+ * replacements, so existing installs keep their configured model and variant.
  *
  * @param value Unknown parsed configuration value.
  * @returns A cloned, validated configuration with every role entry present.
@@ -195,8 +210,9 @@ export function validateConfig(value: unknown): SpecOpsConfig {
 
     // Unknown role ids stay a hard error because they almost certainly name a
     // role this installation does not have; absent ids belong to older files.
+    // Legacy identifiers are accepted here and migrated below instead.
     const entries = value.agents as Record<string, unknown>;
-    const known = new Set<string>(ALL_AGENT_IDS);
+    const known = new Set<string>([...ALL_AGENT_IDS, ...Object.keys(LEGACY_AGENT_IDS)]);
     for (const id of Object.keys(entries)) {
         if (!known.has(id)) {
             throw new Error(
@@ -204,24 +220,17 @@ export function validateConfig(value: unknown): SpecOpsConfig {
             );
         }
     }
+    const migratedEntries = migrateLegacyAgentEntries(entries);
 
     for (const id of ALL_AGENT_IDS) {
-        const entry = entries[id];
+        const entry = migratedEntries[id];
         if (entry === undefined) continue;
-        if (!isRecord(entry) || !hasOnlyKeys(entry, ["model", "variant"])) {
-            throw new Error(`invalid SpecOps configuration entry: ${id}`);
-        }
-        if (
-            ("model" in entry && typeof entry.model !== "string") ||
-            ("variant" in entry && (typeof entry.variant !== "string" || !entry.variant.trim()))
-        ) {
-            throw new Error(`invalid SpecOps configuration entry: ${id}`);
-        }
+        assertAgentEntryShape(id, entry);
     }
 
     const config = {
         agents: Object.fromEntries(
-            ALL_AGENT_IDS.map(id => [id, (entries[id] ?? {}) as AgentConfig]),
+            ALL_AGENT_IDS.map(id => [id, (migratedEntries[id] ?? {}) as AgentConfig]),
         ),
         frontierEscalation: value.frontierEscalation ?? false,
         maxSubagentConcurrency: value.maxSubagentConcurrency ?? DEFAULT_SUBAGENT_CONCURRENCY,
@@ -238,6 +247,78 @@ export function validateConfig(value: unknown): SpecOpsConfig {
     }
 
     return structuredClone(config);
+}
+
+/**
+ * Resolve legacy role identifiers to their canonical replacements.
+ *
+ * A legacy entry with no canonical counterpart is migrated as-is, preserving
+ * its configured model and variant. Malformed legacy entries are rejected
+ * before migration. When both spellings are present, equal entries collapse
+ * to the canonical one, while conflicting entries fail loudly instead of
+ * silently preferring one of the two user choices.
+ *
+ * @param entries Raw role entries keyed by role identifier.
+ * @returns A fresh record keyed by canonical identifiers only.
+ * @throws Error when a legacy entry is malformed or disagrees with its
+ *     canonical entry.
+ */
+function migrateLegacyAgentEntries(entries: Record<string, unknown>): Record<string, unknown> {
+    const migrated: Record<string, unknown> = { ...entries };
+    for (const [legacyId, canonicalId] of Object.entries(LEGACY_AGENT_IDS)) {
+        const legacy = migrated[legacyId];
+        if (legacy === undefined) continue;
+        delete migrated[legacyId];
+        // Shape-check the legacy entry before migrating it so a malformed
+        // entry fails loudly instead of being silently collapsed into a
+        // canonical counterpart that happens to carry the same model/variant.
+        assertAgentEntryShape(canonicalId, legacy);
+        const canonical = migrated[canonicalId];
+        if (canonical === undefined) {
+            migrated[canonicalId] = legacy;
+        } else if (!agentEntryEquals(legacy, canonical)) {
+            throw new Error(
+                `conflicting SpecOps configuration for ${canonicalId}: the legacy ` +
+                    `"${legacyId}" entry and the "${canonicalId}" entry set different ` +
+                    `models or variants. Remove the legacy "${legacyId}" entry or make ` +
+                    "both entries identical, then restart OpenCode.",
+            );
+        }
+    }
+    return migrated;
+}
+
+/**
+ * Reject an entry whose shape does not match the persisted role entry shape.
+ *
+ * @param id Role identifier named in the thrown error.
+ * @param entry Raw entry value from a parsed configuration.
+ * @throws Error when the entry is not a record holding only an optional string
+ *     `model` and an optional non-blank string `variant`.
+ */
+function assertAgentEntryShape(id: string, entry: unknown): void {
+    if (!isRecord(entry) || !hasOnlyKeys(entry, ["model", "variant"])) {
+        throw new Error(`invalid SpecOps configuration entry: ${id}`);
+    }
+    if (
+        ("model" in entry && typeof entry.model !== "string") ||
+        ("variant" in entry && (typeof entry.variant !== "string" || !entry.variant.trim()))
+    ) {
+        throw new Error(`invalid SpecOps configuration entry: ${id}`);
+    }
+}
+
+/**
+ * Compare two role entries by their meaningful model/variant fields.
+ *
+ * @param left Raw entry from a persisted configuration.
+ * @param right Raw entry from a persisted configuration.
+ * @returns Whether both entries carry the same model and variant choices.
+ */
+function agentEntryEquals(left: unknown, right: unknown): boolean {
+    const a = (isRecord(left) ? left : {}) as { model?: unknown; variant?: unknown };
+    const b = (isRecord(right) ? right : {}) as { model?: unknown; variant?: unknown };
+    return a.model === b.model && a.variant === b.variant;
 }
 
 /**
