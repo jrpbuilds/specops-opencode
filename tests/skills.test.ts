@@ -10,13 +10,30 @@ type SkillFrontmatter = {
 };
 
 /** The canonical packaged skill catalogue. Adding a skill means updating this. */
-const PACKAGED_SKILL_NAMES = ["specops-example"] as const;
+const PACKAGED_SKILL_NAMES = [
+    "specops-backend-engineering",
+    "specops-database-engineering",
+    "specops-example",
+    "specops-frontend-engineering",
+    "specops-security-engineering",
+    "specops-testing",
+] as const;
 
 /** OpenCode's skill name rule: lowercase kebab-case, single hyphen separators. */
 const SKILL_NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 /** OpenCode's documented description ceiling; longer descriptions are rejected. */
 const MAX_DESCRIPTION_LENGTH = 1024;
+
+/** Lifecycle tools belong to the runtime, never to a specialist capability. */
+const LIFECYCLE_TOOL_NAMES = [
+    "specops_archive",
+    "specops_create_change",
+    "specops_progress",
+    "specops_review_guard",
+    "specops_status",
+    "specops_validate_change",
+];
 
 function readSkillFile(skillName: string): { frontmatter: SkillFrontmatter; body: string } {
     const raw = readFileSync(path.join(PACKAGED_SKILLS_DIR, skillName, "SKILL.md"), "utf8");
@@ -79,6 +96,17 @@ describe("packaged skills", () => {
             ).toBeLessThanOrEqual(MAX_DESCRIPTION_LENGTH);
 
             expect(body.trim().length, `${name} body must not be empty`).toBeGreaterThan(0);
+        }
+    });
+
+    test("skills do not carry SpecOps lifecycle tools", () => {
+        for (const name of packagedSkillNames()) {
+            const { body } = readSkillFile(name);
+            for (const toolName of LIFECYCLE_TOOL_NAMES) {
+                expect(body, `${name} must not name the ${toolName} lifecycle tool`).not.toContain(
+                    toolName,
+                );
+            }
         }
     });
 });

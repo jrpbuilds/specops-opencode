@@ -13,3 +13,7 @@ OpenCode's single shared namespace.
 
 See [docs/skills.md](https://github.com/jrpbuilds/specops-opencode/blob/main/docs/skills.md) for the capability contract and authoring
 conventions, and `specops-example` for a working template.
+
+The initial catalogue adds focused frontend, backend, database, security, and
+testing capabilities. See the catalogue table in `docs/skills.md` to choose the
+skill whose trigger matches the work at hand.

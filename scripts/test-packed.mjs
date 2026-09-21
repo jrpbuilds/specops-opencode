@@ -184,7 +184,18 @@ try {
         .filter(entry => entry.isDirectory())
         .map(entry => entry.name)
         .sort();
-    assertEqual(packedSkillNames, ["specops-example"], "packed skill catalogue");
+    assertEqual(
+        packedSkillNames,
+        [
+            "specops-backend-engineering",
+            "specops-database-engineering",
+            "specops-example",
+            "specops-frontend-engineering",
+            "specops-security-engineering",
+            "specops-testing",
+        ],
+        "packed skill catalogue",
+    );
     assert(
         (await readFile(path.join(packageDirectory, "skills", "README.md"), "utf8")).trim().length >
             0,

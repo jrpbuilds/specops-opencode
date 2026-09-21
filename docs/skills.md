@@ -41,6 +41,21 @@ Every packaged SpecOps skill follows one contract:
 - **Useful to a competent base role.** Skills add specialist depth on top of the
   role prompts; they are never a crutch that compensates for a weak role prompt.
 
+## The packaged catalogue
+
+| Skill                          | Provides                                                                                                   | Use when                                                                          |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `specops-example`              | A working packaged-skill template                                                                          | Authoring or reviewing a packaged SpecOps skill                                   |
+| `specops-frontend-engineering` | Interaction, state, forms, accessibility, responsive behavior, and safe rendering guidance                 | Browser-visible behavior or client-side state changes                             |
+| `specops-backend-engineering`  | Service contracts, trust boundaries, side effects, compatibility, and observability guidance               | Server behavior, integrations, or API contracts change                            |
+| `specops-database-engineering` | Schema, migration, integrity, transaction, concurrency, and query guidance                                 | Persisted data, queries, or database-backed workflows change                      |
+| `specops-security-engineering` | Trust-boundary, access-control, secret-handling, unsafe-input, and secure-failure guidance                 | Access, exposure, credentials, or untrusted-data handling changes                 |
+| `specops-testing`              | Behavior-focused verification, failure boundaries, integration choices, and regression protection guidance | A change needs deeper verification design than the repository's usual conventions |
+
+Each specialist skill is intentionally narrow and on-demand. It supplements a
+competent base role without deciding workflow, expanding the approved task, or
+prescribing a framework that the repository has not already chosen.
+
 ## Naming and format
 
 Each skill is one folder with one `SKILL.md` file:
