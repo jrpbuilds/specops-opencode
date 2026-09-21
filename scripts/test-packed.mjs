@@ -171,6 +171,52 @@ try {
             `packed shared prompt fragment missing or empty: ${fragment}`,
         );
     }
+
+    // Packaged skills are required runtime assets: the tree ships beside the
+    // prompts, the config hook registers it through OpenCode's native
+    // `skills.paths` discovery, and every packaged SKILL.md satisfies the
+    // discovery contract (name matches its folder, description present).
+    const packedSkillNames = (
+        await readdir(path.join(packageDirectory, "skills"), {
+            withFileTypes: true,
+        })
+    )
+        .filter(entry => entry.isDirectory())
+        .map(entry => entry.name)
+        .sort();
+    assertEqual(packedSkillNames, ["specops-example"], "packed skill catalogue");
+    assert(
+        (await readFile(path.join(packageDirectory, "skills", "README.md"), "utf8")).trim().length >
+            0,
+        "packed skills README missing or empty",
+    );
+    const packedSkillPaths = config.skills?.paths ?? [];
+    assert(
+        packedSkillPaths.includes(path.join(packageDirectory, "skills")),
+        `config hook did not register the packed skills directory: ${packedSkillPaths.join(", ")}`,
+    );
+    for (const skillName of packedSkillNames) {
+        const raw = await readFile(
+            path.join(packageDirectory, "skills", skillName, "SKILL.md"),
+            "utf8",
+        );
+        const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---/.exec(raw);
+        assert(frontmatter, `packed skill ${skillName} has no YAML frontmatter`);
+        const parsed = Bun.YAML.parse(frontmatter[1]);
+        assert(parsed && parsed.name === skillName, `packed skill ${skillName} name mismatch`);
+        assert(
+            skillName.length <= 64,
+            `packed skill ${skillName} name exceeds OpenCode's 64-character limit`,
+        );
+        assert(
+            typeof parsed.description === "string" && parsed.description.trim().length > 0,
+            `packed skill ${skillName} has no usable description`,
+        );
+        assert(
+            raw.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "").trim().length > 0,
+            `packed skill ${skillName} body is empty`,
+        );
+    }
     assert(
         typeof config.agent["SpecOps"].prompt === "string" &&
             config.agent["SpecOps"].prompt.length > 0,

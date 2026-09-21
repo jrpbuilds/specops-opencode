@@ -6,6 +6,7 @@ All notable changes to SpecOps are documented in this file.
 
 ### Added
 
+- SpecOps now ships packaged skills that OpenCode discovers natively alongside your own skills, so added capability packs work without extra setup and nothing is installed into your OpenCode configuration.
 - SpecOps now publishes the native to-do list itself from the current OpenSpec state instead of hand-maintaining it, with the sidebar as the only place the list appears; a failed status read keeps the last good list visible rather than clearing it.
 - The to-do list shows in-flight parallel work where it belongs and removes each entry as that specialist finishes, and every entry carries a readable name and a short description so the checklist explains itself at a glance.
 - `specops_status` now reports the change's current workflow phase, whether implementation and review are legally available (with a stable machine-readable reason when they are not), and every workflow action that is legal right now, so routing decisions start from durable facts instead of prose.

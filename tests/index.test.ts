@@ -37,6 +37,9 @@ describe("SpecOpsPlugin config hook", () => {
                 "specops-onboard": expect.any(Object),
             }),
         );
+        expect((config as { skills?: { paths?: string[] } }).skills?.paths?.length).toBeGreaterThan(
+            0,
+        );
         expect(warnSpy).toHaveBeenCalledWith(
             "SpecOps: failed to load configuration, agent registration skipped:",
             "configuration is broken",

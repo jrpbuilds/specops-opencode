@@ -8,6 +8,7 @@ import {
     registerWorkflowSubagents,
 } from "./host/agents.js";
 import { applyLifecycleBoundary, applyTaskBoundary } from "./host/permissions.js";
+import { applySkills } from "./host/skills.js";
 import { createImplementerDispatchGate } from "./host/dispatch-gate.js";
 import {
     createSessionEventObserver,
@@ -53,6 +54,11 @@ export const SpecOpsPlugin: Plugin = async input => {
             // roles can provide their own explicit permission overrides.
             applyTaskBoundary(config);
             applyLifecycleBoundary(config);
+
+            // Register the packaged skill tree with the host before agent
+            // registration so OpenCode's native skill discovery lists it
+            // alongside the user's configured skill paths.
+            applySkills(config);
 
             try {
                 const specOpsConfig = await loadConfig();

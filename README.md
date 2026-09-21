@@ -31,6 +31,7 @@ Specialist agents then investigate the repository, work out the requirements, de
 | [Configuration](docs/configuration.md)                 | The Configure screen and `specops.json` reference   |
 | [Model recommendations](docs/model-recommendations.md) | Which model classes suit which roles                |
 | [Commands](docs/commands.md)                           | Every command explained                             |
+| [Skills](docs/skills.md)                               | The bundled skill catalogue and capability contract |
 | [Troubleshooting](docs/troubleshooting.md)             | Doctor output, BLOCKED runs, common fixes           |
 
 ## Install
