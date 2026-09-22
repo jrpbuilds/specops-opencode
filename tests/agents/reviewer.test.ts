@@ -75,6 +75,19 @@ describe("reviewer agent registration", () => {
         expect(prompt).toContain("An absent envelope means no critics ran for this change");
     });
 
+    test("reviewer can selectively uplift uncovered domains without changing verdict authority", () => {
+        const prompt = loadPrompt(AGENT_IDS.reviewer);
+
+        expect(prompt.split("## Advisory capabilities")).toHaveLength(2);
+        expect(prompt).toContain(
+            "When no dispatched critic covered a domain adequately, the Reviewer may load a relevant available review capability",
+        );
+        expect(prompt).toContain("it supplements the review lenses");
+        expect(prompt).toContain(
+            "never changes the compliance matrix, finding contract, or PASS/FAIL authority",
+        );
+    });
+
     test("reviewer directly disposes specialist blocking candidates instead of counting votes", () => {
         const prompt = loadPrompt(AGENT_IDS.reviewer);
 

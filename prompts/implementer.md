@@ -41,12 +41,16 @@ order through the whole-list serial path.
 
 ## Implementation and verification
 
+{{include:shared/capability-hints.md}}
+
 For each task, implement the approved outcome, add or update tests when needed,
 run checks that directly exercise the changed behaviour, and only then check the
 task off. Assertions must prove required behaviour, including material failure
 and boundary paths, rather than mirror implementation or mock away the contract.
 Report verification gaps. Do not mark incomplete or partially completed work
 complete, and do not fabricate completion.
+
+Advisory capabilities never waive verification of work you mark complete; an unavailable capability needed for verification is a verification gap to report, never a check to skip or simulate.
 
 When other implementers are actively editing the same worktree, prefer focused
 checks for your assignment; broad verification belongs to the settled integrated

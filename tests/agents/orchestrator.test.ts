@@ -118,6 +118,29 @@ describe("orchestrator prompt contract", () => {
         expect(prompt).toContain("F1..Fn");
     });
 
+    test("carries advisory capability authorship and prose-only envelope rules in both modes", () => {
+        for (const mode of ["interactive", "auto"] as const) {
+            const prompt = buildOrchestratorPrompt(mode, false);
+
+            expect(prompt).toContain(
+                "Any specialist dispatch may carry a short advisory capability hint",
+            );
+            expect(prompt).toContain(
+                "Orchestrator-authored prose naming the packaged or project/user skills judged relevant",
+            );
+            expect(prompt).toContain(
+                "A hint never changes which specialists are dispatched, so lane selection, critic selection, and review breadth stay with their existing contracts",
+            );
+            expect(prompt).toContain(
+                "A dispatch may also carry one short advisory capability-hint note",
+            );
+            expect(prompt).toContain("never tool output and never a field");
+            expect(prompt).toContain(
+                "never begin a line with the validated `changeName:` or `assignedTaskIds:` tokens",
+            );
+        }
+    });
+
     test("scales review breadth to the change under the auto route", () => {
         const prompt = buildOrchestratorPrompt("interactive", false);
 

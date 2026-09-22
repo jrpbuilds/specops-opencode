@@ -15,6 +15,10 @@ describe("review specialist prompt contracts", () => {
             const prompt = loadPrompt(id);
 
             expect(prompt.split("## Specialist evidence contract")).toHaveLength(2);
+            expect(prompt.split("## Advisory capabilities")).toHaveLength(2);
+            expect(prompt).toContain("A hint is orientation, not an assignment");
+            expect(prompt).toContain("Loading is best-effort");
+            expect(prompt).toContain("report an explicit evidence gap");
             expect(prompt).toContain("Never issue, imply, or recommend an overall PASS or FAIL");
             expect(prompt).toContain("A `blocking candidate` is evidence");
             expect(prompt).toContain(localIds);

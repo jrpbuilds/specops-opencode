@@ -12,9 +12,13 @@ The Implementer's completion claim, checkbox state, summary, and reported test r
 
 ## Using specialist evidence
 
+{{include:shared/capability-hints.md}}
+
 When the Orchestrator provides a `## Specialist evidence` envelope, treat the provided critic reports — one to three, one section per critic that ran — as evidence, not votes or authority, and verify them directly. Cross-check every material claim against the approved artifacts, implementation, and tests; your direct inspection remains authoritative. The specialists are independent and do not see each other's reports. Their `blocking candidate` labels do not determine materiality. The compliance matrix, finding contract, PASS/FAIL authority, and remediation re-review rules below remain unchanged.
 
 An absent envelope means no critics ran for this change: perform the normal full review above with no Specialist disposition section.
+
+When no dispatched critic covered a domain adequately, the Reviewer may load a relevant available review capability; it supplements the review lenses and never changes the compliance matrix, finding contract, or PASS/FAIL authority.
 
 Explicitly dispose of every specialist blocking candidate as one of: accepted as a canonical `Fk`, merged into another `Fk`, downgraded to a sparse non-blocking observation, or rejected. Give direct evidence for every downgrade or rejection. Do not accept a claim merely because several specialists repeat it, and do not infer correctness merely because no specialist found a problem.
 

@@ -59,6 +59,22 @@ const SHARED_ENGRAM_POLICY_ANCHORS = [
     "proposal, specs, design, and tasks content is never copied into memory — only context about it.",
 ] as const;
 
+const CAPABILITY_AWARE_SOURCE_FILES = [
+    "implementer.md",
+    "reviewer.md",
+    "review-correctness.md",
+    "review-risk.md",
+    "review-quality.md",
+] as const;
+
+const SHARED_CAPABILITY_POLICY_ANCHORS = [
+    "## Advisory capabilities",
+    "A hint is orientation, not an assignment",
+    "Loading is best-effort",
+    "report an explicit evidence gap naming it and what remains unverified",
+    "never broaden assigned scope or review lens",
+] as const;
+
 async function withTempPromptDirectory(run: (directory: string) => Promise<void>): Promise<void> {
     const directory = await mkdtemp(path.join(os.tmpdir(), "specops-prompts-"));
     try {
@@ -221,6 +237,51 @@ describe("shared Engram policy", () => {
             expect(prompt).not.toContain("## Engram");
             expect(prompt).not.toContain("topic_key");
             expect(prompt).not.toContain("change/<change-name>");
+        }
+    });
+});
+
+describe("shared capability policy", () => {
+    const promptsDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "prompts");
+
+    test("keeps the capability contract in one shared fragment and exactly five consumers", async () => {
+        const sharedFile = "shared/capability-hints.md";
+        const include = "{{include:shared/capability-hints.md}}";
+        const sourceFiles = readdirSync(promptsDir, { recursive: true })
+            .map((entry: unknown) => String(entry))
+            .filter(entry => entry.endsWith(".md"));
+        const sources = await Promise.all(
+            sourceFiles.map(async file => ({
+                file,
+                content: await readFile(path.join(promptsDir, file), "utf8"),
+            })),
+        );
+        const shared = sources.find(source => source.file === sharedFile)?.content;
+
+        expect(shared).toBeDefined();
+        for (const anchor of SHARED_CAPABILITY_POLICY_ANCHORS) {
+            expect(shared).toContain(anchor);
+            expect(
+                sources.reduce(
+                    (count, source) => count + (source.content.split(anchor).length - 1),
+                    0,
+                ),
+            ).toBe(1);
+            expect(
+                sources
+                    .filter(source => source.content.includes(anchor))
+                    .map(source => source.file),
+            ).toEqual([sharedFile]);
+        }
+
+        const includeSources = sources
+            .filter(source => source.content.includes(include))
+            .map(source => source.file)
+            .sort();
+        expect(includeSources).toEqual([...CAPABILITY_AWARE_SOURCE_FILES].sort());
+        for (const file of CAPABILITY_AWARE_SOURCE_FILES) {
+            const source = sources.find(entry => entry.file === file)?.content;
+            expect(source?.split(include).length).toBe(2);
         }
     });
 });

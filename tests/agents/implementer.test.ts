@@ -83,6 +83,20 @@ describe("implementer agent", () => {
         expect(prompt).toContain("Do not archive the OpenSpec change");
     });
 
+    test("uses advisory capabilities without weakening completion verification", () => {
+        const prompt = loadPrompt(AGENT_IDS.implementer);
+
+        expect(prompt.split("## Advisory capabilities")).toHaveLength(2);
+        expect(prompt).toContain("A hint is orientation, not an assignment");
+        expect(prompt).toContain("Loading is best-effort");
+        expect(prompt).toContain("report an explicit evidence gap");
+        expect(prompt).toContain("Advisory capabilities never waive verification");
+        expect(prompt).toContain(
+            "an unavailable capability needed for verification is a verification gap to report",
+        );
+        expect(prompt).toContain("never a check to skip or simulate");
+    });
+
     test("supports review remediation without creating a second workflow manual", () => {
         const prompt = loadPrompt(AGENT_IDS.implementer);
 

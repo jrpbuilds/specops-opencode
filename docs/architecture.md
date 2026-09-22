@@ -132,6 +132,7 @@ The native Todo list is runtime-published through a **trigger bridge**, never mo
 ## Packaged skills are capabilities, not policy
 
 The packaged skill tree (`skills/`) is an advisory capability layer delivered through OpenCode's native skill system. Registration is deterministic mechanics: TypeScript resolves the packaged directory, verifies it exists, and appends it to the host's `skills.paths` configuration so OpenCode discovers it alongside user-configured skill paths. What a skill contains is engineering expertise for models to weigh — a skill must never carry workflow policy, phase order, routing, or permissions, and it never outranks approved OpenSpec artifacts or project conventions. Whether a skill is worth loading for the work at hand stays with the agent, matching OpenCode's load-on-demand design; SpecOps adds no per-skill selection, gating, or configuration of its own.
+Consuming roles now actively weigh advisory hints and load relevant capabilities per assignment through prompt guidance. The orchestrator authors hints as prose inside the existing envelope with no new parsing, and relevance judgement stays with the agents (classification 2).
 
 ## Classifying new behaviour
 

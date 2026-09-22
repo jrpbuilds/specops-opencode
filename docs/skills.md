@@ -41,6 +41,14 @@ Every packaged SpecOps skill follows one contract:
 - **Useful to a competent base role.** Skills add specialist depth on top of the
   role prompts; they are never a crutch that compensates for a weak role prompt.
 
+### Consuming roles and advisory hints
+
+The consuming roles are capability-aware: hints arrive as advisory prose in
+dispatch context, and each role inspects the assignment before loading a
+materially relevant skill, declining or substituting a hint when appropriate.
+Role contracts remain authoritative, and roles degrade honestly through
+best-effort loading and explicit evidence gaps when needed.
+
 ## The packaged catalogue
 
 ### Implementation skills

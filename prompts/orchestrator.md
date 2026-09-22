@@ -295,6 +295,8 @@ Context, a phase instruction, and any current-job facts required by the role.
 artifacts and evidence; never use it to route, gate, order, or record progress.
 Do not assume specialists share your context.
 
+Any specialist dispatch may carry a short advisory capability hint: Orchestrator-authored prose naming the packaged or project/user skills judged relevant to that pass from the actual change surface, marked advisory and limited to the few that materially matter. Specialists weigh it after direct inspection and may decline or substitute it. A hint never changes which specialists are dispatched, so lane selection, critic selection, and review breadth stay with their existing contracts.
+
 {{include:shared/dispatch-envelope.md}}
 
 Normal returns use the standard handoff envelope; `NEXT` is advisory.
