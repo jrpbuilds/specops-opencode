@@ -43,6 +43,8 @@ Every packaged SpecOps skill follows one contract:
 
 ## The packaged catalogue
 
+### Implementation skills
+
 | Skill                          | Provides                                                                                                   | Use when                                                                          |
 | ------------------------------ | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | `specops-example`              | A working packaged-skill template                                                                          | Authoring or reviewing a packaged SpecOps skill                                   |
@@ -51,6 +53,28 @@ Every packaged SpecOps skill follows one contract:
 | `specops-database-engineering` | Schema, migration, integrity, transaction, concurrency, and query guidance                                 | Persisted data, queries, or database-backed workflows change                      |
 | `specops-security-engineering` | Trust-boundary, access-control, secret-handling, unsafe-input, and secure-failure guidance                 | Access, exposure, credentials, or untrusted-data handling changes                 |
 | `specops-testing`              | Behavior-focused verification, failure boundaries, integration choices, and regression protection guidance | A change needs deeper verification design than the repository's usual conventions |
+
+### Review skills
+
+| Skill                          | Provides                                                                                                     | Use when                                                                |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| `specops-accessibility-review` | Semantics, keyboard and focus behavior, labeling, form errors, and interactive state review                  | Reviewing a change that exposes or alters a user interface              |
+| `specops-backend-review`       | API and service contracts, validation boundaries, effects, failures, transactions, and integration review    | Reviewing server behavior, integrations, or service contracts           |
+| `specops-browser-verification` | Disciplined real-browser evidence with explicit gaps when browser tooling is unavailable                     | A review needs to verify actual browser-visible behavior                |
+| `specops-compatibility-review` | Public contracts, formats, callers, upgrade paths, and migration compatibility review                        | Reviewing changes that could affect existing consumers or upgrade paths |
+| `specops-database-review`      | Migrations, integrity, transactions, locking, query and index implications, existing data, and compatibility | Reviewing persisted data, queries, or database-backed workflows         |
+| `specops-frontend-review`      | Interaction and state behavior, forms, loading/error/empty states, boundaries, regressions, and UI evidence  | Reviewing browser-visible behavior or client-side state                 |
+| `specops-performance-review`   | Material hot-path, query, resource, latency, and unbounded-work review                                       | Reviewing a change where performance is genuinely material              |
+| `specops-security-review`      | Authentication, authorization, trust boundaries, secrets, unsafe input, privilege, and security failures     | Reviewing access, exposure, credentials, or untrusted-data handling     |
+
+### Review skills and the lens model
+
+Correctness, Risk, and Quality define the review question; a review skill supplies
+domain expertise used through that lens. A skill may help more than one lens, but
+the consuming critic still decides what to challenge and the Final Reviewer still
+owns materiality, disposition, and the final PASS/FAIL authority. Review skills
+provide evidence-oriented investigation guidance only: they do not define review
+workflow, critic selection, remediation routing, or lifecycle state.
 
 Each specialist skill is intentionally narrow and on-demand. It supplements a
 competent base role without deciding workflow, expanding the approved task, or

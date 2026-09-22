@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, test } from "bun:test";
+import { AGENT_IDS } from "../src/agents/ids.js";
 import { PACKAGED_SKILLS_DIR } from "../src/skills.js";
 
 /** Frontmatter fields every packaged skill must carry. */
@@ -11,11 +12,19 @@ type SkillFrontmatter = {
 
 /** The canonical packaged skill catalogue. Adding a skill means updating this. */
 const PACKAGED_SKILL_NAMES = [
+    "specops-accessibility-review",
     "specops-backend-engineering",
+    "specops-backend-review",
+    "specops-browser-verification",
+    "specops-compatibility-review",
     "specops-database-engineering",
+    "specops-database-review",
     "specops-example",
     "specops-frontend-engineering",
+    "specops-frontend-review",
+    "specops-performance-review",
     "specops-security-engineering",
+    "specops-security-review",
     "specops-testing",
 ] as const;
 
@@ -34,6 +43,22 @@ const LIFECYCLE_TOOL_NAMES = [
     "specops_status",
     "specops_validate_change",
 ];
+
+/** Verdict tokens belong to the reviewer contract, never to a skill body. */
+const REVIEW_VERDICT_PATTERN = /\b(?:PASS|FAIL)\b/;
+
+/** Review output and remediation labels belong to the review contracts. */
+const REVIEW_CONTRACT_MARKERS = [
+    { text: "blocking candidate", source: "shared/critic-evidence.md" },
+    { text: "### REVIEW COVERAGE", source: "shared/critic-evidence.md" },
+    { text: "### FINDINGS", source: "shared/critic-evidence.md" },
+    { text: "Correction direction", source: "shared/critic-evidence.md" },
+    { text: "Correction target", source: "reviewer.md" },
+    { text: "Specialist disposition", source: "reviewer.md" },
+] as const;
+
+const SPECOPS_AGENT_IDS = Object.values(AGENT_IDS);
+const PROMPTS_DIR = path.resolve(PACKAGED_SKILLS_DIR, "..", "prompts");
 
 function readSkillFile(skillName: string): { frontmatter: SkillFrontmatter; body: string } {
     const raw = readFileSync(path.join(PACKAGED_SKILLS_DIR, skillName, "SKILL.md"), "utf8");
@@ -107,6 +132,56 @@ describe("packaged skills", () => {
                     toolName,
                 );
             }
+        }
+    });
+
+    test("skills do not emit review verdict language", () => {
+        for (const name of packagedSkillNames()) {
+            const { body } = readSkillFile(name);
+            expect(body, `${name} must not emit reviewer verdict tokens`).not.toMatch(
+                REVIEW_VERDICT_PATTERN,
+            );
+        }
+    });
+
+    test("skills do not template review reports or remediation routing", () => {
+        for (const name of packagedSkillNames()) {
+            const { body } = readSkillFile(name);
+            for (const { text } of REVIEW_CONTRACT_MARKERS) {
+                expect(
+                    body,
+                    `${name} must not carry the review contract marker '${text}'`,
+                ).not.toContain(text);
+            }
+        }
+    });
+
+    test("skills do not name SpecOps agent roles", () => {
+        for (const name of packagedSkillNames()) {
+            const { body } = readSkillFile(name);
+            for (const agentId of SPECOPS_AGENT_IDS) {
+                expect(body, `${name} must not name the ${agentId} runtime role`).not.toContain(
+                    agentId,
+                );
+            }
+        }
+    });
+
+    test("review authority markers stay aligned with their contracts", () => {
+        for (const { text, source } of REVIEW_CONTRACT_MARKERS) {
+            const contract = readFileSync(path.join(PROMPTS_DIR, source), "utf8");
+            expect(
+                contract,
+                `review authority marker '${text}' moved; update the skill guard and its source mapping`,
+            ).toContain(text);
+        }
+
+        const reviewerContract = readFileSync(path.join(PROMPTS_DIR, "reviewer.md"), "utf8");
+        for (const verdict of ["PASS", "FAIL"]) {
+            expect(
+                reviewerContract,
+                `review verdict '${verdict}' moved; update the skill guard in lockstep`,
+            ).toMatch(new RegExp(`^${verdict}$`, "m"));
         }
     });
 });

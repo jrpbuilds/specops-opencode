@@ -29,9 +29,12 @@ A specialist skill should give a competent engineer leverage they would not get 
 
 Prefer an operational sequence such as `investigate -> model -> decide -> verify`. Use concrete decision rules and test oracles instead of slogans such as "handle errors" or "follow best practices". Make materiality explicit: not every concern applies to every assignment, and the skill should help distinguish the relevant ones rather than impose its whole contents as a checklist.
 
+Before shipping, evaluate a specialist skill on representative work: a small safe change where it should stop early, a characteristic defect it should expose with evidence, a complex change where it must prioritize rather than enumerate, and an unavailable-capability case when the skill promises an evidence gap. Compare behavior with and without the skill across intended model classes. Score evidence quality, false-positive restraint, scope discipline, and whether the guidance changes the result for the better; refine from observed misses instead of adding speculative prose.
+
 ## What a packaged skill may and may not do
 
 - Provide specialist engineering expertise, not workflow policy. Phase order, routing, lifecycle authority, and permissions stay with the SpecOps roles and the runtime.
-- Stay subordinate to approved OpenSpec artifacts, current repository behaviour, and project conventions. When a skill contradicts any of those, they win.
+- Treat approved OpenSpec artifacts, current repository behaviour, and project conventions as the authority for intended behavior. When a domain constraint conflicts with that intent, surface the mismatch to the owning role rather than silently overriding either side.
 - Stay proportional to the actual assignment. Advise for the work at hand rather than imposing generic checklists, and never broaden the assigned scope.
 - Be useful to a competent base role. A skill compensates for missing specialist knowledge, never for a weakened role prompt.
+- For a review-oriented skill, leave outcome words, finding materiality labels, and report section headers to the review contracts rather than reproducing their output format.
