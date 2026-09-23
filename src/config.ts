@@ -36,11 +36,13 @@ export type SpecOpsConfig = {
 };
 
 /**
- * Fan-out policy for one parallel stage.
+ * Fan-out policy for implementation or review.
  *
- * `auto` applies size-based gating: small changes stay on a single dispatch or
- * the direct reviewer. `always` fans out whenever the stage's safety gates
- * allow it. `never` forces the serial/direct route regardless of change size.
+ * For implementation, `auto` keeps small or tightly related work on one
+ * dispatch and `always` prefers safe parallel lanes. For review, `auto` lets
+ * the Orchestrator choose direct, focused, full, or expanded review, while
+ * `always` requires all three conceptual lenses but leaves additional lanes to
+ * judgement. `never` forces the serial implementer or direct final review.
  */
 export type FanoutMode = "auto" | "always" | "never";
 

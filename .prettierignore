@@ -3,3 +3,4 @@ node_modules
 .codegraph
 .opencode
 bun.lock
+prompts/**/*.md

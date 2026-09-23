@@ -24,7 +24,7 @@ All notable changes to SpecOps are documented in this file.
 - Parallel progress is now tracked and reported by SpecOps from what actually happened in the session, alongside current task totals, and the progress tool is a read-only diagnostic, so the coordinator no longer maintains or submits that state.
 - Workflow legality now comes from one shared derivation, so status, planning dispatch, and the to-do list can no longer contradict one another about the same change state.
 - Specialist dispatches now name the active change on a line SpecOps checks before the specialist starts, and implementer assignments are validated when they are sent against concurrency, overlap, and current task state, so stale dispatches and invalid assignments fail fast with a clear error; whole-list dispatches are no longer rejected when an assignment field merely appears in task prose.
-- Review now scales with the change in `auto` mode: small changes get a light single-reviewer pass, moderately complex or user-visible changes get a deeper single review with runtime checks where relevant, and broad or risky changes fan out only the critics whose lenses matter.
+- Review now selects direct, focused, full, or expanded specialist coverage according to the change's risks and scope, without adding reviewers just to fill available capacity.
 - Coordinator and specialist guidance is more concise and follows the current workflow state, with less duplicated prompt content while preserving the existing decision and safety boundaries.
 
 ## [v1.6.0] - 2026-09-02

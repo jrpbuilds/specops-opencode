@@ -22,8 +22,8 @@ const SETTINGS: Record<
         title: "Review fan-out",
         placeholder: "Choose fan-out mode",
         descriptions: {
-            auto: "Three critics for larger or riskier changes",
-            always: "Always run all three review critics",
+            auto: "Scale from direct to expanded review by scope and risk",
+            always: "Require all three lenses; add lanes only when useful",
             never: "Always a single final reviewer",
         },
     },

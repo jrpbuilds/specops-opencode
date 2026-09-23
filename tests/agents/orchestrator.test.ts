@@ -141,16 +141,58 @@ describe("orchestrator prompt contract", () => {
         }
     });
 
-    test("scales review breadth to the change under the auto route", () => {
-        const prompt = buildOrchestratorPrompt("interactive", false);
+    test("describes direct, focused, full, and expanded plans in both modes", () => {
+        for (const mode of ["interactive", "auto"] as const) {
+            const prompt = buildOrchestratorPrompt(mode, false);
+            const review = prompt
+                .split("## Review phase")[1]
+                ?.split("## Schema-aware remediation")[0];
 
-        expect(prompt).toMatch(/scale the review to the change/);
-        expect(prompt).toMatch(/light,\s+proportionate pass/);
-        expect(prompt).toMatch(
-            /runtime or\s+browser checks when the affected behaviour is visual or interactive/,
+            expect(review).toMatch(/\*\*Direct:\*\* only `specops-reviewer`.*isolated, low-risk/s);
+            expect(review).toMatch(/\*\*Focused:\*\* one or two scoped specialist lanes/s);
+            expect(review).toMatch(
+                /\*\*Full gauntlet:\*\* at least one correctness, risk, and quality lane/s,
+            );
+            expect(review).toMatch(/\*\*Expanded:\*\* more than three specialist lanes/s);
+            expect(review).toMatch(
+                /Multiple lanes sharing a lens need materially different scopes/,
+            );
+            expect(review).toMatch(/visual or interactive behaviour in a runtime or browser/);
+        }
+    });
+
+    test("applies fan-out settings without turning concurrency or skills into review targets", () => {
+        const prompt = buildOrchestratorPrompt("auto", false);
+        const review = prompt.split("## Review phase")[1]?.split("## Schema-aware remediation")[0];
+
+        expect(review).toMatch(/`reviewFanout: never` requires direct review/);
+        expect(review).toMatch(/`auto` allows all four shapes/);
+        expect(review).toMatch(
+            /`always` requires at least one correctness, risk, and quality lane/,
         );
-        expect(prompt).toMatch(/one, two, or all three/);
-        expect(prompt).toMatch(/when\s+uncertain between two levels, choose the heavier one/);
+        expect(review).toMatch(/do not load every skill or fill free concurrency slots/);
+        expect(review).toMatch(
+            /`maxSubagentConcurrency` is an in-flight ceiling, not a plan-size target/,
+        );
+        expect(review).toMatch(/skills never choose scope or lens/);
+        expect(review).toMatch(
+            /Reviewer remains the sole owner of the compliance matrix and PASS\/FAIL/,
+        );
+    });
+
+    test("grounds scenario choices in qualitative evidence and distinct scopes", () => {
+        const prompt = buildOrchestratorPrompt("interactive", false);
+        const review = prompt.split("## Review phase")[1]?.split("## Schema-aware remediation")[0];
+
+        expect(review).toMatch(/specialists add ceremony, not evidence/);
+        expect(review).toMatch(/UI correctness or a security-sensitive backend boundary/);
+        expect(review).toMatch(/substantial scope or elevated risk merits all three lenses/);
+        expect(review).toMatch(/frontend and backend correctness plus security and database risk/);
+        expect(review).toMatch(/verification quality and coverage, and prior remediation evidence/);
+        expect(review).toMatch(/Avoid file-count or task-count thresholds and scoring formulas/);
+        expect(review).toMatch(/Do not split coherent concerns for parallelism/);
+        expect(review).toMatch(/Multiple lanes sharing a lens need materially different scopes/);
+        expect(review).toMatch(/register the selected plan with `specops_review_lanes` start/);
     });
 
     test("passes only dispatched critics in the evidence envelope", () => {
