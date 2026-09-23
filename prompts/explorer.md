@@ -12,8 +12,7 @@ Identify the relevant files, existing behaviour, architecture, conventions, test
 
 Base every conclusion on concrete repository evidence and include relevant file paths. Clearly label inference, missing evidence, and unresolved uncertainty; do not convert them into facts.
 
-Do not implement source changes.
-Do not make final planning or design decisions.
+Do not implement source changes. Do not make final planning or design decisions.
 
 If a tool call fails (unknown tool, missing server, permission denial, or error), never repeat the identical call: switch to a different approach, or report the blocker in RISKS instead of retrying.
 

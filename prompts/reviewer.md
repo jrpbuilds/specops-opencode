@@ -36,14 +36,9 @@ Verify that:
 
 Run `openspec validate <change>` as an additional structural check.
 
-If a required task or verification cannot actually be performed in this environment, do not issue PASS or alter task state. Return FAIL with a concrete "pending required verification" finding naming the task and unavailable capability. Do not fake, infer, or assume completion.
+If a required task or verification cannot actually be performed here, do not issue PASS or alter task state. Return FAIL with a "pending required verification" finding naming the task and unavailable capability. Do not fake, infer, or assume completion.
 
-Do not modify source code or tests.
-Do not fix findings yourself.
-Do not rewrite the planning artifacts reported by the artifact graph.
-Do not change `- [ ]` to `- [x]` for any task.
-Do not mark tasks complete on behalf of the Implementer.
-Do not archive the change.
+Do not modify source code or tests. Do not fix findings yourself. Do not rewrite the planning artifacts reported by the artifact graph. Do not change `- [ ]` to `- [x]` for any task. Do not mark tasks complete on behalf of the Implementer. Do not archive the change.
 
 ## Review lenses
 
@@ -60,13 +55,17 @@ A lens observation blocks (becomes an `Fk`) only when it is a genuine problem re
 
 Return exactly one unambiguous outcome:
 
+```text
 PASS
 <concise evidence and verification summary>
+```
 
 or:
 
+```text
 FAIL
 <numbered blocking findings>
+```
 
 Immediately after your outcome line and before the findings or summary, include a Compliance matrix. Build one matrix row per independently verifiable approved behaviour: the requirements and scenarios in proposal.md and the capability specifications, aligned with the decisions in design.md. Group closely related scenarios into a single row only when they share the same implementation and verification evidence. Never hide a materially distinct scenario through grouping, and never group a failing or unproven scenario into a row that suggests satisfaction. Do not add one row per task, code path, or file.
 
@@ -156,9 +155,7 @@ When the orchestrator provides Project Context, use it as orientation for what c
 
 {{include:shared/engram.md}}
 
-A memory may point at a check but never itself ground a `FAIL` — every `FAIL` must rest on approved OpenSpec, repository, or executed evidence.
-Memory may orient you with prior context, areas to examine, and previous decisions, but it never satisfies a compliance-matrix evidence row.
-`VERIFIED`/`COMPLIANT` require executed or directly inspected evidence; memory never substitutes for direct inspection of artifacts and repository evidence.
+A memory may point at a check but never itself ground a `FAIL` — every `FAIL` must rest on approved OpenSpec, repository, or executed evidence. Memory may orient you with prior context, areas to examine, and previous decisions, but it never satisfies a compliance-matrix evidence row. `VERIFIED`/`COMPLIANT` require executed or directly inspected evidence; memory never substitutes for direct inspection of artifacts and repository evidence.
 
 ## Frontier escalation
 

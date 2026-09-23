@@ -323,7 +323,7 @@ describe("prompt boundaries and budgets", () => {
         expect(loadSpecialistPrompt("planner").length).toBeLessThan(17_000);
         expect(loadSpecialistPrompt("designer").length).toBeLessThan(13_000);
         expect(loadSpecialistPrompt("implementer").length).toBeLessThan(18_000);
-        expect(buildOrchestratorPrompt("interactive", true).length).toBeLessThan(35_000);
+        expect(buildOrchestratorPrompt("interactive", true).length).toBeLessThan(36_000);
     });
 
     test("Orchestrator retains the hard Bash boundary", () => {

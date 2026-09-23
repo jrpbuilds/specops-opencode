@@ -320,8 +320,8 @@ describe("SpecOps Configure save flow", () => {
                     "never",
                 ]);
                 expect(fake.currentDialog()?.options?.map(option => option.description)).toEqual([
-                    "Three critics for larger or riskier changes",
-                    "Always run all three review critics",
+                    "Scale from direct to expanded review by scope and risk",
+                    "Require all three lenses; add lanes only when useful",
                     "Always a single final reviewer",
                 ]);
                 fake.selectByValue("always");

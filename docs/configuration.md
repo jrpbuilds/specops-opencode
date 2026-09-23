@@ -137,15 +137,17 @@ Controls when implementation splits across parallel implementer lanes (requires 
 
 ### `reviewFanout` (default: `auto`)
 
-Controls whether review runs the independent critics (correctness, risk, quality) before the final Reviewer.
+Controls how the orchestrator chooses independent review lanes before the final Reviewer.
 
-- **`auto` (default):** the orchestrator scales review to the change — a small, simple change gets a light single-reviewer pass, a moderately complex or user-visible change gets a deeper single review (runtime or browser checks where relevant), and a large or risky change fans out the critics its risk profile calls for, up to all three.
-- **`always`:** the previous behaviour — every change gets all three critics.
-- **`never`:** never run critics; the final Reviewer always reviews alone.
+- **`auto` (default):** the orchestrator chooses direct final review for isolated low-risk work, one or two focused specialist lanes for limited concerns, all three correctness/risk/quality lenses for substantial or elevated-risk changes, or more than three scoped lanes when distinct concerns genuinely need separate review. Browser-visible work still receives appropriate runtime or browser checks.
+- **`always`:** include at least one lane for each of correctness, risk and quality before the final Reviewer. Additional scoped lanes are optional and must earn their place; `always` does not load every skill or fill free capacity.
+- **`never`:** send the change directly to the final Reviewer without specialist lanes.
+
+Review breadth is a judgement about the changed surfaces, verification, and risks, not a file-count rule. `maxSubagentConcurrency` limits how many lanes run at once, not how many the orchestrator may plan.
 
 ## Upgrading from older versions
 
-Configuration files written before these fields existed are filled in automatically on load: missing concurrency becomes `1`, missing Auto iterations become `3`, missing fan-out modes become `auto`, and missing roles become empty entries. Nothing to migrate by hand. Note that `auto` fan-out is a behaviour change from earlier releases, which always ran the critic fan-out; set `reviewFanout: "always"` (and `implementerFanout: "always"`) to keep the old parallel behaviour.
+Configuration files written before these fields existed are filled in automatically on load: missing concurrency becomes `1`, missing Auto iterations become `3`, missing fan-out modes become `auto`, and missing roles become empty entries. Nothing to migrate by hand. To require the traditional three review lenses for every change, set `reviewFanout: "always"`; set `implementerFanout: "always"` to prefer safe parallel implementation lanes.
 
 ## Related pages
 
