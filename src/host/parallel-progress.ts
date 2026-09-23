@@ -43,17 +43,30 @@ import {
     type ReviewFanoutSnapshot,
 } from "../orchestrator/review-fanout.js";
 import {
+    parseReviewLaneDispatch,
+    type ReviewLaneRoundSnapshot,
+} from "../orchestrator/review-lanes.js";
+import {
     parseAssignedTaskIds,
     type ActiveImplementerAssignment,
     type ImplementerDispatchObservation,
     type ImplementerDispatchState,
 } from "../orchestrator/implementer-progress.js";
 import { getSessionBinding } from "./session-bindings.js";
+import {
+    __resetReviewLanesForTesting,
+    getReviewLaneRound,
+    linkReviewLaneChild,
+    markReviewLaneChildTerminal,
+    observeReviewLaneTaskResult,
+} from "./review-lanes.js";
 
 /** Runtime-derived parallel progress for one orchestrator session. */
 export type ParallelProgressSnapshot = {
     /** Raw fan-out state lists; omitted when no critic dispatch was observed. */
     readonly reviewFanout?: ReviewFanoutSnapshot;
+    /** Model-selected dynamic lane state; omitted when no lane round is active. */
+    readonly reviewLanes?: ReviewLaneRoundSnapshot;
     /** Observed implementer dispatches in dispatch order. */
     readonly implementerDispatches?: readonly ImplementerDispatchObservation[];
 };
@@ -62,6 +75,8 @@ export type ParallelProgressSnapshot = {
 type DispatchEntry = {
     role: typeof AGENT_IDS.implementer | ReviewCriticId;
     state: ImplementerDispatchState;
+    /** Present for a dispatch belonging to an explicitly registered lane round. */
+    reviewRoundId?: string;
     /** Implementer dispatch is awaiting the boundary's durable validation. */
     pendingValidation?: boolean;
     /** Linked child session id (the background task id) once known. */
@@ -171,19 +186,6 @@ function pruneImplementers(run: ParallelRunState): void {
     }
 }
 
-/**
- * A critic re-dispatch (one whose id was already seen this run) means a new
- * fan-out round, so every critic entry from the previous round is cleared
- * before the new one is recorded — the new round's critic set may
- * legitimately be a subset of the three critics. Implementer entries are
- * unaffected.
- */
-function resetSupersededCritics(run: ParallelRunState): void {
-    for (const [callId, entry] of run.dispatches) {
-        if (entry.role !== AGENT_IDS.implementer) run.dispatches.delete(callId);
-    }
-}
-
 /** Hook-shaped input/output types, derived so the seams stay compatible. */
 type BeforeHookInput = Parameters<NonNullable<Hooks["tool.execute.before"]>>[0];
 type BeforeHookOutput = Parameters<NonNullable<Hooks["tool.execute.before"]>>[1];
@@ -217,9 +219,14 @@ export async function recordTaskDispatch(
         const run = runFor(input.sessionID);
         if (criticId !== undefined) {
             releaseImplementerDispatch(input.sessionID, input.callID);
-            const seen = [...run.dispatches.values()].some(entry => entry.role === criticId);
-            if (seen) resetSupersededCritics(run);
-            run.dispatches.set(input.callID, { role: criticId, state: "inFlight" });
+            const prompt =
+                typeof output?.args?.prompt === "string" ? output.args.prompt : undefined;
+            const lane = parseReviewLaneDispatch(prompt);
+            run.dispatches.set(input.callID, {
+                role: criticId,
+                state: "inFlight",
+                ...(lane.ok ? { reviewRoundId: lane.identity.roundId } : {}),
+            });
         } else {
             const reserved = run.dispatches.get(input.callID);
             if (reserved?.role === AGENT_IDS.implementer && reserved.pendingValidation) {
@@ -255,31 +262,66 @@ function parseTaskTag(output: string): { id?: string; state?: string } | undefin
     };
 }
 
-/** Link one in-flight entry to its child session id. */
+/**
+ * Link a tracked Task entry to a child ID attributed to that call.
+ *
+ * For a review lane, this exact call-ID link is the only route into lane child
+ * tracking; the parent-only lifecycle fallback intentionally excludes lanes.
+ *
+ * @param sessionId Parent Orchestrator session.
+ * @param callId Tracked Task call ID.
+ * @param childSessionId Child ID returned by the call or uniquely corroborated by the host.
+ */
 function linkChild(sessionId: string, callId: string, childSessionId: string): void {
     const run = runs.get(sessionId);
     const entry = run?.dispatches.get(callId);
     if (!run || !entry || entry.childSessionId !== undefined) return;
+    const existing = callByChild.get(childSessionId);
+    if (
+        existing &&
+        (existing.sessionId !== sessionId || existing.callId !== callId) &&
+        runs.get(existing.sessionId)?.dispatches.get(existing.callId)?.state === "inFlight"
+    ) {
+        return;
+    }
     entry.childSessionId = childSessionId;
     callByChild.set(childSessionId, { sessionId, callId });
+    linkReviewLaneChild(sessionId, callId, childSessionId);
 }
 
-/** Mark the entry linked to one child session id terminal, if it is in flight. */
+/**
+ * Mark a call-correlated child result terminal in both generic and lane state.
+ *
+ * @param childSessionId Child session ID observed by the lifecycle hook.
+ * @param state Terminal execution state to record.
+ * @returns Nothing; missing or already-terminal links are ignored.
+ */
 function markChildTerminal(childSessionId: string, state: "completed" | "failed"): void {
+    markReviewLaneChildTerminal(childSessionId, state);
     const link = callByChild.get(childSessionId);
     if (!link) return;
     const entry = runs.get(link.sessionId)?.dispatches.get(link.callId);
-    if (!entry || entry.state !== "inFlight") return;
+    if (!entry || entry.state !== "inFlight") {
+        callByChild.delete(childSessionId);
+        return;
+    }
     entry.state = state;
+    if (entry.reviewRoundId) runs.get(link.sessionId)?.dispatches.delete(link.callId);
+    callByChild.delete(childSessionId);
 }
 
 /**
  * Observe one `tool.execute.after` hook and resolve a tracked dispatch.
  *
- * Foreground task calls terminate here directly. Background calls return the
- * documented `<task id=… state="running">` envelope, so the task id is linked
- * to the call and the entry stays in flight until a session lifecycle event
- * resolves it; an immediately terminal envelope state is honoured as-is.
+ * Foreground task calls terminate here directly unless their explicit task
+ * envelope reports `running` or an unknown state. Background calls return the
+ * documented `<task id=… state="running">` envelope; its child ID is linked
+ * to the exact call and lifecycle events resolve it later. Explicit errors are
+ * forwarded to review-lane state as failures rather than successful returns.
+ *
+ * @param input Host after-hook identity and Task arguments.
+ * @param output Host after-hook Task result.
+ * @returns A resolved promise; observer failures never escape the hook.
  */
 export async function recordTaskResult(
     input: AfterHookInput,
@@ -287,17 +329,36 @@ export async function recordTaskResult(
 ): Promise<void> {
     try {
         if (input.tool !== "task" || !input.callID) return;
+        const tag = parseTaskTag(output?.output ?? "");
+        observeReviewLaneTaskResult({
+            sessionID: input.sessionID,
+            callID: input.callID,
+            background: input.args?.background === true,
+            ...(tag?.id === undefined ? {} : { childSessionId: tag.id }),
+            ...(tag?.state === undefined ? {} : { taskState: tag.state }),
+        });
         const run = runs.get(input.sessionID);
         const entry = run?.dispatches.get(input.callID);
         if (!entry || entry.state !== "inFlight") return;
-        const tag = parseTaskTag(output?.output ?? "");
         if (input.args?.background === true) {
             if (tag?.id) linkChild(input.sessionID, input.callID, tag.id);
             if (tag?.state === "completed") entry.state = "completed";
             if (tag?.state === "error") entry.state = "failed";
+            if (entry.reviewRoundId && entry.state !== "inFlight") {
+                run?.dispatches.delete(input.callID);
+            }
+            if (
+                tag?.id &&
+                (tag.state === "completed" || tag.state === "error") &&
+                callByChild.get(tag.id)?.sessionId === input.sessionID &&
+                callByChild.get(tag.id)?.callId === input.callID
+            ) {
+                callByChild.delete(tag.id);
+            }
             return;
         }
         entry.state = "completed";
+        if (entry.reviewRoundId) run?.dispatches.delete(input.callID);
     } catch {
         // Fail open: observation must never break the model's task result.
     }
@@ -307,10 +368,13 @@ export async function recordTaskResult(
  * Build the `event` hook that resolves tracked dispatches from session
  * lifecycle events.
  *
- * `session.created` corroborates the child-session link of the oldest
- * in-flight entry under the parent when the background envelope could not be
- * parsed; `session.idle` completes and `session.error`/`session.deleted`
- * fail the entry linked to the child session.
+ * `session.created` may corroborate a child link for non-review-lane dispatches
+ * only when exactly one eligible unlinked entry is in flight under the parent.
+ * Review lanes require a child ID from their call-correlated Task result;
+ * unrelated child events never claim them. `session.idle` completes and
+ * `session.error`/`session.deleted` fail an already linked child entry.
+ *
+ * @returns A fail-open observer for host session lifecycle events.
  */
 export function createSessionEventObserver(): NonNullable<Hooks["event"]> {
     return async input => {
@@ -321,14 +385,24 @@ export function createSessionEventObserver(): NonNullable<Hooks["event"]> {
             };
             if (event.type === "session.created") {
                 const info = event.properties?.info;
-                if (!info?.id || !info.parentID || callByChild.has(info.id)) return;
+                if (!info?.id || !info.parentID) return;
+                const linked = callByChild.get(info.id);
+                if (
+                    linked &&
+                    runs.get(linked.sessionId)?.dispatches.get(linked.callId)?.state === "inFlight"
+                ) {
+                    return;
+                }
                 const run = runs.get(info.parentID);
                 if (!run) return;
-                for (const [callId, entry] of run.dispatches) {
-                    if (entry.state === "inFlight" && entry.childSessionId === undefined) {
-                        linkChild(info.parentID, callId, info.id);
-                        return;
-                    }
+                const candidates = [...run.dispatches.entries()].filter(
+                    ([, entry]) =>
+                        entry.state === "inFlight" &&
+                        entry.childSessionId === undefined &&
+                        entry.reviewRoundId === undefined,
+                );
+                if (candidates.length === 1) {
+                    linkChild(info.parentID, candidates[0][0], info.id);
                 }
                 return;
             }
@@ -353,22 +427,24 @@ export function createSessionEventObserver(): NonNullable<Hooks["event"]> {
 /**
  * Snapshot the runtime-derived parallel progress for one orchestrator session.
  *
- * Pure read over the observed entries: critics project onto the canonical
- * snapshot lists (every critic appears in exactly one list, so the snapshot
- * always satisfies `summarizeReviewFanout`'s contract), implementers project
- * in dispatch order with the linked background task id as `dispatchId` when
- * one is known. A session with no tracked work returns an empty snapshot.
+ * Pure read over observed entries: legacy critic dispatches project onto the
+ * canonical three-lens snapshot; registered dynamic rounds project separately
+ * with their model-supplied lanes. Implementers project in dispatch order with
+ * the linked background task id as `dispatchId` when known. A session with no
+ * tracked work returns an empty snapshot.
  */
 export function snapshotParallelProgress(sessionID: string): ParallelProgressSnapshot {
+    const binding = getSessionBinding(sessionID);
+    const reviewLanes = binding ? getReviewLaneRound(sessionID, binding.change) : undefined;
     const run = runs.get(sessionID);
-    if (!run) return {};
+    if (!run) return reviewLanes ? { reviewLanes } : {};
 
     const latestCritic = new Map<ReviewCriticId, DispatchEntry>();
     const implementers: DispatchEntry[] = [];
     for (const entry of run.dispatches.values()) {
         if (entry.role === AGENT_IDS.implementer) {
             implementers.push(entry);
-        } else {
+        } else if (entry.reviewRoundId === undefined) {
             latestCritic.set(entry.role, entry);
         }
     }
@@ -401,6 +477,7 @@ export function snapshotParallelProgress(sessionID: string): ParallelProgressSna
               )
             : undefined;
     return {
+        ...(reviewLanes ? { reviewLanes } : {}),
         ...(reviewFanout ? { reviewFanout } : {}),
         ...(implementerDispatches ? { implementerDispatches } : {}),
     };
@@ -441,4 +518,5 @@ export function snapshotActiveImplementers(sessionID: string): ActiveImplementer
 export function __resetParallelProgressForTesting(): void {
     runs.clear();
     callByChild.clear();
+    __resetReviewLanesForTesting();
 }

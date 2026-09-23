@@ -130,9 +130,12 @@ export function createTodoSyncHook(deps: TodoSyncDeps): NonNullable<Hooks["tool.
             // carried by durable task checkboxes and failures surface through
             // orchestrator reporting, so only live work is projected.
             const snapshot = snapshotParallelProgress(input.sessionID);
-            const fanout = snapshot.reviewFanout
-                ? summarizeReviewFanout(snapshot.reviewFanout)
-                : undefined;
+            // The fixed-three projection cannot faithfully represent a
+            // model-supplied plan with arbitrary or repeated lenses.
+            const fanout =
+                !snapshot.reviewLanes && snapshot.reviewFanout
+                    ? summarizeReviewFanout(snapshot.reviewFanout)
+                    : undefined;
             const dispatches = (snapshot.implementerDispatches ?? []).flatMap(dispatch =>
                 dispatch.state === "inFlight"
                     ? [

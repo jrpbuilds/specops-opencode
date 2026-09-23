@@ -39,6 +39,7 @@ import type {
     TodoProjectionMode,
 } from "../orchestrator/todo-projection.js";
 import type { NativeTodoItem } from "../orchestrator/todo-publication.js";
+import { __resetReviewLanesForTesting, switchReviewLaneChange } from "./review-lanes.js";
 
 /** One session's active SpecOps change and orchestrator mode. */
 export type SessionBinding = {
@@ -67,12 +68,14 @@ const archivedSessions = new Set<string>();
  * Record or refresh the binding for one session.
  *
  * The latest lifecycle call wins, so a session that switches changes follows
- * the new one. Non-SpecOps agents, empty session ids, and empty change names
- * are ignored.
+ * the new one after any old review round has no in-flight lanes. A running
+ * round rejects the switch before binding or projection state is mutated.
+ * Non-SpecOps agents, empty session ids, and empty change names are ignored.
  *
  * @param sessionID OpenCode session identifier from the tool context.
  * @param agent Agent name from the tool context.
  * @param change Active change name supplied to the lifecycle tool.
+ * @throws When changing to another active change would discard in-flight review lanes.
  */
 export function recordSessionBinding(sessionID: string, agent: string, change: string): void {
     const trimmed = change.trim();
@@ -87,6 +90,7 @@ export function recordSessionBinding(sessionID: string, agent: string, change: s
 
     const previous = bindings.get(sessionID);
     if (previous?.change !== trimmed || previous.mode !== mode) {
+        if (previous?.change !== trimmed) switchReviewLaneChange(sessionID, trimmed);
         lastTodoRefreshMessage.delete(sessionID);
         rememberedTodoProjections.delete(sessionID);
         reviewCycles.delete(sessionID);
@@ -228,6 +232,7 @@ export function clearArchivedChange(sessionID: string): void {
 
 /** Clear every binding and gate flag; test isolation only. */
 export function __resetSessionBindingsForTesting(): void {
+    __resetReviewLanesForTesting();
     bindings.clear();
     lastTodoRefreshMessage.clear();
     rememberedTodoProjections.clear();

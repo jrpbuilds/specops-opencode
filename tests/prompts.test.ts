@@ -355,6 +355,10 @@ describe("rewritten role contracts", () => {
         expect(prompt).toContain("eligibleActions");
         expect(prompt).toContain("legal, not recommended");
         expect(prompt).toContain("engineering judgement");
+        expect(prompt).toContain("specops_review_lanes");
+        expect(prompt).toContain("reviewLaneId");
+        expect(prompt).toContain("fanInComplete: true");
+        expect(prompt).toMatch(/Reset\s+any prior round/);
         expect(prompt).not.toContain("specops_progress");
         expect(prompt).not.toContain("createRollingScheduler");
         expect(prompt).not.toContain("reverse-dependency reachability");

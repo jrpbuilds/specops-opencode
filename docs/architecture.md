@@ -30,22 +30,23 @@ A deterministic helper answers _what is true_, _what is legal_, and _what follow
 
 Today these live in:
 
-| Decision                               | Where it lives                                                                                                                                                             |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Lifecycle, phase, and eligible actions | `src/openspec/status.ts`, `src/orchestrator/workflow-state.ts`                                                                                                             |
-| Planning completion                    | `src/orchestrator/planning-completion.ts`                                                                                                                                  |
-| Artifact existence and dependencies    | `src/orchestrator/artifact-graph.ts`                                                                                                                                       |
-| Artifact eligibility, planning routes  | `src/orchestrator/batching.ts`, `src/orchestrator/rolling-scheduler.ts`                                                                                                    |
-| Task existence and completion          | `src/openspec/apply-instructions.ts`                                                                                                                                       |
-| Assignment validity and overlap        | `src/orchestrator/implementer-progress.ts`                                                                                                                                 |
-| Dispatch identity (`changeName`)       | `src/orchestrator/dispatch-envelope.ts`, `src/host/dispatch-gate.ts` (boundary)                                                                                            |
-| Implementer dispatch validation        | `src/orchestrator/implementer-progress.ts` (invariants), `src/host/dispatch-gate.ts` (boundary)                                                                            |
-| Concurrency and capacity accounting    | `src/orchestrator/rolling-scheduler.ts`                                                                                                                                    |
-| Review guard state                     | `src/orchestrator/review-guard.ts`                                                                                                                                         |
-| Archive operation (structural only)    | `src/openspec/archive.ts` — see the archive boundary below                                                                                                                 |
-| Todo projection and publication        | `src/orchestrator/todo-projection.ts`, `src/orchestrator/todo-publication.ts`, `src/orchestrator/reviewer-verdict.ts`, `src/host/todo-sync.ts`, `src/host/review-cycle.ts` |
-| Progress projection                    | `src/tools/progress.ts`, `src/orchestrator/review-fanout.ts`, `src/orchestrator/implementer-progress.ts`, `src/host/parallel-progress.ts`                                  |
-| Role and tool permissions              | `src/agents/permission-policy.ts`, `src/host/lifecycle-permission.ts`                                                                                                      |
+| Decision                                            | Where it lives                                                                                                                                                             |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lifecycle, phase, and eligible actions              | `src/openspec/status.ts`, `src/orchestrator/workflow-state.ts`                                                                                                             |
+| Planning completion                                 | `src/orchestrator/planning-completion.ts`                                                                                                                                  |
+| Artifact existence and dependencies                 | `src/orchestrator/artifact-graph.ts`                                                                                                                                       |
+| Artifact eligibility, planning routes               | `src/orchestrator/batching.ts`, `src/orchestrator/rolling-scheduler.ts`                                                                                                    |
+| Task existence and completion                       | `src/openspec/apply-instructions.ts`                                                                                                                                       |
+| Assignment validity and overlap                     | `src/orchestrator/implementer-progress.ts`                                                                                                                                 |
+| Dispatch identity (`changeName`)                    | `src/orchestrator/dispatch-envelope.ts`, `src/host/dispatch-gate.ts` (boundary)                                                                                            |
+| Implementer dispatch validation                     | `src/orchestrator/implementer-progress.ts` (invariants), `src/host/dispatch-gate.ts` (boundary)                                                                            |
+| Concurrency and capacity accounting                 | `src/orchestrator/rolling-scheduler.ts`                                                                                                                                    |
+| Review-lane identity, execution state, and capacity | `src/orchestrator/review-lanes.ts`, `src/host/review-lanes.ts`, `src/host/dispatch-gate.ts`                                                                                |
+| Review guard state                                  | `src/orchestrator/review-guard.ts`                                                                                                                                         |
+| Archive operation (structural only)                 | `src/openspec/archive.ts` — see the archive boundary below                                                                                                                 |
+| Todo projection and publication                     | `src/orchestrator/todo-projection.ts`, `src/orchestrator/todo-publication.ts`, `src/orchestrator/reviewer-verdict.ts`, `src/host/todo-sync.ts`, `src/host/review-cycle.ts` |
+| Progress projection                                 | `src/tools/progress.ts`, `src/orchestrator/review-fanout.ts`, `src/orchestrator/implementer-progress.ts`, `src/host/parallel-progress.ts`                                  |
+| Role and tool permissions                           | `src/agents/permission-policy.ts`, `src/host/lifecycle-permission.ts`                                                                                                      |
 
 Deterministic helpers may validate, derive, and project. Deterministic helpers must not judge.
 

@@ -10,6 +10,7 @@ import { doctorTool } from "../../src/host/tools/doctor.js";
 import { onboardTool } from "../../src/host/tools/onboard.js";
 import { progressTool } from "../../src/host/tools/progress.js";
 import { reviewGuardTool } from "../../src/host/tools/review-guard.js";
+import { reviewLanesTool } from "../../src/host/tools/review-lanes.js";
 import { statusTool } from "../../src/host/tools/status.js";
 import { validateChangeTool } from "../../src/host/tools/validate-change.js";
 import { SPECOPS_TODO_REFRESH } from "../../src/host/tools/todo-refresh.js";
@@ -94,6 +95,16 @@ const LIFECYCLE_TOOLS: Array<{
         definition: reviewGuardTool,
         args: { operation: "capture", change: "example" },
         metadataTitle: "Capturing review guard baseline…",
+    },
+    {
+        id: "specops_review_lanes",
+        definition: reviewLanesTool,
+        args: {
+            operation: "start",
+            change: "example",
+            lanes: [{ id: "C1", lens: "correctness", scope: "full change" }],
+        },
+        metadataTitle: "start review lanes…",
     },
     {
         id: "specops_status",
@@ -217,6 +228,7 @@ describe("lifecycle tool integration", () => {
                 "specops_onboard",
                 "specops_progress",
                 "specops_review_guard",
+                "specops_review_lanes",
                 "specops_status",
                 "specops_validate_change",
             ]);
@@ -245,7 +257,13 @@ describe("lifecycle tool integration", () => {
                         ? { change: "example" }
                         : id === "specops_review_guard"
                           ? { operation: "capture", change: "example" }
-                          : {};
+                          : id === "specops_review_lanes"
+                            ? {
+                                  operation: "start",
+                                  change: "example",
+                                  lanes: [{ id: "C1", lens: "correctness", scope: "full change" }],
+                              }
+                            : {};
                 await expect(definition.execute(args, context)).rejects.toThrow("lifecycle denied");
                 expect(requests).toHaveLength(1);
                 expect(requests[0]).toEqual({

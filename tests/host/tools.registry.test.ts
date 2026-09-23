@@ -67,6 +67,12 @@ const EXPECTED_TOOLS = [
         args: ["change", "operation"],
     },
     {
+        id: "specops_review_lanes",
+        description:
+            "Register and inspect an Orchestrator-selected review-lane round, or reset/retry its runtime state. The runtime validates and tracks lanes but never chooses them.",
+        args: ["change", "laneId", "lanes", "operation", "roundId"],
+    },
+    {
         id: "specops_status",
         description:
             "Read normalized OpenSpec workflow status for a named change, including the current " +

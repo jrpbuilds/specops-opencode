@@ -9,13 +9,14 @@ import { doctorTool } from "./doctor.js";
 import { onboardTool } from "./onboard.js";
 import { progressTool } from "./progress.js";
 import { reviewGuardTool } from "./review-guard.js";
+import { reviewLanesTool } from "./review-lanes.js";
 import { statusTool } from "./status.js";
 import { validateChangeTool } from "./validate-change.js";
 
 /**
- * OpenCode 1 lifecycle tools exposed by the plugin, keyed by their registered
- * tool names. Each entry is a V1 wrapper around a deterministic function in
- * `src/tools/`.
+ * OpenCode 1 lifecycle and runtime-coordination tools, keyed by their
+ * registered names. Deterministic workflow cores live in `src/tools/`; the
+ * review-lane wrapper manages session-scoped execution state in the host layer.
  */
 export const TOOLS: Record<string, ToolDefinition> = {
     specops_archive: archiveTool,
@@ -28,6 +29,7 @@ export const TOOLS: Record<string, ToolDefinition> = {
     specops_onboard: onboardTool,
     specops_progress: progressTool,
     specops_review_guard: reviewGuardTool,
+    specops_review_lanes: reviewLanesTool,
     specops_status: statusTool,
     specops_validate_change: validateChangeTool,
 };

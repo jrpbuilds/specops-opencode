@@ -6,6 +6,7 @@ All notable changes to SpecOps are documented in this file.
 
 ### Added
 
+- Review fan-out can cover multiple scoped jobs per lens while keeping parallel critics within the configured concurrency limit.
 - Specialists now use relevant packaged skills when available, adding domain depth without changing their workflow responsibilities.
 - Review work can now lean on focused domain skills for frontend, backend, security, database, accessibility, browser verification, compatibility, and performance concerns, so critiques gain depth without extra setup.
 - SpecOps now ships focused frontend, backend, database, security, and testing skills, giving implementation work deeper domain guidance without extra setup.

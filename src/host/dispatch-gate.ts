@@ -75,8 +75,14 @@ import {
     validateImplementerOwnership,
     validateImplementerDispatchScope,
 } from "../orchestrator/implementer-progress.js";
+import {
+    parseReviewLaneDispatch,
+    parseReviewRoundIdentity,
+    type ReviewLens,
+} from "../orchestrator/review-lanes.js";
 import type { ApplyInstructionsResult } from "../openspec/apply-instructions.js";
 import { getSessionBinding } from "./session-bindings.js";
+import { getReviewLaneRound, reserveReviewLaneDispatch } from "./review-lanes.js";
 import {
     releaseImplementerDispatch,
     reserveImplementerDispatch,
@@ -93,12 +99,12 @@ export type ImplementerDispatchGateDeps = {
 };
 
 /**
- * Build the `tool.execute.before` gate for specialist dispatches.
+ * Build the `tool.execute.before` gate for SpecOps specialist dispatches.
  *
  * Must compose before `recordTaskDispatch` so a rejected dispatch is never
- * recorded as active ownership. A passing dispatch is reserved synchronously
- * before any durable read, so concurrent gates see it before the observer
- * consumes the reservation.
+ * recorded as active ownership. Review-lane identity and Final Reviewer fan-in
+ * are checked here; review-lane and Implementer reservations happen
+ * synchronously before downstream dispatch observers or durable task reads.
  *
  * @param deps The durable task reader and effective configuration.
  * @returns A hook that throws to block a rejected dispatch and returns
@@ -141,6 +147,49 @@ export function createImplementerDispatchGate(
                     `match the active change '${binding.change}'; re-read the current state ` +
                     "and dispatch against the active change",
             );
+        }
+
+        const prompt = typeof output?.args?.prompt === "string" ? output.args.prompt : undefined;
+        const reviewLens = reviewLensForAgent(subagentType);
+        if (reviewLens) {
+            const config = deps.getConfig();
+            const lane = parseReviewLaneDispatch(prompt);
+            if (!lane.ok) {
+                throw new Error(`Invalid ${subagentType} dispatch: ${lane.error}`);
+            }
+            reserveReviewLaneDispatch({
+                sessionID: input.sessionID,
+                callID: input.callID,
+                change: binding.change,
+                ...lane.identity,
+                lens: reviewLens,
+                maxConcurrency: config.maxSubagentConcurrency,
+            });
+            return;
+        }
+
+        if (subagentType === AGENT_IDS.reviewer) {
+            const round = getReviewLaneRound(input.sessionID, binding.change);
+            const identity = parseReviewRoundIdentity(prompt);
+            if (!identity.ok) {
+                throw new Error(`Invalid ${subagentType} dispatch: ${identity.error}`);
+            }
+            if (round && identity.roundId !== round.roundId) {
+                throw new Error(
+                    `Final Reviewer dispatch must carry reviewRoundId '${round.roundId}' after specialist fan-out; clear the round before direct review`,
+                );
+            }
+            if (!round && identity.roundId !== undefined) {
+                throw new Error(
+                    `Final Reviewer dispatch references stale round '${identity.roundId}'`,
+                );
+            }
+            if (round && !round.fanInComplete) {
+                throw new Error(
+                    `Review round '${round.roundId}' is not complete; resolve every pending or failed lane before the Final Reviewer`,
+                );
+            }
+            return;
         }
 
         if (subagentType !== AGENT_IDS.implementer) return;
@@ -191,4 +240,23 @@ export function createImplementerDispatchGate(
             throw error;
         }
     };
+}
+
+/**
+ * Map one packaged critic agent ID to its canonical review lens.
+ *
+ * @param agent Specialist agent identifier to resolve.
+ * @returns The critic's lens, or `undefined` for non-critic roles.
+ */
+function reviewLensForAgent(agent: string): ReviewLens | undefined {
+    switch (agent) {
+        case AGENT_IDS.reviewCorrectness:
+            return "correctness";
+        case AGENT_IDS.reviewRisk:
+            return "risk";
+        case AGENT_IDS.reviewQuality:
+            return "quality";
+        default:
+            return undefined;
+    }
 }

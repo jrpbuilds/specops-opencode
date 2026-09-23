@@ -12,6 +12,7 @@ import {
     recordTaskDispatch,
     recordTaskResult,
 } from "../../src/host/parallel-progress.js";
+import { startReviewLaneRound } from "../../src/host/review-lanes.js";
 import type { NormalizedApplyInstructionContext } from "../../src/openspec/apply-instructions.js";
 import type { ApplyInstructionsResult } from "../../src/openspec/apply-instructions.js";
 import type { NormalizedArtifact } from "../../src/openspec/status.js";
@@ -579,6 +580,18 @@ describe("createTodoSyncHook parallel progress", () => {
         const todos = await fireTrigger(hook);
 
         expect(todos.some(todo => String(todo.id).startsWith("implementer:"))).toBe(false);
+        expect(todos.some(todo => String(todo.id).startsWith("review-critic:"))).toBe(false);
+    });
+
+    test("does not project a dynamic lane plan as the fixed three-critic shape", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        startReviewLaneRound("ses_1", "example", [
+            { id: "C1", lens: "correctness", scope: "frontend" },
+        ]);
+        const hook = hookWith(okStatus());
+
+        const todos = await fireTrigger(hook);
+
         expect(todos.some(todo => String(todo.id).startsWith("review-critic:"))).toBe(false);
     });
 });

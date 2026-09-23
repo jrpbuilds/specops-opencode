@@ -40,6 +40,7 @@ const LIFECYCLE_TOOL_NAMES = [
     "specops_create_change",
     "specops_progress",
     "specops_review_guard",
+    "specops_review_lanes",
     "specops_status",
     "specops_validate_change",
 ];

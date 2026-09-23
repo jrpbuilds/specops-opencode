@@ -156,9 +156,9 @@ describe("orchestrator prompt contract", () => {
     test("passes only dispatched critics in the evidence envelope", () => {
         const prompt = buildOrchestratorPrompt("interactive", false);
 
-        expect(prompt).toMatch(/until every dispatched critic has returned\s+successfully/);
-        expect(prompt).toMatch(/one section per dispatched critic and no others/);
-        expect(prompt).toMatch(/after every dispatched critic returns and before building/);
+        expect(prompt).toMatch(/Dispatch the Reviewer only at\s+`fanInComplete: true`/);
+        expect(prompt).toMatch(/one\s+section per dispatched critic and no others/);
+        expect(prompt).toMatch(/verify after each critic result and after the Reviewer/);
     });
 
     test("keeps re-review on the failed round's route without shrinking the critic set", () => {

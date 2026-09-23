@@ -145,13 +145,10 @@ return. Reuse never bypasses fresh context, durable checkbox verification,
 suspension, or review gates.
 
 When multiple Implementers are active, use the background dispatch contract.
-Process each return through the handoff gate, verify assigned tasks against
-fresh apply instructions and status, and refill only a freed slot when a new
-lane still passes the same segregation and wall-clock-benefit judgement. On
-overlap, newly discovered dependencies, malformed handoffs, stale task state,
-checkbox regression, or any mismatch between claimed and durable state, stop
-new dispatches without cancelling active siblings; let them finish, then reform
-assignments from fresh state. Never persist or reconstruct scheduler state.
+Verify each return against fresh task/status state; refill a freed slot only
+after rechecking separation and benefit. On overlap, stale state, regression,
+or mismatch, stop refills, let siblings finish, then reform lanes. Never persist
+or reconstruct scheduler state.
 
 {{include:shared/settled-integrated-verification.md}}
 
@@ -179,18 +176,25 @@ After implementation and successful validation, read `reviewFanout` and
       whose lenses are genuinely relevant — one, two, or all three — followed
       by the final Reviewer.
 
-Review agents are denied SpecOps lifecycle tools. Call `specops_review_guard`
-yourself. Capture once immediately before the first review dispatch. On the
-fan-out route, verify after every dispatched critic returns and before building
-the evidence envelope. Verify again after the final Reviewer returns. If
-`mutated` or `missingBaseline` is reported, stop `BLOCKED`, surface `violations`
-verbatim, and never auto-revert.
+Review agents are denied lifecycle tools. Capture `specops_review_guard` before
+review; verify after each critic result and after the Reviewer. Mutation or a
+missing baseline means `BLOCKED`: surface `violations` verbatim and never
+auto-revert.
 
-Critics are independent and receive the current change, goal, findings, Project
-Context, and focused instruction. Process background completions as they arrive.
-Do not dispatch the final Reviewer until every dispatched critic has returned
-successfully. Pass successful reports verbatim, in canonical correctness, risk,
-quality order, with one section per dispatched critic and no others:
+On critic routes, register the selected plan with `specops_review_lanes` start
+(active change; unique `id`, `lens`, single-line `scope`, optional hints). Keep
+its `roundId`; each critic Task carries one exact `reviewRoundId`,
+`reviewLaneId`, and `reviewScope` line. After each result inspect status and
+refill freed slots only from registered pending lanes. Retry malformed output
+once via `retry` on that lane, then resume its session; failed execution remains
+failed under the existing policy. Dispatch the Reviewer only at
+`fanInComplete: true` and include exactly one `reviewRoundId: <id>` line. Reset
+any prior round before direct or fresh review; reset is blocked while a lane is
+in flight.
+
+Each critic receives the current change, goal, findings, Project Context, and
+focused scope. Pass reports verbatim in correctness, risk, quality order, one
+section per dispatched critic and no others:
 
 ```text
 ## Specialist evidence
@@ -206,9 +210,9 @@ quality order, with one section per dispatched critic and no others:
 ```
 
 The Reviewer remains the sole owner of the compliance matrix and PASS/FAIL
-verdict. Treat critic reports as evidence, not votes. On a malformed critic
-return, resume the completed session once; a still-malformed return fails the
-fan-in. A genuine execution error is not resumed as if work exists.
+verdict. Treat critic reports as evidence, not votes. Malformed reports use the
+lane retry above once; a still-malformed return fails fan-in. A genuine
+execution error is not resumed as if work exists.
 
 ## Schema-aware remediation routing
 

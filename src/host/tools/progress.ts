@@ -34,7 +34,9 @@ export const progressTool = tool({
             await progress(
                 {
                     ...args,
-                    ...(snapshot.reviewFanout ? { reviewFanout: snapshot.reviewFanout } : {}),
+                    ...(!snapshot.reviewLanes && snapshot.reviewFanout
+                        ? { reviewFanout: snapshot.reviewFanout }
+                        : {}),
                     implementerDispatches: snapshot.implementerDispatches ?? [],
                 },
                 {

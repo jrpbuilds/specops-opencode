@@ -221,11 +221,18 @@ describe("specialist dispatch identity", () => {
         expect(snapshotActiveImplementers(ORCHESTRATOR)).toEqual({ count: 0, assignments: [] });
     });
 
-    test("each non-implementer specialist passes with the matching change name, no durable read", async () => {
+    test("direct Reviewer and non-review specialists pass with the matching change name", async () => {
         const { durable, hook } = gateFor(TASKS);
 
         for (const role of SPECIALIST_AGENT_IDS) {
-            if (role === AGENT_IDS.implementer) continue;
+            if (
+                role === AGENT_IDS.implementer ||
+                role === AGENT_IDS.reviewCorrectness ||
+                role === AGENT_IDS.reviewRisk ||
+                role === AGENT_IDS.reviewQuality
+            ) {
+                continue;
+            }
             await expect(
                 dispatch(hook, "changeName: example\nDo the assigned pass.", role),
             ).resolves.toBeUndefined();
