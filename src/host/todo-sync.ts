@@ -18,7 +18,8 @@
  * The hook is session-scoped and fails open by construction: sessions without
  * a recorded SpecOps binding pass through untouched, every failure (durable
  * read, projection, unexpected shape) falls back to the last successful
- * projection when available, and otherwise preserves the model-authored list.
+ * projection without stale review-lane entries when available, and otherwise
+ * preserves the model-authored list.
  * Nothing is ever thrown — a hook failure must never break the model's tool
  * call. Todo state is never read back as workflow authority.
  *
@@ -59,7 +60,7 @@
 import type { Hooks } from "@opencode-ai/plugin";
 import { buildNativeTodoProjection } from "../orchestrator/todo-publication.js";
 import type { ParallelProgressInput } from "../orchestrator/todo-projection.js";
-import { summarizeReviewFanout } from "../orchestrator/review-fanout.js";
+import { summarizeReviewLanes } from "../orchestrator/review-lanes.js";
 import type { ApplyInstructionsResult } from "../openspec/apply-instructions.js";
 import type { OpenSpecStatusResult } from "../openspec/status.js";
 import { snapshotParallelProgress } from "./parallel-progress.js";
@@ -130,12 +131,9 @@ export function createTodoSyncHook(deps: TodoSyncDeps): NonNullable<Hooks["tool.
             // carried by durable task checkboxes and failures surface through
             // orchestrator reporting, so only live work is projected.
             const snapshot = snapshotParallelProgress(input.sessionID);
-            // The fixed-three projection cannot faithfully represent a
-            // model-supplied plan with arbitrary or repeated lenses.
-            const fanout =
-                !snapshot.reviewLanes && snapshot.reviewFanout
-                    ? summarizeReviewFanout(snapshot.reviewFanout)
-                    : undefined;
+            const lanes = snapshot.reviewLanes
+                ? summarizeReviewLanes(snapshot.reviewLanes)
+                : undefined;
             const dispatches = (snapshot.implementerDispatches ?? []).flatMap(dispatch =>
                 dispatch.state === "inFlight"
                     ? [
@@ -146,9 +144,9 @@ export function createTodoSyncHook(deps: TodoSyncDeps): NonNullable<Hooks["tool.
                     : [],
             );
             const parallel: ParallelProgressInput | undefined =
-                fanout?.ok || dispatches.length > 0
+                lanes?.ok || dispatches.length > 0
                     ? {
-                          reviewFanout: fanout?.ok ? fanout.progress : undefined,
+                          reviewLanes: lanes?.ok ? lanes.progress : undefined,
                           implementerDispatches: dispatches,
                       }
                     : undefined;
@@ -179,11 +177,20 @@ export function createTodoSyncHook(deps: TodoSyncDeps): NonNullable<Hooks["tool.
     };
 }
 
-/** Restore the most recent good projection without inventing workflow state. */
+/**
+ * Restore durable orientation without reviving lane entries from a discarded round.
+ *
+ * A failed durable read cannot establish that a remembered in-flight review
+ * lane still exists, so omit those presentation-only entries on fallback.
+ *
+ * @param sessionID Session whose last successful projection may be restored.
+ * @param output Mutable native Todo tool arguments.
+ * @returns Nothing; leaves the tool payload alone when no projection is known.
+ */
 function restoreRememberedProjection(
     sessionID: string,
     output: { args: Record<string, unknown> },
 ): void {
     const todos = getRememberedTodoProjection(sessionID);
-    if (todos) output.args.todos = todos;
+    if (todos) output.args.todos = todos.filter(todo => !todo.id.startsWith("review-lane:"));
 }

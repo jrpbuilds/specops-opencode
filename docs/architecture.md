@@ -45,7 +45,7 @@ Today these live in:
 | Review guard state                                  | `src/orchestrator/review-guard.ts`                                                                                                                                         |
 | Archive operation (structural only)                 | `src/openspec/archive.ts` — see the archive boundary below                                                                                                                 |
 | Todo projection and publication                     | `src/orchestrator/todo-projection.ts`, `src/orchestrator/todo-publication.ts`, `src/orchestrator/reviewer-verdict.ts`, `src/host/todo-sync.ts`, `src/host/review-cycle.ts` |
-| Progress projection                                 | `src/tools/progress.ts`, `src/orchestrator/review-fanout.ts`, `src/orchestrator/implementer-progress.ts`, `src/host/parallel-progress.ts`                                  |
+| Progress projection                                 | `src/tools/progress.ts`, `src/orchestrator/review-lanes.ts`, `src/orchestrator/implementer-progress.ts`, `src/host/parallel-progress.ts`                                   |
 | Role and tool permissions                           | `src/agents/permission-policy.ts`, `src/host/lifecycle-permission.ts`                                                                                                      |
 
 Deterministic helpers may validate, derive, and project. Deterministic helpers must not judge.
@@ -112,17 +112,19 @@ The second rule is an escape hatch, not a ban. Behaviour that steers judgement c
 
 ## Projections are not state
 
-Todo and progress reports are **non-authoritative projections**: they derive from durable state and can be rebuilt from it at any time. A projection may be lossy, ephemeral, or discarded when an orchestrator run ends; it must never become a second source of truth.
+Todo and progress reports are **non-authoritative projections**: durable workflow facts can be rebuilt from OpenSpec, while observed review-lane and dispatch details exist only in the active runtime context. A projection may be lossy, ephemeral, or discarded when an orchestrator run ends; it must never become a second source of truth.
 
 OpenSpec remains the durable workflow source of truth. Change artifacts and task checkboxes under `openspec/changes/<change>/` are the only persisted workflow state; temporary session affinity, in-flight dispatch tracking, and projections end with the run.
 
 ### Progress is a runtime-derived diagnostic
 
-`specops_progress` is a read-only diagnostic/recovery view, not an orchestration step: normal coordination never requires calling it, and no prompt instructs it to. Every report is derived by the runtime from the dispatch lifecycle it observed (`src/host/parallel-progress.ts`) and reconciled against fresh durable task state by the deterministic core (`src/tools/progress.ts`); the orchestrator supplies no progress state of its own. A resume starts from empty runtime projections and trusts only durable state.
+`specops_progress` is a read-only diagnostic/recovery view, not an orchestration step: normal coordination never requires calling it, and no prompt instructs it to. It shows the active round's scoped review lanes, their pending/in-flight/completed/failed states and attempts, and implementer dispatches reconciled against fresh durable task state. The runtime supplies observed state (`src/host/parallel-progress.ts`), and the deterministic core validates and projects it (`src/tools/progress.ts`); the orchestrator supplies no progress state of its own. A resume starts from empty runtime projections and trusts only durable state.
 
 ### Todo publication
 
 Current refresh behavior preserves the runtime-owned trigger bridge while covering the full run: every specialist dispatch result carries a cue, and lifecycle-tool markers are coalesced to one cue per assistant message. The orchestrator refreshes once after consuming any marked result batch; duplicate cues in that turn do not create duplicate Todo updates. The task-result after-hook covers planning, foreground/background implementation, review, remediation, and specialist failures. A per-session last-successful projection is retained only as a fail-stale display fallback when a later durable read fails; it never becomes workflow authority.
+
+Todo splices only currently in-flight review lanes under the independent-review stage, using each lane's id, lens, and scope. Pending, failed, and completed lanes belong in the diagnostic report rather than a historical Todo list. If a durable read fails, a remembered list drops its review-lane entries rather than retaining work from a round that may have ended; archive likewise removes those entries before finalizing the list and stops reporting the archived round as active. The active round is session- and change-scoped, and its snapshot never chooses review work or overrides OpenSpec state.
 
 Post-review stages advance from ephemeral runtime observation, because review verdicts are not durable OpenSpec state: the runtime reads the reviewer's terminal verdict from its foreground result against the strict outcome contract (`src/orchestrator/reviewer-verdict.ts`) and tracks the remediation/re-review rounds from observed review-role dispatches (`src/host/review-cycle.ts`). The projection consumes these observations to hand current work to the remediation, re-review, or terminal archive-or-remediate stages; it never routes from them, and they never persist — a resume shows the durable-only projection until the run re-observes these moments. A fresh implementation-entry crossing supersedes a concluded verdict, so post-approval plan revisions regress the projection to durable state again. A successful archive is observed at the tool boundary: the active change no longer exists, so the next publication's durable read fails and the hook republishes the terminal, all-complete projection finalized at archive time instead of degrading to the model's list.
 

@@ -18,7 +18,7 @@ import { withTodoRefreshReminder } from "./todo-refresh.js";
 export const progressTool = tool({
     description:
         "Read-only diagnostic view of in-flight parallel progress for a named change: " +
-        "review critic fan-out status and implementer dispatch progress, as observed by " +
+        "dynamic review-lane state and implementer dispatch progress, as observed by " +
         "the runtime and reconciled against durable task checkboxes.",
     args: {
         change: tool.schema.string(),
@@ -34,9 +34,7 @@ export const progressTool = tool({
             await progress(
                 {
                     ...args,
-                    ...(!snapshot.reviewLanes && snapshot.reviewFanout
-                        ? { reviewFanout: snapshot.reviewFanout }
-                        : {}),
+                    ...(snapshot.reviewLanes ? { reviewLanes: snapshot.reviewLanes } : {}),
                     implementerDispatches: snapshot.implementerDispatches ?? [],
                 },
                 {

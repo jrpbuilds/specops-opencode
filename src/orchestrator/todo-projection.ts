@@ -1,7 +1,7 @@
 import { AGENT_IDS } from "../agents/ids.js";
 import type { NormalizedApplyInstructionContext } from "../openspec/apply-instructions.js";
 import type { NormalizedArtifact, NormalizedStatus } from "../openspec/status.js";
-import type { ReviewFanoutProgress } from "./review-fanout.js";
+import type { ReviewLanesProgress } from "./review-lanes.js";
 import { derivePlanningCompletion } from "./planning-completion.js";
 import { deriveWorkflowState } from "./workflow-state.js";
 import { requiredClosure, transitiveRequires } from "./artifact-graph.js";
@@ -29,8 +29,8 @@ export type TodoProjectionMode = "interactive" | "auto";
 
 /** Ephemeral parallel work reflected in the Todo projection. */
 export type ParallelProgressInput = {
-    /** Canonical fan-out progress computed once via `summarizeReviewFanout`. */
-    readonly reviewFanout?: ReviewFanoutProgress;
+    /** Canonical round progress computed once via `summarizeReviewLanes`. */
+    readonly reviewLanes?: ReviewLanesProgress;
     /**
      * Implementer dispatches currently in flight. Completion is carried by
      * durable task checkboxes, and failures surface through orchestrator
@@ -194,11 +194,11 @@ function insertParallelEntries(
     );
     insertAfter(
         INDEPENDENT_REVIEW_STAGE_ID,
-        (parallel.reviewFanout?.critics ?? [])
-            .filter(critic => critic.status === "inFlight")
-            .map(critic => ({
-                id: `review-critic:${critic.id}`,
-                content: `Review critic: ${critic.id}`,
+        (parallel.reviewLanes?.lanes ?? [])
+            .filter(lane => lane.state === "inFlight")
+            .map(lane => ({
+                id: `review-lane:${lane.id}`,
+                content: `${lane.id} · ${lane.lens[0].toUpperCase()}${lane.lens.slice(1)} · ${lane.scope}`,
                 status: "in_progress" as const,
             })),
     );

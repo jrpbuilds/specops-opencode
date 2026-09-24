@@ -1,8 +1,8 @@
 import {
-    summarizeReviewFanout,
-    type ReviewFanoutProgress,
-    type ReviewFanoutSnapshot,
-} from "../orchestrator/review-fanout.js";
+    summarizeReviewLanes,
+    type ReviewLanesProgress,
+    type ReviewLaneRoundSnapshot,
+} from "../orchestrator/review-lanes.js";
 import {
     projectImplementerDispatches,
     type ImplementerDispatchObservation,
@@ -17,8 +17,8 @@ import type { ApplyInstructionsResult } from "../openspec/apply-instructions.js"
  */
 export type ProgressArgs = {
     readonly change: string;
-    /** Fan-out snapshot; omitted ⇒ the report states `reviewFanout: { active: false }`. */
-    readonly reviewFanout?: ReviewFanoutSnapshot;
+    /** Active lane snapshot; omitted ⇒ the report states `reviewLanes: { active: false }`. */
+    readonly reviewLanes?: ReviewLaneRoundSnapshot;
     /** Runtime-observed implementer dispatches; `[]` keeps the view present but empty. */
     readonly implementerDispatches?: readonly ImplementerDispatchObservation[];
 };
@@ -31,8 +31,8 @@ export type ProgressDeps = {
 /** Canonical JSON report returned by the tool core. */
 export type ProgressReport = {
     readonly change: string;
-    /** Active fan-out: per-critic statuses; otherwise an explicit inactivity marker. */
-    readonly reviewFanout: ReviewFanoutProgress | { readonly active: false };
+    /** Active round: per-lane states; otherwise an explicit inactivity marker. */
+    readonly reviewLanes: ReviewLanesProgress | { readonly active: false };
     readonly implementers?:
         | ({ readonly available: true } & ImplementerDispatchProgress)
         | { readonly available: false; readonly error: string };
@@ -43,10 +43,10 @@ export type ProgressReport = {
  *
  * Deterministic, string-in/string-out like `status`: no I/O of its own, no
  * timestamps, no randomness — two identical calls with identical dep results
- * return byte-identical JSON. The `change`/`reviewFanout`/`implementers` key
- * order is fixed. A fan-out-only call never invokes `getApplyInstructions`;
+ * return byte-identical JSON. The `change`/`reviewLanes`/`implementers` key
+ * order is fixed. A review-only call never invokes `getApplyInstructions`;
  * a durable read failure degrades only the implementer view, keeping the
- * fan-out view intact. Malformed snapshots or dispatch observations fail
+ * review view intact. Malformed snapshots or dispatch observations fail
  * closed with non-JSON failure prefixes and no partial report.
  */
 export async function progress(args: ProgressArgs, deps: ProgressDeps): Promise<string> {
@@ -54,24 +54,26 @@ export async function progress(args: ProgressArgs, deps: ProgressDeps): Promise<
     if (!name) return "An OpenSpec change name is required.";
 
     // Build in the fixed report key order; `implementers` is appended only
-    // when requested, so JSON.stringify omits it for fan-out-only calls.
+    // when requested, so JSON.stringify omits it for review-only calls.
     const report: {
         change: string;
-        reviewFanout: ProgressReport["reviewFanout"];
+        reviewLanes: ProgressReport["reviewLanes"];
         implementers?: ProgressReport["implementers"];
     } = {
         change: name,
-        // Explicit inactivity marker: no snapshot means no fan-out is running,
-        // never an inferred per-critic state.
-        reviewFanout: { active: false },
+        // No round observed means no lane state can be inferred.
+        reviewLanes: { active: false },
     };
 
-    if (args.reviewFanout !== undefined) {
-        const summary = summarizeReviewFanout(args.reviewFanout);
+    if (args.reviewLanes !== undefined) {
+        const summary = summarizeReviewLanes(args.reviewLanes);
         if (!summary.ok) {
-            return `Invalid review fan-out snapshot for '${name}': ${summary.error}`;
+            return `Invalid review lane snapshot for '${name}': ${summary.error}`;
         }
-        report.reviewFanout = summary.progress;
+        if (args.reviewLanes.change !== name) {
+            return `Invalid review lane snapshot for '${name}': round belongs to another change`;
+        }
+        report.reviewLanes = summary.progress;
     }
 
     if (args.implementerDispatches !== undefined) {

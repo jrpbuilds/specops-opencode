@@ -2,9 +2,136 @@ import { describe, expect, test } from "bun:test";
 import {
     parseReviewLaneDispatch,
     parseReviewRoundIdentity,
+    summarizeReviewLanes,
     validateReviewLanes,
 } from "../../src/orchestrator/review-lanes.js";
-import type { ReviewLaneDefinition } from "../../src/orchestrator/review-lanes.js";
+import type {
+    ReviewLaneDefinition,
+    ReviewLaneRoundSnapshot,
+} from "../../src/orchestrator/review-lanes.js";
+
+/** Build a detached observed round, deriving counts from its lane states. */
+function round(lanes: ReviewLaneRoundSnapshot["lanes"]): ReviewLaneRoundSnapshot {
+    const counts = { pending: 0, inFlight: 0, completed: 0, failed: 0 };
+    for (const lane of lanes) counts[lane.state]++;
+    return {
+        active: true,
+        roundId: "review-round-1",
+        change: "example",
+        lanes,
+        counts,
+        fanInComplete: counts.completed === lanes.length,
+    };
+}
+
+describe("summarizeReviewLanes", () => {
+    const threeLenses = [
+        { id: "R1", lens: "risk", scope: "authentication", state: "pending", attempts: 0 },
+        { id: "Q1", lens: "quality", scope: "integration", state: "completed", attempts: 1 },
+        {
+            id: "C1",
+            lens: "correctness",
+            scope: "booking frontend",
+            state: "inFlight",
+            attempts: 1,
+        },
+    ] as const;
+
+    test("projects standard three-lens and expanded same-lens rounds in lens order", () => {
+        const expanded = round([
+            ...threeLenses,
+            { id: "C2", lens: "correctness", scope: "booking API", state: "inFlight", attempts: 2 },
+            { id: "R2", lens: "risk", scope: "migration", state: "failed", attempts: 1 },
+        ]);
+        const original = structuredClone(expanded);
+        const standard = summarizeReviewLanes(round(threeLenses));
+        const summary = summarizeReviewLanes(expanded);
+
+        expect(standard.ok && standard.progress.lanes.map(lane => lane.id)).toEqual([
+            "C1",
+            "R1",
+            "Q1",
+        ]);
+        expect(summary).toEqual({
+            ok: true,
+            progress: {
+                roundId: "review-round-1",
+                lanes: [
+                    {
+                        id: "C1",
+                        lens: "correctness",
+                        scope: "booking frontend",
+                        state: "inFlight",
+                        attempts: 1,
+                    },
+                    {
+                        id: "C2",
+                        lens: "correctness",
+                        scope: "booking API",
+                        state: "inFlight",
+                        attempts: 2,
+                    },
+                    {
+                        id: "R1",
+                        lens: "risk",
+                        scope: "authentication",
+                        state: "pending",
+                        attempts: 0,
+                    },
+                    { id: "R2", lens: "risk", scope: "migration", state: "failed", attempts: 1 },
+                    {
+                        id: "Q1",
+                        lens: "quality",
+                        scope: "integration",
+                        state: "completed",
+                        attempts: 1,
+                    },
+                ],
+                counts: { pending: 1, inFlight: 2, completed: 1, failed: 1 },
+                fanInComplete: false,
+            },
+        });
+        expect(expanded).toEqual(original);
+        expect(summarizeReviewLanes(round([{ ...threeLenses[1] }]))).toMatchObject({
+            ok: true,
+            progress: { fanInComplete: true },
+        });
+    });
+
+    test("rejects malformed identity, duplicate lanes, invalid execution, and inconsistent totals", () => {
+        const valid = round(threeLenses);
+        expect(summarizeReviewLanes({ ...valid, lanes: [] }).ok).toBe(false);
+        expect(summarizeReviewLanes({ ...valid, roundId: "" }).ok).toBe(false);
+        expect(summarizeReviewLanes({ ...valid, lanes: [threeLenses[0], threeLenses[0]] })).toEqual(
+            {
+                ok: false,
+                error: "duplicate review lane id 'R1'",
+            },
+        );
+        expect(
+            summarizeReviewLanes({ ...valid, lanes: [{ ...threeLenses[0], scope: "\n" }] }).ok,
+        ).toBe(false);
+        expect(
+            summarizeReviewLanes({
+                ...valid,
+                lanes: [{ ...threeLenses[0], state: "unknown" }] as never,
+            }).ok,
+        ).toBe(false);
+        expect(
+            summarizeReviewLanes({ ...valid, lanes: [{ ...threeLenses[2], attempts: 0 }] }).ok,
+        ).toBe(false);
+        expect(summarizeReviewLanes({ ...valid, counts: { ...valid.counts, pending: 2 } })).toEqual(
+            {
+                ok: false,
+                error: "review lane counts do not match execution states",
+            },
+        );
+        expect(summarizeReviewLanes({ ...valid, fanInComplete: true })).toEqual({
+            ok: false,
+            error: "review lane fan-in does not match execution states",
+        });
+    });
+});
 
 describe("validateReviewLanes", () => {
     test("accepts one lane, the three-lens shape, and expanded same-lens scopes in order", () => {

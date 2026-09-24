@@ -11,8 +11,13 @@ import {
     createSessionEventObserver,
     recordTaskDispatch,
     recordTaskResult,
+    snapshotParallelProgress,
 } from "../../src/host/parallel-progress.js";
-import { startReviewLaneRound } from "../../src/host/review-lanes.js";
+import {
+    clearReviewLaneRound,
+    reserveReviewLaneDispatch,
+    startReviewLaneRound,
+} from "../../src/host/review-lanes.js";
 import type { NormalizedApplyInstructionContext } from "../../src/openspec/apply-instructions.js";
 import type { ApplyInstructionsResult } from "../../src/openspec/apply-instructions.js";
 import type { NormalizedArtifact } from "../../src/openspec/status.js";
@@ -523,9 +528,39 @@ describe("createTodoSyncHook parallel progress", () => {
     test("splices runtime-observed parallel entries after their anchor stages", async () => {
         recordSessionBinding("ses_1", "SpecOps", "example");
         await dispatchImplementer("c1", '<task id="task-1" state="running">');
+        const round = startReviewLaneRound("ses_1", "example", [
+            { id: "C1", lens: "correctness", scope: "booking frontend" },
+            { id: "C2", lens: "correctness", scope: "booking API" },
+            { id: "R1", lens: "risk", scope: "authentication" },
+        ]);
+        reserveReviewLaneDispatch({
+            sessionID: "ses_1",
+            callID: "c2",
+            change: "example",
+            roundId: round.roundId,
+            laneId: "C1",
+            lens: "correctness",
+            scope: "booking frontend",
+            maxConcurrency: 2,
+        });
+        reserveReviewLaneDispatch({
+            sessionID: "ses_1",
+            callID: "c3",
+            change: "example",
+            roundId: round.roundId,
+            laneId: "C2",
+            lens: "correctness",
+            scope: "booking API",
+            maxConcurrency: 2,
+        });
         await recordTaskDispatch(
             { tool: "task", sessionID: "ses_1", callID: "c2" },
-            { args: { subagent_type: "specops-review-correctness" } },
+            {
+                args: {
+                    subagent_type: "specops-review-correctness",
+                    prompt: `reviewRoundId: ${round.roundId}\nreviewLaneId: C1\nreviewScope: booking frontend`,
+                },
+            },
         );
         const hook = hookWith(okStatus());
 
@@ -533,18 +568,18 @@ describe("createTodoSyncHook parallel progress", () => {
         const ids = todos.map(todo => todo.id);
 
         expect(ids.indexOf("implementer:task-1")).toBe(ids.indexOf("implementation") + 1);
-        expect(ids.indexOf("review-critic:correctness")).toBe(
-            ids.indexOf("independent-review") + 1,
-        );
+        expect(ids.indexOf("review-lane:C1")).toBe(ids.indexOf("independent-review") + 1);
+        expect(ids.indexOf("review-lane:C2")).toBe(ids.indexOf("review-lane:C1") + 1);
+        expect(ids).not.toContain("review-lane:R1");
         expect(byId(todos).get("implementer:task-1")).toEqual({
             id: "implementer:task-1",
             content: "Implementer dispatch (task-1)",
             status: "in_progress",
             priority: "medium",
         });
-        expect(byId(todos).get("review-critic:correctness")).toEqual({
-            id: "review-critic:correctness",
-            content: "Review critic: correctness",
+        expect(byId(todos).get("review-lane:C1")).toEqual({
+            id: "review-lane:C1",
+            content: "C1 · Correctness · booking frontend",
             status: "in_progress",
             priority: "medium",
         });
@@ -580,18 +615,76 @@ describe("createTodoSyncHook parallel progress", () => {
         const todos = await fireTrigger(hook);
 
         expect(todos.some(todo => String(todo.id).startsWith("implementer:"))).toBe(false);
-        expect(todos.some(todo => String(todo.id).startsWith("review-critic:"))).toBe(false);
+        expect(todos.some(todo => String(todo.id).startsWith("review-lane:"))).toBe(false);
     });
 
-    test("does not project a dynamic lane plan as the fixed three-critic shape", async () => {
+    test("pending, terminal, and cleared rounds do not leave stale lane entries", async () => {
         recordSessionBinding("ses_1", "SpecOps", "example");
-        startReviewLaneRound("ses_1", "example", [
+        const round = startReviewLaneRound("ses_1", "example", [
             { id: "C1", lens: "correctness", scope: "frontend" },
         ]);
         const hook = hookWith(okStatus());
 
-        const todos = await fireTrigger(hook);
+        expect(
+            (await fireTrigger(hook)).some(todo => String(todo.id).startsWith("review-lane:")),
+        ).toBe(false);
+        reserveReviewLaneDispatch({
+            sessionID: "ses_1",
+            callID: "review-1",
+            change: "example",
+            roundId: round.roundId,
+            laneId: "C1",
+            scope: "frontend",
+            lens: "correctness",
+            maxConcurrency: 1,
+        });
+        expect(byId(await fireTrigger(hook)).get("review-lane:C1")?.status).toBe("in_progress");
+        await recordTaskResult(
+            { tool: "task", sessionID: "ses_1", callID: "review-1", args: {} },
+            { title: "", output: "done", metadata: {} },
+        );
+        expect(
+            (await fireTrigger(hook)).some(todo => String(todo.id).startsWith("review-lane:")),
+        ).toBe(false);
+        clearReviewLaneRound("ses_1", round.roundId);
+        expect(
+            (await fireTrigger(hook)).some(todo => String(todo.id).startsWith("review-lane:")),
+        ).toBe(false);
+    });
 
-        expect(todos.some(todo => String(todo.id).startsWith("review-critic:"))).toBe(false);
+    test("a failed refresh or archive never revives remembered in-flight lanes", async () => {
+        recordSessionBinding("ses_1", "SpecOps", "example");
+        const round = startReviewLaneRound("ses_1", "example", [
+            { id: "C1", lens: "correctness", scope: "frontend" },
+        ]);
+        reserveReviewLaneDispatch({
+            sessionID: "ses_1",
+            callID: "review-1",
+            change: "example",
+            roundId: round.roundId,
+            laneId: "C1",
+            scope: "frontend",
+            lens: "correctness",
+            maxConcurrency: 1,
+        });
+        let statusFails = false;
+        const hook = createTodoSyncHook({
+            directory: "/project",
+            getOpenSpecStatus: async () =>
+                statusFails ? { ok: false, error: "read failed" } : okStatus(),
+            getApplyInstructions: async () => applyContext(),
+        });
+        expect(byId(await fireTrigger(hook)).has("review-lane:C1")).toBe(true);
+
+        statusFails = true;
+        const failedRefresh = await fireTrigger(hook);
+        expect(byId(failedRefresh).has("review-lane:C1")).toBe(false);
+        expect(byId(failedRefresh).has("independent-review")).toBe(true);
+
+        recordArchivedChange("ses_1");
+        expect(snapshotParallelProgress("ses_1").reviewLanes).toBeUndefined();
+        const archived = await fireTrigger(hook);
+        expect(byId(archived).has("review-lane:C1")).toBe(false);
+        expect(archived.every(todo => todo.status === "completed")).toBe(true);
     });
 });

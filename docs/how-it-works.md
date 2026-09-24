@@ -70,6 +70,8 @@ The same parallelism covers planning and implementation: independent planning ar
 
 Specialists return independent critiques identified by review lane. The final `specops-reviewer` checks their evidence against the repository, explicitly disposes each blocking candidate, and owns the only PASS/FAIL decision. The critics don't vote and can't overrule it.
 
+While lanes are running, the to-do list names each in-flight lane and its scope. `specops_progress` can show the active round's queued, running, completed, and failed lanes when diagnostics are needed. These views are temporary; after a restart, only durable change state remains until new work is observed.
+
 During the review window, review agents can't change tracked repository files or the `openspec/` tree. If protected state changes mid-review, the run stops rather than pass a review that no longer matches the work — so a PASS means the review looked at exactly what shipped.
 
 ## What happens on FAIL

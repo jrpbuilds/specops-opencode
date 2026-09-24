@@ -1,14 +1,21 @@
 import { describe, expect, test } from "bun:test";
 import type { ImplementerDispatchObservation } from "../../src/orchestrator/implementer-progress.js";
-import type { ReviewFanoutSnapshot } from "../../src/orchestrator/review-fanout.js";
+import type { ReviewLaneRoundSnapshot } from "../../src/orchestrator/review-lanes.js";
 import type { NormalizedApplyInstructionContext } from "../../src/openspec/apply-instructions.js";
 import { progress, type ProgressDeps } from "../../src/tools/progress.js";
 
-const mixedSnapshot = (overrides: Partial<ReviewFanoutSnapshot> = {}): ReviewFanoutSnapshot => ({
-    pending: ["quality"],
-    inFlight: ["correctness"],
-    completed: ["risk"],
-    failed: [],
+const lanes = (overrides: Partial<ReviewLaneRoundSnapshot> = {}): ReviewLaneRoundSnapshot => ({
+    active: true,
+    roundId: "review-round-1",
+    change: "example",
+    lanes: [
+        { id: "R1", lens: "risk", scope: "auth", state: "failed", attempts: 2 },
+        { id: "C1", lens: "correctness", scope: "frontend", state: "inFlight", attempts: 1 },
+        { id: "C2", lens: "correctness", scope: "API", state: "pending", attempts: 0 },
+        { id: "Q1", lens: "quality", scope: "integration", state: "completed", attempts: 1 },
+    ],
+    counts: { pending: 1, inFlight: 1, completed: 1, failed: 1 },
+    fanInComplete: false,
     ...overrides,
 });
 
@@ -35,11 +42,6 @@ const successfulDeps = (overrides: Partial<ProgressDeps> = {}): ProgressDeps => 
     ...overrides,
 });
 
-const failingReadDeps = (overrides: Partial<ProgressDeps> = {}): ProgressDeps => ({
-    getApplyInstructions: async () => ({ ok: false, error: "read failed" }),
-    ...overrides,
-});
-
 describe("progress", () => {
     test("rejects an empty change name without invoking deps", async () => {
         let called = false;
@@ -57,7 +59,7 @@ describe("progress", () => {
         expect(called).toBe(false);
     });
 
-    test("reports an inactive fan-out without a durable read when no view is supplied", async () => {
+    test("direct review has no invented lanes or durable read", async () => {
         let called = false;
         const result = await progress(
             { change: "example" },
@@ -69,16 +71,14 @@ describe("progress", () => {
             },
         );
 
+        expect(JSON.parse(result)).toEqual({ change: "example", reviewLanes: { active: false } });
         expect(called).toBe(false);
-        const report = JSON.parse(result);
-        expect(report).toEqual({ change: "example", reviewFanout: { active: false } });
-        expect("implementers" in report).toBe(false);
     });
 
-    test("a fan-out-only call never invokes getApplyInstructions", async () => {
+    test("reports every lane state, preserves same-lens identities, and avoids a review-only durable read", async () => {
         let called = false;
         const result = await progress(
-            { change: "example", reviewFanout: mixedSnapshot() },
+            { change: "example", reviewLanes: lanes() },
             {
                 getApplyInstructions: async () => {
                     called = true;
@@ -88,25 +88,38 @@ describe("progress", () => {
         );
 
         expect(called).toBe(false);
-        const report = JSON.parse(result);
-        expect(report).toEqual({
+        expect(JSON.parse(result)).toEqual({
             change: "example",
-            reviewFanout: {
-                critics: [
-                    { id: "correctness", status: "inFlight" },
-                    { id: "risk", status: "completed" },
-                    { id: "quality", status: "pending" },
+            reviewLanes: {
+                roundId: "review-round-1",
+                lanes: [
+                    {
+                        id: "C1",
+                        lens: "correctness",
+                        scope: "frontend",
+                        state: "inFlight",
+                        attempts: 1,
+                    },
+                    { id: "C2", lens: "correctness", scope: "API", state: "pending", attempts: 0 },
+                    { id: "R1", lens: "risk", scope: "auth", state: "failed", attempts: 2 },
+                    {
+                        id: "Q1",
+                        lens: "quality",
+                        scope: "integration",
+                        state: "completed",
+                        attempts: 1,
+                    },
                 ],
-                counts: { pending: 1, inFlight: 1, completed: 1, failed: 0 },
+                counts: { pending: 1, inFlight: 1, completed: 1, failed: 1 },
+                fanInComplete: false,
             },
         });
-        expect("implementers" in report).toBe(false);
     });
 
-    test("returns byte-identical JSON across two identical calls", async () => {
+    test("returns byte-identical JSON and composes review with implementer progress", async () => {
         const args = {
             change: "example",
-            reviewFanout: mixedSnapshot(),
+            reviewLanes: lanes(),
             implementerDispatches: [
                 { dispatchId: "impl-1", state: "completed" },
                 { state: "inFlight" },
@@ -123,47 +136,25 @@ describe("progress", () => {
         });
 
         const first = await progress(args, deps);
-        const second = await progress(args, deps);
-
-        expect(first).toBe(second);
-        expect(JSON.parse(first)).toEqual({
-            change: "example",
-            reviewFanout: {
-                critics: [
-                    { id: "correctness", status: "inFlight" },
-                    { id: "risk", status: "completed" },
-                    { id: "quality", status: "pending" },
-                ],
-                counts: { pending: 1, inFlight: 1, completed: 1, failed: 0 },
-            },
-            implementers: {
-                available: true,
-                dispatches: [{ dispatchId: "impl-1", state: "completed" }, { state: "inFlight" }],
-                durable: { total: 2, complete: 1, remaining: 1 },
-            },
+        expect(first).toBe(await progress(args, deps));
+        const report = JSON.parse(first);
+        expect(Object.keys(report)).toEqual(["change", "reviewLanes", "implementers"]);
+        expect(report.implementers).toEqual({
+            available: true,
+            dispatches: [{ dispatchId: "impl-1", state: "completed" }, { state: "inFlight" }],
+            durable: { total: 2, complete: 1, remaining: 1 },
         });
     });
 
-    test("rejects an unknown critic id with a failure prefix and no report", async () => {
-        const result = await progress(
-            { change: "example", reviewFanout: mixedSnapshot({ pending: ["security"] }) },
-            failingReadDeps(),
-        );
-
-        expect(result).toBe(
-            "Invalid review fan-out snapshot for 'example': unknown critic id 'security'",
-        );
-        expect(() => JSON.parse(result)).toThrow();
-    });
-
-    test("rejects an incomplete fan-out snapshot with the missing-lists failure prefix", async () => {
+    test("rejects inconsistent review observations without a partial report or durable read", async () => {
         let called = false;
         const result = await progress(
             {
                 change: "example",
-                // Spec scenario "Incomplete fan-out snapshot rejected": the
-                // failed list omitted entirely while another is present.
-                reviewFanout: { pending: [], inFlight: [], completed: ["risk"] },
+                reviewLanes: lanes({
+                    counts: { pending: 0, inFlight: 2, completed: 1, failed: 1 },
+                }),
+                implementerDispatches: [],
             },
             {
                 getApplyInstructions: async () => {
@@ -174,30 +165,32 @@ describe("progress", () => {
         );
 
         expect(result).toBe(
-            "Invalid review fan-out snapshot for 'example': fan-out snapshot is missing state list(s): failed",
+            "Invalid review lane snapshot for 'example': review lane counts do not match execution states",
         );
-        expect(called).toBe(false);
         expect(() => JSON.parse(result)).toThrow();
+        expect(called).toBe(false);
+        expect(
+            await progress({ change: "example", reviewLanes: null as never }, successfulDeps()),
+        ).toBe(
+            "Invalid review lane snapshot for 'example': review round has invalid identity or lanes",
+        );
+        expect(await progress({ change: "other", reviewLanes: lanes() }, successfulDeps())).toBe(
+            "Invalid review lane snapshot for 'other': round belongs to another change",
+        );
     });
 
-    test("states no active fan-out explicitly when the snapshot is omitted", async () => {
+    test("keeps review available when the durable implementer read fails", async () => {
         const result = await progress(
-            { change: "example", implementerDispatches: [] },
-            successfulDeps(),
+            { change: "example", reviewLanes: lanes(), implementerDispatches: [] },
+            { getApplyInstructions: async () => ({ ok: false, error: "read failed" }) },
         );
 
         const report = JSON.parse(result);
-        expect(report.reviewFanout).toEqual({ active: false });
-        expect("critics" in report.reviewFanout).toBe(false);
-        expect("counts" in report.reviewFanout).toBe(false);
-        expect(report.implementers).toEqual({
-            available: true,
-            dispatches: [],
-            durable: { total: 0, complete: 0, remaining: 0 },
-        });
+        expect(report.reviewLanes.lanes).toHaveLength(4);
+        expect(report.implementers).toEqual({ available: false, error: "read failed" });
     });
 
-    test("rejects malformed implementer dispatches with a failure prefix and no report", async () => {
+    test("rejects malformed implementer dispatches without a partial report", async () => {
         const result = await progress(
             {
                 change: "example",
@@ -212,52 +205,5 @@ describe("progress", () => {
             "Invalid implementer dispatches for 'example': dispatch #1 has an unknown state",
         );
         expect(() => JSON.parse(result)).toThrow();
-    });
-
-    test("degrades only the implementer view when the durable read fails", async () => {
-        const error = "OpenSpec instructions apply failed with exit code 1";
-        const result = await progress(
-            { change: "example", reviewFanout: mixedSnapshot(), implementerDispatches: [] },
-            failingReadDeps({
-                getApplyInstructions: async () => ({ ok: false, error }),
-            }),
-        );
-
-        const report = JSON.parse(result);
-        expect(report).toEqual({
-            change: "example",
-            reviewFanout: {
-                critics: [
-                    { id: "correctness", status: "inFlight" },
-                    { id: "risk", status: "completed" },
-                    { id: "quality", status: "pending" },
-                ],
-                counts: { pending: 1, inFlight: 1, completed: 1, failed: 0 },
-            },
-            implementers: { available: false, error },
-        });
-    });
-
-    test("composes both views in one report with the fixed key order", async () => {
-        const result = await progress(
-            {
-                change: "example",
-                reviewFanout: mixedSnapshot(),
-                implementerDispatches: [{ dispatchId: "impl-1", state: "inFlight" }],
-            },
-            successfulDeps({
-                getApplyInstructions: async () => ({
-                    ok: true,
-                    context: fakeApplyContext([{ id: "1.1", done: true }]),
-                }),
-            }),
-        );
-
-        const report = JSON.parse(result);
-        expect(Object.keys(report)).toEqual(["change", "reviewFanout", "implementers"]);
-        expect(report.implementers.dispatches).toEqual([
-            { dispatchId: "impl-1", state: "inFlight" },
-        ]);
-        expect(report.implementers.durable).toEqual({ total: 1, complete: 1, remaining: 0 });
     });
 });

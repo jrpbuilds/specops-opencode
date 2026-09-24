@@ -268,7 +268,7 @@ describe("representative workflow synchronization", () => {
             expect(
                 todos.some(
                     todo =>
-                        (todo.id as string).startsWith("review-critic:") ||
+                        (todo.id as string).startsWith("review-lane:") ||
                         (todo.id as string).startsWith("implementer:"),
                 ),
             ).toBe(false);

@@ -38,12 +38,9 @@
 import type { Hooks } from "@opencode-ai/plugin";
 import { AGENT_IDS } from "../agents/ids.js";
 import {
+    parseReviewLaneDispatch,
     REVIEW_CRITIC_IDS,
     type ReviewCriticId,
-    type ReviewFanoutSnapshot,
-} from "../orchestrator/review-fanout.js";
-import {
-    parseReviewLaneDispatch,
     type ReviewLaneRoundSnapshot,
 } from "../orchestrator/review-lanes.js";
 import {
@@ -52,7 +49,7 @@ import {
     type ImplementerDispatchObservation,
     type ImplementerDispatchState,
 } from "../orchestrator/implementer-progress.js";
-import { getSessionBinding } from "./session-bindings.js";
+import { getSessionBinding, hasArchivedChange } from "./session-bindings.js";
 import {
     __resetReviewLanesForTesting,
     getReviewLaneRound,
@@ -63,8 +60,6 @@ import {
 
 /** Runtime-derived parallel progress for one orchestrator session. */
 export type ParallelProgressSnapshot = {
-    /** Raw fan-out state lists; omitted when no critic dispatch was observed. */
-    readonly reviewFanout?: ReviewFanoutSnapshot;
     /** Model-selected dynamic lane state; omitted when no lane round is active. */
     readonly reviewLanes?: ReviewLaneRoundSnapshot;
     /** Observed implementer dispatches in dispatch order. */
@@ -435,39 +430,22 @@ export function createSessionEventObserver(): NonNullable<Hooks["event"]> {
  */
 export function snapshotParallelProgress(sessionID: string): ParallelProgressSnapshot {
     const binding = getSessionBinding(sessionID);
-    const reviewLanes = binding ? getReviewLaneRound(sessionID, binding.change) : undefined;
+    // An archived change has no active review context, even if the process
+    // still retains the completed round for the owning session.
+    const reviewLanes =
+        binding && !hasArchivedChange(sessionID)
+            ? getReviewLaneRound(sessionID, binding.change)
+            : undefined;
     const run = runs.get(sessionID);
     if (!run) return reviewLanes ? { reviewLanes } : {};
 
-    const latestCritic = new Map<ReviewCriticId, DispatchEntry>();
     const implementers: DispatchEntry[] = [];
     for (const entry of run.dispatches.values()) {
         if (entry.role === AGENT_IDS.implementer) {
             implementers.push(entry);
-        } else if (entry.reviewRoundId === undefined) {
-            latestCritic.set(entry.role, entry);
         }
     }
 
-    let reviewFanout: ReviewFanoutSnapshot | undefined;
-    if (latestCritic.size > 0) {
-        const lists: Record<"pending" | ImplementerDispatchState, string[]> = {
-            pending: [],
-            inFlight: [],
-            completed: [],
-            failed: [],
-        };
-        for (const critic of REVIEW_CRITIC_IDS) {
-            const entry = latestCritic.get(critic);
-            lists[entry ? entry.state : "pending"].push(critic);
-        }
-        reviewFanout = {
-            pending: lists.pending,
-            inFlight: lists.inFlight,
-            completed: lists.completed,
-            failed: lists.failed,
-        };
-    }
     const implementerDispatches =
         implementers.length > 0
             ? implementers.map(entry =>
@@ -478,7 +456,6 @@ export function snapshotParallelProgress(sessionID: string): ParallelProgressSna
             : undefined;
     return {
         ...(reviewLanes ? { reviewLanes } : {}),
-        ...(reviewFanout ? { reviewFanout } : {}),
         ...(implementerDispatches ? { implementerDispatches } : {}),
     };
 }

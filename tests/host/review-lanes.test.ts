@@ -166,7 +166,6 @@ describe("dynamic review lane runtime", () => {
             completed: 1,
             failed: 0,
         });
-        expect(snapshot.reviewFanout).toBeUndefined();
         expect(snapshot.reviewLanes?.lanes.map(lane => lane.id)).toEqual([
             "C1",
             "C2",

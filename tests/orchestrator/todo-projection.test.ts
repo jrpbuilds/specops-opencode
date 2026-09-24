@@ -3,7 +3,7 @@ import {
     buildTodoProjection,
     type TodoProjectionEntry,
 } from "../../src/orchestrator/todo-projection.js";
-import type { ReviewFanoutProgress } from "../../src/orchestrator/review-fanout.js";
+import type { ReviewLanesProgress } from "../../src/orchestrator/review-lanes.js";
 import type { NormalizedApplyInstructionContext } from "../../src/openspec/apply-instructions.js";
 import type { NormalizedArtifact, NormalizedStatus } from "../../src/openspec/status.js";
 
@@ -397,18 +397,23 @@ describe("buildTodoProjection review-cycle advancement", () => {
 });
 
 describe("buildTodoProjection parallel progress", () => {
-    const fanoutProgress: ReviewFanoutProgress = {
-        critics: [
-            { id: "correctness", status: "completed" },
-            { id: "risk", status: "inFlight" },
-            { id: "quality", status: "pending" },
+    const laneProgress: ReviewLanesProgress = {
+        roundId: "review-round-1",
+        lanes: [
+            {
+                id: "C1",
+                lens: "correctness",
+                scope: "booking frontend",
+                state: "inFlight",
+                attempts: 1,
+            },
+            { id: "C2", lens: "correctness", scope: "booking API", state: "inFlight", attempts: 1 },
+            { id: "R1", lens: "risk", scope: "authentication", state: "completed", attempts: 1 },
+            { id: "R2", lens: "risk", scope: "migration", state: "failed", attempts: 1 },
+            { id: "Q1", lens: "quality", scope: "integration", state: "pending", attempts: 0 },
         ],
-        counts: { pending: 1, inFlight: 1, completed: 1, failed: 0 },
-    };
-
-    const failedFanout: ReviewFanoutProgress = {
-        critics: [{ id: "risk", status: "failed" }],
-        counts: { pending: 0, inFlight: 0, completed: 0, failed: 1 },
+        counts: { pending: 1, inFlight: 2, completed: 1, failed: 1 },
+        fanInComplete: false,
     };
 
     test("omitting the parallel input reproduces the projection exactly as before", () => {
@@ -430,38 +435,49 @@ describe("buildTodoProjection parallel progress", () => {
             stagedStatus(),
             "interactive",
             {
-                reviewFanout: fanoutProgress,
+                reviewLanes: laneProgress,
                 implementerDispatches: [{ dispatchId: "ses_f92d6cc", state: "inFlight" }],
             },
             { apply: applyContext(4) },
         );
         const ids = entries.map(entry => entry.id);
 
-        // Implementer dispatch follows the implementation stage; the critic
-        // follows independent review; the terminal stage stays last.
+        // Implementer dispatch follows implementation; lanes follow review.
         expect(ids.indexOf("implementer:ses_f92d6cc")).toBe(ids.indexOf("implementation") + 1);
-        expect(ids.indexOf("review-critic:risk")).toBe(ids.indexOf("independent-review") + 1);
+        expect(ids.indexOf("review-lane:C1")).toBe(ids.indexOf("independent-review") + 1);
+        expect(ids.indexOf("review-lane:C2")).toBe(ids.indexOf("review-lane:C1") + 1);
         expect(ids[ids.length - 1]).toBe("lifecycle-remediation");
 
-        // Completed work is carried by the durable stages, never projected.
-        expect(entries.find(entry => entry.id === "review-critic:correctness")).toBeUndefined();
-        expect(entries.find(entry => entry.id === "review-critic:quality")).toBeUndefined();
+        expect(entries.find(entry => entry.id === "review-lane:R1")).toBeUndefined();
+        expect(entries.find(entry => entry.id === "review-lane:Q1")).toBeUndefined();
     });
 
-    test("projects only in-flight critics, skipping completed, pending, and failed", () => {
+    test("projects distinct same-lens lanes only while in flight", () => {
         const entries = buildTodoProjection(stagedStatus(), "interactive", {
-            reviewFanout: fanoutProgress,
+            reviewLanes: laneProgress,
         });
-        const criticEntries = entries.filter(entry => entry.id.startsWith("review-critic:"));
+        const laneEntries = entries.filter(entry => entry.id.startsWith("review-lane:"));
 
-        expect(criticEntries).toEqual([
-            { id: "review-critic:risk", content: "Review critic: risk", status: "in_progress" },
+        expect(laneEntries).toEqual([
+            {
+                id: "review-lane:C1",
+                content: "C1 · Correctness · booking frontend",
+                status: "in_progress",
+            },
+            {
+                id: "review-lane:C2",
+                content: "C2 · Correctness · booking API",
+                status: "in_progress",
+            },
         ]);
 
-        const failedEntries = buildTodoProjection(stagedStatus(), "interactive", {
-            reviewFanout: failedFanout,
+        const terminalEntries = buildTodoProjection(stagedStatus(), "interactive", {
+            reviewLanes: {
+                ...laneProgress,
+                lanes: laneProgress.lanes.filter(lane => lane.state !== "inFlight"),
+            },
         });
-        expect(failedEntries.some(entry => entry.id.startsWith("review-critic:"))).toBe(false);
+        expect(terminalEntries.some(entry => entry.id.startsWith("review-lane:"))).toBe(false);
     });
 
     test("truncates dispatch labels and falls back to positional ids", () => {

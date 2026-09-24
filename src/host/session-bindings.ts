@@ -190,10 +190,11 @@ export function clearReviewCycle(sessionID: string): void {
  *
  * After an archive the active change no longer exists, so later publications
  * cannot rebuild from durable state: the remembered projection is finalized
- * into its terminal, all-complete form, and the session's archive flag makes
- * subsequent publications serve that terminal list — including a publication
- * that was concurrently building while the archive moved the change, whose
- * stale rebuild must never publish over or re-remember the terminal state.
+ * into its terminal, all-complete form without stale review-lane entries. The
+ * session's archive flag makes subsequent publications serve that terminal
+ * list — including a publication that was concurrently building while the
+ * archive moved the change, whose stale rebuild must never publish over or
+ * re-remember the terminal state.
  * A later successful durable read for a live change clears the flag and
  * supersedes the terminal list.
  *
@@ -206,7 +207,9 @@ export function recordArchivedChange(sessionID: string): void {
     if (remembered) {
         rememberedTodoProjections.set(
             sessionID,
-            remembered.map(todo => ({ ...todo, status: "completed" as const })),
+            remembered
+                .filter(todo => !todo.id.startsWith("review-lane:"))
+                .map(todo => ({ ...todo, status: "completed" as const })),
         );
     }
 }

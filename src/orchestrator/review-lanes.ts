@@ -11,6 +11,10 @@ export const REVIEW_LENSES = ["correctness", "risk", "quality"] as const;
 
 export type ReviewLens = (typeof REVIEW_LENSES)[number];
 
+/** Canonical critic identities correspond to the supported review lenses. */
+export type ReviewCriticId = ReviewLens;
+export const REVIEW_CRITIC_IDS: readonly ReviewCriticId[] = REVIEW_LENSES;
+
 /** One independent review job selected by the Orchestrator. */
 export type ReviewLaneDefinition = {
     readonly id: string;
@@ -43,6 +47,21 @@ export type ReviewLaneRoundSnapshot = {
     readonly fanInComplete: boolean;
 };
 
+/** Presentation-only summary of the observed lanes in one active round. */
+export type ReviewLanesProgress = {
+    readonly roundId: string;
+    readonly lanes: readonly Pick<
+        ReviewLaneProgress,
+        "id" | "lens" | "scope" | "state" | "attempts"
+    >[];
+    readonly counts: ReviewLaneRoundSnapshot["counts"];
+    readonly fanInComplete: boolean;
+};
+
+export type ReviewLanesSummaryResult =
+    | { readonly ok: true; readonly progress: ReviewLanesProgress }
+    | { readonly ok: false; readonly error: string };
+
 export type ReviewLaneValidationResult =
     | { readonly ok: true; readonly lanes: readonly ReviewLaneDefinition[] }
     | { readonly ok: false; readonly error: string };
@@ -59,6 +78,84 @@ export type ReviewLaneDispatchParseResult =
 
 /** Token characters accepted for generated round IDs and model-supplied lane IDs. */
 const LANE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
+/**
+ * Validate and order one runtime snapshot for read-only Todo and diagnostic views.
+ *
+ * The host owns execution state; this function only checks its detached snapshot
+ * and never feeds a projection back into dispatch or workflow decisions. Lanes
+ * are grouped by lens while preserving registration order within each lens.
+ *
+ * @param snapshot Runtime-observed round snapshot.
+ * @returns Canonical progress or a deterministic presentation error.
+ */
+export function summarizeReviewLanes(snapshot: ReviewLaneRoundSnapshot): ReviewLanesSummaryResult {
+    if (
+        !isRecord(snapshot) ||
+        snapshot.active !== true ||
+        typeof snapshot.roundId !== "string" ||
+        !LANE_ID_PATTERN.test(snapshot.roundId) ||
+        typeof snapshot.change !== "string" ||
+        !snapshot.change.trim() ||
+        !Array.isArray(snapshot.lanes) ||
+        snapshot.lanes.length === 0
+    ) {
+        return { ok: false, error: "review round has invalid identity or lanes" };
+    }
+
+    const definitions = snapshot.lanes.map(lane =>
+        isRecord(lane)
+            ? {
+                  id: lane.id,
+                  lens: lane.lens,
+                  scope: lane.scope,
+                  capabilityHints: lane.capabilityHints,
+              }
+            : lane,
+    );
+    const validated = validateReviewLanes(definitions);
+    if (!validated.ok) return { ok: false, error: validated.error };
+
+    const counts = { pending: 0, inFlight: 0, completed: 0, failed: 0 };
+    const lanes: ReviewLanesProgress["lanes"][number][] = [];
+    for (let index = 0; index < snapshot.lanes.length; index++) {
+        const lane = snapshot.lanes[index];
+        if (
+            !isRecord(lane) ||
+            !["pending", "inFlight", "completed", "failed"].includes(String(lane.state)) ||
+            !Number.isInteger(lane.attempts) ||
+            (lane.attempts as number) < (lane.state === "pending" ? 0 : 1)
+        ) {
+            return {
+                ok: false,
+                error: `review lane '${validated.lanes[index].id}' has invalid execution state`,
+            };
+        }
+        const state = lane.state as ReviewLaneExecutionState;
+        counts[state]++;
+        const { id, lens, scope } = validated.lanes[index];
+        lanes.push({ id, lens, scope, state, attempts: lane.attempts as number });
+    }
+
+    if (
+        !isRecord(snapshot.counts) ||
+        (Object.keys(counts) as (keyof typeof counts)[]).some(
+            state => snapshot.counts[state] !== counts[state],
+        )
+    ) {
+        return { ok: false, error: "review lane counts do not match execution states" };
+    }
+    const fanInComplete = counts.completed === lanes.length;
+    if (snapshot.fanInComplete !== fanInComplete) {
+        return { ok: false, error: "review lane fan-in does not match execution states" };
+    }
+
+    const ordered = REVIEW_LENSES.flatMap(lens => lanes.filter(lane => lane.lens === lens));
+    return {
+        ok: true,
+        progress: { roundId: snapshot.roundId, lanes: ordered, counts, fanInComplete },
+    };
+}
 
 /**
  * Validate an Orchestrator-supplied lane plan without selecting or reordering

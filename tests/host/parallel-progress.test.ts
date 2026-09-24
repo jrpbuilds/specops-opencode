@@ -11,7 +11,11 @@ import {
     __resetSessionBindingsForTesting,
     recordSessionBinding,
 } from "../../src/host/session-bindings.js";
-import { summarizeReviewFanout } from "../../src/orchestrator/review-fanout.js";
+import {
+    observeReviewLaneTaskResult,
+    reserveReviewLaneDispatch,
+    startReviewLaneRound,
+} from "../../src/host/review-lanes.js";
 import { AGENT_IDS } from "../../src/agents/ids.js";
 
 const ORCHESTRATOR = "ses_orchestrator";
@@ -133,51 +137,41 @@ describe("parallel progress tracking", () => {
         ]);
     });
 
-    test("projects critic fan-out onto canonical lists that summarizeReviewFanout accepts", async () => {
+    test("ungated critic observation cannot invent an active review round", async () => {
         await dispatchBackground(
             "c1",
             "specops-review-correctness",
             '<task id="r1" state="running">',
         );
-        await dispatchBackground("c2", "specops-review-risk", '<task id="r2" state="running">');
-        await observe({ type: "session.idle", properties: { sessionID: "r1" } });
-
-        const snapshot = snapshotParallelProgress(ORCHESTRATOR);
-        expect(snapshot.reviewFanout).toEqual({
-            pending: ["quality"],
-            inFlight: ["risk"],
-            completed: ["correctness"],
-            failed: [],
-        });
-        const summary = summarizeReviewFanout(snapshot.reviewFanout!);
-        expect(summary.ok).toBe(true);
-        if (summary.ok) {
-            expect(summary.progress.counts).toEqual({
-                pending: 1,
-                inFlight: 1,
-                completed: 1,
-                failed: 0,
-            });
-        }
+        expect(snapshotParallelProgress(ORCHESTRATOR).reviewLanes).toBeUndefined();
     });
 
-    test("a critic failure is reflected and a re-dispatch starts a fresh round", async () => {
-        await dispatchBackground("c1", "specops-review-risk", '<task id="r1" state="running">');
-        await observe({ type: "session.error", properties: { sessionID: "r1" } });
-        expect(snapshotParallelProgress(ORCHESTRATOR).reviewFanout).toEqual({
-            pending: ["correctness", "quality"],
-            inFlight: [],
-            completed: [],
-            failed: ["risk"],
+    test("snapshots only the owning round's lane state and clears it on context loss", () => {
+        const round = startReviewLaneRound(ORCHESTRATOR, "example", [
+            { id: "C1", lens: "correctness", scope: "frontend" },
+            { id: "C2", lens: "correctness", scope: "API" },
+        ]);
+        expect(snapshotParallelProgress(ORCHESTRATOR).reviewLanes?.counts.pending).toBe(2);
+        expect(snapshotParallelProgress("another-session").reviewLanes).toBeUndefined();
+        reserveReviewLaneDispatch({
+            sessionID: ORCHESTRATOR,
+            callID: "lane-1",
+            change: "example",
+            roundId: round.roundId,
+            laneId: "C1",
+            scope: "frontend",
+            lens: "correctness",
+            maxConcurrency: 1,
         });
-
-        await dispatchBackground("c2", "specops-review-risk", '<task id="r2" state="running">');
-        expect(snapshotParallelProgress(ORCHESTRATOR).reviewFanout).toEqual({
-            pending: ["correctness", "quality"],
-            inFlight: ["risk"],
-            completed: [],
-            failed: [],
+        expect(snapshotParallelProgress(ORCHESTRATOR).reviewLanes?.counts.inFlight).toBe(1);
+        // A different active change never reads the previous round as progress.
+        observeReviewLaneTaskResult({
+            sessionID: ORCHESTRATOR,
+            callID: "lane-1",
+            background: false,
         });
+        recordSessionBinding(ORCHESTRATOR, "SpecOps", "another-change");
+        expect(snapshotParallelProgress(ORCHESTRATOR).reviewLanes).toBeUndefined();
     });
 
     test("refill after completion keeps both dispatches in dispatch order", async () => {
@@ -209,24 +203,27 @@ describe("parallel progress tracking", () => {
         ]);
     });
 
-    test("implementer and critic tracking coexist within one run", async () => {
+    test("implementer and review-lane tracking coexist within one run", async () => {
         await dispatchBackground("c1", AGENT_IDS.implementer, '<task id="task-1" state="running">');
-        await dispatchBackground(
-            "c2",
-            "specops-review-correctness",
-            '<task id="r1" state="running">',
-        );
+        const round = startReviewLaneRound(ORCHESTRATOR, "example", [
+            { id: "C1", lens: "correctness", scope: "frontend" },
+        ]);
+        reserveReviewLaneDispatch({
+            sessionID: ORCHESTRATOR,
+            callID: "c2",
+            change: "example",
+            roundId: round.roundId,
+            laneId: "C1",
+            scope: "frontend",
+            lens: "correctness",
+            maxConcurrency: 1,
+        });
 
         const snapshot = snapshotParallelProgress(ORCHESTRATOR);
         expect(snapshot.implementerDispatches).toEqual([
             { dispatchId: "task-1", state: "inFlight" },
         ]);
-        expect(snapshot.reviewFanout).toEqual({
-            pending: ["risk", "quality"],
-            inFlight: ["correctness"],
-            completed: [],
-            failed: [],
-        });
+        expect(snapshot.reviewLanes?.lanes[0]).toMatchObject({ id: "C1", state: "inFlight" });
     });
 
     test("observation seams never throw on malformed input", async () => {

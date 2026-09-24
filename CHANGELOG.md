@@ -6,6 +6,8 @@ All notable changes to SpecOps are documented in this file.
 
 ### Added
 
+- The to-do list now names each running scoped review lane, so multiple reviewers using the same lens remain easy to tell apart.
+- Parallel progress now shows every review lane's current state and attempts, making larger reviews easier to inspect and recover.
 - Review fan-out can cover multiple scoped jobs per lens while keeping parallel critics within the configured concurrency limit.
 - Specialists now use relevant packaged skills when available, adding domain depth without changing their workflow responsibilities.
 - Review work can now lean on focused domain skills for frontend, backend, security, database, accessibility, browser verification, compatibility, and performance concerns, so critiques gain depth without extra setup.

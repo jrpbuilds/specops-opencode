@@ -16,6 +16,7 @@ import {
     recordSessionBinding,
 } from "../../src/host/session-bindings.js";
 import { AGENT_IDS } from "../../src/agents/ids.js";
+import { reserveReviewLaneDispatch, startReviewLaneRound } from "../../src/host/review-lanes.js";
 import { stripTodoRefreshMarker } from "../helpers.js";
 
 type AskRequest = Parameters<ToolContext["ask"]>[0];
@@ -124,11 +125,29 @@ describe("specops_progress tool wrapper", () => {
 
     test("passes the core's exact JSON string through for the runtime-derived report", async () => {
         recordSessionBinding("test-session", "SpecOps", "example");
-        // One critic dispatch still in flight gives the report an active
-        // fan-out view without a durable read beyond the stub.
+        const round = startReviewLaneRound("test-session", "example", [
+            { id: "C1", lens: "correctness", scope: "booking frontend" },
+            { id: "C2", lens: "correctness", scope: "booking API" },
+            { id: "R1", lens: "risk", scope: "authentication" },
+        ]);
+        reserveReviewLaneDispatch({
+            sessionID: "test-session",
+            callID: "c1",
+            change: "example",
+            roundId: round.roundId,
+            laneId: "C1",
+            scope: "booking frontend",
+            lens: "correctness",
+            maxConcurrency: 2,
+        });
         await recordTaskDispatch(
             { tool: "task", sessionID: "test-session", callID: "c1" },
-            { args: { subagent_type: AGENT_IDS.reviewCorrectness } },
+            {
+                args: {
+                    subagent_type: AGENT_IDS.reviewCorrectness,
+                    prompt: `reviewRoundId: ${round.roundId}\nreviewLaneId: C1\nreviewScope: booking frontend`,
+                },
+            },
         );
         const stubbed = spyOn(applyInstructions, "getApplyInstructions").mockImplementation(
             async () => ({
@@ -149,7 +168,7 @@ describe("specops_progress tool wrapper", () => {
         const expected = await progress(
             {
                 change: "example",
-                ...(observed.reviewFanout ? { reviewFanout: observed.reviewFanout } : {}),
+                ...(observed.reviewLanes ? { reviewLanes: observed.reviewLanes } : {}),
                 implementerDispatches: observed.implementerDispatches ?? [],
             },
             {
@@ -162,13 +181,33 @@ describe("specops_progress tool wrapper", () => {
         expect(actual).toBe(expected);
         expect(JSON.parse(actual)).toEqual({
             change: "example",
-            reviewFanout: {
-                critics: [
-                    { id: "correctness", status: "inFlight" },
-                    { id: "risk", status: "pending" },
-                    { id: "quality", status: "pending" },
+            reviewLanes: {
+                roundId: round.roundId,
+                lanes: [
+                    {
+                        id: "C1",
+                        lens: "correctness",
+                        scope: "booking frontend",
+                        state: "inFlight",
+                        attempts: 1,
+                    },
+                    {
+                        id: "C2",
+                        lens: "correctness",
+                        scope: "booking API",
+                        state: "pending",
+                        attempts: 0,
+                    },
+                    {
+                        id: "R1",
+                        lens: "risk",
+                        scope: "authentication",
+                        state: "pending",
+                        attempts: 0,
+                    },
                 ],
                 counts: { pending: 2, inFlight: 1, completed: 0, failed: 0 },
+                fanInComplete: false,
             },
             implementers: {
                 available: true,
@@ -215,7 +254,7 @@ describe("specops_progress runtime-derived report", () => {
         expect(stubbed).toHaveBeenCalledWith("example", "/project");
         expect(JSON.parse(actual)).toEqual({
             change: "example",
-            reviewFanout: { active: false },
+            reviewLanes: { active: false },
             implementers: {
                 available: true,
                 dispatches: [{ dispatchId: "task-1", state: "completed" }, { state: "inFlight" }],
@@ -242,7 +281,7 @@ describe("specops_progress runtime-derived report", () => {
 
         expect(JSON.parse(actual)).toEqual({
             change: "example",
-            reviewFanout: { active: false },
+            reviewLanes: { active: false },
             implementers: {
                 available: true,
                 dispatches: [],
