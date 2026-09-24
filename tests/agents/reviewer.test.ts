@@ -65,14 +65,15 @@ describe("reviewer agent registration", () => {
         expect(prompt).toContain("The compliance matrix, finding contract, PASS/FAIL authority");
     });
 
-    test("reviewer generalizes the evidence envelope to any dispatched critic subset", () => {
+    test("reviewer accepts any number of scoped lane reports or direct review", () => {
         const prompt = loadPrompt(AGENT_IDS.reviewer);
 
-        expect(prompt).toMatch(
-            /the provided critic reports — one to three,\s*one section per critic that ran/,
-        );
-        expect(prompt).toMatch(/every blocking candidate from each provided critic/);
+        expect(prompt).toContain("one section per completed lane, with no fixed limit");
+        expect(prompt).toContain("possibly several lanes sharing a lens");
+        expect(prompt).toContain("lane id, lens, and scope");
+        expect(prompt).toContain("every blocking candidate from every provided lane");
         expect(prompt).toContain("An absent envelope means no critics ran for this change");
+        expect(prompt).toContain("Omit the whole section when no specialist evidence was provided");
     });
 
     test("reviewer can selectively uplift uncovered domains without changing verdict authority", () => {
@@ -97,9 +98,15 @@ describe("reviewer agent registration", () => {
         expect(prompt).toContain("downgraded to a sparse non-blocking observation");
         expect(prompt).toContain("Give direct evidence for every downgrade or rejection");
         expect(prompt).toContain("Specialist disposition:");
+        expect(prompt).toContain("C1-F1 — accepted as F1 | merged into F2");
+        expect(prompt).toContain("C2-F1 — ...");
+        expect(prompt).toContain("in envelope order");
+        expect(prompt).toContain("Repeated concerns across lanes are not votes");
         expect(prompt).toContain(
-            "Do not accept a claim merely because several specialists repeat it",
+            "dismiss a material concern merely because only one lane raised it",
         );
+        expect(prompt).toContain("Lane-local candidate IDs never replace the canonical `F1..Fn`");
+        expect(prompt).toContain("must not be carried forward as remediation IDs");
     });
 
     test("reviewer treats claims and broad checks as leads, not behavioural proof", () => {

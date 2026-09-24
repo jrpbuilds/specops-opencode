@@ -3,15 +3,15 @@ import { AGENT_IDS } from "../../src/agents/ids.js";
 import { loadPrompt } from "../../src/prompts.js";
 
 const SPECIALISTS = [
-    ["correctness", AGENT_IDS.reviewCorrectness, "C1..Cn"],
-    ["risk", AGENT_IDS.reviewRisk, "R1..Rn"],
-    ["quality", AGENT_IDS.reviewQuality, "Q1..Qn"],
+    ["correctness", AGENT_IDS.reviewCorrectness],
+    ["risk", AGENT_IDS.reviewRisk],
+    ["quality", AGENT_IDS.reviewQuality],
 ] as const;
 
 describe("review specialist prompt contracts", () => {
     test.each(SPECIALISTS)(
         "%s critic is advisory and uses the shared evidence contract once",
-        (_name, id, localIds) => {
+        (_name, id) => {
             const prompt = loadPrompt(id);
 
             expect(prompt.split("## Specialist evidence contract")).toHaveLength(2);
@@ -21,7 +21,9 @@ describe("review specialist prompt contracts", () => {
             expect(prompt).toContain("report an explicit evidence gap");
             expect(prompt).toContain("Never issue, imply, or recommend an overall PASS or FAIL");
             expect(prompt).toContain("A `blocking candidate` is evidence");
-            expect(prompt).toContain(localIds);
+            expect(prompt).toContain("<reviewLaneId>-F<n>");
+            expect(prompt).toContain("C1-F1");
+            expect(prompt).toContain("not the Final Reviewer's canonical remediation findings");
             expect(prompt).toContain("### REVIEW COVERAGE");
             expect(prompt).toContain("### FINDINGS");
             expect(prompt).toContain("NO MATERIAL FINDINGS");

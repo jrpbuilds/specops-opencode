@@ -93,22 +93,25 @@ Review agents are denied lifecycle tools. Capture `specops_review_guard` before 
 
 On specialist routes, register the selected plan with `specops_review_lanes` start (active change; unique `id`, `lens`, single-line `scope`, optional hints). Keep its `roundId`; each critic Task carries one exact `reviewRoundId`, `reviewLaneId`, and `reviewScope` line. After each result inspect status and refill freed slots only from registered pending lanes. Retry malformed output once via `retry` on that lane, then resume its session; failed execution remains failed under the existing policy. Dispatch the Reviewer only at `fanInComplete: true` and include exactly one `reviewRoundId: <id>` line. Reset any prior round before direct or fresh review; reset is blocked while a lane is in flight.
 
-Each critic receives the current change, goal, findings, Project Context, and focused scope. Pass reports verbatim in correctness, risk, quality order, one section per dispatched critic and no others:
+Each critic receives the current change, goal, findings, Project Context, and focused scope. After all registered lanes complete, pass every completed lane's report verbatim in a `## Specialist evidence` envelope, one section per lane and no others. Identify each section by its registered lane id, lens, and scope; multiple sections may share a lens. Order sections by correctness, risk, quality, then by registration order within each lens as listed by `specops_review_lanes` status, not by completion order. For example:
 
 ```text
 ## Specialist evidence
 
-### specops-review-correctness
-<verbatim report>
+### C1 — correctness — frontend
+<verbatim C1 report>
 
-### specops-review-risk
-<verbatim report>
+### C2 — correctness — backend
+<verbatim C2 report>
 
-### specops-review-quality
-<verbatim report>
+### R1 — risk — security
+<verbatim R1 report>
+
+### Q1 — quality — integration
+<verbatim Q1 report>
 ```
 
-The Reviewer remains the sole owner of the compliance matrix and PASS/FAIL verdict. Treat critic reports as evidence, not votes. Malformed reports use the lane retry above once; a still-malformed return fails fan-in. A genuine execution error is not resumed as if work exists.
+Omit the whole envelope on the direct route with no specialist lanes. The Reviewer remains the sole owner of the compliance matrix and PASS/FAIL verdict. Treat critic reports as evidence, not votes. Malformed reports use the lane retry above once; a still-malformed return fails fan-in. A genuine execution error is not resumed as if work exists.
 
 ## Schema-aware remediation routing
 
@@ -118,7 +121,7 @@ Carry every Reviewer finding `F1..Fn` verbatim and route the earliest incorrect 
 - a `design` target goes to `specops-designer`; other planning-artifact targets go to `specops-planner` for revision and reconciliation before implementation;
 - mixed targets are one coherent pass: fix planning roots first, then route the implementation-local work without conflicting concurrent edits.
 
-Re-run the review dispatch gate after remediation. The re-review uses the same route as the review that failed — the same critic set on the fan-out route, never fewer — scaling up to more critics only when remediation materially grew the change's surface; a direct route re-dispatches the Reviewer directly. Preserve completed work and valid task checkboxes.
+Re-run the review dispatch gate after remediation. The re-review uses the same route as the review that failed — the same review-lane set on the fan-out route, never fewer — scaling up to more lanes only when remediation materially grew the change's surface; a direct route re-dispatches the Reviewer directly. Preserve completed work and valid task checkboxes.
 
 ## Reconciling revised planning artifacts
 

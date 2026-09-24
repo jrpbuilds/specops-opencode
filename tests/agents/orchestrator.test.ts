@@ -72,7 +72,7 @@ describe("orchestrator prompt contract", () => {
     });
 
     test("keeps assembled prompts substantially below the legacy budget", () => {
-        expect(buildOrchestratorPrompt("auto", true).length).toBeLessThan(35_000);
+        expect(buildOrchestratorPrompt("auto", true).length).toBeLessThan(35_500);
     });
 
     test("consumes canonical status legality without reconstructing scheduler state", () => {
@@ -112,7 +112,7 @@ describe("orchestrator prompt contract", () => {
         expect(prompt).toContain("dispatch boundary validates identity, capacity, overlap");
         expect(prompt).toContain("never ask the runtime to regroup or repartition it");
         expect(prompt).toContain("reviewFanout");
-        expect(prompt).toContain("specops-review-correctness");
+        expect(prompt).toContain("### C1 — correctness — frontend");
         expect(prompt).toContain("## Specialist evidence");
         expect(prompt).toContain("specops_review_guard");
         expect(prompt).toContain("F1..Fn");
@@ -195,21 +195,35 @@ describe("orchestrator prompt contract", () => {
         expect(review).toMatch(/register the selected plan with `specops_review_lanes` start/);
     });
 
-    test("passes only dispatched critics in the evidence envelope", () => {
-        const prompt = buildOrchestratorPrompt("interactive", false);
+    test("passes every completed lane's report in deterministic order, including same-lens lanes", () => {
+        for (const mode of ["interactive", "auto"] as const) {
+            const prompt = buildOrchestratorPrompt(mode, false);
+            const review = prompt
+                .split("## Review phase")[1]
+                ?.split("## Schema-aware remediation")[0];
 
-        expect(prompt).toMatch(/Dispatch the Reviewer only at\s+`fanInComplete: true`/);
-        expect(prompt).toMatch(/one\s+section per dispatched critic and no others/);
-        expect(prompt).toMatch(/verify after each critic result and after the Reviewer/);
+            expect(review).toMatch(/Dispatch the Reviewer only at\s+`fanInComplete: true`/);
+            expect(review).toContain("every completed lane's report verbatim");
+            expect(review).toContain("one section per lane and no others");
+            expect(review).toContain("registered lane id, lens, and scope");
+            expect(review).toContain("then by registration order within each lens");
+            expect(review).toContain("not by completion order");
+            expect(review).toContain("Omit the whole envelope on the direct route");
+            expect(review).toMatch(
+                /### C1 — correctness — frontend[\s\S]*### C2 — correctness — backend[\s\S]*### R1 — risk — security[\s\S]*### Q1 — quality — integration/,
+            );
+            expect(review).not.toContain("### specops-review-correctness");
+            expect(review).toContain("verify after each critic result and after the Reviewer");
+        }
     });
 
-    test("keeps re-review on the failed round's route without shrinking the critic set", () => {
+    test("keeps re-review on the failed round's route without shrinking the lane set", () => {
         const prompt = buildOrchestratorPrompt("interactive", false);
 
         expect(prompt).toMatch(/the same\s+route as the review that failed/);
-        expect(prompt).toMatch(/the same critic set on the fan-out route,\s+never fewer/);
+        expect(prompt).toMatch(/the same review-lane set on the fan-out route,\s+never fewer/);
         expect(prompt).toMatch(
-            /scaling up to more critics only when remediation materially grew\s+the change's surface/,
+            /scaling up to more lanes only when remediation materially grew\s+the change's surface/,
         );
     });
 

@@ -14,13 +14,13 @@ The Implementer's completion claim, checkbox state, summary, and reported test r
 
 {{include:shared/capability-hints.md}}
 
-When the Orchestrator provides a `## Specialist evidence` envelope, treat the provided critic reports — one to three, one section per critic that ran — as evidence, not votes or authority, and verify them directly. Cross-check every material claim against the approved artifacts, implementation, and tests; your direct inspection remains authoritative. The specialists are independent and do not see each other's reports. Their `blocking candidate` labels do not determine materiality. The compliance matrix, finding contract, PASS/FAIL authority, and remediation re-review rules below remain unchanged.
+When the Orchestrator provides a `## Specialist evidence` envelope, treat every lane's verbatim report — one section per completed lane, with no fixed limit and possibly several lanes sharing a lens — as evidence, not votes or authority. The section heading identifies the lane id, lens, and scope; each report's `<laneId>-F<n>` candidate IDs are scoped to this review round. Cross-check every material claim against the approved artifacts, implementation, and tests; your direct inspection remains authoritative. The specialists are independent and do not see each other's reports. Their `blocking candidate` labels do not determine materiality. The compliance matrix, finding contract, PASS/FAIL authority, and remediation re-review rules below remain unchanged.
 
 An absent envelope means no critics ran for this change: perform the normal full review above with no Specialist disposition section.
 
 When no dispatched critic covered a domain adequately, the Reviewer may load a relevant available review capability; it supplements the review lenses and never changes the compliance matrix, finding contract, or PASS/FAIL authority.
 
-Explicitly dispose of every specialist blocking candidate as one of: accepted as a canonical `Fk`, merged into another `Fk`, downgraded to a sparse non-blocking observation, or rejected. Give direct evidence for every downgrade or rejection. Do not accept a claim merely because several specialists repeat it, and do not infer correctness merely because no specialist found a problem.
+Explicitly dispose of every specialist blocking candidate as one of: accepted as a canonical `Fk`, merged into another `Fk`, downgraded to a sparse non-blocking observation, or rejected. Give direct evidence for every downgrade or rejection. Repeated concerns across lanes are not votes; do not accept a claim merely because several lanes repeat it or dismiss a material concern merely because only one lane raised it. Do not infer correctness merely because no specialist found a problem.
 
 {{include:shared/worktree-scope.md}}
 
@@ -92,12 +92,13 @@ When specialist evidence was provided, after the Compliance matrix include:
 ```
 Specialist disposition:
 
-- C1 — accepted as F1 | merged into F2 | downgraded — <direct evidence> | rejected — <direct evidence>
-- R1 — ...
-- Q1 — ...
+- C1-F1 — accepted as F1 | merged into F2 | downgraded — <direct evidence> | rejected — <direct evidence>
+- C1-F2 — ...
+- C2-F1 — ...
+- R1-F1 — ...
 ```
 
-Include one line for every blocking candidate from each provided critic and omit specialists' non-blocking findings unless they materially inform the verdict. Omit the whole section when no specialist evidence was provided. A PASS requires every material specialist concern to be resolved or defensibly rejected through direct inspection.
+Include one line for every blocking candidate from every provided lane, in envelope order, and omit specialists' non-blocking findings unless they materially inform the verdict. Omit the whole section when no specialist evidence was provided. A PASS requires every material specialist concern to be resolved or defensibly rejected through direct inspection. Lane-local candidate IDs never replace the canonical `F1..Fn` findings or their correction targets, and must not be carried forward as remediation IDs.
 
 Number every blocking finding `F1`, `F2`, ..., `Fn` so it can be mapped directly to remediation. Every blocking finding must include exactly one Correction target, and each finding must include:
 

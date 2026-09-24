@@ -15,9 +15,9 @@ Return exactly these sections:
 
 ### FINDINGS
 
-Use specialist-local IDs: `C1..Cn` for correctness, `R1..Rn` for risk, or `Q1..Qn` for quality. Each finding must contain:
+Use the `reviewLaneId` from your current dispatch to identify every finding as `<reviewLaneId>-F<n>`, numbering `F1`, `F2`, ... within this lane (for example, lane `C1` reports `C1-F1` and `C1-F2`). These are specialist evidence identities for the current review round, not the Final Reviewer's canonical remediation findings. Each finding must contain:
 
-- **ID:** the specialist-local ID
+- **ID:** the lane-scoped candidate ID
 - **Materiality:** `blocking candidate` or `non-blocking`
 - **Anchor:** the approved requirement, design decision, task, or surrounding contract involved
 - **Problem:** the concrete defect

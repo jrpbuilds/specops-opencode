@@ -9,12 +9,10 @@ Every change flows through investigation, planning, implementation, and a multi-
 ```mermaid
 flowchart TD
     A[PLAN] --> B[IMPLEMENT]
-    B --> C1[review-correctness]
-    B --> C2[review-risk]
-    B --> C3[review-quality]
-    C1 --> D[specops-reviewer<br/>FINAL AUTHORITY]
-    C2 --> D
-    C3 --> D
+    B --> C{Review route}
+    C -->|Direct| D[specops-reviewer<br/>FINAL AUTHORITY]
+    C -->|Specialist review| S[One or more scoped lanes<br/>correctness / risk / quality]
+    S -->|Evidence| D
     D --> E{PASS / FAIL}
     E -->|PASS| F[Lifecycle]
     E -->|FAIL| G[Find earliest incorrect layer]
@@ -24,9 +22,7 @@ flowchart TD
     I --> K[Implementer]
     J --> L[IMPLEMENT]
     K --> L
-    L --> C1
-    L --> C2
-    L --> C3
+    L --> C
 ```
 
 ## The roles
@@ -38,7 +34,7 @@ flowchart TD
 | Planner                             | Authors the proposal, specifications, and implementation tasks.                                          |
 | Designer                            | Authors the technical design artifact when the schema calls for one.                                     |
 | Implementer                         | Writes the source code and tests.                                                                        |
-| Review correctness / risk / quality | Three independent critics that review larger or riskier changes from different angles in parallel.       |
+| Review correctness / risk / quality | Independent scoped lanes that review from three lenses; multiple lanes can share a lens when useful.     |
 | Reviewer                            | The final authority. Combines the critiques into one PASS/FAIL verdict, or reviews a small change alone. |
 | Frontier (optional)                 | A stronger escalation model consulted only for blockers that cheaper routes cannot resolve.              |
 
@@ -72,7 +68,7 @@ After implementation, the orchestrator chooses a proportionate review plan. Isol
 
 The same parallelism covers planning and implementation: independent planning artifacts author concurrently, and implementation parallelizes only when the change is large enough and planned work is genuinely segregated so concurrent lanes actually finish sooner — small changes (roughly three or fewer files in one coherent area) and tightly related work always build on a single implementer. When one lane receives staged assignments, its implementer session may be reused to preserve useful context, but every dispatch receives fresh canonical state; a fresh implementer dispatch is always a valid fallback. Launch OpenCode with `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true` for the best experience — parallel specialists then run as background tasks and each finished slot is refilled immediately, instead of waiting for every in-flight specialist to finish before the next batch starts.
 
-Specialists return independent critiques; the final `specops-reviewer` owns the only PASS/FAIL decision. The critics don't vote and can't overrule it.
+Specialists return independent critiques identified by review lane. The final `specops-reviewer` checks their evidence against the repository, explicitly disposes each blocking candidate, and owns the only PASS/FAIL decision. The critics don't vote and can't overrule it.
 
 During the review window, review agents can't change tracked repository files or the `openspec/` tree. If protected state changes mid-review, the run stops rather than pass a review that no longer matches the work — so a PASS means the review looked at exactly what shipped.
 
@@ -85,7 +81,7 @@ A FAIL doesn't automatically go back to the Implementer. The orchestrator classi
 - Findings about requirements or tasks → the Planner revises those artifacts first.
 - Mixed findings → one coherent pass, earliest roots first, keeping completed work.
 
-After correction, the review dispatch gate runs again — the same critic set as the review that failed, never fewer, followed by a fresh Reviewer verdict.
+After correction, the review dispatch gate runs again — the same review-lane set as the review that failed, never fewer, followed by a fresh Reviewer verdict.
 
 ## Standard vs Auto
 
