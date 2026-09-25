@@ -83,7 +83,7 @@ A FAIL doesn't automatically go back to the Implementer. The orchestrator classi
 - Findings about requirements or tasks → the Planner revises those artifacts first.
 - Mixed findings → one coherent pass, earliest roots first, keeping completed work.
 
-After correction, the review dispatch gate runs again — the same review-lane set as the review that failed, never fewer, followed by a fresh Reviewer verdict.
+After correction, the orchestrator selects a fresh review plan for the current implementation, remaining findings, and regression risk. Specialist coverage can grow or narrow as relevant surfaces change; the final Reviewer still independently checks every prior finding and the complete approved change before a new verdict.
 
 ## Standard vs Auto
 

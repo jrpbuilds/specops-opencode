@@ -217,13 +217,41 @@ describe("orchestrator prompt contract", () => {
         }
     });
 
-    test("keeps re-review on the failed round's route without shrinking the lane set", () => {
-        const prompt = buildOrchestratorPrompt("interactive", false);
+    test("recomposes proportionate re-review coverage in both modes", () => {
+        for (const mode of ["interactive", "auto"] as const) {
+            const prompt = buildOrchestratorPrompt(mode, false);
 
-        expect(prompt).toMatch(/the same\s+route as the review that failed/);
-        expect(prompt).toMatch(/the same review-lane set on the fan-out route,\s+never fewer/);
-        expect(prompt).toMatch(
-            /scaling up to more lanes only when remediation materially grew\s+the change's surface/,
+            expect(prompt).toContain("reset the prior review round");
+            expect(prompt).toContain("Choose a fresh proportionate plan");
+            expect(prompt).toContain("direct, focused, full, or expanded under `reviewFanout`");
+            expect(prompt).toContain("remediation changes, outstanding canonical findings");
+            expect(prompt).toContain("Prior lanes inform coverage, not assignments");
+            expect(prompt).toContain("retain, reshape, add, or drop scoped lanes");
+            expect(prompt).toContain("capability hints as surfaces change");
+            expect(prompt).toContain("Never drop coverage to evade independent verification");
+            expect(prompt).not.toContain("never fewer");
+            expect(prompt).not.toContain("same route as the review that failed");
+        }
+    });
+
+    test("keeps canonical findings and full Final Reviewer verification across review plans", () => {
+        for (const mode of ["interactive", "auto"] as const) {
+            const prompt = buildOrchestratorPrompt(mode, false);
+
+            expect(prompt).toContain("finding `F1..Fn` and correction target verbatim");
+            expect(prompt).toContain(
+                "Lane and candidate IDs are round-scoped evidence, not canonical findings",
+            );
+            expect(prompt).toContain(
+                "new reports (if any), the remediation summary, prior findings verbatim",
+            );
+            expect(prompt).toContain("independently rechecks every prior finding");
+            expect(prompt).toContain(
+                "the complete approved change, regressions, and new material approved-scope defects",
+            );
+        }
+        expect(buildOrchestratorPrompt("auto", false)).toContain(
+            "Each remediation/re-review round consumes one",
         );
     });
 

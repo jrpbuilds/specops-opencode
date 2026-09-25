@@ -121,7 +121,7 @@ Carry every Reviewer finding `F1..Fn` verbatim and route the earliest incorrect 
 - a `design` target goes to `specops-designer`; other planning-artifact targets go to `specops-planner` for revision and reconciliation before implementation;
 - mixed targets are one coherent pass: fix planning roots first, then route the implementation-local work without conflicting concurrent edits.
 
-Re-run the review dispatch gate after remediation. The re-review uses the same route as the review that failed — the same review-lane set on the fan-out route, never fewer — scaling up to more lanes only when remediation materially grew the change's surface; a direct route re-dispatches the Reviewer directly. Preserve completed work and valid task checkboxes.
+After remediation, follow the mode's shared re-review contract and preserve completed work and valid task checkboxes.
 
 ## Reconciling revised planning artifacts
 
