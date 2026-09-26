@@ -20,6 +20,7 @@ All notable changes to SpecOps are documented in this file.
 
 ### Changed
 
+- Configure now explains review-lens model mappings and how review breadth relates to the concurrency limit, making settings easier to choose.
 - Follow-up reviews now select specialist coverage for the corrected change, while still checking every prior finding and new regressions.
 - The final Reviewer now considers any number of scoped specialist reports and explicitly resolves each blocking concern, so broad changes can receive independent review across multiple lanes without ambiguity.
 - SpecOps' internal coordinator role is now named the orchestrator. Existing settings keep working: configurations that used the old `specops-coordinator` key migrate automatically with their model and variant choices preserved, and identical duplicate entries collapse; conflicting ones are reported with clear guidance instead of guessing.

@@ -48,6 +48,10 @@ dispatch context, and each role inspects the assignment before loading a
 materially relevant skill, declining or substituting a hint when appropriate.
 Role contracts remain authoritative, and roles degrade honestly through
 best-effort loading and explicit evidence gaps when needed.
+Users configure role models and broad review policy in SpecOps Configure;
+neither packaged skills nor individual review lanes have separate SpecOps
+switches or model mappings. Multiple lanes using the same lens use the same
+role model even if they load different relevant skills.
 
 ## The packaged catalogue
 

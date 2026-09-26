@@ -2,7 +2,7 @@ import {
     MAX_AUTO_REVIEW_ITERATIONS_SELECTABLE,
     MAX_SUBAGENT_CONCURRENCY_SELECTABLE,
 } from "../../config.js";
-import { ROLE_WORKFLOW_ORDER, type AgentId } from "../../agents/ids.js";
+import { AGENT_IDS, ROLE_WORKFLOW_ORDER, type AgentId } from "../../agents/ids.js";
 import { agentDisplayName, validateConfigSelections } from "../../models.js";
 import { changedAgentIds, describeSelection, formatConfiguredValue } from "../display.js";
 import type { EditorNavigator, EditorSession } from "../editor-session.js";
@@ -12,6 +12,11 @@ const CONCURRENT_SUBAGENTS = "__concurrent_subagents__";
 const AUTO_REVIEW_ITERATIONS = "__auto_review_iterations__";
 const IMPLEMENTER_FANOUT = "__implementer_fanout__";
 const REVIEW_FANOUT = "__review_fanout__";
+const REVIEW_LENS_ROLES: ReadonlySet<AgentId> = new Set([
+    AGENT_IDS.reviewCorrectness,
+    AGENT_IDS.reviewRisk,
+    AGENT_IDS.reviewQuality,
+]);
 
 /**
  * Render the role/options list that drives the editor state machine.
@@ -37,13 +42,19 @@ export function openRoleList(session: EditorSession, nav: EditorNavigator): void
         staged.maxAutoReviewIterations !== initial.maxAutoReviewIterations;
     const implementerFanoutChanged = staged.implementerFanout !== initial.implementerFanout;
     const reviewFanoutChanged = staged.reviewFanout !== initial.reviewFanout;
-    const roleOptions = ROLE_WORKFLOW_ORDER.map(id => ({
-        // "!" = saved model unavailable in the current catalogue; "*" = staged change.
-        title: `${unresolved.has(id) ? "! " : ""}${changed.has(id) ? "* " : ""}${agentDisplayName(id)}`,
-        value: id,
-        category: "Model Routing",
-        footer: describeSelection(staged, id, models),
-    }));
+    const roleOptions = ROLE_WORKFLOW_ORDER.map(id => {
+        const isReviewLens = REVIEW_LENS_ROLES.has(id);
+        return {
+            // "!" = saved model unavailable in the current catalogue; "*" = staged change.
+            title: `${unresolved.has(id) ? "! " : ""}${changed.has(id) ? "* " : ""}${agentDisplayName(id)}`,
+            value: id,
+            category: isReviewLens ? "Review Lenses" : "Model Routing",
+            ...(isReviewLens
+                ? { description: "One model per lens, shared by its scoped review lanes" }
+                : {}),
+            footer: describeSelection(staged, id, models),
+        };
+    });
 
     api.ui.dialog.replace(
         () =>
@@ -62,6 +73,7 @@ export function openRoleList(session: EditorSession, nav: EditorNavigator): void
                         value: CONCURRENT_SUBAGENTS,
                         category: "Options",
                         title: `${concurrencyChanged ? "* " : ""}Concurrent subagents`,
+                        description: "Simultaneous-work ceiling, not a target reviewer count",
                         footer: formatConfiguredValue(
                             staged.maxSubagentConcurrency,
                             MAX_SUBAGENT_CONCURRENCY_SELECTABLE,
@@ -86,6 +98,7 @@ export function openRoleList(session: EditorSession, nav: EditorNavigator): void
                         value: REVIEW_FANOUT,
                         category: "Options",
                         title: `${reviewFanoutChanged ? "* " : ""}Review fan-out`,
+                        description: "Orchestrator chooses the review breadth within this policy",
                         footer: staged.reviewFanout,
                     },
                     {

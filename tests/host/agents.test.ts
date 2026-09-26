@@ -155,6 +155,26 @@ describe("applyAgentDefinition translation", () => {
 });
 
 describe("registerWorkflowSubagents table", () => {
+    test("registers distinct stable lens models with Reviewer fallback", () => {
+        const config: Config = {};
+        const specOpsConfig = configWithRoleOverrides({
+            [AGENT_IDS.reviewer]: { model: "reviewer/model", variant: "high" },
+            [AGENT_IDS.reviewCorrectness]: { model: "correctness/model", variant: "fast" },
+        });
+        registerWorkflowSubagents(config, specOpsConfig);
+
+        expect(config.agent?.[AGENT_IDS.reviewCorrectness]).toMatchObject({
+            model: "correctness/model",
+            variant: "fast",
+        });
+        for (const id of [AGENT_IDS.reviewRisk, AGENT_IDS.reviewQuality]) {
+            expect(config.agent?.[id]).toMatchObject({ model: "reviewer/model", variant: "high" });
+        }
+        expect(
+            Object.keys(config.agent ?? {}).filter(id => id.startsWith("specops-review-")),
+        ).toEqual([AGENT_IDS.reviewCorrectness, AGENT_IDS.reviewRisk, AGENT_IDS.reviewQuality]);
+    });
+
     test("registers every workflow role except the orchestrator", () => {
         const config: Config = {};
         const specOpsConfig = structuredClone(DEFAULT_CONFIG);

@@ -73,12 +73,10 @@ The orchestrator routes your change through specialist agents, then has the fini
 ```mermaid
 flowchart TD
     A[PLAN] --> B[IMPLEMENT]
-    B --> C1[review-correctness]
-    B --> C2[review-risk]
-    B --> C3[review-quality]
-    C1 --> D[specops-reviewer<br/>FINAL AUTHORITY]
-    C2 --> D
-    C3 --> D
+    B --> C{Review route}
+    C -->|Direct| D[specops-reviewer<br/>FINAL AUTHORITY]
+    C -->|Focused / full / expanded| S[Scoped specialist lanes<br/>correctness / risk / quality]
+    S -->|Evidence| D
     D --> E{PASS / FAIL}
     E -->|PASS| F[Lifecycle]
     E -->|FAIL| G[Find earliest incorrect layer]
@@ -88,12 +86,10 @@ flowchart TD
     I --> K[Implementer]
     J --> L[IMPLEMENT]
     K --> L
-    L --> C1
-    L --> C2
-    L --> C3
+    L --> C
 ```
 
-When the Reviewer fails the work, the orchestrator finds the earliest incorrect layer (implementation, design, or requirements), gets it corrected there, and runs the whole review pipeline again. [How it works](docs/how-it-works.md) covers the details.
+When the Reviewer fails the work, the orchestrator finds the earliest incorrect layer (implementation, design, or requirements), gets it corrected there, and selects a fresh, proportionate review route for the updated work. [How it works](docs/how-it-works.md) covers the details.
 
 SpecOps keeps no persistent workflow state of its own: durable state lives in OpenSpec artifacts under `openspec/changes/<change>/`, while temporary session affinity ends with the orchestrator run. That's why custom schemas work, and why an interrupted change picks up where it left off.
 
@@ -101,7 +97,7 @@ The specialist agents (`specops-explorer`, `specops-planner`, `specops-designer`
 
 ## Model configuration
 
-Open the command palette (`Ctrl+P`), choose **SpecOps Configure**, and map any of the ten roles — orchestrator, explorer, planner, designer, implementer, reviewer, three review specialists, and frontier — to their own model and reasoning variant.
+Open the command palette (`Ctrl+P`), choose **SpecOps Configure**, and map any of the ten stable roles — Orchestrator, Explorer, Planner, Designer, Implementer, Final Reviewer, the Correctness, Risk, and Quality review lenses, and Frontier — to a model and reasoning variant. Multiple scoped lanes under one lens use that lens's mapping; lanes and skills do not need separate model settings.
 
 Configuration lives at `~/.config/opencode/specops.json` and looks like this:
 
@@ -120,7 +116,7 @@ Configuration lives at `~/.config/opencode/specops.json` and looks like this:
 }
 ```
 
-Any role you leave out inherits OpenCode's default model. Review specialists without their own entry inherit the Reviewer's. Specialists run one at a time by default; raise `maxSubagentConcurrency` (Configure offers 1–8) to overlap independent work, without changing how many lanes are worth running. `implementerFanout` defaults to `auto` and keeps small or tightly related work on one implementer. `reviewFanout` also defaults to `auto`: the orchestrator chooses direct, focused, full three-lens, or expanded scoped review according to the change's risks and surfaces. Set review fan-out to `always` to require correctness, risk, and quality lanes, or `never` for a direct final review; additional lanes remain judgement-driven. Auto's correction budget defaults to 3 cycles, and both concurrency and iteration budgets accept larger finite values if you set them directly in the file. For the best parallel experience, launch OpenCode with `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true` so a new specialist starts the moment one finishes.
+Roles without an explicit model use OpenCode's default; review lenses first inherit the Final Reviewer's model and variant if set. Specialists run one at a time by default; raise `maxSubagentConcurrency` (Configure offers 1–8) to overlap independent work. It is a ceiling, not a target reviewer count. `implementerFanout` defaults to `auto` and keeps small or tightly related work on one implementer. `reviewFanout` also defaults to `auto`: the Orchestrator chooses direct, focused, full three-lens, or expanded scoped review according to the change's risks and surfaces. Set review fan-out to `always` to require correctness, risk, and quality lanes, or `never` for a direct final review; additional lanes remain judgement-driven. Skills add relevant expertise on demand, without per-skill configuration. Auto's correction budget defaults to 3 cycles, and both concurrency and iteration budgets accept larger finite values if you set them directly in the file. For the best parallel experience, launch OpenCode with `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true` so a new specialist starts the moment one finishes.
 
 For the full `specops.json` with all ten roles mapped, see [Configuration](docs/configuration.md#where-configuration-lives). For advice on which models go where, see [Model recommendations](docs/model-recommendations.md).
 

@@ -29,6 +29,8 @@ For implementation, context capacity is a real practical constraint. Kimi K2.7 C
 
 The final Reviewer needs sound engineering judgement and a well-calibrated PASS/FAIL decision. DeepSeek V4 Pro and MiMo V2.5 Pro work particularly well here. Review critics have narrower, independent assignments, so capable flash models can be very effective: they need engineering judgement and issue-spotting ability, not necessarily full implementation prowess. Nemotron 3 is a good example of a model that may disappoint as a general coding assistant but works very well as a reviewer.
 
+Map models to the Correctness, Risk, and Quality lenses, not to skills or individual scoped lanes. Two lanes sharing a lens use its configured model; a lens without its own model inherits the Final Reviewer's mapping.
+
 ## Current configured stack
 
 This is the only complete example in this guide. It uses low-cost models for routing and review work, reserves stronger models for planning, design, implementation, and escalation, and deliberately spreads the workflow across model families.

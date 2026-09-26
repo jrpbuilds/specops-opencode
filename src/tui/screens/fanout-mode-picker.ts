@@ -22,9 +22,9 @@ const SETTINGS: Record<
         title: "Review fan-out",
         placeholder: "Choose fan-out mode",
         descriptions: {
-            auto: "Scale from direct to expanded review by scope and risk",
-            always: "Require all three lenses; add lanes only when useful",
-            never: "Always a single final reviewer",
+            auto: "Direct, focused, full or expanded by scope and risk",
+            always: "Require all three lenses; extra lanes only when useful",
+            never: "Direct Final Reviewer only; no specialist lanes",
         },
     },
 };

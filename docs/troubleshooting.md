@@ -27,8 +27,8 @@ Fixing it in the Configure screen (`Ctrl+P` → SpecOps Configure) is usually ea
 **A role shows an unavailable model**
 The Configure screen flags roles whose saved model no longer exists in your OpenCode catalogue (renamed, removed provider, typo). Re-select the model for that role; everything else is preserved.
 
-**Review specialists use the "wrong" model**
-They inherit the Reviewer's model and variant unless they have their own entry — see [review specialist inheritance](configuration.md#configurable-roles).
+**A review lens uses the "wrong" model**
+Lens roles inherit the Final Reviewer's model and variant unless they have their own entry — see [review lens inheritance](configuration.md#configurable-roles).
 
 ## Workflow problems
 

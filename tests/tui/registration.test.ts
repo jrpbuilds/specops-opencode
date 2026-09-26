@@ -95,9 +95,18 @@ describe("registerModelSettings", () => {
                     "Review - Quality",
                     "Frontier",
                 ]);
-                expect(
-                    options.slice(0, 10).every(option => option.category === "Model Routing"),
-                ).toBe(true);
+                expect(options.slice(0, 10).map(option => option.category)).toEqual([
+                    "Model Routing",
+                    "Model Routing",
+                    "Model Routing",
+                    "Model Routing",
+                    "Model Routing",
+                    "Model Routing",
+                    "Review Lenses",
+                    "Review Lenses",
+                    "Review Lenses",
+                    "Model Routing",
+                ]);
                 expect(props?.title).toBe("SpecOps role model mappings");
             }),
         ));

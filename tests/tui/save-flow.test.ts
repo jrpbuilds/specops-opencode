@@ -61,9 +61,12 @@ describe("SpecOps Configure save flow", () => {
                 expect(
                     fake
                         .currentDialog()
-                        ?.options?.find(option => option.value === "specops-review-correctness")
-                        ?.title,
-                ).toContain("Review - Correctness");
+                        ?.options?.find(option => option.value === "specops-review-correctness"),
+                ).toMatchObject({
+                    title: "* Review - Correctness",
+                    category: "Review Lenses",
+                    description: "One model per lens, shared by its scoped review lanes",
+                });
                 fake.selectByValue("__save__");
                 await fake.confirm();
 
@@ -85,12 +88,51 @@ describe("SpecOps Configure save flow", () => {
                 await fake.runCommand();
                 fake.selectByValue("specops-review-risk");
                 expect(fake.currentDialog()?.title).toBe("specops-review-risk: model");
+                expect(fake.currentDialog()?.options?.[0]).toMatchObject({
+                    title: "Use Reviewer mapping",
+                    description: "Inherit its model and variant, or OpenCode default",
+                });
                 fake.selectByValue("");
                 fake.selectByValue("__save__");
                 await fake.confirm();
 
                 const saved = await loadConfig(path.join(home, "opencode", "specops.json"));
                 expect(saved.agents["specops-review-risk"]).toEqual({});
+            }),
+        );
+    });
+
+    test("clearing a review lens uses the configured Reviewer mapping", async () => {
+        await withTempDir(async home =>
+            withConfigHome(home, async () => {
+                const destination = path.join(home, "opencode", "specops.json");
+                const persisted = await loadConfig(destination);
+                persisted.agents["specops-reviewer"] = {
+                    model: "openference/GLM-5.2",
+                    variant: "high",
+                };
+                persisted.agents["specops-review-risk"] = { model: "openai/gpt-5" };
+                await saveConfig(persisted, destination);
+
+                const fake = fakeTuiApi(allProviders);
+                registerModelSettings(fake.api);
+                await fake.runCommand();
+                fake.selectByValue("specops-review-risk");
+                fake.selectByValue("");
+                expect(
+                    fake
+                        .currentDialog()
+                        ?.options?.find(option => option.value === "specops-review-risk")?.footer,
+                ).toContain("GLM-5.2");
+                fake.selectByValue("__save__");
+                await fake.confirm();
+
+                const saved = await loadConfig(destination);
+                expect(saved.agents["specops-review-risk"]).toEqual({});
+                expect(saved.agents["specops-reviewer"]).toEqual({
+                    model: "openference/GLM-5.2",
+                    variant: "high",
+                });
             }),
         );
     });
@@ -143,7 +185,26 @@ describe("SpecOps Configure save flow", () => {
                 expect(
                     initialOptions?.find(option => option.value === "__concurrent_subagents__")
                         ?.description,
-                ).toBeUndefined();
+                ).toBe("Simultaneous-work ceiling, not a target reviewer count");
+                expect(
+                    initialOptions?.find(option => option.value === "specops-orchestrator"),
+                ).toMatchObject({
+                    title: "Orchestrator",
+                    category: "Model Routing",
+                });
+                expect(
+                    initialOptions?.find(option => option.value === "specops-review-risk"),
+                ).toMatchObject({
+                    title: "Review - Risk",
+                    category: "Review Lenses",
+                    description: "One model per lens, shared by its scoped review lanes",
+                });
+                expect(
+                    initialOptions?.find(option => option.value === "__review_fanout__"),
+                ).toMatchObject({
+                    description: "Orchestrator chooses the review breadth within this policy",
+                    footer: "auto",
+                });
                 expect(
                     initialOptions?.find(option => option.value === "__auto_review_iterations__"),
                 ).toMatchObject({
@@ -239,7 +300,7 @@ describe("SpecOps Configure save flow", () => {
                         .currentDialog()
                         ?.options?.find(option => option.value === "__concurrent_subagents__")
                         ?.description,
-                ).toBeUndefined();
+                ).toBe("Simultaneous-work ceiling, not a target reviewer count");
                 fake.selectByValue("__save__");
                 await fake.confirm();
 
@@ -320,9 +381,9 @@ describe("SpecOps Configure save flow", () => {
                     "never",
                 ]);
                 expect(fake.currentDialog()?.options?.map(option => option.description)).toEqual([
-                    "Scale from direct to expanded review by scope and risk",
-                    "Require all three lenses; add lanes only when useful",
-                    "Always a single final reviewer",
+                    "Direct, focused, full or expanded by scope and risk",
+                    "Require all three lenses; extra lanes only when useful",
+                    "Direct Final Reviewer only; no specialist lanes",
                 ]);
                 fake.selectByValue("always");
 

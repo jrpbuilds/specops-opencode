@@ -9,7 +9,7 @@ const SUBAGENT_CONCURRENCY_OPTIONS: readonly number[] = Array.from(
 );
 
 /**
- * Show the global planning concurrency choices and stage the selection.
+ * Show the global specialist concurrency ceiling and stage the selection.
  *
  * @param session Open editor session holding staged state.
  * @param nav Navigator used to return to the role list after selection.
@@ -24,7 +24,7 @@ export function openConcurrencyPicker(session: EditorSession, nav: EditorNavigat
                 current > MAX_SUBAGENT_CONCURRENCY_SELECTABLE
                     ? `Concurrent subagents (manual: ${current})`
                     : "Concurrent subagents",
-            placeholder: "Choose concurrency limit",
+            placeholder: "Choose concurrency ceiling",
             current,
             options: SUBAGENT_CONCURRENCY_OPTIONS.map(value => ({
                 title: String(value),

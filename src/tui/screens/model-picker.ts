@@ -1,5 +1,11 @@
 import type { AgentId } from "../../agents/ids.js";
-import { clearConfiguredModel, selectConfiguredModel, type ConfiguredModel } from "../../models.js";
+import { ROLE_META, type RoleMeta } from "../../agents/roles.js";
+import {
+    agentDisplayName,
+    clearConfiguredModel,
+    selectConfiguredModel,
+    type ConfiguredModel,
+} from "../../models.js";
 import type { EditorNavigator, EditorSession } from "../editor-session.js";
 
 /** Sentinel option value that navigates back from a drill-down screen. */
@@ -70,6 +76,7 @@ export function openVariantPicker(
  */
 export function openModelPicker(session: EditorSession, nav: EditorNavigator, id: AgentId): void {
     const { api, models, staged } = session;
+    const inheritedRole = (ROLE_META[id] as RoleMeta).inheritsModelFrom;
     api.ui.dialog.replace(() =>
         api.ui.DialogSelect<string | typeof BACK>({
             title: `${id}: model`,
@@ -77,9 +84,13 @@ export function openModelPicker(session: EditorSession, nav: EditorNavigator, id
             current: staged.agents[id].model ?? "",
             options: [
                 {
-                    title: "Use OpenCode default",
+                    title: inheritedRole
+                        ? `Use ${agentDisplayName(inheritedRole)} mapping`
+                        : "Use OpenCode default",
                     value: "",
-                    description: "Use OpenCode's configured global default model",
+                    description: inheritedRole
+                        ? "Inherit its model and variant, or OpenCode default"
+                        : "Use OpenCode's configured global default model",
                 },
                 ...models.map(model => ({
                     title: model.name,

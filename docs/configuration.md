@@ -1,6 +1,6 @@
 # Configuration
 
-SpecOps has one configuration file: it maps each role to a model, plus a few workflow options. You can set it up in the visual editor or edit the file directly.
+SpecOps has one configuration file: it maps stable roles to models and sets a few broad workflow policies. The Orchestrator chooses appropriate scoped work and specialists load relevant skills on demand; neither lanes nor skills need individual configuration. You can use the visual editor or edit the file directly.
 
 ## The Configure screen
 
@@ -10,7 +10,7 @@ Open OpenCode's command palette with `Ctrl+P` and select:
 SpecOps Configure
 ```
 
-The screen lists every role with its current model selection, plus five workflow options:
+The screen lists the Orchestrator and other stable roles with their current model selections, plus five workflow options:
 
 - **Frontier escalation** — on/off toggle
 - **Concurrent subagents** — 1 to 8
@@ -79,11 +79,11 @@ A complete example:
 }
 ```
 
-Every key is optional. Leave a role out (or set no `model`) and that role inherits OpenCode's global default model.
+Include an `agents` object, but individual role entries and workflow options are optional. Leave a role out (or set no `model`) to use the default mapping for that role.
 
 ## Upgrading from older releases
 
-Older releases named the primary role `specops-coordinator`. Existing files keep working: SpecOps reads the legacy key and migrates it to `specops-orchestrator` automatically, keeping the configured model and variant. New saves always write `specops-orchestrator`. If a file contains both keys with different models or variants, SpecOps refuses to guess and reports the conflict with guidance on how to resolve it.
+Older releases named the primary role `specops-coordinator`. Existing files keep working: SpecOps reads the legacy key and migrates it to `specops-orchestrator` automatically, keeping the configured model and variant. Identical old and new entries collapse to one; new saves write only `specops-orchestrator`. If both keys have different models or variants, SpecOps reports the conflict instead of choosing silently; resolve it in the file before opening Configure. Older files missing concurrency, Auto iterations, fan-out modes, or role entries receive defaults on load (`1`, `3`, `auto`, and empty role entries respectively).
 
 ## Configurable roles
 
@@ -95,12 +95,12 @@ Older releases named the primary role `specops-coordinator`. Existing files keep
 | `specops-designer`           | Technical design                        |
 | `specops-implementer`        | Source code and tests                   |
 | `specops-reviewer`           | Final independent PASS/FAIL verdict     |
-| `specops-review-correctness` | Correctness critique                    |
-| `specops-review-risk`        | Risk critique                           |
-| `specops-review-quality`     | Quality critique                        |
+| `specops-review-correctness` | Correctness review lens                 |
+| `specops-review-risk`        | Risk review lens                        |
+| `specops-review-quality`     | Quality review lens                     |
 | `specops-frontier`           | Escalation consultant for hard blockers |
 
-**Review specialist inheritance:** if a review specialist has no model of its own, it inherits the Reviewer's model _and_ variant together. Give a specialist its own `model` to break away from the Reviewer — for example, run all three critics on a fast cheap model while the Reviewer uses a stronger one. A `variant` without a `model` is rejected.
+**Review lens inheritance:** Correctness, Risk, and Quality each have one stable role mapping. Every scoped lane using a lens runs on that lens's configured model and variant, regardless of how many lanes the Orchestrator selects. If a lens has no model of its own, it inherits the Final Reviewer's model and variant together; if the Reviewer has no explicit model either, OpenCode's default applies. Give a lens its own model to break away from the Reviewer. A variant without an effective model is rejected; Configure requires choosing a model before setting a lens-specific variant.
 
 ## Workflow options
 
@@ -115,7 +115,7 @@ The maximum number of SpecOps specialist subagents that may run at the same time
 - **Default is `1`:** specialists run strictly one at a time unless you raise this.
 - The Configure screen offers **1–8**.
 - You can set any positive integer directly in `specops.json`; values above 8 stay effective and show up in Configure as manual values.
-- Work never exceeds this limit no matter how many routes are eligible. Raising it speeds up parallel stages like the review fan-out, at the cost of more concurrent model calls.
+- Work never exceeds this limit no matter how many routes are eligible. Raising it can speed up parallel stages, but does not instruct the Orchestrator to create more reviewers just to fill free slots.
 - **For the best experience, launch OpenCode with `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS=true`.** With it, parallel specialists run as background tasks and a new one starts the moment any specialist finishes. Without it, work still parallelises but refills in waves — the next dispatch waits for every in-flight sibling to finish.
 
 ### `maxAutoReviewIterations` (default: `3`)
@@ -143,11 +143,7 @@ Controls how the orchestrator chooses independent review lanes before the final 
 - **`always`:** include at least one lane for each of correctness, risk and quality before the final Reviewer. Additional scoped lanes are optional and must earn their place; `always` does not load every skill or fill free capacity.
 - **`never`:** send the change directly to the final Reviewer without specialist lanes.
 
-Review breadth is a judgement about the changed surfaces, verification, and risks, not a file-count rule. `maxSubagentConcurrency` limits how many lanes run at once, not how many the orchestrator may plan.
-
-## Upgrading from older versions
-
-Configuration files written before these fields existed are filled in automatically on load: missing concurrency becomes `1`, missing Auto iterations become `3`, missing fan-out modes become `auto`, and missing roles become empty entries. Nothing to migrate by hand. To require the traditional three review lenses for every change, set `reviewFanout: "always"`; set `implementerFanout: "always"` to prefer safe parallel implementation lanes.
+Review breadth is an Orchestrator judgement about the changed surfaces, verification, and risks, not a file-count rule. `maxSubagentConcurrency` limits how many lanes run at once, not how many the Orchestrator may plan. Skills are capabilities selected for each assignment, not extra reviewer types or model-mapping keys.
 
 ## Related pages
 
